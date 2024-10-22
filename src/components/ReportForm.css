@@ -1,0 +1,365 @@
+/* General Styles */
+body {
+    background-color: #f0f0f0;
+    color: #333;
+    font-family: 'Arial', sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: #e0e0e0;
+    /* Light grey background */
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #a3a3a3;
+    /* Dark grey thumb */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+
+/* Container for the form and preview */
+.report-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 20px;
+    max-width: 1200px;
+    /* Increased width for full layout */
+    margin: 0 auto;
+    gap: 20px;
+}
+
+/* Form Styles */
+.report-form {
+    background-color: #dde7f0;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-width: 500px;
+    /* Keep the form width consistent */
+    width: 100%;
+    /* Ensure width is respected */
+    box-sizing: border-box;
+    /* Ensure padding doesn't affect width */
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.physical-exam-input {
+    height: 250px;
+
+    /* Set a larger height for this specific textarea */
+}
+
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    border-color: #1c87c9;
+    outline: none;
+    background-color: #fff;
+    /* Remove width adjustment on focus */
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    /* Ensure full width within the container */
+    padding: 2px;
+    margin-bottom: 4px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    background-color: #f7f7f7;
+    color: #333;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+
+
+    /* Hide scrollbars */
+
+    /* Keep within the container size */
+}
+
+.submit-button {
+    padding: 8px 12px;
+    background-color: #1c87c9;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s ease;
+}
+
+.submit-button:disabled {
+    background-color: #666;
+    cursor: not-allowed;
+}
+
+.submit-button:hover:not(:disabled) {
+    background-color: #156cae;
+}
+
+
+
+.add-button:hover {
+    background-color: #73a7c7;
+}
+
+.remove-button:hover {
+    background-color: #f5b5b5;
+}
+
+/* Error Messages */
+.error-message {
+    color: red;
+    font-size: 0.8rem;
+}
+
+/* Report Preview */
+.report-preview {
+    background-color: #bedec9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
+    height: auto;
+    /* overflow-y: auto; */
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ddd;
+    align-items: center;
+    /* Center the text editor horizontally */
+    justify-content: flex-start;
+    /* Align content to the top */
+}
+
+.report-preview h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+    color: #333;
+    text-align: center;
+    overflow-x: hidden;
+
+
+}
+
+.report-text-editor {
+    width: 100%;
+    flex-grow: 1;
+    padding: 7px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f7f7f7;
+    color: #333;
+    font-size: 0.8rem;
+    resize: none;
+    line-height: 1.4;
+    overflow-y: auto;
+    margin-bottom: 2px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.report-text-editor:focus {
+    border-color: #1c87c9;
+    outline: none;
+    background-color: #fff;
+}
+
+/* Close button inside report preview */
+.remove-button {
+    width: auto;
+    /* Allow the button to adjust width */
+    padding: 8px 12px;
+    color: #fff;
+    background-color: #d76f72;
+    border-radius: 5px;
+    border: none;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+@media (max-width: 900px) {
+    .report-container {
+        flex-direction: column;
+    }
+
+    .report-form,
+    .report-preview {
+        max-width: 100%;
+    }
+
+    .report-preview {
+        margin-top: 20px;
+        overflow-x: hidden;
+
+    }
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    /* Space between buttons */
+    margin-top: 10px;
+    /* Space between text editor and buttons */
+}
+
+
+
+
+/* Center the loader */
+.three-body {
+    --uib-size: 60px;
+    --uib-speed: 0.8s;
+    --uib-color: #54b8dc;
+    position: relative;
+    height: var(--uib-size);
+    width: var(--uib-size);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: spin78236 calc(var(--uib-speed) * 2.5) infinite linear;
+    margin: auto;
+    /* Ensure it's centered horizontally */
+}
+
+.three-body__dot {
+    position: absolute;
+    height: 100%;
+    width: 30%;
+}
+
+.three-body__dot:after {
+    content: '';
+    position: absolute;
+    height: 0%;
+    width: 100%;
+    padding-bottom: 100%;
+    background-color: var(--uib-color);
+    border-radius: 50%;
+}
+
+.three-body__dot:nth-child(1) {
+    bottom: 5%;
+    left: 0;
+    transform: rotate(60deg);
+    transform-origin: 50% 85%;
+}
+
+.three-body__dot:nth-child(1)::after {
+    bottom: 0;
+    left: 0;
+    animation: wobble1 var(--uib-speed) infinite ease-in-out;
+    animation-delay: calc(var(--uib-speed) * -0.3);
+}
+
+.three-body__dot:nth-child(2) {
+    bottom: 5%;
+    right: 0;
+    transform: rotate(-60deg);
+    transform-origin: 50% 85%;
+}
+
+.three-body__dot:nth-child(2)::after {
+    bottom: 0;
+    left: 0;
+    animation: wobble1 var(--uib-speed) infinite calc(var(--uib-speed) * -0.15) ease-in-out;
+}
+
+.three-body__dot:nth-child(3) {
+    bottom: -5%;
+    left: 0;
+    transform: translateX(116.666%);
+}
+
+.three-body__dot:nth-child(3)::after {
+    top: 0;
+    left: 0;
+    animation: wobble2 var(--uib-speed) infinite ease-in-out;
+}
+
+@keyframes spin78236 {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes wobble1 {
+
+    0%,
+    100% {
+        transform: translateY(0%) scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translateY(-66%) scale(0.65);
+        opacity: 0.8;
+    }
+}
+
+@keyframes wobble2 {
+
+    0%,
+    100% {
+        transform: translateY(0%) scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: translateY(66%) scale(0.65);
+        opacity: 0.8;
+    }
+}
+
+textarea {
+    min-height: 50px;
+    /* Set an initial height */
+    max-height: 800px;
+    /* Set a maximum height where scrolling begins */
+    width: 100%;
+    /* Full width */
+    padding: 5px;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.8rem;
+    resize: none;
+    /* Disable manual resizing */
+    overflow: hidden;
+    /* Hide scrollbars until necessary */
+}
+
+/* This makes the textarea grow */
+textarea:focus {
+    overflow-y: auto;
+    /* Allow vertical scrolling if content exceeds max-height */
+}
