@@ -24,8 +24,10 @@ const ReportForm = () => {
     const [staff, setStaff] = useState('');
     const [presentingComplaint, setPresentingComplaint] = useState('');
     const [history, setHistory] = useState('');
-    const [physicalExamFindings, setPhysicalExamFindings] = useState(`Temperature: Normal, 101.5°F
-General Appearance: Bright, Alert, Responsive (BAR)
+    const [physicalExamFindings, setPhysicalExamFindings] = useState(`General Appearance: Bright, Alert, Responsive
+T: °F, Normal
+P:
+R:
 Body Condition Score: 5/9 (Ideal=5/9)
 Mucous Membranes: Pink, moist
 Capillary Refill Time: <2 seconds
@@ -35,8 +37,8 @@ Heart: No murmur, no arrhythmia auscultated
 Lungs: Clear on auscultation, no abnormal sounds
 Abdomen Palpation: Within normal limits, no pain or abnormalities detected
 Lymph Nodes: Palpable and within normal limits
-Integumentary (Skin and Coat): Clean, no lesions, masses, or abnormalities detected
-Musculoskeletal: No lameness, full range of motion, no pain on palpation
+Integumentary (Skin and Coat): Normal, no lesions, masses, or abnormalities detected
+Musculoskeletal: No lameness, no pain on palpation
 Neurologic: Alert and responsive, normal reflexes
 Urogenital: Within normal limits, no abnormalities noted`);
     const [diagnosticPlan, setDiagnosticPlan] = useState('');

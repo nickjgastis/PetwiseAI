@@ -52,8 +52,12 @@ const GenerateReport = async (inputs) => {
     Treatment:
     ${inputs.treatment || "Offer a detailed description of each treatment. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous), and the expected benefits. Mention any potential side effects and explain how the owner should monitor for adverse reactions. Ensure each response is at least three sentences."}
     
+Expected Course/Prognosis:
+"Based on the information provided, describe the expected course and prognosis of the condition. Include potential outcomes, the likelihood of recovery or improvement, and any necessary ongoing care or treatments. Each explanation should be at least three sentences long, and reflect best practices and industry standards for similar cases."}
+
+
     Client Communications/Recommendations:
-    ${inputs.clientCommunications || "Summarize all the key points communicated with the client, including diagnosis, treatment options, and any follow-up steps. Mention any key questions or concerns raised by the client. Each section should be no shorter than three sentences."}
+    ${inputs.clientCommunications || "Explain any potential side effects that may occur from treatemnt in detail. Summarize all the key points communicated with the client, including diagnosis, treatment options, and any follow-up steps. Mention any key questions or concerns raised by the client. Each section should be no shorter than three sentences."}
     
     Plan/Follow-Up:
     ${inputs.planFollowUp || "Provide clear and actionable follow-up instructions. Recommend when the next check-up should be, which signs of improvement or deterioration to watch for, and any necessary adjustments to care (e.g., diet changes, exercise restrictions). Suggest when and how the owner should re-engage for further treatment or tests. Each follow-up plan should be no shorter than three sentences."}
