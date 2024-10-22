@@ -30,10 +30,9 @@ const GenerateReport = async (inputs) => {
     History:
     ${inputs.history || "Provide a thorough history of the patient, including any previous medical issues, treatments, and notable changes in the patient’s health or behavior. The history should be at least three sentences long."}
     
+    Date and Time of Examination: ${new Date().toLocaleString()}
     Physical Exam Findings:
     ${inputs.physicalExamFindings || "Thoroughly describe the results of the physical examination, noting any abnormal findings, and also mention important normal findings (e.g., stable weight, hydrated condition, good coat health). Provide any recommendations for further testing if necessary. Ensure the description is at least three sentences long."}
-    
-    Date and Time of Examination: ${new Date().toLocaleString()}
     
     Diagnostic Plan:
     ${inputs.diagnosticPlan || "Detail the diagnostic plan, including any recommended tests, imaging, or lab work needed to confirm or clarify the diagnosis. If nothing is input, fill in with best practices and any other information given."}
@@ -50,8 +49,8 @@ const GenerateReport = async (inputs) => {
     Differential Diagnosis:
     ${inputs.differentialDiagnosis || "Include potential differential diagnoses that were considered and explain why they were ruled out or considered less likely. Ensure the explanation is no less than three sentences."}
     
-    Treatment Performed Today:
-    ${inputs.treatment || "Offer a detailed description of each treatment administered today. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous), and the expected benefits. Mention any potential side effects and explain how the owner should monitor for adverse reactions. Ensure each response is at least three sentences."}
+    Treatment:
+    ${inputs.treatment || "Offer a detailed description of each treatment. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous), and the expected benefits. Mention any potential side effects and explain how the owner should monitor for adverse reactions. Ensure each response is at least three sentences."}
     
     Client Communications/Recommendations:
     ${inputs.clientCommunications || "Summarize all the key points communicated with the client, including diagnosis, treatment options, and any follow-up steps. Mention any key questions or concerns raised by the client. Each section should be no shorter than three sentences."}

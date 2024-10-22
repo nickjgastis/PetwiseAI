@@ -4,12 +4,13 @@ import './ReportForm.css';
 import GenerateReport from './GenerateReport';
 
 const ReportForm = () => {
-    const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false); // Track which form is shown
+    const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
 
+    // Patient Info State
     const [patientName, setPatientName] = useState('');
     const [species, setSpecies] = useState('');
     const [sex, setSex] = useState('');
-    const [breed, setBreed] = useState(''); // Added breed state
+    const [breed, setBreed] = useState('');
     const [colorMarkings, setColorMarkings] = useState('');
     const [weight, setWeight] = useState('');
     const [weightUnit, setWeightUnit] = useState('lbs');
@@ -18,11 +19,26 @@ const ReportForm = () => {
     const [address, setAddress] = useState('');
     const [telephone, setTelephone] = useState('');
 
+    // Exam Info State
     const [examDate, setExamDate] = useState('');
     const [staff, setStaff] = useState('');
     const [presentingComplaint, setPresentingComplaint] = useState('');
     const [history, setHistory] = useState('');
-
+    const [physicalExamFindings, setPhysicalExamFindings] = useState(`Temperature: Normal, 101.5°F
+General Appearance: Bright, Alert, Responsive (BAR)
+Body Condition Score: 5/9 (Ideal=5/9)
+Mucous Membranes: Pink, moist
+Capillary Refill Time: <2 seconds
+Eyes, Ears, Nose, Throat (EENT): Within normal limits
+Oral Cavity: Gd. 1 tartar
+Heart: No murmur, no arrhythmia auscultated
+Lungs: Clear on auscultation, no abnormal sounds
+Abdomen Palpation: Within normal limits, no pain or abnormalities detected
+Lymph Nodes: Palpable and within normal limits
+Integumentary (Skin and Coat): Clean, no lesions, masses, or abnormalities detected
+Musculoskeletal: No lameness, full range of motion, no pain on palpation
+Neurologic: Alert and responsive, normal reflexes
+Urogenital: Within normal limits, no abnormalities noted`);
     const [diagnosticPlan, setDiagnosticPlan] = useState('');
     const [labResults, setLabResults] = useState('');
     const [assessment, setAssessment] = useState('');
@@ -32,53 +48,48 @@ const ReportForm = () => {
     const [clientCommunications, setClientCommunications] = useState('');
     const [planFollowUp, setPlanFollowUp] = useState('');
 
+    // Loading and error states
     const [loading, setLoading] = useState(false);
     const [reportText, setReportText] = useState('');
     const [previewVisible, setPreviewVisible] = useState(false);
     const [error, setError] = useState('');
 
-    const defaultPhysicalExamFindings = `Temperature: Normal, 101.5°F
-General Appearance: Bright, Alert, Responsive (BAR)
-Body Condition Score: 5/9 (Ideal=5/9)
-Mucous Membranes: Pink, moist
-Capillary Refill Time: <2 seconds
-Eyes, Ears, Nose, Throat (EENT): Within normal limits
-Oral Cavity: No significant findings, teeth clean, mild tartar
-Heart: No murmur, no arrhythmia auscultated
-Lungs: Clear on auscultation, no abnormal sounds
-Abdomen Palpation: Within normal limits, no pain or abnormalities detected
-Lymph Nodes: Palpable and within normal limits
-Integumentary (Skin and Coat): Clean, no lesions, masses, or abnormalities detected
-Musculoskeletal: No lameness, full range of motion, no pain on palpation
-Neurologic: Alert and responsive, normal reflexes
-Urogenital: Within normal limits, no abnormalities noted`;
+    // Species and breed options
+    const speciesOptions = ['Canine', 'Feline', 'Avian', 'Reptile', 'Bovine', 'Equine', 'Ovine', 'Porcine'];
 
-    const [physicalExamFindings, setPhysicalExamFindings] = useState(defaultPhysicalExamFindings);
-
-    const speciesOptions = [
-        'Canine', 'Feline', 'Avian', 'Reptile', 'Bovine', 'Equine', 'Ovine', 'Porcine'
-    ];
-
-    const sexOptions = [
-        'Female Spayed', 'Female Intact', 'Male Neutered', 'Male Intact'
-    ];
+    const sexOptions = ['Female Spayed', 'Female Intact', 'Male Neutered', 'Male Intact'];
 
     const dogBreeds = [
-        'Labrador Retriever', 'German Shepherd', 'Golden Retriever', 'Bulldog', 'Poodle',
-        'Beagle', 'Rottweiler', 'Yorkshire Terrier', 'Boxer', 'Dachshund', 'Shih Tzu',
-        'Siberian Husky', 'Great Dane', 'Cocker Spaniel', 'Doberman Pinscher', 'Australian Shepherd',
-        'Pembroke Welsh Corgi', 'Chihuahua', 'Border Collie', 'Maltese'
+        'Labrador Retriever', 'German Shepherd', 'Golden Retriever', 'Bulldog', 'Poodle', 'Beagle', 'Rottweiler', 'Yorkshire Terrier',
+        'Boxer', 'Dachshund', 'Shih Tzu', 'Siberian Husky', 'Great Dane', 'Cocker Spaniel', 'Doberman Pinscher',
+        'Australian Shepherd', 'Pembroke Welsh Corgi', 'Chihuahua', 'Border Collie', 'Maltese'
     ];
 
+    const felineBreeds = [
+        'Domestic Long Hair', 'Domestic Short Hair', 'Domestic Medium Hair',
+        'Persian', 'Maine Coon', 'Ragdoll', 'British Shorthair', 'Sphynx',
+        'Scottish Fold', 'Abyssinian', 'Birman', 'Bengal', 'Siberian',
+        'Russian Blue', 'Norwegian Forest Cat', 'American Shorthair',
+        'Exotic Shorthair', 'Oriental Shorthair', 'Burmese', 'Turkish Angora',
+        'Chartreux', 'Tonkinese', 'Cornish Rex'
+    ];
+
+
+    // Set breed options based on species
+    const breedOptions = species === 'Canine' ? dogBreeds : species === 'Feline' ? felineBreeds : [];
+
+    // Submit patient info
     const handlePatientInfoSubmit = (e) => {
         e.preventDefault();
-        setPatientInfoSubmitted(true); // Show the next section
+        setPatientInfoSubmitted(true);
     };
 
+    // Go back to patient info form
     const handleBackToPatientInfo = () => {
-        setPatientInfoSubmitted(false); // Go back to Patient Info form
+        setPatientInfoSubmitted(false);
     };
 
+    // Submit exam info and generate report
     const handleExamSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
@@ -89,7 +100,6 @@ Urogenital: Within normal limits, no abnormalities noted`;
                 examDate, staff, presentingComplaint, history, physicalExamFindings, diagnosticPlan, labResults,
                 assessment, diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp
             };
-            console.log(inputs);
 
             const generatedReport = await GenerateReport(inputs);
             setReportText(generatedReport);
@@ -101,6 +111,7 @@ Urogenital: Within normal limits, no abnormalities noted`;
         }
     };
 
+    // Generate PDF
     const generatePDF = () => {
         const doc = new jsPDF();
         doc.text(reportText, 10, 10);
@@ -135,7 +146,7 @@ Urogenital: Within normal limits, no abnormalities noted`;
                     <label className="form-label">Breed:</label>
                     <select className="form-input" value={breed} onChange={(e) => setBreed(e.target.value)}>
                         <option value="">Select Breed</option>
-                        {dogBreeds.map((breed, index) => (
+                        {breedOptions.map((breed, index) => (
                             <option key={index} value={breed}>{breed}</option>
                         ))}
                     </select>
