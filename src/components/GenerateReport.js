@@ -47,10 +47,10 @@ const GenerateReport = async (inputs) => {
     ${inputs.diagnosis || "Provide a detailed and well-supported diagnosis, explaining potential causes, complications, and how the condition may develop if left untreated. Mention any differential diagnoses and explain why this diagnosis was chosen. Comment on the prognosis and the expected progression of the condition. Each response should be at least three sentences long."}
     
     Differential Diagnosis:
-    ${inputs.differentialDiagnosis || "Include potential differential diagnoses that were considered and explain why they were ruled out or considered less likely. Ensure the explanation is no less than three sentences."}
+    ${inputs.differentialDiagnosis || "Create a list of differential diagnosis in order of most likelyhood. Include potential differential diagnoses that were considered and explain why they were ruled out or considered less likely. Ensure the explanation is no less than three sentences."}
     
     Treatment:
-    ${inputs.treatment || "Offer a detailed description of each treatment. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous), and the expected benefits. Mention any potential side effects and explain how the owner should monitor for adverse reactions. Ensure each response is at least three sentences."}
+    ${inputs.treatment || "List all the possible drugs that could be used, Example 1. Drug name Dose (mg/kg) Route of admistration(IV, P.O, SQ), Frequency (SID, BID, TID, QID, EOD) Include number of days for treatment. Offer a detailed description of each treatment. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous), and the expected benefits. Mention any potential side effects and explain how the owner should monitor for adverse reactions. Ensure each response is at least three sentences."}
     
     Expected Course/Prognosis:
     ${inputs.expectedCoursePrognosis || `Based on the information provided, describe the expected course and prognosis of the condition. Include potential outcomes, the likelihood of recovery or improvement, and any necessary ongoing care or treatments. Each explanation should be at least three sentences long, and reflect best practices and industry standards for similar cases.
