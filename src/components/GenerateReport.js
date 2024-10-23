@@ -68,7 +68,7 @@ const GenerateReport = async (inputs) => {
     Plan/Follow-Up:
     ${inputs.planFollowUp || "Provide clear and actionable follow-up instructions. Recommend when the next check-up should be, which signs of improvement or deterioration to watch for, and any necessary adjustments to care (e.g., diet changes, exercise restrictions). Suggest when and how the owner should re-engage for further treatment or tests. Each follow-up plan should be no shorter than three sentences."}
     
-    Staff: ${inputs.staff || "Provide here"}
+    ${inputs.staff || "Provide here"}
     
     End of Medical Record.
     
