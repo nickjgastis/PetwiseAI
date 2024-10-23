@@ -62,19 +62,30 @@ Urogenital: Within normal limits, no abnormalities noted`);
     const sexOptions = ['Female Spayed', 'Female Intact', 'Male Neutered', 'Male Intact'];
 
     const dogBreeds = [
-        'Labrador Retriever', 'German Shepherd', 'Golden Retriever', 'Bulldog', 'Poodle', 'Beagle', 'Rottweiler', 'Yorkshire Terrier',
-        'Boxer', 'Dachshund', 'Shih Tzu', 'Siberian Husky', 'Great Dane', 'Cocker Spaniel', 'Doberman Pinscher',
-        'Australian Shepherd', 'Pembroke Welsh Corgi', 'Chihuahua', 'Border Collie', 'Maltese'
+        'Australian Shepherd', 'Beagle', 'Bernese Mountain Dog', 'Bichon Frise', 'Border Collie', 'Boston Terrier',
+        'Boxer', 'Bulldog', 'Cavalier King Charles Spaniel', 'Chihuahua', 'Cocker Spaniel', 'Collie',
+        'Dachshund', 'Dalmatian', 'Doberman Pinscher', 'English Cocker Spaniel', 'English Springer Spaniel', 'French Bulldog',
+        'German Shepherd', 'Golden Retriever', 'Great Dane', 'Havanese', 'Irish Setter', 'Jack Russell Terrier',
+        'Labrador Retriever', 'Maltese', 'Miniature Pinscher', 'Miniature Schnauzer', 'Newfoundland', 'Pekingese',
+        'Pembroke Welsh Corgi', 'Pomeranian', 'Poodle', 'Portuguese Water Dog', 'Pug', 'Rottweiler', 'Samoyed',
+        'Schipperke', 'Shiba Inu', 'Shih Tzu', 'Siberian Husky', 'Soft-Coated Wheaten Terrier', 'Staffordshire Bull Terrier',
+        'Standard Schnauzer', 'Weimaraner', 'West Highland White Terrier', 'Whippet', 'Wire Fox Terrier', 'Yorkshire Terrier'
     ];
+
 
     const felineBreeds = [
         'Domestic Long Hair', 'Domestic Short Hair', 'Domestic Medium Hair',
-        'Persian', 'Maine Coon', 'Ragdoll', 'British Shorthair', 'Sphynx',
-        'Scottish Fold', 'Abyssinian', 'Birman', 'Bengal', 'Siberian',
-        'Russian Blue', 'Norwegian Forest Cat', 'American Shorthair',
-        'Exotic Shorthair', 'Oriental Shorthair', 'Burmese', 'Turkish Angora',
-        'Chartreux', 'Tonkinese', 'Cornish Rex'
+        'Abyssinian', 'American Curl', 'American Shorthair', 'Bengal', 'Birman',
+        'Bombay', 'British Shorthair', 'Burmese', 'Burmilla', 'Chartreux', 'Cornish Rex',
+        'Devon Rex', 'Egyptian Mau', 'Exotic Shorthair', 'Havana Brown', 'Himalayan',
+        'Japanese Bobtail', 'Javanese', 'Khao Manee', 'Korat', 'LaPerm', 'Lykoi',
+        'Maine Coon', 'Manx', 'Norwegian Forest Cat', 'Ocicat', 'Oriental Shorthair',
+        'Persian', 'Peterbald', 'Pixie-Bob', 'Ragamuffin', 'Ragdoll', 'Russian Blue',
+        'Savannah', 'Scottish Fold', 'Selkirk Rex', 'Serengeti', 'Siamese', 'Siberian',
+        'Singapura', 'Snowshoe', 'Somali', 'Sphynx', 'Thai', 'Tonkinese',
+        'Toyger', 'Turkish Angora', 'Turkish Van'
     ];
+
 
 
     // Set breed options based on species
