@@ -32,7 +32,7 @@ const GenerateReport = async (inputs) => {
     
     Date and Time of Examination: ${new Date().toLocaleString()}
     Physical Exam Findings:
-    ${inputs.physicalExamFindings || "Thoroughly describe the results of the physical examination, noting any abnormal findings, and also mention important normal findings (e.g., stable weight, hydrated condition, good coat health). Provide any recommendations for further testing if necessary. Ensure the description is at least three sentences long. Compensate for capitalization errors, example: NORAML = normal."}
+    ${inputs.physicalExamFindings || "Keep the exact same structure as the input gives you at all times. Thoroughly describe the results of the physical examination, noting any abnormal findings, and also mention important normal findings (e.g., stable weight, hydrated condition, good coat health). Provide any recommendations for further testing if necessary. Ensure the description is at least three sentences long. Compensate for capitalization errors, example: NORAML = normal."}
     
     Diagnostic Plan:
     ${inputs.diagnosticPlan || "Detail the diagnostic plan, including any recommended tests, imaging, or lab work needed to confirm or clarify the diagnosis. If nothing is input, fill in with best practices and any other information given."}
@@ -74,7 +74,7 @@ const GenerateReport = async (inputs) => {
     
     If any information is missing or incomplete, fill in with best practices from similar cases. Always ensure the report is detailed and medically accurate, providing the owner with a clear understanding of the pet’s condition, prognosis, and next steps for care. Recommend appropriate treatments where relevant. If the input is short such as (vomiting for three days) you should expand with two to three sentences. Don't ever leave a comment at the end of the report.`;
 
-    console.log('Prompt being sent:', prompt);
+    // console.log('Prompt being sent:', prompt);
 
 
 

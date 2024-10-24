@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import '../styles/ReportForm.css';
 import GenerateReport from './GenerateReport';
@@ -91,6 +91,32 @@ Urogenital: Within normal limits, no abnormalities noted`);
     // Set breed options based on species
     const breedOptions = species === 'Canine' ? dogBreeds : species === 'Feline' ? felineBreeds : [];
 
+    const isGenerating = useRef(false); // Track if report generation is ongoing
+
+    const [savedMessageVisible, setSavedMessageVisible] = useState(false);
+
+    useEffect(() => {
+        console.log('Component mounted');
+        const savedReportText = localStorage.getItem('currentReportText');
+        const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
+
+        if (savedReportText !== null && savedReportText !== '') {
+            setReportText(savedReportText);
+        }
+
+        setPreviewVisible(savedPreviewVisible);
+
+        return () => {
+            console.log('Component unmounted');
+        };
+    }, []);
+
+    useEffect(() => {
+        console.log('Saving to localStorage:', { reportText, previewVisible });
+        localStorage.setItem('currentReportText', reportText);
+        localStorage.setItem('previewVisible', previewVisible.toString());
+    }, [reportText, previewVisible]);
+
     // Submit patient info
     const handlePatientInfoSubmit = (e) => {
         e.preventDefault();
@@ -105,7 +131,9 @@ Urogenital: Within normal limits, no abnormalities noted`);
     // Submit exam info and generate report
     const handleExamSubmit = async (e) => {
         e.preventDefault();
+        if (isGenerating.current) return; // Prevent multiple submissions
         setLoading(true);
+        isGenerating.current = true;
 
         try {
             const inputs = {
@@ -121,32 +149,27 @@ Urogenital: Within normal limits, no abnormalities noted`);
             setError(error.message || 'An error occurred while generating the report.');
         } finally {
             setLoading(false);
+            isGenerating.current = false;
         }
     };
 
-    const generatePDF = () => {
-        const doc = new jsPDF();
 
-        // Text content for the report
-        const lines = doc.splitTextToSize(reportText, 180); // Wrap text to fit within 180 units width
 
-        // Set initial cursor position
-        let yPosition = 10; // Top margin
-        const pageHeight = doc.internal.pageSize.height; // Get the page height
+    const saveReport = () => {
+        const savedReports = JSON.parse(localStorage.getItem('savedReports')) || [];
+        const newReport = {
+            text: reportText,
+            date: new Date().toLocaleString() // Store the creation date
+        };
+        savedReports.push(newReport);
+        localStorage.setItem('savedReports', JSON.stringify(savedReports));
+        localStorage.removeItem('currentReportText'); // Clear current report text after saving
+        localStorage.removeItem('previewVisible'); // Clear preview visibility after saving
 
-        // Loop through lines and add them to the PDF
-        lines.forEach((line, index) => {
-            if (yPosition + 10 > pageHeight) { // Check if space is left on the page
-                doc.addPage(); // Add a new page if the current page is full
-                yPosition = 10; // Reset yPosition for the new page
-            }
-            doc.text(line, 10, yPosition); // Add the text line by line
-            yPosition += 10; // Move yPosition down by 10 units (adjust if needed)
-        });
-
-        // Save the PDF
-        doc.save('Veterinary_Report.pdf');
+        setSavedMessageVisible(true); // Show saved message
+        setTimeout(() => setSavedMessageVisible(false), 2000); // Hide after 2 seconds
     };
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -286,9 +309,10 @@ Urogenital: Within normal limits, no abnormalities noted`);
                                 onChange={(e) => setReportText(e.target.value)}
                             />
                             <div className="button-container">
-                                <button className="submit-button" onClick={generatePDF}>Download PDF</button>
+                                <button className="submit-button" onClick={saveReport}>Save Report</button>
                                 <button className="remove-button" onClick={() => setPreviewVisible(false)}>Close Preview</button>
                             </div>
+                            {savedMessageVisible && <div className="saved-message">Saved</div>}
                         </>
                     )
                 )}

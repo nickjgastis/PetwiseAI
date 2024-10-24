@@ -22,10 +22,7 @@
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
-.sidebar:hover {
-    width: 300px;
-    /* Smooth expansion on hover */
-}
+
 
 /* Sidebar Menu */
 .sidebar-menu {
@@ -79,10 +76,7 @@
     transition: margin-left 0.3s ease-in-out;
 }
 
-.sidebar:hover+.main-content {
-    margin-left: 300px;
-    /* Adjusts main content when sidebar expands */
-}
+
 
 /* Heading Styling */
 h1 {
@@ -172,9 +166,7 @@ h3 {
         text-align: center;
     }
 
-    .sidebar-links:hover {
-        padding-left: 0;
-    }
+
 }
 
 

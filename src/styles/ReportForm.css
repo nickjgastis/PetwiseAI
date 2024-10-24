@@ -1,8 +1,8 @@
 /* General Styles */
 body {
-    background-color: #f0f0f0;
-    color: #333;
-    font-family: 'Arial', sans-serif;
+    background-color: #f7f9fc;
+    color: #2c3e50;
+    font-family: 'Roboto', sans-serif;
     font-size: 14px;
     margin: 0;
     padding: 0;
@@ -14,18 +14,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background-color: #e0e0e0;
-    /* Light grey background */
+    background-color: #ecf0f1;
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: #a3a3a3;
-    /* Dark grey thumb */
+    background-color: #bdc3c7;
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background-color: #888;
+    background-color: #95a5a6;
 }
 
 /* Container for the form and preview */
@@ -35,169 +33,153 @@ body {
     align-items: stretch;
     padding: 20px;
     max-width: 1200px;
-    /* Increased width for full layout */
     margin: 0 auto;
     gap: 20px;
 }
 
 /* Form Styles */
 .report-form {
-    background-color: #dde7f0;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 15px;
+    /* More rounded corners for a card look */
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+    /* Deeper shadow for a card effect */
     flex: 1;
     display: flex;
     flex-direction: column;
-    height: auto;
     max-width: 500px;
-    /* Keep the form width consistent */
     width: 100%;
-    /* Ensure width is respected */
     box-sizing: border-box;
-    /* Ensure padding doesn't affect width */
+    border: 1px solid #e0e0e0;
+    /* Light border for card outline */
+    transition: box-shadow 0.3s ease;
+    /* Smooth transition for hover effect */
+}
+
+.report-form:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    /* Slightly larger shadow on hover */
 }
 
 .form-label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-    font-size: 0.9rem;
-    color: #333;
+    margin-bottom: 4px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: #34495e;
 }
 
 .physical-exam-input {
     height: 250px;
-
-    /* Set a larger height for this specific textarea */
 }
-
 
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-    border-color: #1c87c9;
+    border-color: #3498db;
     outline: none;
-    background-color: #fff;
-    /* Remove width adjustment on focus */
+    background-color: #ecf0f1;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
     width: 100%;
-    /* Ensure full width within the container */
-    padding: 2px;
-    margin-bottom: 4px;
-    border: 1px solid #ccc;
-    border-radius: 2px;
-    background-color: #f7f7f7;
-    color: #333;
-    font-size: 0.8rem;
+    padding: 6px;
+    margin-bottom: 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    background-color: #f7f9fc;
+    color: #2c3e50;
+    font-size: 0.85rem;
     transition: all 0.3s ease;
     box-sizing: border-box;
-    font-family: Arial, Helvetica, sans-serif;
-
-
-    /* Hide scrollbars */
-
-    /* Keep within the container size */
 }
 
 .submit-button {
     padding: 8px 12px;
-    background-color: #1c87c9;
+    background-color: #3498db;
     color: #fff;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     transition: background-color 0.3s ease;
 }
 
 .submit-button:disabled {
-    background-color: #666;
+    background-color: #95a5a6;
     cursor: not-allowed;
 }
 
 .submit-button:hover:not(:disabled) {
-    background-color: #156cae;
+    background-color: #2980b9;
 }
 
-
-
 .add-button:hover {
-    background-color: #73a7c7;
+    background-color: #5dade2;
 }
 
 .remove-button:hover {
-    background-color: #f5b5b5;
+    background-color: #e74c3c;
 }
 
 /* Error Messages */
 .error-message {
-    color: red;
+    color: #e74c3c;
     font-size: 0.8rem;
 }
 
 /* Report Preview */
 .report-preview {
-    background-color: #a1d1d8;
+    background-color: #ecf0f1;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     flex: 1;
-    height: auto;
-    /* overflow-y: auto; */
     display: flex;
     flex-direction: column;
-    border: 1px solid #ddd;
+    border: 1px solid #bdc3c7;
     align-items: center;
-    /* Center the text editor horizontally */
     justify-content: flex-start;
-    /* Align content to the top */
 }
 
 .report-preview h3 {
     font-size: 1.5rem;
-    margin-bottom: 10px;
-    color: #333;
+    margin-bottom: 15px;
+    color: #2c3e50;
     text-align: center;
-    overflow-x: hidden;
-
-
 }
 
 .report-text-editor {
     width: 100%;
     flex-grow: 1;
-    padding: 7px;
-    border: 1px solid #ccc;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
     border-radius: 5px;
-    background-color: #f7f7f7;
-    color: #333;
-    font-size: 0.8rem;
+    background-color: #ffffff;
+    color: #2c3e50;
+    font-size: 0.9rem;
     resize: none;
-    line-height: 1.4;
+    line-height: 1.5;
     overflow-y: auto;
-    margin-bottom: 2px;
-    font-family: Arial, Helvetica, sans-serif;
+    margin-bottom: 10px;
+    font-family: 'Roboto', sans-serif;
     height: 600px;
 }
 
 .report-text-editor:focus {
-    border-color: #1c87c9;
+    border-color: #3498db;
     outline: none;
-    background-color: #fff;
+    background-color: #ecf0f1;
 }
 
 /* Close button inside report preview */
 .remove-button {
-    width: auto;
-    /* Allow the button to adjust width */
-    padding: 8px 12px;
+    padding: 10px 15px;
     color: #fff;
-    background-color: #d76f72;
+    background-color: #e74c3c;
     border-radius: 5px;
     border: none;
     font-size: 0.9rem;
@@ -216,8 +198,6 @@ body {
 
     .report-preview {
         margin-top: 20px;
-        overflow-x: hidden;
-
     }
 }
 
@@ -225,19 +205,14 @@ body {
     display: flex;
     justify-content: center;
     gap: 10px;
-    /* Space between buttons */
     margin-top: 10px;
-    /* Space between text editor and buttons */
 }
-
-
-
 
 /* Center the loader */
 .three-body {
     --uib-size: 60px;
     --uib-speed: 0.8s;
-    --uib-color: #54b8dc;
+    --uib-color: #3498db;
     position: relative;
     height: var(--uib-size);
     width: var(--uib-size);
@@ -246,7 +221,6 @@ body {
     align-items: center;
     animation: spin78236 calc(var(--uib-speed) * 2.5) infinite linear;
     margin: auto;
-    /* Ensure it's centered horizontally */
 }
 
 .three-body__dot {
@@ -344,23 +318,16 @@ body {
 
 textarea {
     min-height: 50px;
-    /* Set an initial height */
     max-height: 800px;
-    /* Set a maximum height where scrolling begins */
     width: 100%;
-    /* Full width */
     padding: 5px;
     box-sizing: border-box;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.8rem;
+    font-family: 'Roboto', sans-serif;
+    font-size: 0.9rem;
     resize: none;
-    /* Disable manual resizing */
     overflow: hidden;
-    /* Hide scrollbars until necessary */
 }
 
-/* This makes the textarea grow */
 textarea:focus {
     overflow-y: auto;
-    /* Allow vertical scrolling if content exceeds max-height */
 }

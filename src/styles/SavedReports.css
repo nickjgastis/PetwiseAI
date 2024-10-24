@@ -1,0 +1,91 @@
+.saved-reports {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.report-list {
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 600px;
+}
+
+.report-item {
+    padding: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.report-item:hover {
+    background-color: #f0f0f0;
+}
+
+.button-group {
+    display: flex;
+    gap: 5px;
+}
+
+.report-item input,
+.report-item span {
+    flex-grow: 1;
+    text-align: center;
+    border: none;
+    background: transparent;
+    padding: 5px;
+}
+
+.report-card {
+    border: 1px solid #ccc;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    overflow-x: hidden;
+}
+
+.report-content {
+    white-space: normal;
+    /* Allow text to wrap */
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 14px;
+    line-height: 1.4;
+    /* Adjusted line height for more compact text */
+    margin-top: 10px;
+    padding: 10px;
+    text-align: justify;
+}
+
+button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.delete-button {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.delete-button:hover {
+    background-color: #c0392b;
+}
+
+.edit-button {
+    background-color: #3498db;
+    color: white;
+}
+
+.edit-button:hover {
+    background-color: #2980b9;
+}

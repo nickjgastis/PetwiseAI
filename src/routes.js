@@ -13,10 +13,9 @@ const AppRoutes = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/dashboard" element={<Dashboard />} /> {/* This is your dashboard */}
+            <Route path="/dashboard/*" element={<Dashboard />} /> {/* Use wildcard for nested routes */}
         </Routes>
     );
 };
 
 export default AppRoutes;
-
