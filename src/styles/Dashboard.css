@@ -10,7 +10,7 @@
 
 /* Sidebar Styling */
 .sidebar {
-    width: 280px;
+    width: 200px;
     background-color: #65a8d2;
     /* Darker, sleek sidebar */
     padding-top: 80px;
@@ -65,7 +65,7 @@
 
 /* Main Content Styling */
 .main-content {
-    margin-left: 280px;
+    margin-left: 200px;
     padding: 40px;
     /* More padding for modern spacing */
     flex-grow: 1;
@@ -136,7 +136,7 @@ h3 {
 /* Responsive Adjustments */
 @media (max-width: 768px) {
     .sidebar {
-        width: 60px;
+        width: 50px;
         /* Collapse sidebar on smaller screens */
         padding-top: 20px;
     }
@@ -146,7 +146,7 @@ h3 {
     }
 
     .main-content {
-        margin-left: 60px;
+        margin-left: 50px;
         padding: 20px;
     }
 
