@@ -1,0 +1,124 @@
+/* src/styles/global.css */
+
+/* CSS Reset: Normalize things across browsers */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    height: 100%;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    background-color: #f9f9f9;
+    color: #333;
+}
+
+/* Links */
+a {
+    text-decoration: none;
+    color: inherit;
+
+}
+
+a:hover {
+    color: #186fbb;
+}
+
+/* Headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    margin-bottom: 1rem;
+    color: #424242;
+    text-align: center;
+    /* Center all headings by default */
+}
+
+/* Paragraphs */
+p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: #757575;
+}
+
+/* Buttons */
+/*
+button {
+    cursor: pointer;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 5px;
+    background-color: #1e88e5;
+    color: white;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #1565c0;
+}*/
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+    /* Ensures content is centered */
+}
+
+/* Center content for all non-dashboard pages */
+.page-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 80px);
+    /* Adjust to account for navbar height */
+    padding: 20px;
+}
+
+/* General flex utility */
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* General padding */
+.padding-section {
+    padding: 40px 0;
+}
+
+/* For global section alignment */
+.section-heading {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+/* Reset list styles */
+ul {
+    list-style-type: none;
+}
+
+/* Add some spacing for form elements */
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Reset image behavior */
+img {
+    max-width: 100%;
+    height: auto;
+}

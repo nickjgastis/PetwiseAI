@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
-import './ReportForm.css';
+import '../styles/ReportForm.css';
 import GenerateReport from './GenerateReport';
 
 const ReportForm = () => {
@@ -124,13 +124,29 @@ Urogenital: Within normal limits, no abnormalities noted`);
         }
     };
 
-    // Generate PDF
     const generatePDF = () => {
         const doc = new jsPDF();
-        doc.text(reportText, 10, 10);
+
+        // Text content for the report
+        const lines = doc.splitTextToSize(reportText, 180); // Wrap text to fit within 180 units width
+
+        // Set initial cursor position
+        let yPosition = 10; // Top margin
+        const pageHeight = doc.internal.pageSize.height; // Get the page height
+
+        // Loop through lines and add them to the PDF
+        lines.forEach((line, index) => {
+            if (yPosition + 10 > pageHeight) { // Check if space is left on the page
+                doc.addPage(); // Add a new page if the current page is full
+                yPosition = 10; // Reset yPosition for the new page
+            }
+            doc.text(line, 10, yPosition); // Add the text line by line
+            yPosition += 10; // Move yPosition down by 10 units (adjust if needed)
+        });
+
+        // Save the PDF
         doc.save('Veterinary_Report.pdf');
     };
-
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -240,7 +256,7 @@ Urogenital: Within normal limits, no abnormalities noted`);
                     <label className="form-label">Plan/Follow-up:</label>
                     <textarea className="form-input" value={planFollowUp} onChange={(e) => setPlanFollowUp(e.target.value)} />
 
-                    <button type="button" className="back-button" onClick={handleBackToPatientInfo}>
+                    <button type="button" className="back-button-patient" onClick={handleBackToPatientInfo}>
                         Back to Patient Info
                     </button>
 
@@ -253,6 +269,7 @@ Urogenital: Within normal limits, no abnormalities noted`);
             )}
 
             <div className="report-preview">
+                <h2>Report will appear here.</h2>
                 {loading ? (
                     <div className="three-body">
                         <div className="three-body__dot"></div>

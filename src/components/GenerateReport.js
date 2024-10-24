@@ -63,7 +63,7 @@ const GenerateReport = async (inputs) => {
     In a canine case involving osteoarthritis, the prognosis would include recommendations for pain management, anti-inflammatory medications, and lifestyle changes such as weight management and physical therapy, with a focus on improving quality of life.`}
     
     Client Communications/Recommendations:
-    ${inputs.clientCommunications || "Explain any potential side effects that may occur from treatment in detail. Summarize all the key points communicated with the client, including diagnosis, treatment options, and any follow-up steps. Mention any key questions or concerns raised by the client. Each section should be no shorter than three sentences."}
+    ${inputs.clientCommunications || "Wrtie a message to the owner. Explain any potential side effects that may occur from treatment in detail to the owner. Summarize all the key points communicated with the owner, including diagnosis, treatment options, and any follow-up steps. Mention any key questions or concerns raised by the client. It should be a message directed at the owner. Each section should be no shorter than three sentences."}
     
     Plan/Follow-Up:
     ${inputs.planFollowUp || "Provide clear and actionable follow-up instructions. Recommend when the next check-up should be, which signs of improvement or deterioration to watch for, and any necessary adjustments to care (e.g., diet changes, exercise restrictions). Suggest when and how the owner should re-engage for further treatment or tests. Each follow-up plan should be no shorter than three sentences."}

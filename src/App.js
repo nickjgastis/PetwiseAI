@@ -1,14 +1,23 @@
-import logo from './logo.svg';
-import './App.css';
-import ReportForm from './components/ReportForm';
+// src/App.js
+
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './routes';
+import Navbar from './components/Navbar'; // Import the Navbar
+import "./styles/global.css"
 
 const App = () => {
   return (
-    <div>
-      <h1 className='title'>Pet Veterinary Medical Record Generator</h1>
-      <ReportForm />
-    </div>
+    <Router>
+      <div>
+        <Navbar /> {/* Display the Navbar on all pages */}
+        <AppRoutes /> {/* Handles routing */}
+      </div>
+    </Router>
   );
 };
 
 export default App;
+
+
+

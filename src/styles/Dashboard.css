@@ -1,0 +1,181 @@
+/* src/pages/Dashboard.css */
+
+/* Dashboard Container */
+.dashboard-container {
+    display: flex;
+    height: 100vh;
+    background-color: #f4f7fa;
+    /* Light background for a modern look */
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 280px;
+    background-color: #65a8d2;
+    /* Darker, sleek sidebar */
+    padding-top: 80px;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: width 0.3s ease-in-out;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar:hover {
+    width: 300px;
+    /* Smooth expansion on hover */
+}
+
+/* Sidebar Menu */
+.sidebar-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Sidebar Items */
+.sidebar-item {
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background-color 0.2s ease-in-out;
+    color: #ffffff;
+}
+
+.sidebar-item:hover {
+    background-color: #3f8ddb66;
+    /* Slightly lighter background on hover */
+}
+
+/* Sidebar Links */
+.sidebar-links {
+    color: #ecf0f1;
+    /* Clean white text for contrast */
+    text-decoration: none;
+    font-size: 1.1rem;
+    display: block;
+    transition: padding-left 0.3s ease-in-out;
+    letter-spacing: 0.5px;
+    /* Slight letter-spacing for readability */
+}
+
+.sidebar-links:hover {
+    color: #1abc9c;
+    /* Modern teal hover effect */
+    padding-left: 30px;
+    /* Slight slide-in effect on hover */
+}
+
+/* Main Content Styling */
+.main-content {
+    margin-left: 280px;
+    padding: 40px;
+    /* More padding for modern spacing */
+    flex-grow: 1;
+    background-color: #ffffff;
+    /* Clean white background for contrast */
+    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); */
+    /* Subtle shadow to lift content */
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.sidebar:hover+.main-content {
+    margin-left: 300px;
+    /* Adjusts main content when sidebar expands */
+}
+
+/* Heading Styling */
+h1 {
+    font-size: 2.5rem;
+    color: #2c3e50;
+    /* Dark, modern text */
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2390c2;
+    /* Adds a modern underline effect */
+    padding-bottom: 10px;
+    letter-spacing: 0.5px;
+    /* Letter-spacing for readability */
+}
+
+h3 {
+    margin-top: 10px;
+}
+
+/* Utility Classes for Main Content */
+.card {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.card h2 {
+    font-size: 1.8rem;
+    color: #34495e;
+    margin-bottom: 15px;
+}
+
+.card p {
+    font-size: 1.1rem;
+    color: #7f8c8d;
+    line-height: 1.6;
+}
+
+/* Buttons inside the dashboard */
+.button {
+    padding: 10px 20px;
+    background-color: #1abc9c;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+}
+
+.button:hover {
+    background-color: #7fb3a9;
+    /* Darker hover effect for buttons */
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 60px;
+        /* Collapse sidebar on smaller screens */
+        padding-top: 20px;
+    }
+
+    .sidebar:hover {
+        width: 80px;
+    }
+
+    .main-content {
+        margin-left: 60px;
+        padding: 20px;
+    }
+
+    .sidebar-menu {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .sidebar-item {
+        padding: 10px 0;
+    }
+
+    .sidebar-links {
+        font-size: 1rem;
+        padding-left: 0;
+        text-align: center;
+    }
+
+    .sidebar-links:hover {
+        padding-left: 0;
+    }
+}
+
+
+/* Any specific styling for report form can go here */
