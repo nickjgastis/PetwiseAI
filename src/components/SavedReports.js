@@ -14,18 +14,11 @@ const SavedReports = () => {
         const fetchReports = async () => {
             if (isAuthenticated) {
                 try {
-                    const token = await getAccessTokenSilently();
-                    // Replace this with your actual API endpoint
-                    const response = await fetch('https://your-api-endpoint.com/reports', {
-                        headers: {
-                            Authorization: `Bearer ${token}`
-                        }
-                    });
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch reports');
-                    }
-                    const data = await response.json();
-                    setReports(data);
+                    // Placeholder for fetching reports
+                    setReports([
+                        { id: 1, report_name: "Sample Report 1", report_text: "This is a sample report content.\nIt has multiple lines." },
+                        { id: 2, report_name: "Sample Report 2", report_text: "Another sample report.\nWith some content." }
+                    ]);
                 } catch (error) {
                     console.error("Error fetching reports:", error);
                     setError("Failed to fetch reports. Please try again.");
@@ -34,7 +27,7 @@ const SavedReports = () => {
         };
 
         fetchReports();
-    }, [isAuthenticated, getAccessTokenSilently]);
+    }, [isAuthenticated]);
 
     const handleReportClick = (report) => {
         setSelectedReport(selectedReport === report ? null : report);
@@ -43,17 +36,7 @@ const SavedReports = () => {
     const handleDeleteReport = async (id) => {
         if (isAuthenticated) {
             try {
-                const token = await getAccessTokenSilently();
-                // Replace this with your actual API endpoint
-                const response = await fetch(`https://your-api-endpoint.com/reports/${id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Failed to delete report');
-                }
+                // Placeholder for deleting report
                 setReports(reports.filter(report => report.id !== id));
                 setSelectedReport(null);
             } catch (error) {
@@ -75,19 +58,7 @@ const SavedReports = () => {
     const handleNameBlur = async (id) => {
         if (isAuthenticated) {
             try {
-                const token = await getAccessTokenSilently();
-                // Replace this with your actual API endpoint
-                const response = await fetch(`https://your-api-endpoint.com/reports/${id}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ report_name: newReportName })
-                });
-                if (!response.ok) {
-                    throw new Error('Failed to update report name');
-                }
+                // Placeholder for updating report name
                 setReports(reports.map(report =>
                     report.id === id ? { ...report, report_name: newReportName } : report
                 ));
