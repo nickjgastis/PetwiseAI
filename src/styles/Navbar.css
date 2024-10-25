@@ -4,61 +4,92 @@
     height: 80px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
     padding: 0 20px;
     position: sticky;
     top: 0;
     width: 100%;
     z-index: 1000;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    position: relative;
 }
 
 .navbar-logo {
     color: white;
     font-size: 1.5rem;
     text-decoration: none;
-    position: absolute;
-    left: 20px;
     font-family: Georgia, 'Times New Roman', Times, serif;
     transition: transform 0.3s ease, color 0.3s ease;
-    /* Smooth transition */
 }
 
 .navbar-logo:hover {
     transform: scale(1.1);
-    /* Slightly enlarge the logo */
     color: #f8fcffbe;
-    /* Optionally change the color on hover */
 }
 
-
-
-.nav-menu {
-    list-style: none;
+.navbar-links {
     display: flex;
-    gap: 50px;
-    /* Increase gap for more space between nav items */
+    list-style: none;
+    gap: 30px;
     margin: 0;
+    padding: 0;
     justify-content: center;
-    flex-grow: 1;
+    align-items: center;
 }
 
-.nav-item {
+.navbar-links li {
     display: inline;
 }
 
-.nav-links {
+.navbar-links a,
+.navbar-links button {
     color: white;
     text-decoration: none;
     font-size: 1.1rem;
     font-weight: 300;
-    /* Thinner font */
     letter-spacing: 0.05em;
-    /* Spacing between letters */
     transition: color 0.3s ease-in-out;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
 }
 
-.nav-links:hover {
+.navbar-links a:hover,
+.navbar-links button:hover {
     color: #f8fcffbe;
+}
+
+.loading-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(255, 255, 255, 0.8);
+    z-index: 1001;
+}
+
+.loading-text {
+    font-size: 1.2rem;
+    color: #3498db;
+    text-align: center;
+    font-weight: 500;
+    animation: pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
 }

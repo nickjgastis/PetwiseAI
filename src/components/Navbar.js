@@ -2,44 +2,42 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth0 } from "@auth0/auth0-react";
+import LoginButton from './LoginButton';
+import LogoutButton from './LogoutButton';
 import '../styles/Navbar.css'
 
 const Navbar = () => {
+    const { isAuthenticated, isLoading } = useAuth0();
+
+    if (isLoading) {
+        return (
+            <div className="loading-container">
+                <div className="loading-text">Loading...</div>
+            </div>
+        );
+    }
+
     return (
-        <>
-            {/* Top Navbar */}
-            <nav className="navbar">
-                <div className="navbar-container">
-                    <Link to="/" className="navbar-logo">
-                        PetwiseAI
-                    </Link>
-                    <ul className="nav-menu">
-                        <li className="nav-item">
-                            <Link to="/" className="nav-links">
-                                Home
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link to="/signup" className="nav-links">
-                                Signup
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link to="/login" className="nav-links">
-                                Login
-                            </Link>
-                        </li>
-                        <li className="nav-item">
-                            <Link to="/dashboard" className="nav-links">
-                                Dashboard
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-
-
-        </>
+        <nav className="navbar">
+            <div className="navbar-logo">
+                <Link to="/">PetWise</Link>
+            </div>
+            <ul className="navbar-links">
+                {!isAuthenticated && (
+                    <>
+                        <li><Link to="/">Home</Link></li>
+                        <li><Link to="/about">About</Link></li>
+                    </>
+                )}
+                {isAuthenticated && <li><Link to="/dashboard">Dashboard</Link></li>}
+                {isAuthenticated ? (
+                    <li><LogoutButton /></li>
+                ) : (
+                    <li><LoginButton /></li>
+                )}
+            </ul>
+        </nav>
     );
 };
 

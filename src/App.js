@@ -1,19 +1,33 @@
 // src/App.js
 
 import React from 'react';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import AppRoutes from './routes';
-import Navbar from './components/Navbar'; // Import the Navbar
+import Navbar from './components/Navbar';
 import "./styles/global.css"
+import { Auth0Provider } from "@auth0/auth0-react";
 
 const App = () => {
+  const navigate = useNavigate();
+
+  const onRedirectCallback = (appState) => {
+    navigate(appState?.returnTo || '/dashboard');
+  };
+
   return (
-    <Router>
+    <Auth0Provider
+      domain="dev-78rjcaj4bc47gu84.ca.auth0.com"
+      clientId="BKkSaSuXGAbtUJTTvKysSawNgAaYwKKQ"
+      authorizationParams={{
+        redirect_uri: window.location.origin
+      }}
+      onRedirectCallback={onRedirectCallback}
+    >
       <div>
-        <Navbar /> {/* Display the Navbar on all pages */}
-        <AppRoutes /> {/* Handles routing */}
+        <Navbar />
+        <AppRoutes />
       </div>
-    </Router>
+    </Auth0Provider>
   );
 };
 

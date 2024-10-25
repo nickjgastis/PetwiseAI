@@ -1,28 +1,72 @@
 /* src/pages/Dashboard.css */
 
+/* Adjust these values based on your navbar's actual height */
+:root {
+    --navbar-height: 80px;
+}
+
 /* Dashboard Container */
 .dashboard-container {
     display: flex;
-    height: 100vh;
+    height: calc(100vh - var(--navbar-height));
     background-color: #f4f7fa;
-    /* Light background for a modern look */
 }
 
 /* Sidebar Styling */
 .sidebar {
     width: 200px;
     background-color: #65a8d2;
-    /* Darker, sleek sidebar */
-    padding-top: 80px;
-    height: 100%;
+    height: calc(100vh - var(--navbar-height));
     position: fixed;
-    top: 0;
+    top: var(--navbar-height);
     left: 0;
     transition: width 0.3s ease-in-out;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    z-index: 999;
+    padding-top: 20px;
 }
 
+.sidebar-collapsed .sidebar {
+    width: 60px;
+}
 
+.sidebar-toggle {
+    position: absolute;
+    top: 10px;
+    right: -15px;
+    width: 30px;
+    height: 30px;
+    background-color: #65a8d2;
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+    z-index: 1001;
+}
+
+.sidebar-toggle:hover {
+    background-color: #3f8ddb;
+}
+
+.sidebar-collapsed .sidebar-item {
+    text-align: center;
+    padding: 15px 0;
+}
+
+.sidebar-collapsed .sidebar-item a {
+    font-size: 0;
+}
+
+.sidebar-collapsed .sidebar-item a::before {
+    content: '\2022';
+    /* Unicode for a bullet point */
+    font-size: 24px;
+}
 
 /* Sidebar Menu */
 .sidebar-menu {
@@ -66,17 +110,16 @@
 /* Main Content Styling */
 .main-content {
     margin-left: 200px;
-    padding: 40px;
-    /* More padding for modern spacing */
+    padding: 20px;
     flex-grow: 1;
     background-color: #ffffff;
-    /* Clean white background for contrast */
-    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); */
-    /* Subtle shadow to lift content */
     transition: margin-left 0.3s ease-in-out;
+    min-height: calc(100vh - var(--navbar-height));
 }
 
-
+.sidebar-collapsed .main-content {
+    margin-left: 60px;
+}
 
 /* Heading Styling */
 h1 {
@@ -135,39 +178,21 @@ h3 {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
-    .sidebar {
-        width: 50px;
-        /* Collapse sidebar on smaller screens */
-        padding-top: 20px;
+
+    .sidebar,
+    .sidebar-collapsed .sidebar {
+        width: 60px;
+        top: var(--navbar-height);
     }
 
-    .sidebar:hover {
-        width: 80px;
+    .main-content,
+    .sidebar-collapsed .main-content {
+        margin-left: 60px;
     }
 
-    .main-content {
-        margin-left: 50px;
-        padding: 20px;
+    .sidebar-toggle {
+        display: none;
     }
-
-    .sidebar-menu {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .sidebar-item {
-        padding: 10px 0;
-    }
-
-    .sidebar-links {
-        font-size: 1rem;
-        padding-left: 0;
-        text-align: center;
-    }
-
-
 }
-
 
 /* Any specific styling for report form can go here */

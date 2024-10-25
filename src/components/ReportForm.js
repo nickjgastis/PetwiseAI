@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import '../styles/ReportForm.css';
 import GenerateReport from './GenerateReport';
+import { supabase } from '../supabaseClient';
 
 const ReportForm = () => {
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
@@ -94,6 +95,8 @@ Urogenital: Within normal limits, no abnormalities noted`);
     const isGenerating = useRef(false); // Track if report generation is ongoing
 
     const [savedMessageVisible, setSavedMessageVisible] = useState(false);
+    const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
+    const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
 
     useEffect(() => {
         console.log('Component mounted');
@@ -155,19 +158,115 @@ Urogenital: Within normal limits, no abnormalities noted`);
 
 
 
-    const saveReport = () => {
-        const savedReports = JSON.parse(localStorage.getItem('savedReports')) || [];
-        const newReport = {
-            text: reportText,
-            date: new Date().toLocaleString() // Store the creation date
-        };
-        savedReports.push(newReport);
-        localStorage.setItem('savedReports', JSON.stringify(savedReports));
-        localStorage.removeItem('currentReportText'); // Clear current report text after saving
-        localStorage.removeItem('previewVisible'); // Clear preview visibility after saving
+    const saveReport = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
 
-        setSavedMessageVisible(true); // Show saved message
-        setTimeout(() => setSavedMessageVisible(false), 2000); // Hide after 2 seconds
+            if (user) {
+                const { error } = await supabase
+                    .from('reports')
+                    .insert([{
+                        user_id: user.id,
+                        report_text: reportText,
+                        report_name: `Report ${new Date().toLocaleDateString()}`,
+                        created_at: new Date(),
+                    }]);
+
+                if (error) {
+                    console.error("Error saving report:", error);
+                    setError("Failed to save report. Please try again.");
+                } else {
+                    console.log("Report saved successfully!");
+                    setSavedMessageVisible(true);
+                    setTimeout(() => setSavedMessageVisible(false), 2000);
+                }
+            } else {
+                setError("User not authenticated. Please log in to save reports.");
+            }
+        } catch (error) {
+            console.error("Error in saveReport:", error);
+            setError("An unexpected error occurred. Please try again.");
+        }
+    };
+
+    const clearPatientInfo = () => {
+        setPatientName('');
+        setSpecies('');
+        setSex('');
+        setBreed('');
+        setColorMarkings('');
+        setWeight('');
+        setWeightUnit('lbs');
+        setBirthdate('');
+        setOwnerName('');
+        setAddress('');
+        setTelephone('');
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(reportText).then(() => {
+            setCopyButtonText('Copied!');
+            setCopiedMessageVisible(true);
+            setTimeout(() => {
+                setCopyButtonText('Copy to Clipboard');
+                setCopiedMessageVisible(false);
+            }, 2000); // Reset after 2 seconds
+        }, (err) => {
+            console.error('Could not copy text: ', err);
+        });
+    };
+
+    const resetEntireForm = () => {
+        // Reset patient info
+        setPatientName('');
+        setSpecies('');
+        setSex('');
+        setBreed('');
+        setColorMarkings('');
+        setWeight('');
+        setWeightUnit('lbs');
+        setBirthdate('');
+        setOwnerName('');
+        setAddress('');
+        setTelephone('');
+
+        // Reset exam info
+        setExamDate('');
+        setStaff('');
+        setPresentingComplaint('');
+        setHistory('');
+        setPhysicalExamFindings(`General Appearance: Bright, Alert, Responsive
+T: °F, Normal
+P:
+R:
+Body Condition Score: 5/9 (Ideal=5/9)
+Mucous Membranes: Pink, moist
+Capillary Refill Time: <2 seconds
+Eyes, Ears, Nose, Throat (EENT): Within normal limits
+Oral Cavity: Gd. 1 tartar
+Heart: No murmur, no arrhythmia auscultated
+Lungs: Clear on auscultation, no abnormal sounds
+Abdomen Palpation: Within normal limits, no pain or abnormalities detected
+Lymph Nodes: Palpable and within normal limits
+Integumentary (Skin and Coat): Normal, no lesions, masses, or abnormalities detected
+Musculoskeletal: No lameness, no pain on palpation
+Neurologic: Alert and responsive, normal reflexes
+Urogenital: Within normal limits, no abnormalities noted`);
+        setDiagnosticPlan('');
+        setLabResults('');
+        setAssessment('');
+        setDiagnosis('');
+        setDifferentialDiagnosis('');
+        setTreatment('');
+        setClientCommunications('');
+        setPlanFollowUp('');
+
+        // Reset other states
+        setPatientInfoSubmitted(false);
+        setReportText('');
+        setPreviewVisible(false);
+        setError('');
+        setLoading(false);
     };
 
     return (
@@ -227,9 +326,14 @@ Urogenital: Within normal limits, no abnormalities noted`);
                     <label className="form-label">Telephone:</label>
                     <input type="text" className="form-input" value={telephone} onChange={(e) => setTelephone(e.target.value)} />
 
-                    <button type="submit" className="submit-button">
-                        Continue to Exam Info
-                    </button>
+                    <div className="button-container">
+                        <button type="submit" className="submit-button">
+                            Continue to Exam Info
+                        </button>
+                        <button type="button" className="clear-button" onClick={clearPatientInfo}>
+                            Clear Form
+                        </button>
+                    </div>
                 </form>
             ) : (
                 <form className="report-form" onSubmit={handleExamSubmit}>
@@ -279,42 +383,62 @@ Urogenital: Within normal limits, no abnormalities noted`);
                     <label className="form-label">Plan/Follow-up:</label>
                     <textarea className="form-input" value={planFollowUp} onChange={(e) => setPlanFollowUp(e.target.value)} />
 
-                    <button type="button" className="back-button-patient" onClick={handleBackToPatientInfo}>
-                        Back to Patient Info
-                    </button>
-
-                    <button type="submit" className="submit-button" disabled={loading}>
-                        {loading ? 'Generating...' : 'Generate Report'}
-                    </button>
+                    <div className="button-container">
+                        <button type="button" className="back-button-patient" onClick={handleBackToPatientInfo}>
+                            Back to Patient Info
+                        </button>
+                        <button type="submit" className="submit-button" disabled={loading}>
+                            {loading ? 'Generating...' : 'Generate Report'}
+                        </button>
+                        <button type="button" className="clear-button" onClick={resetEntireForm}>
+                            Clear All
+                        </button>
+                    </div>
 
                     {error && <div className="error-message">{error}</div>}
                 </form>
             )}
 
             <div className="report-preview">
-                <h2>Report will appear here.</h2>
                 {loading ? (
-                    <div className="three-body">
-                        <div className="three-body__dot"></div>
-                        <div className="three-body__dot"></div>
-                        <div className="three-body__dot"></div>
+                    <div className="loading-container">
+                        <div className="loading-dots">
+                            <div className="loading-dot"></div>
+                            <div className="loading-dot"></div>
+                            <div className="loading-dot"></div>
+                        </div>
+                        <p className="loading-text">Generating report...</p>
                     </div>
-                ) : (
-                    previewVisible && (
-                        <>
+                ) : previewVisible ? (
+                    <>
+                        <div className="report-preview-header">
                             <h3>Report Preview</h3>
+                            <button className="close-button" onClick={() => setPreviewVisible(false)}>×</button>
+                        </div>
+                        <div className="report-preview-content">
                             <textarea
                                 className="report-text-editor"
                                 value={reportText}
                                 onChange={(e) => setReportText(e.target.value)}
                             />
+                        </div>
+                        <div className="report-preview-footer">
                             <div className="button-container">
                                 <button className="submit-button" onClick={saveReport}>Save Report</button>
-                                <button className="remove-button" onClick={() => setPreviewVisible(false)}>Close Preview</button>
+                                <div className="copy-button-container">
+                                    <button className="copy-button" onClick={copyToClipboard}>{copyButtonText}</button>
+                                    {copiedMessageVisible && <span className="copied-message">Copied</span>}
+                                </div>
                             </div>
                             {savedMessageVisible && <div className="saved-message">Saved</div>}
-                        </>
-                    )
+                            {error && <div className="error-message">{error}</div>}
+                        </div>
+                    </>
+                ) : (
+                    <div className="report-placeholder">
+                        <h2>Report will appear here</h2>
+                        <p>Fill out the form and click "Generate Report" to see the preview</p>
+                    </div>
                 )}
             </div>
         </div>
