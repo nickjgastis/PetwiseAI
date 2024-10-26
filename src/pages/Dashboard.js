@@ -19,7 +19,11 @@ const Dashboard = () => {
     };
 
     const handleLogout = () => {
-        logout({ returnTo: window.location.origin });
+        logout({
+            logoutParams: {
+                returnTo: `${window.location.origin}/`
+            }
+        });
     };
 
     return (

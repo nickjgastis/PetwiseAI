@@ -1,49 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import '../styles/SavedReports.css';
 
 const SavedReports = () => {
-    const { user, isAuthenticated, getAccessTokenSilently } = useAuth0();
+    const { isAuthenticated } = useAuth0();
     const [reports, setReports] = useState([]);
     const [selectedReport, setSelectedReport] = useState(null);
     const [editingIndex, setEditingIndex] = useState(null);
     const [newReportName, setNewReportName] = useState('');
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchReports = async () => {
-            if (isAuthenticated) {
-                try {
-                    // Placeholder for fetching reports
-                    setReports([
-                        { id: 1, report_name: "Sample Report 1", report_text: "This is a sample report content.\nIt has multiple lines." },
-                        { id: 2, report_name: "Sample Report 2", report_text: "Another sample report.\nWith some content." }
-                    ]);
-                } catch (error) {
-                    console.error("Error fetching reports:", error);
-                    setError("Failed to fetch reports. Please try again.");
-                }
-            }
-        };
-
-        fetchReports();
-    }, [isAuthenticated]);
-
     const handleReportClick = (report) => {
         setSelectedReport(selectedReport === report ? null : report);
     };
 
     const handleDeleteReport = async (id) => {
-        if (isAuthenticated) {
-            try {
-                // Placeholder for deleting report
-                setReports(reports.filter(report => report.id !== id));
-                setSelectedReport(null);
-            } catch (error) {
-                console.error("Error deleting report:", error);
-                setError("Failed to delete report. Please try again.");
-            }
-        }
+        // Placeholder for delete functionality
+        setReports(reports.filter(report => report.id !== id));
+        setSelectedReport(null);
     };
 
     const handleEditClick = (index) => {
@@ -56,18 +30,11 @@ const SavedReports = () => {
     };
 
     const handleNameBlur = async (id) => {
-        if (isAuthenticated) {
-            try {
-                // Placeholder for updating report name
-                setReports(reports.map(report =>
-                    report.id === id ? { ...report, report_name: newReportName } : report
-                ));
-                setEditingIndex(null);
-            } catch (error) {
-                console.error("Error updating report name:", error);
-                setError("Failed to update report name. Please try again.");
-            }
-        }
+        // Placeholder for update functionality
+        setReports(reports.map(report =>
+            report.id === id ? { ...report, report_name: newReportName } : report
+        ));
+        setEditingIndex(null);
     };
 
     if (!isAuthenticated) {

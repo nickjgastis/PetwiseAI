@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { jsPDF } from 'jspdf';
 import '../styles/ReportForm.css';
 import GenerateReport from './GenerateReport';
+import { useAuth0 } from "@auth0/auth0-react";
 
 const ReportForm = () => {
+    const { user, isAuthenticated } = useAuth0();
+
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
 
     // Patient Info State
@@ -56,7 +59,15 @@ Urogenital: Within normal limits, no abnormalities noted`);
     const [previewVisible, setPreviewVisible] = useState(false);
     const [error, setError] = useState('');
 
-    // Species and breed options
+    const [savedMessageVisible, setSavedMessageVisible] = useState(false);
+    const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
+    const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
+
+    const [customBreed, setCustomBreed] = useState('');
+    const [isCustomBreed, setIsCustomBreed] = useState(false);
+
+    const isGenerating = useRef(false); // Track if report generation is ongoing
+
     const speciesOptions = ['Canine', 'Feline', 'Avian', 'Reptile', 'Bovine', 'Equine', 'Ovine', 'Porcine'];
 
     const sexOptions = ['Female Spayed', 'Female Intact', 'Male Neutered', 'Male Intact'];
@@ -91,14 +102,8 @@ Urogenital: Within normal limits, no abnormalities noted`);
     // Set breed options based on species
     const breedOptions = species === 'Canine' ? dogBreeds : species === 'Feline' ? felineBreeds : [];
 
-    const isGenerating = useRef(false); // Track if report generation is ongoing
-
-    const [savedMessageVisible, setSavedMessageVisible] = useState(false);
-    const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
-    const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
-
     useEffect(() => {
-        console.log('Component mounted');
+        // console.log('Component mounted');
         const savedReportText = localStorage.getItem('currentReportText');
         const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
 
@@ -109,12 +114,12 @@ Urogenital: Within normal limits, no abnormalities noted`);
         setPreviewVisible(savedPreviewVisible);
 
         return () => {
-            console.log('Component unmounted');
+            // console.log('Component unmounted');
         };
     }, []);
 
     useEffect(() => {
-        console.log('Saving to localStorage:', { reportText, previewVisible });
+        // console.log('Saving to localStorage:', { reportText, previewVisible });
         localStorage.setItem('currentReportText', reportText);
         localStorage.setItem('previewVisible', previewVisible.toString());
     }, [reportText, previewVisible]);
@@ -158,15 +163,15 @@ Urogenital: Within normal limits, no abnormalities noted`);
 
 
     const saveReport = async () => {
-        try {
-            // Placeholder for saving report
-            console.log("Report saved successfully!");
-            setSavedMessageVisible(true);
-            setTimeout(() => setSavedMessageVisible(false), 2000);
-        } catch (error) {
-            console.error("Error in saveReport:", error);
-            setError("An unexpected error occurred. Please try again.");
+        if (!isAuthenticated) {
+            setError("Please log in to save the report.");
+            return;
         }
+
+        // Placeholder for saving report
+        console.log("Report saved successfully!");
+        setSavedMessageVisible(true);
+        setTimeout(() => setSavedMessageVisible(false), 2000);
     };
 
     const clearPatientInfo = () => {
@@ -249,6 +254,22 @@ Urogenital: Within normal limits, no abnormalities noted`);
         setLoading(false);
     };
 
+    const handleBreedChange = (e) => {
+        const selectedBreed = e.target.value;
+        if (selectedBreed === 'custom') {
+            setIsCustomBreed(true);
+            setBreed('');
+        } else {
+            setIsCustomBreed(false);
+            setBreed(selectedBreed);
+        }
+    };
+
+    const handleCustomBreedChange = (e) => {
+        setCustomBreed(e.target.value);
+        setBreed(e.target.value);
+    };
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -275,12 +296,22 @@ Urogenital: Within normal limits, no abnormalities noted`);
                     </select>
 
                     <label className="form-label">Breed:</label>
-                    <select className="form-input" value={breed} onChange={(e) => setBreed(e.target.value)}>
+                    <select className="form-input" value={isCustomBreed ? 'custom' : breed} onChange={handleBreedChange}>
                         <option value="">Select Breed</option>
+                        <option value="custom">Other (specify)</option>
                         {breedOptions.map((breed, index) => (
                             <option key={index} value={breed}>{breed}</option>
                         ))}
                     </select>
+                    {isCustomBreed && (
+                        <input
+                            type="text"
+                            className="form-input"
+                            value={customBreed}
+                            onChange={handleCustomBreedChange}
+                            placeholder="Enter custom breed"
+                        />
+                    )}
 
                     <label className="form-label">Color/Markings:</label>
                     <input type="text" className="form-input" value={colorMarkings} onChange={(e) => setColorMarkings(e.target.value)} />

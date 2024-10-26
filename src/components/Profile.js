@@ -1,9 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import "../styles/Profile.css";
 
 const Profile = () => {
     const { user, isAuthenticated, isLoading } = useAuth0();
+
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            console.log("Profile Component - Auth0 User Information:");
+            console.log("UserSUB:", user.sub);
+            console.log("Email:", user.email);
+            console.log("Name:", user.name);
+            console.log("Full User Object:", user);
+        }
+    }, [isAuthenticated, user]);
 
     if (isLoading) {
         return <div className="profile-loading">Loading ...</div>;
@@ -20,6 +30,10 @@ const Profile = () => {
                 <div className="profile-details">
                     <h3>Profile Information</h3>
                     <div className="profile-info">
+                        <div className="info-item">
+                            <span className="info-label">User ID:</span>
+                            <span className="info-value">{user.sub}</span>
+                        </div>
                         <div className="info-item">
                             <span className="info-label">Nickname:</span>
                             <span className="info-value">{user.nickname || 'Not set'}</span>
