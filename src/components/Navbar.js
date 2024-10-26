@@ -1,14 +1,14 @@
 // src/components/Navbar.js
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import LoginButton from './LoginButton';
-import LogoutButton from './LogoutButton';
 import '../styles/Navbar.css'
 
 const Navbar = () => {
     const { isAuthenticated, isLoading } = useAuth0();
+    const location = useLocation();
 
     if (isLoading) {
         return (
@@ -16,6 +16,11 @@ const Navbar = () => {
                 <div className="loading-text">Loading...</div>
             </div>
         );
+    }
+
+    // Hide navbar on dashboard routes
+    if (location.pathname.startsWith('/dashboard')) {
+        return null;
     }
 
     return (
@@ -31,11 +36,7 @@ const Navbar = () => {
                     </>
                 )}
                 {isAuthenticated && <li><Link to="/dashboard">Dashboard</Link></li>}
-                {isAuthenticated ? (
-                    <li><LogoutButton /></li>
-                ) : (
-                    <li><LoginButton /></li>
-                )}
+                {!isAuthenticated && <li><LoginButton /></li>}
             </ul>
         </nav>
     );
