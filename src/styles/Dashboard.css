@@ -192,19 +192,41 @@ h3 {
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+    :root {
+        --sidebar-width: 100%;
+        --sidebar-collapsed-width: 60px;
+    }
 
-    .sidebar,
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: static;
+    }
+
     .sidebar-collapsed .sidebar {
-        width: var(--sidebar-collapsed-width);
+        width: 100%;
     }
 
     .main-content,
     .sidebar-collapsed .main-content {
-        margin-left: var(--sidebar-collapsed-width);
+        margin-left: 0;
     }
 
     .sidebar-toggle {
         display: none;
+    }
+
+    .sidebar-item a,
+    .sidebar-item .sidebar-link {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .card {
+        padding: 15px;
     }
 }
 

@@ -320,16 +320,44 @@ body {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+    .hero-section {
+        height: auto;
+        padding: 60px 20px;
+        flex-direction: column;
+    }
 
-    .hero-text,
-    .cta-button {
-        max-width: 90%;
-        margin: 0 auto;
+    .hero-text {
+        max-width: 100%;
+        padding-left: 0;
         text-align: center;
     }
 
+    .hero-text h1 {
+        font-size: 2rem;
+    }
+
+    .hero-text p {
+        font-size: 1.2rem;
+    }
+
+    .cta-button {
+        margin-right: 0;
+        padding: 15px 30px;
+        font-size: 1rem;
+    }
+
+    .trusted-stats,
+    .steps,
+    .testimonial-container,
+    .pricing-container {
+        flex-direction: column;
+        gap: 30px;
+    }
+
+    .stat-box,
     .step,
+    .testimonial,
     .pricing-card {
-        width: 80%;
+        width: 100%;
     }
 }

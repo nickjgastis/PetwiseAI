@@ -1,33 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { jsPDF } from 'jspdf';
 import '../styles/ReportForm.css';
 import GenerateReport from './GenerateReport';
 import { useAuth0 } from "@auth0/auth0-react";
+import { supabase } from '../supabaseClient';
 
 const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
-
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
 
     // Patient Info State
-    const [patientName, setPatientName] = useState('');
-    const [species, setSpecies] = useState('');
-    const [sex, setSex] = useState('');
-    const [breed, setBreed] = useState('');
-    const [colorMarkings, setColorMarkings] = useState('');
-    const [weight, setWeight] = useState('');
-    const [weightUnit, setWeightUnit] = useState('lbs');
-    const [birthdate, setBirthdate] = useState('');
-    const [ownerName, setOwnerName] = useState('');
-    const [address, setAddress] = useState('');
-    const [telephone, setTelephone] = useState('');
+    const [patientName, setPatientName] = useState(() => localStorage.getItem('patientName') || '');
+    const [species, setSpecies] = useState(() => localStorage.getItem('species') || '');
+    const [sex, setSex] = useState(() => localStorage.getItem('sex') || '');
+    const [breed, setBreed] = useState(() => localStorage.getItem('breed') || '');
+    const [colorMarkings, setColorMarkings] = useState(() => localStorage.getItem('colorMarkings') || '');
+    const [weight, setWeight] = useState(() => localStorage.getItem('weight') || '');
+    const [weightUnit, setWeightUnit] = useState(() => localStorage.getItem('weightUnit') || 'lbs');
+    const [birthdate, setBirthdate] = useState(() => localStorage.getItem('birthdate') || '');
+    const [ownerName, setOwnerName] = useState(() => localStorage.getItem('ownerName') || '');
+    const [address, setAddress] = useState(() => localStorage.getItem('address') || '');
+    const [telephone, setTelephone] = useState(() => localStorage.getItem('telephone') || '');
 
     // Exam Info State
-    const [examDate, setExamDate] = useState('');
-    const [staff, setStaff] = useState('');
-    const [presentingComplaint, setPresentingComplaint] = useState('');
-    const [history, setHistory] = useState('');
-    const [physicalExamFindings, setPhysicalExamFindings] = useState(`General Appearance: Bright, Alert, Responsive
+    const [examDate, setExamDate] = useState(() => localStorage.getItem('examDate') || '');
+    const [staff, setStaff] = useState(() => localStorage.getItem('staff') || '');
+    const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
+    const [history, setHistory] = useState(() => localStorage.getItem('history') || '');
+    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || `General Appearance: Bright, Alert, Responsive
 T: °F, Normal
 P:
 R:
@@ -44,19 +43,19 @@ Integumentary (Skin and Coat): Normal, no lesions, masses, or abnormalities dete
 Musculoskeletal: No lameness, no pain on palpation
 Neurologic: Alert and responsive, normal reflexes
 Urogenital: Within normal limits, no abnormalities noted`);
-    const [diagnosticPlan, setDiagnosticPlan] = useState('');
-    const [labResults, setLabResults] = useState('');
-    const [assessment, setAssessment] = useState('');
-    const [diagnosis, setDiagnosis] = useState('');
-    const [differentialDiagnosis, setDifferentialDiagnosis] = useState('');
-    const [treatment, setTreatment] = useState('');
-    const [clientCommunications, setClientCommunications] = useState('');
-    const [planFollowUp, setPlanFollowUp] = useState('');
+    const [diagnosticPlan, setDiagnosticPlan] = useState(() => localStorage.getItem('diagnosticPlan') || '');
+    const [labResults, setLabResults] = useState(() => localStorage.getItem('labResults') || '');
+    const [assessment, setAssessment] = useState(() => localStorage.getItem('assessment') || '');
+    const [diagnosis, setDiagnosis] = useState(() => localStorage.getItem('diagnosis') || '');
+    const [differentialDiagnosis, setDifferentialDiagnosis] = useState(() => localStorage.getItem('differentialDiagnosis') || '');
+    const [treatment, setTreatment] = useState(() => localStorage.getItem('treatment') || '');
+    const [clientCommunications, setClientCommunications] = useState(() => localStorage.getItem('clientCommunications') || '');
+    const [planFollowUp, setPlanFollowUp] = useState(() => localStorage.getItem('planFollowUp') || '');
 
     // Loading and error states
     const [loading, setLoading] = useState(false);
-    const [reportText, setReportText] = useState('');
-    const [previewVisible, setPreviewVisible] = useState(false);
+    const [reportText, setReportText] = useState(() => localStorage.getItem('currentReportText') || '');
+    const [previewVisible, setPreviewVisible] = useState(() => localStorage.getItem('previewVisible') === 'true');
     const [error, setError] = useState('');
 
     const [savedMessageVisible, setSavedMessageVisible] = useState(false);
@@ -69,7 +68,6 @@ Urogenital: Within normal limits, no abnormalities noted`);
     const isGenerating = useRef(false); // Track if report generation is ongoing
 
     const speciesOptions = ['Canine', 'Feline', 'Avian', 'Reptile', 'Bovine', 'Equine', 'Ovine', 'Porcine'];
-
     const sexOptions = ['Female Spayed', 'Female Intact', 'Male Neutered', 'Male Intact'];
 
     const dogBreeds = [
@@ -82,7 +80,6 @@ Urogenital: Within normal limits, no abnormalities noted`);
         'Schipperke', 'Shiba Inu', 'Shih Tzu', 'Siberian Husky', 'Soft-Coated Wheaten Terrier', 'Staffordshire Bull Terrier',
         'Standard Schnauzer', 'Weimaraner', 'West Highland White Terrier', 'Whippet', 'Wire Fox Terrier', 'Yorkshire Terrier'
     ];
-
 
     const felineBreeds = [
         'Domestic Long Hair', 'Domestic Short Hair', 'Domestic Medium Hair',
@@ -97,13 +94,10 @@ Urogenital: Within normal limits, no abnormalities noted`);
         'Toyger', 'Turkish Angora', 'Turkish Van'
     ];
 
-
-
     // Set breed options based on species
     const breedOptions = species === 'Canine' ? dogBreeds : species === 'Feline' ? felineBreeds : [];
 
     useEffect(() => {
-        // console.log('Component mounted');
         const savedReportText = localStorage.getItem('currentReportText');
         const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
 
@@ -112,17 +106,13 @@ Urogenital: Within normal limits, no abnormalities noted`);
         }
 
         setPreviewVisible(savedPreviewVisible);
-
-        return () => {
-            // console.log('Component unmounted');
-        };
     }, []);
 
     useEffect(() => {
-        // console.log('Saving to localStorage:', { reportText, previewVisible });
         localStorage.setItem('currentReportText', reportText);
         localStorage.setItem('previewVisible', previewVisible.toString());
-    }, [reportText, previewVisible]);
+        localStorage.setItem('patientName', patientName);
+    }, [reportText, previewVisible, patientName]);
 
     // Submit patient info
     const handlePatientInfoSubmit = (e) => {
@@ -152,6 +142,9 @@ Urogenital: Within normal limits, no abnormalities noted`);
             const generatedReport = await GenerateReport(inputs);
             setReportText(generatedReport);
             setPreviewVisible(true);
+            localStorage.setItem('currentReportText', generatedReport);
+            localStorage.setItem('previewVisible', 'true');
+            localStorage.setItem('patientName', patientName);
         } catch (error) {
             setError(error.message || 'An error occurred while generating the report.');
         } finally {
@@ -160,19 +153,54 @@ Urogenital: Within normal limits, no abnormalities noted`);
         }
     };
 
-
-
     const saveReport = async () => {
         if (!isAuthenticated) {
             setError("Please log in to save the report.");
             return;
         }
 
-        // Placeholder for saving report
-        console.log("Report saved successfully!");
-        setSavedMessageVisible(true);
-        setTimeout(() => setSavedMessageVisible(false), 2000);
+        try {
+            // Get user's UUID from users table using auth0_user_id directly
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (userError || !userData) {
+                // console.error("Error fetching user:", userError);
+                throw new Error("User not found in Supabase.");
+            }
+
+            const userId = userData.id; // This is the user's internal ID
+            // console.log("User ID fetched:", userId); // Log user ID
+
+            // console.log(userId)
+            // Save report with user's UUID
+            const { data, error: insertError } = await supabase
+                .from('saved_reports')
+                .insert([{
+                    user_id: userId, // Ensure this matches the policy check
+                    report_name: `${patientName} - ${new Date().toLocaleString()}` || `Report ${new Date().toLocaleString()}`,
+                    report_text: reportText
+                }]);
+
+            if (insertError) {
+                console.error("Insert error:", insertError); // Log error details
+                throw insertError;
+            }
+
+            setSavedMessageVisible(true);
+            setTimeout(() => setSavedMessageVisible(false), 2000);
+            console.log("Report saved successfully to Supabase:", data);
+        } catch (error) {
+            console.error("Error saving report:", error);
+            setError("Failed to save report. Please try again.");
+        }
     };
+
+
+
 
     const clearPatientInfo = () => {
         setPatientName('');
@@ -269,6 +297,38 @@ Urogenital: Within normal limits, no abnormalities noted`);
         setCustomBreed(e.target.value);
         setBreed(e.target.value);
     };
+
+    useEffect(() => {
+        // Save all form fields to localStorage
+        localStorage.setItem('species', species);
+        localStorage.setItem('sex', sex);
+        localStorage.setItem('breed', breed);
+        localStorage.setItem('colorMarkings', colorMarkings);
+        localStorage.setItem('weight', weight);
+        localStorage.setItem('weightUnit', weightUnit);
+        localStorage.setItem('birthdate', birthdate);
+        localStorage.setItem('ownerName', ownerName);
+        localStorage.setItem('address', address);
+        localStorage.setItem('telephone', telephone);
+
+        // Exam info
+        localStorage.setItem('examDate', examDate);
+        localStorage.setItem('staff', staff);
+        localStorage.setItem('presentingComplaint', presentingComplaint);
+        localStorage.setItem('history', history);
+        localStorage.setItem('physicalExamFindings', physicalExamFindings);
+        localStorage.setItem('diagnosticPlan', diagnosticPlan);
+        localStorage.setItem('labResults', labResults);
+        localStorage.setItem('assessment', assessment);
+        localStorage.setItem('diagnosis', diagnosis);
+        localStorage.setItem('differentialDiagnosis', differentialDiagnosis);
+        localStorage.setItem('treatment', treatment);
+        localStorage.setItem('clientCommunications', clientCommunications);
+        localStorage.setItem('planFollowUp', planFollowUp);
+    }, [species, sex, breed, colorMarkings, weight, weightUnit, birthdate,
+        ownerName, address, telephone, examDate, staff, presentingComplaint,
+        history, physicalExamFindings, diagnosticPlan, labResults, assessment,
+        diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp]);
 
     return (
         <div className="report-container">

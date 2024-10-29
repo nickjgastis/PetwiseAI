@@ -11,6 +11,12 @@
     width: 100%;
     z-index: 1000;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+    @media (max-width: 768px) {
+        height: auto;
+        flex-direction: column;
+        padding: 10px;
+    }
 }
 
 .navbar-logo {
@@ -19,6 +25,10 @@
     text-decoration: none;
     font-family: Georgia, 'Times New Roman', Times, serif;
     transition: transform 0.3s ease, color 0.3s ease;
+
+    @media (max-width: 768px) {
+        margin-bottom: 10px;
+    }
 }
 
 .navbar-logo:hover {
@@ -34,6 +44,11 @@
     padding: 0;
     justify-content: center;
     align-items: center;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 15px;
+    }
 }
 
 .navbar-links li {
@@ -52,6 +67,10 @@
     border: none;
     cursor: pointer;
     padding: 0;
+
+    @media (max-width: 768px) {
+        font-size: 1rem;
+    }
 }
 
 .navbar-links a:hover,

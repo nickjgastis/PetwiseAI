@@ -307,10 +307,27 @@ body {
 }
 
 @media (max-width: 768px) {
+    .report-container {
+        flex-direction: column;
+        height: auto;
+        margin: 15px auto;
+    }
+
+    .report-form,
     .report-preview {
         max-width: 100%;
-        height: calc(100vh - 20px);
-        margin: 10px;
+    }
+
+    .report-preview {
+        height: 50vh;
+        margin-top: 20px;
+    }
+
+    .form-input,
+    .form-select,
+    .form-textarea {
+        font-size: 16px;
+        /* Prevents zoom on focus in iOS */
     }
 }
 

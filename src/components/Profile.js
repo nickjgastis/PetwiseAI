@@ -7,11 +7,11 @@ const Profile = () => {
 
     useEffect(() => {
         if (isAuthenticated && user) {
-            console.log("Profile Component - Auth0 User Information:");
-            console.log("UserSUB:", user.sub);
-            console.log("Email:", user.email);
-            console.log("Name:", user.name);
-            console.log("Full User Object:", user);
+            // console.log("Profile Component - Auth0 User Information:");
+            // console.log("UserSUB:", user.sub);
+            // console.log("Email:", user.email);
+            // console.log("Name:", user.name);
+            // console.log("Full User Object:", user);
         }
     }, [isAuthenticated, user]);
 

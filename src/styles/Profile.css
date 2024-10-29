@@ -107,11 +107,24 @@
         height: 100px;
     }
 
+    .profile-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .profile-email {
+        font-size: 0.9rem;
+    }
+
+    .profile-details h3 {
+        font-size: 1.2rem;
+    }
+
     .profile-actions {
         flex-direction: column;
     }
 
     .profile-button {
         width: 100%;
+        margin-bottom: 0.5rem;
     }
 }

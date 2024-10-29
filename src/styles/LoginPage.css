@@ -55,3 +55,20 @@
     margin-top: 1rem;
     text-align: center;
 }
+
+@media (max-width: 768px) {
+    .login-container {
+        padding: 1.5rem;
+        max-width: 90%;
+    }
+
+    .login-container h2 {
+        font-size: 1.5rem;
+    }
+
+    .login-container input,
+    .login-container button {
+        font-size: 16px;
+        /* Prevents zoom on focus in iOS */
+    }
+}

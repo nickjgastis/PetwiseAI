@@ -30,3 +30,10 @@
 .field-label {
     font-weight: bold;
 }
+
+@media (max-width: 768px) {
+    .report-preview {
+        margin-left: 0;
+        max-width: 100%;
+    }
+}

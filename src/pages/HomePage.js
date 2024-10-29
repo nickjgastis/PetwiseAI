@@ -24,8 +24,8 @@ const HomePage = () => {
         <div className="page-content">
             <header className="hero-section">
                 <div className="hero-text fade-in-section">
-                    <h1>Clinic-Ready Veterinary Medical Records In Seconds</h1>
-                    <p>Petwise AI: Streamline your workflow and enhance patient care with intelligent prognosis reports.</p>
+                    <h1>Create Veterinary Medical Records In Seconds</h1>
+                    <p>Petwise AI: Save 90% of your medical record entry time. Let AI do the work.</p>
                 </div>
                 <button onClick={() => loginWithRedirect()} className="cta-button fade-in-section">
                     Start Your Free Trial - No Credit Card Required
