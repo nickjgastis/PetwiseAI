@@ -1,13 +1,13 @@
 .about-page {
     font-family: 'Arial', sans-serif;
-    color: #333;
+    color: #4a4a4a;
     line-height: 1.6;
 }
 
 .about-hero {
     background: linear-gradient(135deg, #61b6e7, #1e88e5);
-    color: white;
     text-align: center;
+    color: rgb(55, 55, 55);
     padding: 100px 20px;
     margin-bottom: 60px;
 }
@@ -119,11 +119,13 @@ h2 {
     visibility: hidden;
     transition: opacity 400ms ease-out, visibility 1200ms ease-out;
     will-change: opacity, visibility;
+
 }
 
 .fade-in-section.show {
     opacity: 1;
     visibility: visible;
+
 }
 
 @media (max-width: 768px) {

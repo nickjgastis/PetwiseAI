@@ -37,11 +37,7 @@ const HomePage = () => {
                     <div className="features-card">
                         <div className="features-content">
                             <h3>Minimal Data Entry</h3>
-                            <ul>
-                                <li>Presenting Complaint</li>
-                                <li>History</li>
-                                <li>Physical Exam Findings</li>
-                            </ul>
+
                             <h4>Report generates:</h4>
                             <ul>
                                 <li>Diagnostic Plan</li>
@@ -73,15 +69,15 @@ const HomePage = () => {
                 <p>Join the growing community of satisfied Petwise AI users.</p>
                 <div className="trusted-stats">
                     <div className="stat-box">
-                        <h3>500+</h3>
+                        <h3>10+</h3>
                         <p>Clinics</p>
                     </div>
                     <div className="stat-box">
-                        <h3>1000+</h3>
+                        <h3>100+</h3>
                         <p>Veterinarians</p>
                     </div>
                     <div className="stat-box">
-                        <h3>1.5M+</h3>
+                        <h3>1M+</h3>
                         <p>Reports Generated</p>
                     </div>
                 </div>
@@ -92,7 +88,7 @@ const HomePage = () => {
                 <div className="steps">
                     <div className="step">
                         <h3>1. Sign Up</h3>
-                        <p>Create your account and start your free 7-day trial.</p>
+                        <p>Create your account and start your free 1-month trial.</p>
                     </div>
                     <div className="step">
                         <h3>2. Input Data</h3>

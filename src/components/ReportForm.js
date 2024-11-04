@@ -3,6 +3,60 @@ import '../styles/ReportForm.css';
 import GenerateReport from './GenerateReport';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
+import { pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+
+const PDFDocument = ({ reportText }) => {
+    const styles = StyleSheet.create({
+        page: {
+            padding: 40,
+            fontSize: 12,
+            fontFamily: 'Helvetica',
+            lineHeight: 1.5
+        },
+        text: {
+            marginBottom: 10,
+            whiteSpace: 'pre-wrap'
+        }
+    });
+
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                <Text style={styles.text}>{reportText}</Text>
+            </Page>
+        </Document>
+    );
+};
+
+const PDFButton = ({ reportText, patientName }) => {
+    const [isPreparing, setIsPreparing] = useState(false);
+
+    const generatePDF = async () => {
+        setIsPreparing(true);
+        const doc = <PDFDocument reportText={reportText} />;
+        const blob = await pdf(doc).toBlob();
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${patientName || 'Report'}-${new Date().toLocaleDateString()}.pdf`;
+        link.click();
+
+        URL.revokeObjectURL(url);
+        setIsPreparing(false);
+    };
+
+    return (
+        <button
+            className="copy-button"
+            onClick={generatePDF}
+            disabled={isPreparing}
+        >
+            {isPreparing ? 'Preparing PDF...' : 'Download PDF'}
+        </button>
+    );
+};
 
 const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
@@ -159,6 +213,10 @@ Urogenital: Within normal limits, no abnormalities noted`);
             return;
         }
 
+        const saveBtn = document.querySelector('.report-preview-footer .submit-button');
+        const originalText = saveBtn.textContent;
+        saveBtn.textContent = 'Saving...';
+
         try {
             // Get user's UUID from users table using auth0_user_id directly
             const { data: userData, error: userError } = await supabase
@@ -193,9 +251,15 @@ Urogenital: Within normal limits, no abnormalities noted`);
             setSavedMessageVisible(true);
             setTimeout(() => setSavedMessageVisible(false), 2000);
             console.log("Report saved successfully to Supabase:", data);
+
+            saveBtn.textContent = 'Saved!';
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+            }, 2000);
         } catch (error) {
             console.error("Error saving report:", error);
             setError("Failed to save report. Please try again.");
+            saveBtn.textContent = originalText;
         }
     };
 
@@ -398,11 +462,11 @@ Urogenital: Within normal limits, no abnormalities noted`);
                     <input type="text" className="form-input" value={telephone} onChange={(e) => setTelephone(e.target.value)} />
 
                     <div className="button-container">
-                        <button type="submit" className="submit-button">
-                            Continue to Exam Info
-                        </button>
                         <button type="button" className="clear-button" onClick={clearPatientInfo}>
                             Clear Form
+                        </button>
+                        <button type="submit" className="continue-button">
+                            Exam Info
                         </button>
                     </div>
                 </form>
@@ -455,10 +519,14 @@ Urogenital: Within normal limits, no abnormalities noted`);
                     <textarea className="form-input" value={planFollowUp} onChange={(e) => setPlanFollowUp(e.target.value)} />
 
                     <div className="button-container">
-                        <button type="button" className="back-button-patient" onClick={handleBackToPatientInfo}>
+                        <button type="button" className="submit-button" onClick={handleBackToPatientInfo}>
                             Back to Patient Info
                         </button>
-                        <button type="submit" className="submit-button" disabled={loading}>
+                        <button
+                            type="submit"
+                            className="generate-report-button"
+                            disabled={loading}
+                        >
                             {loading ? 'Generating...' : 'Generate Report'}
                         </button>
                         <button type="button" className="clear-button" onClick={resetEntireForm}>
@@ -471,46 +539,58 @@ Urogenital: Within normal limits, no abnormalities noted`);
             )}
 
             <div className="report-preview">
-                {loading ? (
-                    <div className="loading-container">
-                        <div className="loading-dots">
-                            <div className="loading-dot"></div>
-                            <div className="loading-dot"></div>
-                            <div className="loading-dot"></div>
-                        </div>
-                        <p className="loading-text">Generating report...</p>
-                    </div>
-                ) : previewVisible ? (
-                    <>
-                        <div className="report-preview-header">
-                            <h3>Report Preview</h3>
-                            <button className="close-button" onClick={() => setPreviewVisible(false)}>×</button>
-                        </div>
-                        <div className="report-preview-content">
-                            <textarea
-                                className="report-text-editor"
-                                value={reportText}
-                                onChange={(e) => setReportText(e.target.value)}
-                            />
-                        </div>
-                        <div className="report-preview-footer">
-                            <div className="button-container">
-                                <button className="submit-button" onClick={saveReport}>Save Report</button>
-                                <div className="copy-button-container">
-                                    <button className="copy-button" onClick={copyToClipboard}>{copyButtonText}</button>
-                                    {copiedMessageVisible && <span className="copied-message">Copied</span>}
-                                </div>
+                <div className="report-preview-header">
+                    <h3>Report Preview</h3>
+                    {previewVisible && (
+                        <button className="close-button" onClick={() => setPreviewVisible(false)}>×</button>
+                    )}
+                </div>
+
+                <div className="report-preview-content">
+                    {loading ? (
+                        <div className="loading-container">
+                            <div className="loading-dots">
+                                <div className="loading-dot"></div>
+                                <div className="loading-dot"></div>
+                                <div className="loading-dot"></div>
                             </div>
-                            {savedMessageVisible && <div className="saved-message">Saved</div>}
-                            {error && <div className="error-message">{error}</div>}
+                            <p className="loading-text">Generating report...</p>
                         </div>
-                    </>
-                ) : (
-                    <div className="report-placeholder">
-                        <h2>Report will appear here</h2>
-                        <p>Fill out the form and click "Generate Report" to see the preview</p>
+                    ) : previewVisible ? (
+                        <textarea
+                            className="report-text-editor"
+                            value={reportText}
+                            onChange={(e) => setReportText(e.target.value)}
+                        />
+                    ) : (
+                        <div className="report-placeholder">
+                            <h2>Report will appear here</h2>
+                            <p>Fill out the form and click "Generate Report" to see the preview</p>
+                        </div>
+                    )}
+                </div>
+
+                <div className="report-preview-footer">
+                    <div className="button-container">
+                        <button className="submit-button" onClick={saveReport} disabled={loading}>Save Report</button>
+                        <div className="copy-button-container">
+                            <button className="copy-button" onClick={copyToClipboard} disabled={loading}>
+                                {copyButtonText}
+                            </button>
+                            {copiedMessageVisible && <span className="copied-message">Copied</span>}
+                        </div>
+                        {reportText && (
+                            <div className="copy-button-container">
+                                <PDFButton
+                                    reportText={reportText}
+                                    patientName={patientName}
+                                />
+                            </div>
+                        )}
                     </div>
-                )}
+                    {savedMessageVisible && <div className="saved-message">Saved</div>}
+                    {error && <div className="error-message">{error}</div>}
+                </div>
             </div>
         </div>
     );
