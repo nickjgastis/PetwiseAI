@@ -20,6 +20,12 @@ const HomePage = () => {
         });
     }, []);
 
+    const signUpOptions = {
+        authorizationParams: {
+            screen_hint: "signup"
+        }
+    };
+
     return (
         <div className="page-content">
             <header className="hero-section">
@@ -27,9 +33,39 @@ const HomePage = () => {
                     <h1>Create Veterinary Medical Records In Seconds</h1>
                     <p>Petwise AI: Save 90% of your medical record entry time. Let AI do the work.</p>
                 </div>
-                <button onClick={() => loginWithRedirect()} className="cta-button fade-in-section">
-                    Start Your Free Trial - No Credit Card Required
-                </button>
+                <div className="hero-features fade-in-section">
+                    <div className="features-card">
+                        <div className="features-content">
+                            <h3>Minimal Data Entry</h3>
+                            <ul>
+                                <li>Presenting Complaint</li>
+                                <li>History</li>
+                                <li>Physical Exam Findings</li>
+                            </ul>
+                            <h4>Report generates:</h4>
+                            <ul>
+                                <li>Diagnostic Plan</li>
+                                <li>Assessment</li>
+                                <li>Diagnosis</li>
+                                <li>Differential diagnosis</li>
+                                <li>Treatment Plan
+                                    <ul>
+                                        <li>Drug names, dosages, interval</li>
+                                    </ul>
+                                </li>
+                                <li>Expected Course/Prognosis</li>
+                                <li>Client Communications/Recommendations
+                                    <ul>
+                                        <li>Drug side effects/interactions</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                        <button onClick={() => loginWithRedirect(signUpOptions)} className="cta-button">
+                            Start Your Free Trial - No Credit Card Required
+                        </button>
+                    </div>
+                </div>
             </header>
 
             <section className="trusted-section fade-in-section">
@@ -68,6 +104,20 @@ const HomePage = () => {
                     </div>
                 </div>
             </section>
+            <section className="video-section fade-in-section">
+                <h2>See Petwise AI in Action</h2>
+                <div className="video-container">
+                    <iframe
+                        width="560"
+                        height="315"
+                        src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+                        title="Petwise AI Demo"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen>
+                    </iframe>
+                </div>
+            </section>
 
             <section className="testimonials fade-in-section">
                 <h2>What Our Users Say</h2>
@@ -85,20 +135,6 @@ const HomePage = () => {
                 </div>
             </section>
 
-            <section className="video-section fade-in-section">
-                <h2>See Petwise AI in Action</h2>
-                <div className="video-container">
-                    <iframe
-                        width="560"
-                        height="315"
-                        src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-                        title="Petwise AI Demo"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen>
-                    </iframe>
-                </div>
-            </section>
 
             <section className="pricing fade-in-section">
                 <h2>Choose Your Plan</h2>
@@ -110,7 +146,7 @@ const HomePage = () => {
                             <li>Full access to all features</li>
                             <li>No credit card required</li>
                         </ul>
-                        <button onClick={() => loginWithRedirect()} className="pricing-button">Start Free Trial</button>
+                        <button onClick={() => loginWithRedirect(signUpOptions)} className="pricing-button">Start Free Trial</button>
                     </div>
                     <div className="pricing-card">
                         <h3>Single Device</h3>
@@ -120,7 +156,7 @@ const HomePage = () => {
                             <li>24/7 support</li>
                             <li>Regular updates</li>
                         </ul>
-                        <button onClick={() => loginWithRedirect()} className="pricing-button">Choose Plan</button>
+                        <button onClick={() => loginWithRedirect(signUpOptions)} className="pricing-button">Choose Plan</button>
                     </div>
                     <div className="pricing-card">
                         <h3>Clinic Plan</h3>
@@ -130,7 +166,7 @@ const HomePage = () => {
                             <li>Priority support</li>
                             <li>Custom integrations</li>
                         </ul>
-                        <button onClick={() => loginWithRedirect()} className="pricing-button">Contact Sales</button>
+                        <button onClick={() => loginWithRedirect(signUpOptions)} className="pricing-button">Contact Sales</button>
                     </div>
                 </div>
             </section>

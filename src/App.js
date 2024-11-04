@@ -1,4 +1,5 @@
 // src/App.js
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
@@ -13,8 +14,6 @@ const AppContent = () => {
   useEffect(() => {
     const checkOrCreateUser = async () => {
       if (isLoading || !isAuthenticated || !user) return;
-
-      // console.log(user)
 
       try {
         // Check if user exists
@@ -36,7 +35,6 @@ const AppContent = () => {
             .from('users')
             .insert([{
               auth0_user_id: user.sub,
-
               nickname: user.nickname // Send the nickname from Auth0
             }]);
 
@@ -44,26 +42,13 @@ const AppContent = () => {
           if (insertError) {
             console.error("Error creating user:", insertError);
           } else {
-            // console.log("User created successfully:", newUser);
-
-            // Fetch the newly created user
-            const { data: createdUser, error: fetchCreatedUserError } = await supabase
-              .from('users')
-              .select('id, auth0_user_id, nickname')
-              .eq('auth0_user_id', user.sub)
-              .single();
-
-            if (fetchCreatedUserError) {
-              console.error("Error fetching created user:", fetchCreatedUserError);
-            } else {
-              // console.log("Created User:", createdUser);
-            }
-            return; // Exit after creating and fetching the user
+            // User created successfully, no redirection
+            console.log("User created successfully:", newUser);
           }
+        } else {
+          // Log the existing user
+          console.log("User already exists:", existingUser);
         }
-
-        // Log the existing user
-        // console.log("User already exists:", existingUser);
       } catch (error) {
         console.error("Unexpected error:", error);
       }
