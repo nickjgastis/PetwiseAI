@@ -588,7 +588,7 @@ Urogenital: Within normal limits, no abnormalities noted`);
                             </div>
                         )}
                     </div>
-                    {savedMessageVisible && <div className="saved-message">Saved</div>}
+
                     {error && <div className="error-message">{error}</div>}
                 </div>
             </div>

@@ -100,3 +100,21 @@
         opacity: 0.6;
     }
 }
+
+@media (max-width: 768px) {
+    .navbar {
+        padding: 10px;
+        height: auto;
+    }
+
+    .navbar-links {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .navbar-logo {
+        margin-bottom: 10px;
+        text-align: center;
+    }
+}

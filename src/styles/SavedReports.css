@@ -89,3 +89,23 @@ button {
 .edit-button:hover {
     background-color: #2980b9;
 }
+
+@media (max-width: 768px) {
+    .saved-reports {
+        padding: 10px;
+    }
+
+    .report-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .button-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .report-card {
+        margin: 10px;
+    }
+}

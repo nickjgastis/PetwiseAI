@@ -344,45 +344,25 @@ body {
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .hero-section {
+        padding: 40px 20px;
         height: auto;
-        padding: 60px 20px;
-        flex-direction: column;
     }
 
     .hero-text {
-        max-width: 100%;
-        padding-left: 0;
-        text-align: center;
+        padding: 20px;
     }
 
-    .hero-text h1 {
-        font-size: 2rem;
+    .hero-features {
+        padding: 20px;
     }
 
-    .hero-text p {
-        font-size: 1.2rem;
-    }
-
-    .cta-button {
-        margin-right: 0;
-        padding: 15px 30px;
-        font-size: 1rem;
-    }
-
-    .trusted-stats,
-    .steps,
-    .testimonial-container,
-    .pricing-container {
-        flex-direction: column;
-        gap: 30px;
-    }
-
-    .stat-box,
-    .step,
-    .testimonial,
-    .pricing-card {
+    .features-card {
         width: 100%;
+    }
 
+    .stat-box {
+        width: 100%;
+        margin: 10px 0;
     }
 }
 
@@ -512,4 +492,111 @@ body {
     padding-left: 0;
     opacity: 0.7;
     margin-top: -5px;
+}
+
+/* Keep all existing styles, just update/add these mobile styles */
+
+@media (max-width: 768px) {
+    .hero-section {
+        flex-direction: column;
+        height: auto;
+        padding: 20px;
+        margin-top: 60px;
+        top: 0;
+    }
+
+    .hero-text {
+        max-width: 100%;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .hero-text h1 {
+        font-size: 2rem;
+    }
+
+    .hero-text p {
+        font-size: 1.1rem;
+    }
+
+    .hero-features {
+        max-width: 100%;
+        padding: 20px;
+    }
+
+    .features-card {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .cta-button {
+        width: auto;
+        margin: 10px auto;
+        display: inline-block;
+    }
+
+    /* Sections adjustments */
+    .trusted-stats {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .stat-box {
+        width: auto;
+        margin: 10px 20px;
+    }
+
+    .steps {
+        flex-direction: column;
+    }
+
+    .step {
+        width: auto;
+        margin: 10px 20px;
+    }
+
+    .testimonial-container {
+        flex-direction: column;
+    }
+
+    .testimonial {
+        width: auto;
+        margin: 10px 20px;
+    }
+
+    .pricing-container {
+        flex-direction: column;
+    }
+
+    .pricing-card {
+        width: auto;
+        margin: 10px 20px;
+    }
+
+    /* Typography adjustments */
+    h2 {
+        font-size: 2rem;
+    }
+
+    .trusted-section h2,
+    .how-it-works h2,
+    .testimonials h2,
+    .pricing h2 {
+        font-size: 2rem;
+        padding: 0 20px;
+    }
+
+    /* Section spacing */
+    .trusted-section,
+    .how-it-works,
+    .testimonials,
+    .pricing {
+        padding: 40px 0;
+    }
+
+    /* Footer adjustment */
+    .homepage-footer {
+        margin: 0;
+        border-radius: 0;
+    }
 }

@@ -1,36 +1,51 @@
-// import React from 'react';
-// import { loadStripe } from '@stripe/stripe-js';
+import React from 'react';
+import { loadStripe } from '@stripe/stripe-js';
 
-// const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+console.log('Stripe key loaded:', !!process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
-// const Checkout = () => {
-//     const handleCheckout = async (priceId) => {
-//         const stripe = await stripePromise;
+const Checkout = ({ onBack, user }) => {
+    const handleCheckout = async () => {
+        try {
+            console.log('User in Checkout:', user);
+            const stripe = await stripePromise;
+            if (!stripe) {
+                throw new Error('Stripe failed to initialize');
+            }
 
-//         const response = await fetch('/create-checkout-session', {
-//             method: 'POST',
-//             headers: {
-//                 'Content-Type': 'application/json',
-//             },
-//             body: JSON.stringify({ priceId }),
-//         });
+            if (!user) {
+                throw new Error('No user data available');
+            }
 
-//         const session = await response.json();
-//         const result = await stripe.redirectToCheckout({ sessionId: session.id });
+            const response = await fetch('http://localhost:3001/create-checkout-session', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user }),
+            });
 
-//         if (result.error) {
-//             console.error(result.error.message);
-//         }
-//     };
+            const session = await response.json();
+            if (!session || !session.id) {
+                console.error('Invalid session:', session);
+                return;
+            }
 
-//     return (
-//         <div>
-//             <h2>Choose Your Plan</h2>
-//             <button onClick={() => handleCheckout('prod_R7Zil3DDGq3ZcF')}>Start Free Trial</button>
-//             <button onClick={() => handleCheckout('prod_R7YuUsCsAlP1lM')}>Subscribe Monthly</button>
-//             <button onClick={() => handleCheckout('prod_R7Zh5C9237ZJCS')}>Subscribe Yearly</button>
-//         </div>
-//     );
-// };
+            const result = await stripe.redirectToCheckout({ sessionId: session.id });
+            if (result.error) {
+                console.error(result.error.message);
+            }
+        } catch (error) {
+            console.error('Checkout error:', error);
+        }
+    };
 
-// export default Checkout;
+    return (
+        <div>
+            <button onClick={handleCheckout}>Start Free Trial</button>
+            <button onClick={onBack}>Back to Profile</button>
+        </div>
+    );
+};
+
+export default Checkout;

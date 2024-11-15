@@ -197,6 +197,10 @@ h3 {
         --sidebar-collapsed-width: 60px;
     }
 
+    .dashboard-container {
+        flex-direction: column;
+    }
+
     .sidebar {
         width: 100%;
         height: auto;
@@ -210,6 +214,7 @@ h3 {
     .main-content,
     .sidebar-collapsed .main-content {
         margin-left: 0;
+        padding: 10px;
     }
 
     .sidebar-toggle {
@@ -227,6 +232,7 @@ h3 {
 
     .card {
         padding: 15px;
+        margin: 10px 0;
     }
 }
 

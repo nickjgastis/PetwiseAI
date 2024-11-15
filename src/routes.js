@@ -9,7 +9,7 @@ import PrivateRoute from './components/PrivateRoute';
 import AboutPage from './pages/AboutPage';
 
 const AppRoutes = () => {
-    const { isLoading } = useAuth0();
+    const { isLoading, isAuthenticated } = useAuth0();
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -17,7 +17,10 @@ const AppRoutes = () => {
 
     return (
         <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route
+                path="/"
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <HomePage />}
+            />
             <Route path="/about" element={<AboutPage />} />
             <Route
                 path="/dashboard/*"
@@ -27,7 +30,10 @@ const AppRoutes = () => {
                     </PrivateRoute>
                 }
             />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route
+                path="*"
+                element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}
+            />
         </Routes>
     );
 };

@@ -29,6 +29,7 @@ const Dashboard = () => {
     return (
         <div className={`dashboard-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
             <aside className="sidebar">
+
                 <div className="sidebar-logo">
                     <Link to="/dashboard">PetWise</Link>
                 </div>
@@ -36,6 +37,7 @@ const Dashboard = () => {
                     {isSidebarCollapsed ? '>' : '<'}
                 </button>
                 <ul className="sidebar-menu">
+
                     <li className="sidebar-item">
                         <Link to="/dashboard/report-form">Report Generator</Link>
                     </li>

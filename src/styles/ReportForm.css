@@ -357,25 +357,25 @@ body {
 @media (max-width: 768px) {
     .report-container {
         flex-direction: column;
-        height: auto;
-        margin: 15px auto;
+        padding: 10px;
     }
 
     .report-form,
     .report-preview {
         max-width: 100%;
+        margin: 10px 0;
     }
 
-    .report-preview {
-        height: 50vh;
-        margin-top: 20px;
+    .button-container {
+        flex-wrap: wrap;
     }
 
-    .form-input,
-    .form-select,
-    .form-textarea {
-        font-size: 16px;
-        /* Prevents zoom on focus in iOS */
+    .submit-button,
+    .copy-button,
+    .download-pdf-button,
+    .clear-button {
+        width: 100%;
+        margin: 5px 0;
     }
 }
 
@@ -466,4 +466,46 @@ body {
 
 .close-button:hover {
     opacity: 1;
+}
+
+.form-field {
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.remove-field-button {
+    background: none;
+    border: none;
+    color: #ff4444;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+}
+
+.add-field-button {
+    background: #f0f0f0;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    padding: 0.5rem;
+    width: 100%;
+    text-align: left;
+    color: #666;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.add-field-button:hover {
+    background: #e8e8e8;
+    color: #333;
+}
+
+.field-toggle {
+    margin-bottom: 1rem;
 }

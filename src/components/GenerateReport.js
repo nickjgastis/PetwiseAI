@@ -22,7 +22,7 @@ const GenerateReport = async (inputs) => {
     Address: ${inputs.address || "Provide here"}  
     Telephone: ${inputs.telephone || "Provide here"}  
     Exam Date: ${inputs.examDate || "Provide here"}  
-    Staff: ${inputs.staff || "Provide here, compensate for capitalization mistakes, example: dr gastis = Dr Gastis"}
+    Staff: ${inputs.staff || "Provide here"} compensate for capitalization mistakes, example: dr gastis = Dr Gastis"
     
     Presenting Complaint:
     ${inputs.presentingComplaint || "Provide additional context on the presenting complaint, including how the owner first noticed the symptoms, how long they have persisted, and any relevant background information. If the symptoms worsen, explain potential complications and when further medical attention should be sought. Ensure the explanation is no shorter than three sentences."}
@@ -50,17 +50,26 @@ const GenerateReport = async (inputs) => {
     ${inputs.differentialDiagnosis || "Create numbered list of differential diagnosis in order of most likelyhood. Include potential differential diagnoses that were considered and explain why they were ruled out or considered less likely. Ensure the explanation is no less than three sentences."}
     
     Treatment:
-    ${inputs.treatment || "List all the possible drugs that could be used, Example 1. Drug name Dose (mg/kg) Route of admistration(IV, P.O, SQ), Frequency (SID, BID, TID, QID, EOD) Include number of days for treatment. Offer a detailed description of each treatment. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous), and the expected benefits. Mention any potential side effects and explain how the owner should monitor for adverse reactions. Ensure each response is at least three sentences."}
+    ${inputs.treatment || "List all the possible drugs that could be used, Example, 1. Drug name Dose (mg/kg) Route of admistration(IV, P.O, SQ), Frequency (SID, BID, TID, QID, EOD) Include number of days for treatment. Include medication names, specific dosages, routes of administration (e.g., oral, subcutaneous)."}
+    
+    Medicine Interactions:
+    Based on the medications listed in the treatment plan above, provide a detailed analysis of:
+    1. Potential interactions between the prescribed medications
+    2. Common side effects for each medication
+    3. Any contraindications or special monitoring requirements
+    4. Specific drug-drug interactions that require attention
+    Ensure each explanation is thorough and at least three sentences long.
     
     Expected Course/Prognosis:
-    ${inputs.expectedCoursePrognosis || `Based on the information provided, describe the expected course and prognosis of the condition. Include potential outcomes, the likelihood of recovery or improvement, and any necessary ongoing care or treatments. Each explanation should be at least three sentences long, and reflect best practices and industry standards for similar cases.
-    Additionally, ensure that prognosis for different species, such as feline and canine, is appropriately tailored. Avoid using overlapping explanations for distinct species cases. For example, in a typical feline prognosis for chronic kidney disease, the expected course and prognosis differ from those of canine cases involving osteoarthritis.
+    ${inputs.expectedCoursePrognosis || "Based on the information provided, describe the expected course and prognosis of the condition. Include potential outcomes, the likelihood of recovery or improvement, and any necessary ongoing care or treatments. Each explanation should be at least three sentences long, and reflect best practices and industry standards for similar cases."}
     
-    Example for a feline case:
-    If this were a feline case of chronic kidney disease, the prognosis might include an explanation of long-term management with fluids, potential dietary adjustments, and regular monitoring of kidney function.
-    
-    Example for a canine case:
-    In a canine case involving osteoarthritis, the prognosis would include recommendations for pain management, anti-inflammatory medications, and lifestyle changes such as weight management and physical therapy, with a focus on improving quality of life.`}
+    Naturopathic Medicine:
+    Based on the diagnosis and treatment plan outlined above, provide:
+    1. Top 3 evidence-based natural treatments that would complement the conventional treatment plan
+    2. Specific dosing recommendations and administration guidelines for each natural treatment
+    3. Potential interactions between these natural treatments and the prescribed medications
+    4. Expected benefits and any contraindications
+    Each recommendation should be at least three sentences long and include scientific rationale.
     
     Client Communications/Recommendations:
     ${inputs.clientCommunications || "Wrtie a message to the owner. Explain any potential side effects that may occur from treatment in detail to the owner. Summarize all the key points communicated with the owner, including diagnosis, treatment options, and any follow-up steps. Mention any key questions or concerns raised by the client. It should be a message directed at the owner. Each section should be no shorter than three sentences."}
@@ -90,32 +99,7 @@ const GenerateReport = async (inputs) => {
                     },
                     {
                         role: 'user',  // User message sending the data only
-                        content: JSON.stringify({
-                            "Patient": inputs.patientName || 'Provide patient name',
-                            "Species": inputs.species || 'Provide species',
-                            "Sex": inputs.sex || 'Provide sex',
-                            "Breed": inputs.breed || 'Provide breed',
-                            "Color/Markings": inputs.colorMarkings || 'Provide color/markings',
-                            "Weight": inputs.weight || 'Provide weight',
-                            "Weight Unit": inputs.weightUnit || 'lbs',
-                            "Birthdate": inputs.birthdate || 'Provide birthdate',
-                            "Owner": inputs.ownerName || 'Provide owner name',
-                            "Address": inputs.address || 'Provide address',
-                            "Telephone": inputs.telephone || 'Provide telephone number',
-                            "Exam Date": inputs.examDate || 'Provide exam date',
-                            "Staff": inputs.staff || 'Provide staff name',
-                            "Presenting Complaint": inputs.presentingComplaint || '',
-                            "History": inputs.history || '',
-                            "Physical Exam Findings": inputs.physicalExamFindings || '',
-                            "Diagnostic Plan": inputs.diagnosticPlan || '',
-                            "Lab Results": inputs.labResults || '',
-                            "Assessment": inputs.assessment || '',
-                            "Diagnosis": inputs.diagnosis || '',
-                            "Differential Diagnosis": inputs.differentialDiagnosis || '',
-                            "Treatment Performed Today": inputs.treatment || '',
-                            "Client Communications/Recommendations": inputs.clientCommunications || '',
-                            "Plan/Follow-Up": inputs.planFollowUp || ''
-                        }, null, 4)  // Adds proper indentation and makes the JSON human-readable
+                        content: ''
                     }
                 ]
             },

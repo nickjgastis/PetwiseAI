@@ -125,26 +125,24 @@ img {
 
 @media (max-width: 768px) {
     .container {
+        width: 100%;
         padding: 10px;
     }
 
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-        font-size: 90%;
-    }
-
-    .page-content {
-        min-height: calc(100vh - 60px);
+    body {
+        font-size: 16px;
+        /* Better for mobile readability */
     }
 
     input,
     textarea,
     select {
-        font-size: 16px;
-        /* Prevents zoom on focus in iOS */
+        width: 100%;
+        padding: 12px;
+        /* Larger touch targets */
+    }
+
+    .page-content {
+        padding: 10px;
     }
 }
