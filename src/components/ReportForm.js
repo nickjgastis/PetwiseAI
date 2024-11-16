@@ -58,6 +58,19 @@ const PDFButton = ({ reportText, patientName }) => {
     );
 };
 
+const ToggleSwitch = ({ fieldName, enabled, onChange }) => (
+    <div className="toggle-switch">
+        <label className="switch">
+            <input
+                type="checkbox"
+                checked={enabled}
+                onChange={() => onChange(fieldName)}
+            />
+            <span className="slider round"></span>
+        </label>
+    </div>
+);
+
 const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
@@ -119,6 +132,8 @@ Urogenital: Within normal limits, no abnormalities noted`);
     const [customBreed, setCustomBreed] = useState('');
     const [isCustomBreed, setIsCustomBreed] = useState(false);
 
+    const [naturopathicMedicine, setNaturopathicMedicine] = useState(() => localStorage.getItem('naturopathicMedicine') || '');
+
     const isGenerating = useRef(false); // Track if report generation is ongoing
 
     const speciesOptions = ['Canine', 'Feline', 'Avian', 'Reptile', 'Bovine', 'Equine', 'Ovine', 'Porcine'];
@@ -151,6 +166,37 @@ Urogenital: Within normal limits, no abnormalities noted`);
     // Set breed options based on species
     const breedOptions = species === 'Canine' ? dogBreeds : species === 'Feline' ? felineBreeds : [];
 
+    // Add near other state declarations
+    const [enabledFields, setEnabledFields] = useState(() => {
+        const saved = localStorage.getItem('enabledFields');
+        return saved ? JSON.parse(saved) : {
+            patientName: true,
+            species: true,
+            sex: true,
+            breed: true,
+            colorMarkings: true,
+            weight: true,
+            birthdate: true,
+            ownerName: true,
+            address: true,
+            telephone: true,
+            examDate: true,
+            staff: true,
+            presentingComplaint: true,
+            history: true,
+            physicalExamFindings: true,
+            diagnosticPlan: true,
+            labResults: true,
+            assessment: true,
+            diagnosis: true,
+            differentialDiagnosis: true,
+            treatment: true,
+            naturopathicMedicine: true,
+            clientCommunications: true,
+            planFollowUp: true
+        };
+    });
+
     useEffect(() => {
         const savedReportText = localStorage.getItem('currentReportText');
         const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
@@ -182,7 +228,7 @@ Urogenital: Within normal limits, no abnormalities noted`);
     // Submit exam info and generate report
     const handleExamSubmit = async (e) => {
         e.preventDefault();
-        if (isGenerating.current) return; // Prevent multiple submissions
+        if (isGenerating.current) return;
         setLoading(true);
         isGenerating.current = true;
 
@@ -190,10 +236,11 @@ Urogenital: Within normal limits, no abnormalities noted`);
             const inputs = {
                 patientName, species, sex, breed, colorMarkings, weight, weightUnit, birthdate, ownerName, address, telephone,
                 examDate, staff, presentingComplaint, history, physicalExamFindings, diagnosticPlan, labResults,
-                assessment, diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp
+                assessment, diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp,
+                naturopathicMedicine
             };
 
-            const generatedReport = await GenerateReport(inputs);
+            const generatedReport = await GenerateReport(inputs, enabledFields);
             setReportText(generatedReport);
             setPreviewVisible(true);
             localStorage.setItem('currentReportText', generatedReport);
@@ -344,6 +391,7 @@ Urogenital: Within normal limits, no abnormalities noted`);
         setPreviewVisible(false);
         setError('');
         setLoading(false);
+        setNaturopathicMedicine('');
     };
 
     const handleBreedChange = (e) => {
@@ -389,10 +437,23 @@ Urogenital: Within normal limits, no abnormalities noted`);
         localStorage.setItem('treatment', treatment);
         localStorage.setItem('clientCommunications', clientCommunications);
         localStorage.setItem('planFollowUp', planFollowUp);
+        localStorage.setItem('naturopathicMedicine', naturopathicMedicine);
     }, [species, sex, breed, colorMarkings, weight, weightUnit, birthdate,
         ownerName, address, telephone, examDate, staff, presentingComplaint,
         history, physicalExamFindings, diagnosticPlan, labResults, assessment,
-        diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp]);
+        diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp, naturopathicMedicine]);
+
+    // Add to useEffect for localStorage
+    useEffect(() => {
+        localStorage.setItem('enabledFields', JSON.stringify(enabledFields));
+    }, [enabledFields]);
+
+    const handleToggleField = (fieldName) => {
+        setEnabledFields(prev => ({
+            ...prev,
+            [fieldName]: !prev[fieldName]
+        }));
+    };
 
     return (
         <div className="report-container">
@@ -400,16 +461,33 @@ Urogenital: Within normal limits, no abnormalities noted`);
                 <form className="report-form" onSubmit={handlePatientInfoSubmit}>
                     <h2>Patient Info</h2>
 
-                    <label className="form-label">Patient Name:</label>
-                    <input type="text" className="form-input" value={patientName} onChange={(e) => setPatientName(e.target.value)} />
+                    <div className="form-field-container">
+                        <div className="field-header">
+                            <label className="form-label">Patient Name:</label>
+                        </div>
+                        <input
+                            type="text"
+                            className="form-input"
+                            value={patientName}
+                            onChange={(e) => setPatientName(e.target.value)}
+                        />
+                    </div>
 
-                    <label className="form-label">Species:</label>
-                    <select className="form-input" value={species} onChange={(e) => setSpecies(e.target.value)}>
-                        <option value="">Select Species</option>
-                        {speciesOptions.map((species, index) => (
-                            <option key={index} value={species}>{species}</option>
-                        ))}
-                    </select>
+                    <div className="form-field-container">
+                        <div className="field-header">
+                            <label className="form-label">Species:</label>
+                        </div>
+                        <select
+                            className="form-input"
+                            value={species}
+                            onChange={(e) => setSpecies(e.target.value)}
+                        >
+                            <option value="">Select Species</option>
+                            {speciesOptions.map((species, index) => (
+                                <option key={index} value={species}>{species}</option>
+                            ))}
+                        </select>
+                    </div>
 
                     <label className="form-label">Sex:</label>
                     <select className="form-input" value={sex} onChange={(e) => setSex(e.target.value)}>
@@ -419,31 +497,39 @@ Urogenital: Within normal limits, no abnormalities noted`);
                         ))}
                     </select>
 
-                    <label className="form-label">Breed:</label>
-                    <select className="form-input" value={isCustomBreed ? 'custom' : breed} onChange={handleBreedChange}>
-                        <option value="">Select Breed</option>
-                        <option value="custom">Other (specify)</option>
-                        {breedOptions.map((breed, index) => (
-                            <option key={index} value={breed}>{breed}</option>
-                        ))}
-                    </select>
-                    {isCustomBreed && (
-                        <input
-                            type="text"
+                    <div className="form-field-container">
+                        <div className="field-header">
+                            <label className="form-label">Breed:</label>
+                        </div>
+                        <select
                             className="form-input"
-                            value={customBreed}
-                            onChange={handleCustomBreedChange}
-                            placeholder="Enter custom breed"
-                        />
-                    )}
+                            value={isCustomBreed ? 'custom' : breed}
+                            onChange={handleBreedChange}
+                        >
+                            <option value="">Select Breed</option>
+                            <option value="custom">Other (specify)</option>
+                            {breedOptions.map((breed, index) => (
+                                <option key={index} value={breed}>{breed}</option>
+                            ))}
+                        </select>
+                        {isCustomBreed && (
+                            <input
+                                type="text"
+                                className="form-input"
+                                value={customBreed}
+                                onChange={handleCustomBreedChange}
+                                placeholder="Enter custom breed"
+                            />
+                        )}
+                    </div>
 
                     <label className="form-label">Color/Markings:</label>
                     <input type="text" className="form-input" value={colorMarkings} onChange={(e) => setColorMarkings(e.target.value)} />
 
                     <label className="form-label">Weight:</label>
-                    <div className="weight-input">
-                        <input type="number" className="form-input" value={weight} onChange={(e) => setWeight(e.target.value)} />
-                        <select className="form-select" value={weightUnit} onChange={(e) => setWeightUnit(e.target.value)}>
+                    <div className="weight-container">
+                        <input type="text" className="form-input weight-input" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                        <select className="form-input weight-unit" value={weightUnit} onChange={(e) => setWeightUnit(e.target.value)}>
                             <option value="lbs">lbs</option>
                             <option value="kg">kg</option>
                         </select>
@@ -474,49 +560,245 @@ Urogenital: Within normal limits, no abnormalities noted`);
                 <form className="report-form" onSubmit={handleExamSubmit}>
                     <h2>Exam Info</h2>
 
-                    <label className="form-label">Exam Date:</label>
-                    <input type="date" className="form-input" value={examDate} onChange={(e) => setExamDate(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Exam Date:</label>
+                        <div className="input-toggle-wrapper">
+                            <input
+                                type="date"
+                                className={`form-input ${!enabledFields.examDate ? 'disabled' : ''}`}
+                                value={examDate}
+                                onChange={(e) => setExamDate(e.target.value)}
+                                disabled={!enabledFields.examDate}
+                            />
+                            <ToggleSwitch
+                                fieldName="examDate"
+                                enabled={enabledFields.examDate}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Staff:</label>
-                    <input type="text" className="form-input" value={staff} onChange={(e) => setStaff(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Staff:</label>
+                        <div className="input-toggle-wrapper">
+                            <input
+                                type="text"
+                                className={`form-input ${!enabledFields.staff ? 'disabled' : ''}`}
+                                value={staff}
+                                onChange={(e) => setStaff(e.target.value)}
+                                disabled={!enabledFields.staff}
+                            />
+                            <ToggleSwitch
+                                fieldName="staff"
+                                enabled={enabledFields.staff}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Presenting Complaint:</label>
-                    <textarea className="form-input" value={presentingComplaint} onChange={(e) => setPresentingComplaint(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Presenting Complaint:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.presentingComplaint ? 'disabled' : ''}`}
+                                value={presentingComplaint}
+                                onChange={(e) => setPresentingComplaint(e.target.value)}
+                                disabled={!enabledFields.presentingComplaint}
+                            />
+                            <ToggleSwitch
+                                fieldName="presentingComplaint"
+                                enabled={enabledFields.presentingComplaint}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">History:</label>
-                    <textarea className="form-input" value={history} onChange={(e) => setHistory(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">History:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.history ? 'disabled' : ''}`}
+                                value={history}
+                                onChange={(e) => setHistory(e.target.value)}
+                                disabled={!enabledFields.history}
+                            />
+                            <ToggleSwitch
+                                fieldName="history"
+                                enabled={enabledFields.history}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Physical Exam Findings:</label>
-                    <textarea
-                        className="form-input physical-exam-input"
-                        value={physicalExamFindings}
-                        onChange={(e) => setPhysicalExamFindings(e.target.value)}
-                        style={{ whiteSpace: 'pre-wrap' }}
-                    />
+                    <div className="form-field-container">
+                        <label className="form-label">Physical Exam Findings:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input physical-exam-input ${!enabledFields.physicalExamFindings ? 'disabled' : ''}`}
+                                value={physicalExamFindings}
+                                onChange={(e) => setPhysicalExamFindings(e.target.value)}
+                                disabled={!enabledFields.physicalExamFindings}
+                            />
+                            <ToggleSwitch
+                                fieldName="physicalExamFindings"
+                                enabled={enabledFields.physicalExamFindings}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Diagnostic Plan:</label>
-                    <textarea className="form-input" value={diagnosticPlan} onChange={(e) => setDiagnosticPlan(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Diagnostic Plan:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.diagnosticPlan ? 'disabled' : ''}`}
+                                value={diagnosticPlan}
+                                onChange={(e) => setDiagnosticPlan(e.target.value)}
+                                disabled={!enabledFields.diagnosticPlan}
+                            />
+                            <ToggleSwitch
+                                fieldName="diagnosticPlan"
+                                enabled={enabledFields.diagnosticPlan}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Lab Results:</label>
-                    <textarea className="form-input" value={labResults} onChange={(e) => setLabResults(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Lab Results:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.labResults ? 'disabled' : ''}`}
+                                value={labResults}
+                                onChange={(e) => setLabResults(e.target.value)}
+                                disabled={!enabledFields.labResults}
+                            />
+                            <ToggleSwitch
+                                fieldName="labResults"
+                                enabled={enabledFields.labResults}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Assessment:</label>
-                    <textarea className="form-input" value={assessment} onChange={(e) => setAssessment(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Assessment:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.assessment ? 'disabled' : ''}`}
+                                value={assessment}
+                                onChange={(e) => setAssessment(e.target.value)}
+                                disabled={!enabledFields.assessment}
+                            />
+                            <ToggleSwitch
+                                fieldName="assessment"
+                                enabled={enabledFields.assessment}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Diagnosis:</label>
-                    <textarea className="form-input" value={diagnosis} onChange={(e) => setDiagnosis(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Diagnosis:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.diagnosis ? 'disabled' : ''}`}
+                                value={diagnosis}
+                                onChange={(e) => setDiagnosis(e.target.value)}
+                                disabled={!enabledFields.diagnosis}
+                            />
+                            <ToggleSwitch
+                                fieldName="diagnosis"
+                                enabled={enabledFields.diagnosis}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Differential Diagnosis:</label>
-                    <textarea className="form-input" value={differentialDiagnosis} onChange={(e) => setDifferentialDiagnosis(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Differential Diagnosis:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.differentialDiagnosis ? 'disabled' : ''}`}
+                                value={differentialDiagnosis}
+                                onChange={(e) => setDifferentialDiagnosis(e.target.value)}
+                                disabled={!enabledFields.differentialDiagnosis}
+                            />
+                            <ToggleSwitch
+                                fieldName="differentialDiagnosis"
+                                enabled={enabledFields.differentialDiagnosis}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Treatment:</label>
-                    <textarea className="form-input" value={treatment} onChange={(e) => setTreatment(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Treatment:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.treatment ? 'disabled' : ''}`}
+                                value={treatment}
+                                onChange={(e) => setTreatment(e.target.value)}
+                                disabled={!enabledFields.treatment}
+                            />
+                            <ToggleSwitch
+                                fieldName="treatment"
+                                enabled={enabledFields.treatment}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Client Communications/Recommendations:</label>
-                    <textarea className="form-input" value={clientCommunications} onChange={(e) => setClientCommunications(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Naturopathic Medicine:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.naturopathicMedicine ? 'disabled' : ''}`}
+                                value={naturopathicMedicine}
+                                onChange={(e) => setNaturopathicMedicine(e.target.value)}
+                                disabled={!enabledFields.naturopathicMedicine}
+                            />
+                            <ToggleSwitch
+                                fieldName="naturopathicMedicine"
+                                enabled={enabledFields.naturopathicMedicine}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
-                    <label className="form-label">Plan/Follow-up:</label>
-                    <textarea className="form-input" value={planFollowUp} onChange={(e) => setPlanFollowUp(e.target.value)} />
+                    <div className="form-field-container">
+                        <label className="form-label">Client Communications/Recommendations:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.clientCommunications ? 'disabled' : ''}`}
+                                value={clientCommunications}
+                                onChange={(e) => setClientCommunications(e.target.value)}
+                                disabled={!enabledFields.clientCommunications}
+                            />
+                            <ToggleSwitch
+                                fieldName="clientCommunications"
+                                enabled={enabledFields.clientCommunications}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-field-container">
+                        <label className="form-label">Plan/Follow-up:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.planFollowUp ? 'disabled' : ''}`}
+                                value={planFollowUp}
+                                onChange={(e) => setPlanFollowUp(e.target.value)}
+                                disabled={!enabledFields.planFollowUp}
+                            />
+                            <ToggleSwitch
+                                fieldName="planFollowUp"
+                                enabled={enabledFields.planFollowUp}
+                                onChange={handleToggleField}
+                            />
+                        </div>
+                    </div>
 
                     <div className="button-container">
                         <button type="button" className="submit-button" onClick={handleBackToPatientInfo}>

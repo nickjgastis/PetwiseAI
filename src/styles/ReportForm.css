@@ -53,10 +53,11 @@ body {
 
 .form-label {
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
     font-weight: 500;
     color: #2c3e50;
     font-size: 0.9rem;
+    margin-top: 8px;
 }
 
 .physical-exam-input {
@@ -77,8 +78,8 @@ body {
 .form-select,
 .form-textarea {
     width: 100%;
-    padding: 6px 8px;
-    margin-bottom: 10px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     background-color: #f9fafc;
@@ -469,15 +470,15 @@ body {
 }
 
 .form-field {
-    margin-bottom: 1rem;
+    margin-bottom: 8px;
     position: relative;
 }
 
 .field-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 2px;
 }
 
 .remove-field-button {
@@ -508,4 +509,91 @@ body {
 
 .field-toggle {
     margin-bottom: 1rem;
+}
+
+.form-field-container {
+    width: 100%;
+    margin-bottom: 8px;
+}
+
+.field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2px;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    margin-top: 22px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked+.slider {
+    background-color: #2196F3;
+}
+
+input:checked+.slider:before {
+    transform: translateX(20px);
+}
+
+.form-input.disabled {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* Add this new container for input and toggle */
+.input-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Adjust input width to make room for toggle */
+.input-toggle-wrapper .form-input {
+    width: calc(100% - 60px);
+    /* 50px for toggle + 10px gap */
+}
+
+.toggle-switch {
+    margin-top: 0;
+    flex-shrink: 0;
 }

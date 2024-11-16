@@ -2,12 +2,10 @@ import React from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
-console.log('Stripe key loaded:', !!process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 const Checkout = ({ onBack, user }) => {
     const handleCheckout = async () => {
         try {
-            console.log('User in Checkout:', user);
             const stripe = await stripePromise;
             if (!stripe) {
                 throw new Error('Stripe failed to initialize');
