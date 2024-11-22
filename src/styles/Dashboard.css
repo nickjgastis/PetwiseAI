@@ -41,22 +41,35 @@
 
 .sidebar-logo a {
     color: white;
-    font-size: 1.5rem;
     text-decoration: none;
     font-family: Georgia, 'Times New Roman', Times, serif;
     transition: color 0.3s ease;
+    display: inline-block;
+    font-size: 1.5rem;
 }
 
-.sidebar-logo a:hover {
-    color: #1a86bc;
-}
-
-.sidebar-collapsed .sidebar-logo a {
-    font-size: 1.2rem;
+/* Remove the before/after content approach */
+.sidebar-logo a span {
     display: block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+}
+
+/* Clean up collapsed state */
+.sidebar-collapsed .sidebar-logo a span {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-favicon {
+    width: 24px;
+    height: 24px;
+    display: block;
+}
+
+/* Remove these conflicting styles */
+.sidebar-logo a::before,
+.sidebar-logo a::after,
+.sidebar-collapsed .sidebar-logo a::before,
+.sidebar-collapsed .sidebar-logo a::after {
+    content: none;
 }
 
 /* Sidebar Menu */
@@ -71,6 +84,7 @@
     padding: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     transition: background-color 0.2s ease-in-out;
+    position: relative;
 }
 
 .sidebar-item:hover {
@@ -79,15 +93,21 @@
 
 .sidebar-item a,
 .sidebar-item .sidebar-link {
+    display: flex;
+    align-items: center;
     color: #ffffff;
     text-decoration: none;
-    font-size: 1.1rem;
-    display: block;
-    padding: 20px;
+    font-size: 1rem;
+    /* Slightly smaller font */
+    padding: 15px 20px;
+    /* Adjusted padding */
     transition: color 0.2s ease-in-out, padding-left 0.3s ease-in-out;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.2px;
+    /* Reduced letter spacing */
     width: 100%;
     text-align: left;
+    white-space: nowrap;
+    /* Prevent text wrapping */
 }
 
 .sidebar-item a:hover,
@@ -106,19 +126,14 @@
 /* Styles for collapsed sidebar */
 .sidebar-collapsed .sidebar-item a,
 .sidebar-collapsed .sidebar-item .sidebar-link {
-    font-size: 0;
-    padding: 20px 0;
-    text-align: center;
-    height: 60px;
-    display: flex;
-    align-items: center;
     justify-content: center;
+    padding: 20px 0;
+    font-size: 1.1rem;
 }
 
 .sidebar-collapsed .sidebar-item a::before,
 .sidebar-collapsed .sidebar-item .sidebar-link::before {
-    content: '\2022';
-    font-size: 24px;
+    content: none;
 }
 
 /* Main Content Styling */
@@ -272,4 +287,77 @@ h3 {
 /* Remove any conflicting styles */
 .sidebar-links {
     /* Remove this class or update its styles if needed */
+}
+
+/* Update the sidebar item styles */
+.sidebar-icon {
+    font-size: 16px;
+    /* Smaller icons when expanded */
+    margin-right: 12px;
+    min-width: 16px;
+}
+
+.sidebar-text {
+    transition: opacity 0.3s ease;
+}
+
+/* Update collapsed sidebar styles */
+.sidebar-collapsed .sidebar-text {
+    display: none;
+}
+
+.sidebar-collapsed .sidebar-icon {
+    font-size: 24px;
+    margin-right: 0;
+}
+
+/* Remove the dot styles */
+.sidebar-collapsed .sidebar-item a::before,
+.sidebar-collapsed .sidebar-item .sidebar-link::before {
+    content: none;
+}
+
+/* Update the link styles */
+.sidebar-item a,
+.sidebar-item .sidebar-link {
+    display: flex;
+    align-items: center;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 1.1rem;
+    padding: 20px;
+    transition: color 0.2s ease-in-out, padding-left 0.3s ease-in-out;
+    letter-spacing: 0.5px;
+    width: 100%;
+    text-align: left;
+}
+
+/* Update collapsed styles */
+.sidebar-collapsed .sidebar-item a,
+.sidebar-collapsed .sidebar-item .sidebar-link {
+    justify-content: center;
+    padding: 20px 0;
+    font-size: 1.1rem;
+}
+
+/* Add tooltip styles */
+.sidebar-item {
+    position: relative;
+}
+
+.sidebar-collapsed .sidebar-item a:hover::after,
+.sidebar-collapsed .sidebar-item .sidebar-link:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    margin-left: 10px;
+    z-index: 1000;
 }

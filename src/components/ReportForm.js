@@ -197,6 +197,40 @@ Urogenital: Within normal limits, no abnormalities noted`);
         };
     });
 
+    const [reportsUsed, setReportsUsed] = useState(0);
+    const [reportLimit, setReportLimit] = useState(0);
+
+    useEffect(() => {
+        const fetchReportUsage = async () => {
+            if (!user) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('reports_used_today, subscription_type')
+                    .eq('auth0_user_id', user.sub)
+                    .single();
+
+                if (error) throw error;
+
+                setReportsUsed(data.reports_used_today);
+
+                // Set limit based on subscription type
+                const limits = {
+                    trial: 10,
+                    singleUser: 25,
+                    multiUser: 120,
+                    clinic: 400
+                };
+                setReportLimit(limits[data.subscription_type] || 0);
+            } catch (error) {
+                console.error('Error fetching report usage:', error);
+            }
+        };
+
+        fetchReportUsage();
+    }, [user]);
+
     useEffect(() => {
         const savedReportText = localStorage.getItem('currentReportText');
         const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
@@ -229,14 +263,20 @@ Urogenital: Within normal limits, no abnormalities noted`);
     const handleExamSubmit = async (e) => {
         e.preventDefault();
         if (isGenerating.current) return;
+        if (reportsUsed >= reportLimit) {
+            setError(`Daily report limit reached (${reportsUsed}/${reportLimit}). Please upgrade your plan for more reports.`);
+            return;
+        }
+
         setLoading(true);
         isGenerating.current = true;
 
         try {
             const inputs = {
-                patientName, species, sex, breed, colorMarkings, weight, weightUnit, birthdate, ownerName, address, telephone,
-                examDate, staff, presentingComplaint, history, physicalExamFindings, diagnosticPlan, labResults,
-                assessment, diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp,
+                patientName, species, sex, breed, colorMarkings, weight, weightUnit, birthdate,
+                ownerName, address, telephone, examDate, staff, presentingComplaint, history,
+                physicalExamFindings, diagnosticPlan, labResults, assessment, diagnosis,
+                differentialDiagnosis, treatment, clientCommunications, planFollowUp,
                 naturopathicMedicine
             };
 
@@ -246,8 +286,23 @@ Urogenital: Within normal limits, no abnormalities noted`);
             localStorage.setItem('currentReportText', generatedReport);
             localStorage.setItem('previewVisible', 'true');
             localStorage.setItem('patientName', patientName);
+
+            // Update reports_used_today in Supabase
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ reports_used_today: reportsUsed + 1 })
+                .eq('auth0_user_id', user.sub);
+
+            if (updateError) throw updateError;
+
+            // Update local state
+            setReportsUsed(prev => prev + 1);
         } catch (error) {
-            setError(error.message || 'An error occurred while generating the report.');
+            if (error.message.includes('Daily report limit reached')) {
+                setError(`Daily report limit reached (${reportsUsed}/${reportLimit}). Please upgrade your plan for more reports.`);
+            } else {
+                setError(error.message || 'An error occurred while generating the report.');
+            }
         } finally {
             setLoading(false);
             isGenerating.current = false;
@@ -366,16 +421,19 @@ R:
 Body Condition Score: 5/9 (Ideal=5/9)
 Mucous Membranes: Pink, moist
 Capillary Refill Time: <2 seconds
-Eyes, Ears, Nose, Throat (EENT): Within normal limits
+Eyes: No abnormal findings
+Ears: No abnormal findings
+Nose: No abnormal findings
+Throat: No abnormal findings
 Oral Cavity: Gd. 1 tartar
 Heart: No murmur, no arrhythmia auscultated
 Lungs: Clear on auscultation, no abnormal sounds
 Abdomen Palpation: Within normal limits, no pain or abnormalities detected
-Lymph Nodes: Palpable and within normal limits
+Lymph Nodes: Palpated and within normal limits
 Integumentary (Skin and Coat): Normal, no lesions, masses, or abnormalities detected
 Musculoskeletal: No lameness, no pain on palpation
 Neurologic: Alert and responsive, normal reflexes
-Urogenital: Within normal limits, no abnormalities noted`);
+Urogenital: No abnormal findings`);
         setDiagnosticPlan('');
         setLabResults('');
         setAssessment('');

@@ -61,7 +61,7 @@ body {
 }
 
 .physical-exam-input {
-    min-height: 350px;
+    min-height: 370px;
     max-height: 400px;
     resize: vertical;
 }
@@ -596,4 +596,23 @@ input:checked+.slider:before {
 .toggle-switch {
     margin-top: 0;
     flex-shrink: 0;
+}
+
+.report-limit-info {
+    background-color: #f8f9fa;
+    padding: 8px 16px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.report-limit-info.near-limit {
+    color: #856404;
+    background-color: #fff3cd;
+}
+
+.report-limit-info.at-limit {
+    color: #721c24;
+    background-color: #f8d7da;
 }

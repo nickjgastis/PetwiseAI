@@ -10,7 +10,7 @@ const GenerateReport = async (inputs, enabledFields) => {
         return content;
     };
 
-    const prompt = `You are a highly experienced veterinarian. Based on the following input details, write a comprehensive veterinary prognosis report that adheres to the specified template. In each section, provide thorough elaboration, including additional medical insights, details on diagnosis, and treatment plans. If any inputs are missing from the top section (i.e., Patient Info), clearly state "Provide here" for those sections. For all other sections, either elaborate on the provided input or use best practices from similar cases to fill in gaps. Each answer you give must be at least three sentences long. Prescribe appropriate treatment plans with detailed dosages, medication names, and best practices to ensure a thorough and actionable report.
+    const prompt = `You are a highly experienced veterinarian. Based on the following input details, write a comprehensive veterinary prognosis report that adheres to the specified template. In each section, provide thorough elaboration, including additional medical insights, details on diagnosis, and treatment plans. If any inputs are missing from the top section (i.e., Patient Info), clearly state "Provide here" for those sections. For all other sections, either elaborate on the provided input or use best practices from similar cases to fill in gaps. Each answer you give must be at least three sentences long. Prescribe appropriate treatment plans with detailed dosages, medication names, and best practices to ensure a thorough and actionable report. ALWAYS PROVIDE A REPORT EVEN IF FIELDS ARE MISSING!!!
 
     When creating headings, do not bold ANYTHING.
     If there are capitalization errors, you will fix them.
@@ -35,7 +35,7 @@ const GenerateReport = async (inputs, enabledFields) => {
     
     ${getEnabledContent('history', `History:\n${inputs.history || "Provide a thorough history of the patient, including any previous medical issues, treatments, and notable changes in the patient's health or behavior. The history should be at least three sentences long."}`)}
     
-    ${getEnabledContent('physicalExamFindings', `Physical Exam Findings - ${new Date().toLocaleString()}\n${inputs.physicalExamFindings || "Keep the exact same structure as the input gives you at all times. Thoroughly describe the results of the physical examination, noting any abnormal findings, and also mention important normal findings (e.g., stable weight, hydrated condition, good coat health). Provide any recommendations for further testing if necessary. Ensure the description is at least three sentences long. Compensate for capitalization errors, example: NORAML = normal."}`)}
+    ${getEnabledContent('physicalExamFindings', `Physical Exam Findings - ${new Date().toLocaleString()}\n${inputs.physicalExamFindings || "IMPORTANT: Keep the exact same structure and data that the input gives you at all times!!!. Do not give a paragraph. Compensate for capitalization errors, example: NORAML = normal. Here is an example: "}`)}
     ${getEnabledContent('diagnosticPlan', `Diagnostic Plan:\n${inputs.diagnosticPlan || "Detail the diagnostic plan, including any recommended tests, imaging, or lab work needed to confirm or clarify the diagnosis. If nothing is input, fill in with best practices and any other information given."}`)}
     
     ${getEnabledContent('labResults', `Lab Results:\n${inputs.labResults || "Explain the significance of the lab results in detail, including the interpretation of abnormal values. Suggest what these results mean in the context of the pet's current health and how they relate to the diagnosis. If relevant, recommend additional testing or monitoring. Each explanation should be at least three sentences."}`)}
@@ -68,25 +68,19 @@ const GenerateReport = async (inputs, enabledFields) => {
     
     If any information is missing or incomplete, fill in with best practices from similar cases. Always ensure the report is detailed and medically accurate, providing the owner with a clear understanding of the pet's condition, prognosis, and next steps for care. Recommend appropriate treatments where relevant. If the input is short such as (vomiting for three days) you should expand with two to three sentences. Don't ever leave a comment at the end of the report.`;
 
-    // console.log('Prompt being sent:', prompt);
-
-
-
     try {
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
             {
-                model: 'gpt-4-turbo',
+                model: 'gpt-4o-mini', // Updated model name
                 messages: [
                     {
-                        role: 'system',  // System message to set the behavior
+                        role: 'system',
                         content: prompt
-                    },
-                    {
-                        role: 'user',  // User message sending the data only
-                        content: ''
                     }
-                ]
+                ],
+                temperature: 0.7,
+                max_tokens: 2000
             },
             {
                 headers: {
@@ -96,8 +90,7 @@ const GenerateReport = async (inputs, enabledFields) => {
             }
         );
 
-        const generatedReport = response.data.choices[0].message.content;
-        return generatedReport; // Return the generated report content
+        return response.data.choices[0].message.content;
     } catch (error) {
         console.error('Error generating report:', error);
         throw new Error('Failed to generate report. Please try again.');

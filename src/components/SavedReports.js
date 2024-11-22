@@ -2,6 +2,61 @@ import React, { useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import '../styles/SavedReports.css';
+import { FaTimes } from 'react-icons/fa';
+import { pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
+
+const PDFDocument = ({ reportText }) => {
+    const styles = StyleSheet.create({
+        page: {
+            padding: 40,
+            fontSize: 12,
+            fontFamily: 'Helvetica',
+            lineHeight: 1.5
+        },
+        text: {
+            marginBottom: 10,
+            whiteSpace: 'pre-wrap'
+        }
+    });
+
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                <Text style={styles.text}>{reportText}</Text>
+            </Page>
+        </Document>
+    );
+};
+
+const PDFButton = ({ reportText, reportName }) => {
+    const [isPreparing, setIsPreparing] = useState(false);
+
+    const generatePDF = async () => {
+        setIsPreparing(true);
+        const doc = <PDFDocument reportText={reportText} />;
+        const blob = await pdf(doc).toBlob();
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${reportName || 'Report'}-${new Date().toLocaleDateString()}.pdf`;
+        link.click();
+
+        URL.revokeObjectURL(url);
+        setIsPreparing(false);
+    };
+
+    return (
+        <button
+            className="copy-button"
+            onClick={generatePDF}
+            disabled={isPreparing}
+        >
+            {isPreparing ? 'Preparing PDF...' : 'Download PDF'}
+        </button>
+    );
+};
 
 const SavedReports = () => {
     const { user, isAuthenticated, isLoading } = useAuth0();
@@ -60,6 +115,12 @@ const SavedReports = () => {
 
     const handleReportClick = (report) => {
         setSelectedReport(selectedReport === report ? null : report);
+        setTimeout(() => {
+            const content = document.querySelector('.report-content');
+            if (content) {
+                content.classList.toggle('expanded', selectedReport !== report);
+            }
+        }, 50);
     };
 
     const handleDeleteReport = async (id) => {
@@ -119,7 +180,8 @@ const SavedReports = () => {
         <div className="saved-reports">
             <h2>Saved Reports</h2>
             {error && <div className="error-message">{error}</div>}
-            <div className="report-list">
+
+            <div className={`report-list ${selectedReport ? 'hidden' : ''}`}>
                 {reports.length > 0 ? (
                     reports.map((report, index) => (
                         <div key={report.id} className="report-item">
@@ -135,7 +197,11 @@ const SavedReports = () => {
                                 <span onClick={() => handleReportClick(report)}>{report.report_name}</span>
                             )}
                             <div className="button-group">
-                                <button className="edit-button" onClick={() => handleEditClick(index)}>Edit Name</button>
+                                <PDFButton
+                                    reportText={report.report_text}
+                                    reportName={report.report_name}
+                                />
+                                <button className="copy-button" onClick={() => handleEditClick(index)}>Edit Name</button>
                                 <button className="delete-button" onClick={() => handleDeleteReport(report.id)}>Delete</button>
                             </div>
                         </div>
@@ -143,11 +209,25 @@ const SavedReports = () => {
                 ) : (
                     <p>No saved reports available.</p>
                 )}
-
             </div>
+
             {selectedReport && (
                 <div className="report-card">
-                    <h3>Report: {selectedReport.report_name}</h3>
+                    <div className="report-card-header">
+                        <h3>{selectedReport.report_name}</h3>
+                        <div className="button-group">
+                            <PDFButton
+                                reportText={selectedReport.report_text}
+                                reportName={selectedReport.report_name}
+                            />
+                            <button
+                                className="close-button"
+                                onClick={() => setSelectedReport(null)}
+                            >
+                                <FaTimes />
+                            </button>
+                        </div>
+                    </div>
                     <div className="report-content">
                         {selectedReport.report_text.split('\n').map((paragraph, index) => (
                             <p key={index}>{paragraph}</p>

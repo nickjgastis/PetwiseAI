@@ -75,7 +75,9 @@ const App = () => {
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
-        redirect_uri: window.location.origin,
+        redirect_uri: process.env.NODE_ENV === 'production'
+          ? 'https://www.petwise.vet/dashboard'
+          : window.location.origin,
         scope: "openid profile email"
       }}
       onRedirectCallback={(appState) => navigate(appState?.returnTo || '/dashboard')}

@@ -1,111 +1,181 @@
 .saved-reports {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: #f8f9fa;
+    min-height: 100vh;
 }
 
 .report-list {
-    margin-bottom: 20px;
+    display: grid;
+    gap: 8px;
     width: 100%;
-    max-width: 600px;
+    transition: all 0.3s ease;
+}
+
+.report-list.hidden {
+    display: none;
 }
 
 .report-item {
-    padding: 5px;
-    border: 1px solid #ccc;
-    margin-bottom: 5px;
-    border-radius: 4px;
-    transition: background-color 0.3s;
+    background: #fff;
+    border-radius: 0;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    border: 1px solid transparent;
+    transition: background 0.1s ease;
 }
 
 .report-item:hover {
-    background-color: #f0f0f0;
+    background: #f1f3f4;
+    border-color: #dadce0;
+}
+
+.report-item:active {
+    background: #e8f0fe;
+}
+
+.report-item input {
+    flex: 1;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    background: #1a73e8;
+    cursor: text;
+    margin-right: 8px;
+}
+
+.report-item input:focus {
+    outline: none;
+    background: #1557b0;
+}
+
+.report-item input::placeholder {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.report-item span {
+    flex: 1;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    font-size: 14px;
+    color: #202124;
+    padding: 8px;
+    cursor: pointer;
 }
 
 .button-group {
     display: flex;
-    gap: 5px;
+    gap: 8px;
+    align-items: center;
+    opacity: 1;
 }
 
-.report-item input,
-.report-item span {
-    flex-grow: 1;
-    text-align: center;
-    border: none;
-    background: transparent;
-    padding: 5px;
+.report-item:hover .button-group {
+    opacity: 1;
 }
 
 .report-card {
-    border: 1px solid #ccc;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    background-color: #fff;
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    overflow-x: hidden;
+    background: #fff;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    margin-top: 8px;
+    animation: slideIn 0.3s ease;
+    height: calc(100vh - 150px);
+    overflow-y: auto;
+}
+
+.report-card-header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #dadce0;
+    z-index: 1;
+}
+
+.close-button {
+    background: transparent;
+    color: #5f6368;
+    padding: 8px;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close-button:hover {
+    background: #f1f3f4;
 }
 
 .report-content {
-    white-space: normal;
-    /* Allow text to wrap */
-    font-family: 'Times New Roman', Times, serif;
+    padding: 24px;
+    max-width: 800px;
+    margin: 0 auto;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
     font-size: 14px;
     line-height: 1.4;
-    /* Adjusted line height for more compact text */
-    margin-top: 10px;
-    padding: 10px;
-    text-align: justify;
+    color: #202124;
+}
+
+.report-content p {
+    margin: 0;
+    /* Remove default paragraph margins */
+    padding: 2px 0;
+    /* Add minimal padding between lines */
+}
+
+.report-card-header h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    color: #202124;
 }
 
 button {
-    padding: 5px 10px;
-    border: none;
+    padding: 8px 12px;
     border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.delete-button {
-    background-color: #e74c3c;
-    color: white;
-}
-
-.delete-button:hover {
-    background-color: #c0392b;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    margin-left: 8px;
 }
 
 .edit-button {
-    background-color: #3498db;
+    background: #1a73e8;
     color: white;
 }
 
 .edit-button:hover {
-    background-color: #2980b9;
+    background: #1557b0;
 }
 
-@media (max-width: 768px) {
-    .saved-reports {
-        padding: 10px;
+.delete-button {
+    background: #dc3545;
+    color: white;
+}
+
+.delete-button:hover {
+    background: #c82333;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
 
-    .report-item {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .button-group {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .report-card {
-        margin: 10px;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
