@@ -72,7 +72,7 @@ const PRICE_IDS = {
     clinicMonthly: 'price_1QNJFEFpF2XskoMKVpGm131E',
     clinicYearly: 'price_1QNJG0FpF2XskoMKqNG8CXjh'
 };
-const TRIAL_DAYS = 1;  // Changed from TRIAL_MINUTES
+const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
     trial: 10,
     singleUser: 25,
@@ -136,14 +136,21 @@ app.post('/create-checkout-session', async (req, res) => {
 // Processes Stripe webhook events
 app.post('/webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
+    console.log('Webhook received:', {
+        signature: sig ? 'present' : 'missing',
+        headers: req.headers,
+        body_length: req.body.length
+    });
 
     try {
-        // Use different webhook secrets based on environment
         const webhookSecret = process.env.NODE_ENV === 'production'
             ? process.env.STRIPE_WEBHOOK_SECRET_DEPLOYED
             : process.env.STRIPE_WEBHOOK_SECRET;
 
-        console.log('Using webhook secret for:', process.env.NODE_ENV);
+        console.log('Environment:', {
+            NODE_ENV: process.env.NODE_ENV,
+            hasWebhookSecret: webhookSecret ? 'yes' : 'no'
+        });
 
         const event = stripe.webhooks.constructEvent(
             req.body,
@@ -151,50 +158,37 @@ app.post('/webhook', async (req, res) => {
             webhookSecret
         );
 
-        console.log('2. Event type:', event.type);
-
-        // Handle checkout.session.completed event
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
-            console.log('3. Checkout session:', {
+            console.log('Checkout Session:', {
                 id: session.id,
                 customer: session.customer,
-                subscription: session.subscription,
-                clientRef: session.client_reference_id
+                user_id: session.client_reference_id
             });
 
             try {
                 const subscription = await stripe.subscriptions.retrieve(session.subscription);
 
-                // Get the price ID and determine subscription type
-                const priceId = subscription.items.data[0].price.id;
+                // Determine subscription type from price ID
                 let subscriptionType;
+                const priceId = subscription.items.data[0].price.id;
+                if (priceId.includes('singleUser')) subscriptionType = 'singleUser';
+                else if (priceId.includes('multiUser')) subscriptionType = 'multiUser';
+                else if (priceId.includes('clinic')) subscriptionType = 'clinic';
 
-                // Map price IDs to subscription types
-                if (priceId === PRICE_IDS.singleUserMonthly || priceId === PRICE_IDS.singleUserYearly) {
-                    subscriptionType = 'singleUser';
-                } else if (priceId === PRICE_IDS.multiUserMonthly || priceId === PRICE_IDS.multiUserYearly) {
-                    subscriptionType = 'multiUser';
-                } else if (priceId === PRICE_IDS.clinicMonthly || priceId === PRICE_IDS.clinicYearly) {
-                    subscriptionType = 'clinic';
-                } else {
-                    throw new Error(`Unknown price ID: ${priceId}`);
-                }
-
-                console.log('Processing subscription:', {
-                    priceId,
-                    subscriptionType,
-                    userId: session.client_reference_id
-                });
-
+                // Define updateData
                 const updateData = {
                     subscription_status: 'active',
                     subscription_type: subscriptionType,
                     stripe_customer_id: session.customer,
                     subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                     reports_used_today: 0,
-                    last_report_date: new Date().toISOString().split('T')[0]
+                    last_report_date: new Date().toISOString().split('T')[0],
+                    has_used_trial: true,  // Mark trial as used
+                    cancel_at_period_end: false
                 };
+
+                console.log('Update Data:', updateData);
 
                 const { data, error } = await supabase
                     .from('users')
@@ -202,101 +196,28 @@ app.post('/webhook', async (req, res) => {
                     .eq('auth0_user_id', session.client_reference_id)
                     .select();
 
-                if (error) {
-                    console.error('Supabase update error:', error);
-                    throw error;
-                }
-
-                console.log('Subscription processed successfully:', {
-                    subscriptionType,
-                    userId: session.client_reference_id,
-                    data
+                console.log('Supabase result:', {
+                    success: !error,
+                    error: error?.message,
+                    data: data
                 });
             } catch (error) {
-                console.error('Subscription processing error:', error);
-                return res.status(400).json({ error: error.message });
+                console.error('Detailed webhook error:', {
+                    message: error.message,
+                    stack: error.stack,
+                    phase: 'subscription processing'
+                });
+                throw error;
             }
         }
 
-        // Handle subscription creation event
-        if (event.type === 'customer.subscription.created') {
-            const subscription = event.data.object;
-            try {
-                const customer = await stripe.customers.retrieve(subscription.customer);
-
-                // Get current user data
-                const { data: userData } = await supabase
-                    .from('users')
-                    .select('subscription_end_date, has_used_trial')
-                    .eq('auth0_user_id', customer.metadata.auth0_user_id)
-                    .single();
-
-                // If this is a free trial, don't update the end date
-                const isTrial = userData?.subscription_end_date && !userData?.has_used_trial;
-
-                const updateData = {
-                    subscription_status: 'active',
-                    stripe_customer_id: subscription.customer,
-                    // Only update subscription_end_date for paid subscriptions
-                    ...(isTrial ? {} : {
-                        subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString()
-                    })
-                };
-
-                console.log('Updating user with data:', updateData);
-
-                const { error } = await supabase
-                    .from('users')
-                    .update(updateData)
-                    .eq('auth0_user_id', customer.metadata.auth0_user_id);
-
-                if (error) throw error;
-            } catch (error) {
-                console.error('Error processing subscription:', error);
-            }
-        }
-
-        // Handle subscription updates and deletions
-        if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
-            const subscription = event.data.object;
-            console.log('Subscription update/deletion:', {
-                customer: subscription.customer,
-                status: subscription.status,
-                currentPeriodEnd: subscription.current_period_end
-            });
-
-            try {
-                const customer = await stripe.customers.retrieve(subscription.customer);
-
-                // Set status based on subscription status
-                const status = subscription.status === 'active' ? 'active' : 'inactive';
-
-                const updateData = {
-                    subscription_status: status,
-                    subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-                    cancel_at_period_end: subscription.cancel_at_period_end || false
-                };
-
-                console.log('Updating user with data:', updateData);
-
-                const { error } = await supabase
-                    .from('users')
-                    .update(updateData)
-                    .eq('auth0_user_id', customer.metadata.auth0_user_id);
-
-                if (error) {
-                    console.error('Supabase update error:', error);
-                    throw error;
-                }
-            } catch (error) {
-                console.error('Error processing subscription update:', error);
-                return res.status(400).json({ error: error.message });
-            }
-        }
-
-        return res.json({ received: true });
+        res.json({ received: true });
     } catch (err) {
-        console.error('Webhook Error:', err.message);
+        console.error('Webhook Error:', {
+            message: err.message,
+            stack: err.stack,
+            type: 'webhook construction'
+        });
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 });

@@ -97,23 +97,25 @@ const ReportForm = () => {
     const [staff, setStaff] = useState(() => localStorage.getItem('staff') || '');
     const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
     const [history, setHistory] = useState(() => localStorage.getItem('history') || '');
-    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || `General Appearance: Bright, Alert, Responsive
-T: °F, Normal
-P:
-R:
+    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || `General Appearance: Bright, Alert
+Temperature: 
+Heart Rate:
+Respiratory Rate:
 Body Condition Score: 5/9 (Ideal=5/9)
-Mucous Membranes: Pink, moist
-Capillary Refill Time: <2 seconds
-Eyes, Ears, Nose, Throat (EENT): Within normal limits
-Oral Cavity: Gd. 1 tartar
-Heart: No murmur, no arrhythmia auscultated
+Mucous Membranes: Pink, moist, CRT <2s
+Eyes: No abnormal findings
+Ears: No abnormal findings
+Nose: No abnormal findings
+Throat: No abnormal findings
+Oral: Gd. 1 tartar
+Heart: No abnormal findings
 Lungs: Clear on auscultation, no abnormal sounds
-Abdomen Palpation: Within normal limits, no pain or abnormalities detected
-Lymph Nodes: Palpable and within normal limits
-Integumentary (Skin and Coat): Normal, no lesions, masses, or abnormalities detected
-Musculoskeletal: No lameness, no pain on palpation
-Neurologic: Alert and responsive, normal reflexes
-Urogenital: Within normal limits, no abnormalities noted`);
+Abdomen Palpation: No abnormal findings
+Lymph Nodes: No enlargement 
+Skin and Coat: No lesions, normal coat condition, no ectoparasites observed
+Musculoskeletal: No abnormal findings
+Neurologic: No abnormal findings
+Urogenital: No abnormal findings`);
     const [diagnosticPlan, setDiagnosticPlan] = useState(() => localStorage.getItem('diagnosticPlan') || '');
     const [labResults, setLabResults] = useState(() => localStorage.getItem('labResults') || '');
     const [assessment, setAssessment] = useState(() => localStorage.getItem('assessment') || '');
@@ -418,25 +420,24 @@ Urogenital: Within normal limits, no abnormalities noted`);
         setStaff('');
         setPresentingComplaint('');
         setHistory('');
-        setPhysicalExamFindings(`General Appearance: Bright, Alert, Responsive
-T: °F, Normal
-P:
-R:
+        setPhysicalExamFindings(`General Appearance: Bright, Alert
+Temperature: 
+Heart Rate:
+Respiratory Rate:
 Body Condition Score: 5/9 (Ideal=5/9)
-Mucous Membranes: Pink, moist
-Capillary Refill Time: <2 seconds
+Mucous Membranes: Pink, moist, CRT <2s
 Eyes: No abnormal findings
 Ears: No abnormal findings
 Nose: No abnormal findings
 Throat: No abnormal findings
-Oral Cavity: Gd. 1 tartar
-Heart: No murmur, no arrhythmia auscultated
+Oral: Gd. 1 tartar
+Heart: No abnormal findings
 Lungs: Clear on auscultation, no abnormal sounds
-Abdomen Palpation: Within normal limits, no pain or abnormalities detected
-Lymph Nodes: Palpated and within normal limits
-Integumentary (Skin and Coat): Normal, no lesions, masses, or abnormalities detected
-Musculoskeletal: No lameness, no pain on palpation
-Neurologic: Alert and responsive, normal reflexes
+Abdomen Palpation: No abnormal findings
+Lymph Nodes: No enlargement 
+Skin and Coat: No lesions, normal coat condition, no ectoparasites observed
+Musculoskeletal: No abnormal findings
+Neurologic: No abnormal findings
 Urogenital: No abnormal findings`);
         setDiagnosticPlan('');
         setLabResults('');

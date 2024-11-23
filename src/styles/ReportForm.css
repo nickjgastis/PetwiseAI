@@ -61,7 +61,7 @@ body {
 }
 
 .physical-exam-input {
-    min-height: 370px;
+    min-height: 340px;
     max-height: 400px;
     resize: vertical;
 }
