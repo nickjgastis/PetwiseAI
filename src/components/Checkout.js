@@ -7,7 +7,7 @@ import { supabase } from '../supabaseClient';
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
 const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'  // Your API domain
+    ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
 const Checkout = ({ onBack, user, subscriptionStatus }) => {

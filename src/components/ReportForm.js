@@ -71,6 +71,10 @@ const ToggleSwitch = ({ fieldName, enabled, onChange }) => (
     </div>
 );
 
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.petwise.vet'
+    : 'http://localhost:3001';
+
 const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);

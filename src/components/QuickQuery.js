@@ -2,6 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/QuickQuery.css';
 
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.petwise.vet'
+    : 'http://localhost:3001';
+
 const QuickQuery = () => {
     const [messages, setMessages] = useState(() => {
         const saved = localStorage.getItem('quickQueryMessages');
@@ -76,7 +80,7 @@ Recommendation: Final advice here.`
             const response = await axios.post(
                 'https://api.openai.com/v1/chat/completions',
                 {
-                    model: 'gpt-4o-mini', // Updated model name
+                    model: 'gpt-4o-mini',
                     messages: conversationHistory,
                     max_tokens: 500,
                     temperature: 0.7,
@@ -92,27 +96,25 @@ Recommendation: Final advice here.`
                 }
             );
 
-            const assistantResponse = response.data.choices[0].message.content;
+            if (response.data.error) {
+                throw new Error(response.data.error);
+            }
+
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: assistantResponse
+                content: response.data.choices[0].message.content
             }]);
         } catch (error) {
-            if (error.response) {
-                // Server responded with a status other than 2xx
-                console.error('Error data:', error.response.data);
-                console.error('Error status:', error.response.status);
-                console.error('Error headers:', error.response.headers);
-            } else if (error.request) {
-                // Request was made but no response received
-                console.error('Error request:', error.request);
-            } else {
-                // Something else caused the error
-                console.error('Error message:', error.message);
+            console.error('Error in QuickQuery:', error);
+            let errorMessage = "I'm sorry, I encountered an error. Please try again.";
+
+            if (error.response?.data?.error === 'Daily report limit reached') {
+                errorMessage = "You've reached your daily query limit. Please upgrade your plan or try again tomorrow.";
             }
+
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I'm sorry, I encountered an error. Please try again."
+                content: errorMessage
             }]);
         } finally {
             setIsLoading(false);
@@ -196,4 +198,4 @@ Recommendation: Final advice here.`
     );
 };
 
-export default QuickQuery;
+export default QuickQuery; 

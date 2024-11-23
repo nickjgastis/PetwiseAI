@@ -22,8 +22,8 @@ app.use(express.json());
 // Add these headers to all responses
 app.use((req, res, next) => {
     const allowedOrigins = [
-        'https://www.petwise.vet',
         'https://petwise.vet',
+        'https://www.petwise.vet',
         'http://localhost:3000'
     ];
     const origin = req.headers.origin;
@@ -46,8 +46,8 @@ app.use((req, res, next) => {
 app.use(cors({
     origin: function (origin, callback) {
         const allowedOrigins = [
-            'https://www.petwise.vet',
             'https://petwise.vet',
+            'https://www.petwise.vet',
             'http://localhost:3000'
         ];
         if (!origin || allowedOrigins.includes(origin)) {
@@ -117,10 +117,10 @@ app.post('/create-checkout-session', async (req, res) => {
                 quantity: 1,
             }],
             success_url: process.env.NODE_ENV === 'production'
-                ? 'https://www.petwise.vet/dashboard'
+                ? 'https://petwise.vet/dashboard'
                 : 'http://localhost:3000/dashboard',
             cancel_url: process.env.NODE_ENV === 'production'
-                ? 'https://www.petwise.vet/dashboard'
+                ? 'https://petwise.vet/dashboard'
                 : 'http://localhost:3000/dashboard',
             client_reference_id: user.sub
         });

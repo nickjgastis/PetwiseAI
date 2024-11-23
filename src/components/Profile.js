@@ -7,6 +7,10 @@ import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
 import ManageAccount from './ManageAccount';
 
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.petwise.vet'
+    : 'http://localhost:3001';
+
 const PricingOptions = ({ onSubscribe, hasUsedTrial }) => {
     return (
         <div className="pricing-container">
