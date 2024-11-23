@@ -531,6 +531,24 @@ app.get('/check-subscription/:userId', async (req, res) => {
     }
 });
 
+// Add near your other routes
+app.get('/', (req, res) => {
+    res.json({
+        message: 'PetWise API is running',
+        status: 'healthy',
+        version: '1.0.0',
+        endpoints: [
+            '/check-subscription/:userId',
+            '/create-checkout-session',
+            '/cancel-subscription',
+            '/cancel-trial',
+            '/activate-trial',
+            '/webhook',
+            '/generate-report'
+        ]
+    });
+});
+
 // ================ SERVER STARTUP ================
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
