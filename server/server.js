@@ -21,13 +21,18 @@ app.use(express.json());
 
 // Place CORS configuration BEFORE any routes
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production'
-        ? 'https://www.petwise.vet'
-        : 'http://localhost:3000',
+    origin: [
+        'https://www.petwise.vet',
+        'https://petwise.vet',
+        'http://localhost:3000'
+    ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization'],
 }));
+
+// Add OPTIONS preflight handler
+app.options('*', cors());
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
