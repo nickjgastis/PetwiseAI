@@ -21,6 +21,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
 
             try {
                 const response = await fetch(`${API_URL}/check-subscription/${user.sub}`, {
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     }
@@ -48,6 +49,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
 
             const response = await fetch(`${API_URL}/create-checkout-session`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
@@ -76,6 +78,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
         try {
             const response = await fetch(`${API_URL}/activate-trial`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },

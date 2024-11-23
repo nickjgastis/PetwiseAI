@@ -19,20 +19,47 @@ const supabase = createClient(
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
-// Place CORS configuration BEFORE any routes
-app.use(cors({
-    origin: [
+// Add these headers to all responses
+app.use((req, res, next) => {
+    const allowedOrigins = [
         'https://www.petwise.vet',
         'https://petwise.vet',
         'http://localhost:3000'
-    ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization'],
-}));
+    ];
+    const origin = req.headers.origin;
 
-// Add OPTIONS preflight handler
-app.options('*', cors());
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
+
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
+    res.header('Access-Control-Allow-Credentials', 'true');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    next();
+});
+
+// Update existing CORS middleware
+app.use(cors({
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            'https://www.petwise.vet',
+            'https://petwise.vet',
+            'http://localhost:3000'
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
+}));
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
