@@ -136,55 +136,76 @@ app.post('/create-checkout-session', async (req, res) => {
 // Processes Stripe webhook events
 app.post('/webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
-    console.log('Webhook received:', {
-        signature: sig ? 'present' : 'missing',
-        headers: req.headers,
-        body_length: req.body.length
+    const webhookSecret = process.env.NODE_ENV === 'production'
+        ? process.env.STRIPE_WEBHOOK_SECRET_DEPLOYED
+        : process.env.STRIPE_WEBHOOK_SECRET;
+
+    console.log('Webhook Debug:', {
+        hasSignature: !!sig,
+        hasBody: !!req.body,
+        env: process.env.NODE_ENV,
+        hasSecret: !!webhookSecret
     });
 
     try {
-        const webhookSecret = process.env.NODE_ENV === 'production'
-            ? process.env.STRIPE_WEBHOOK_SECRET_DEPLOYED
-            : process.env.STRIPE_WEBHOOK_SECRET;
-
-        console.log('Environment:', {
-            NODE_ENV: process.env.NODE_ENV,
-            hasWebhookSecret: webhookSecret ? 'yes' : 'no'
-        });
-
         const event = stripe.webhooks.constructEvent(
             req.body,
             sig,
             webhookSecret
         );
 
+        console.log('Event Type:', event.type);
+
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
-            console.log('Checkout Session:', {
-                id: session.id,
-                customer: session.customer,
-                user_id: session.client_reference_id
-            });
+            console.log('Processing checkout session:', session.id);
 
             try {
                 const subscription = await stripe.subscriptions.retrieve(session.subscription);
 
-                // Determine subscription type from price ID
-                let subscriptionType;
+                // Determine subscription type and interval
+                let subscriptionType, subscriptionInterval;
                 const priceId = subscription.items.data[0].price.id;
-                if (priceId.includes('singleUser')) subscriptionType = 'singleUser';
-                else if (priceId.includes('multiUser')) subscriptionType = 'multiUser';
-                else if (priceId.includes('clinic')) subscriptionType = 'clinic';
 
-                // Define updateData
+                // Match price ID to subscription type and interval
+                switch (priceId) {
+                    case PRICE_IDS.singleUserMonthly:
+                        subscriptionType = 'singleUser';
+                        subscriptionInterval = 'monthly';
+                        break;
+                    case PRICE_IDS.singleUserYearly:
+                        subscriptionType = 'singleUser';
+                        subscriptionInterval = 'yearly';
+                        break;
+                    case PRICE_IDS.multiUserMonthly:
+                        subscriptionType = 'multiUser';
+                        subscriptionInterval = 'monthly';
+                        break;
+                    case PRICE_IDS.multiUserYearly:
+                        subscriptionType = 'multiUser';
+                        subscriptionInterval = 'yearly';
+                        break;
+                    case PRICE_IDS.clinicMonthly:
+                        subscriptionType = 'clinic';
+                        subscriptionInterval = 'monthly';
+                        break;
+                    case PRICE_IDS.clinicYearly:
+                        subscriptionType = 'clinic';
+                        subscriptionInterval = 'yearly';
+                        break;
+                    default:
+                        throw new Error('Invalid price ID');
+                }
+
                 const updateData = {
                     subscription_status: 'active',
                     subscription_type: subscriptionType,
+                    subscription_interval: subscriptionInterval,
                     stripe_customer_id: session.customer,
                     subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                     reports_used_today: 0,
                     last_report_date: new Date().toISOString().split('T')[0],
-                    has_used_trial: true,  // Mark trial as used
+                    has_used_trial: true,
                     cancel_at_period_end: false
                 };
 
@@ -196,28 +217,21 @@ app.post('/webhook', async (req, res) => {
                     .eq('auth0_user_id', session.client_reference_id)
                     .select();
 
-                console.log('Supabase result:', {
-                    success: !error,
-                    error: error?.message,
-                    data: data
-                });
+                if (error) {
+                    console.error('Supabase update error:', error);
+                    throw error;
+                }
+
+                console.log('Update successful:', data);
             } catch (error) {
-                console.error('Detailed webhook error:', {
-                    message: error.message,
-                    stack: error.stack,
-                    phase: 'subscription processing'
-                });
-                throw error;
+                console.error('Subscription processing error:', error);
+                return res.status(500).json({ error: error.message });
             }
         }
 
         res.json({ received: true });
     } catch (err) {
-        console.error('Webhook Error:', {
-            message: err.message,
-            stack: err.stack,
-            type: 'webhook construction'
-        });
+        console.error('Webhook error:', err);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 });
@@ -287,26 +301,23 @@ app.post('/activate-trial', async (req, res) => {
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
 
-        const updateData = {
-            subscription_status: 'active',
-            subscription_type: 'trial',
-            subscription_end_date: trialEndDate.toISOString(),
-            has_used_trial: true,
-            reports_used_today: 0,
-            last_report_date: new Date().toISOString().split('T')[0]
-        };
-
         const { data, error } = await supabase
             .from('users')
-            .update(updateData)
+            .update({
+                subscription_status: 'active',
+                subscription_type: 'trial',
+                subscription_interval: 'trial',
+                subscription_end_date: trialEndDate.toISOString(),
+                has_used_trial: true,
+                reports_used_today: 0,
+                last_report_date: new Date().toISOString().split('T')[0]
+            })
             .eq('auth0_user_id', user_id)
             .select();
 
         if (error) throw error;
-        console.log('Trial activated:', data);
-        res.json({ success: true });
+        res.json(data);
     } catch (error) {
-        console.error('Trial activation error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -441,7 +452,7 @@ app.get('/check-subscription/:userId', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('subscription_type, subscription_status, reports_used_today')
+            .select('subscription_type, subscription_status, reports_used_today, subscription_interval')
             .eq('auth0_user_id', req.params.userId)
             .single();
 

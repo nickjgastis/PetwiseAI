@@ -14,6 +14,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
     const { logout } = useAuth0();
     const [isTrial, setIsTrial] = useState(false);
     const [subscriptionType, setSubscriptionType] = useState(null);
+    const [subscriptionInterval, setSubscriptionInterval] = useState(null);
 
     useEffect(() => {
         const fetchSubscriptionInfo = async () => {
@@ -28,6 +29,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                 });
                 const data = await response.json();
                 setSubscriptionType(data.subscription_type);
+                setSubscriptionInterval(data.subscription_interval);
             } catch (error) {
                 console.error('Error fetching subscription info:', error);
             }
@@ -265,17 +267,6 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                             onCancel={() => window.location.reload()}
                         />
                     )}
-                    <button
-                        onClick={() => alert('Delete account functionality coming soon')}
-                        className="delete-account-button"
-                        style={{
-                            backgroundColor: '#dc3545',
-                            color: 'white',
-                            marginLeft: 'auto'
-                        }}
-                    >
-                        Delete Account
-                    </button>
                 </div>
             </div>
         </div>

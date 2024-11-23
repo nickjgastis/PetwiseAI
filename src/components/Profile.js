@@ -155,7 +155,7 @@ const Profile = () => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, subscription_end_date, stripe_customer_id, has_used_trial, subscription_type')
+                    .select('subscription_status, subscription_end_date, stripe_customer_id, has_used_trial, subscription_type, subscription_interval')
                     .eq('auth0_user_id', user.sub)
                     .single();
 
@@ -288,11 +288,11 @@ const Profile = () => {
                                                 {userData?.subscription_type === 'clinic' && 'Clinic'}
                                                 {userData?.subscription_type === 'trial' && 'Trial'}
                                                 <span className="subscription-plan">
-                                                    {userData?.stripe_customer_id ? (
-                                                        subscriptionEndDate && new Date(subscriptionEndDate).getTime() - new Date().getTime() > 31536000000
-                                                            ? ' (Yearly Plan)'
-                                                            : ' (Monthly Plan)'
-                                                    ) : ''}
+                                                    {userData?.subscription_interval && (
+                                                        userData?.subscription_interval === 'trial'
+                                                            ? ' (Trial)'
+                                                            : ` (${userData.subscription_interval.charAt(0).toUpperCase() + userData.subscription_interval.slice(1)} Plan)`
+                                                    )}
                                                 </span>
                                             </>
                                         ) : (
