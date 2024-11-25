@@ -5,6 +5,12 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import { createEditor } from 'slate';
+import { Slate, Editable, withReact } from 'slate-react';
+import { withHistory } from 'slate-history';
+import { Node } from 'slate';
+
+
 
 // Add this before PDFDocument component
 const mainHeaders = [
@@ -150,6 +156,74 @@ Skin and Coat: No lesions, normal coat condition, no ectoparasites observed
 Musculoskeletal: No abnormal findings
 Neurologic: No abnormal findings
 Urogenital: No abnormal findings`;
+
+const createSlateValue = (text) => {
+    // Split text into paragraphs
+    const paragraphs = text.split('\n');
+
+    return paragraphs.map(paragraph => {
+        // Check for headers (including partial matches for headers like "Physical Exam Findings:")
+        if (mainHeaders.some(header =>
+            paragraph.trim() === header ||
+            paragraph.startsWith(header) ||
+            paragraph.trim() === 'Veterinary Report'
+        )) {
+            return {
+                type: 'heading',
+                children: [{
+                    text: paragraph,
+                    bold: true
+                }]
+            };
+        }
+
+        // Check for indented lines
+        if ((paragraph.includes('•') ||
+            (paragraph.includes('-') &&
+                !paragraph.includes('Date:') &&
+                !paragraph.includes('Signature:'))) &&
+            !paragraph.trim().match(/^\d+[\.\)]/)) {
+            return {
+                type: 'indented',
+                children: [{ text: paragraph }]
+            };
+        }
+
+        // Default paragraph
+        return {
+            type: 'paragraph',
+            children: [{ text: paragraph }]
+        };
+    });
+};
+
+const renderElement = props => {
+    switch (props.element.type) {
+        case 'heading':
+            return <div {...props.attributes} style={{ fontWeight: 'bold' }}>{props.children}</div>;
+        case 'indented':
+            return <div {...props.attributes} style={{ paddingLeft: '20px' }}>{props.children}</div>;
+        default:
+            return <div {...props.attributes}>{props.children}</div>;
+    }
+};
+
+const renderLeaf = props => {
+    return (
+        <span
+            {...props.attributes}
+            style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal' }}
+        >
+            {props.children}
+        </span>
+    );
+};
+
+// Add this helper function at the top of your file
+const deserializeSlateValue = (text) => {
+    if (!text) return [{ type: 'paragraph', children: [{ text: '' }] }];
+    return createSlateValue(text);
+};
 
 const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
@@ -660,6 +734,32 @@ const ReportForm = () => {
         }
     }, [reportText]); // Trigger when reportText changes
 
+    const [editor] = useState(() => withHistory(withReact(createEditor())));
+    const [slateValue, setSlateValue] = useState(() => {
+        const savedReport = localStorage.getItem('currentReportText');
+        return deserializeSlateValue(savedReport);
+    });
+
+    useEffect(() => {
+        if (reportText) {
+            const initialValue = createSlateValue(reportText);
+            // Ensure we always have at least one paragraph node
+            setSlateValue(initialValue.length > 0 ? initialValue : [{
+                type: 'paragraph',
+                children: [{ text: '' }]
+            }]);
+        }
+    }, [reportText]);
+
+    // Add this useEffect to handle initial load and page switches
+    useEffect(() => {
+        const savedReport = localStorage.getItem('currentReportText');
+        if (savedReport) {
+            setSlateValue(deserializeSlateValue(savedReport));
+            setReportText(savedReport);
+        }
+    }, []);
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -1065,32 +1165,31 @@ const ReportForm = () => {
                             <p className="loading-text">Generating report...</p>
                         </div>
                     ) : previewVisible ? (
-                        <div
-                            className="report-text-editor"
-                            dangerouslySetInnerHTML={{
-                                __html: reportText.split('\n').map(line => {
-                                    // Check for Physical Exam Findings specifically
-                                    if (line.startsWith('Physical Exam Findings:')) {
-                                        return `<strong>${line}</strong>`;
-                                    }
-
-                                    // Check for other headers
-                                    if (mainHeaders.some(header => line.trim() === header)) {
-                                        return `<strong>${line}</strong>`;
-                                    }
-
-                                    // Only indent if line has a bullet point (•) or dash (-) that's part of a list
-                                    if ((line.includes('•') ||
-                                        (line.includes('-') && !line.includes('Date:') && !line.includes('Signature:'))) &&
-                                        !line.trim().match(/^\d+[\.\)]/)) {
-                                        return `<div style="padding-left: 20px">${line}</div>`;
-                                    }
-
-                                    // All other lines stay at start
-                                    return line + '\n';
-                                }).join('')
-                            }}
-                        />
+                        <div className="editor-wrapper">
+                            <Slate
+                                editor={editor}
+                                initialValue={slateValue}
+                                value={slateValue}
+                                onChange={value => {
+                                    setSlateValue(value);
+                                    const newText = value
+                                        .map(n => Node.string(n))
+                                        .join('\n');
+                                    setReportText(newText);
+                                    localStorage.setItem('currentReportText', newText);
+                                }}
+                            >
+                                <Editable
+                                    renderElement={renderElement}
+                                    renderLeaf={renderLeaf}
+                                    style={{
+                                        minHeight: '100%',
+                                        padding: '10px',
+                                        whiteSpace: 'pre-wrap'
+                                    }}
+                                />
+                            </Slate>
+                        </div>
                     ) : (
                         <div className="report-placeholder">
                             <h2>Report will appear here</h2>

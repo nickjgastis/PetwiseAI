@@ -2,14 +2,14 @@ import React from 'react';
 import axios from 'axios';
 
 const GenerateReport = async (inputs, enabledFields) => {
-    const getEnabledContent = (fieldName, content) => {
-        if (!enabledFields || !enabledFields[fieldName]) {
-            return '';
-        }
-        return content;
-    };
+  const getEnabledContent = (fieldName, content) => {
+    if (!enabledFields || !enabledFields[fieldName]) {
+      return '';
+    }
+    return content;
+  };
 
-    const prompt = `You are a highly experienced veterinarian. Based on the following input details, write a comprehensive veterinary prognosis report that adheres to the specified template. IMPORTANT: Maintain exact bullet point format (•) as shown in the template. Do not convert bullets to dashes or other formats. If a section is empty, keep the bullet points and provide data based on best practices from similar cases IMPORTANT: For patient information fields marked as "Provide here", leave them exactly as "Provide here" - do not generate or make up any patient information. Only fill in medical content in the sections below the patient information.
+  const prompt = `You are a highly experienced veterinarian. Based on the following input details, write a comprehensive veterinary prognosis report that adheres to the specified template. IMPORTANT: Maintain exact bullet point format (•) as shown in the template. Do not convert bullets to dashes or other formats. If a section is empty, keep the bullet points and provide data based on best practices from similar cases IMPORTANT: For patient information fields marked as "Provide here", leave them exactly as "Provide here" - do not generate or make up any patient information. Only fill in medical content in the sections below the patient information.
 
 Veterinary Report
     
@@ -27,8 +27,8 @@ ${getEnabledContent('examDate', `Exam Date: ${inputs.examDate || "Provide here"}
 ${getEnabledContent('doctor', `Doctor: ${inputs.doctor || "Provide here"}`)}
     
 ${getEnabledContent('presentingComplaint', `Presenting Complaint:\n${inputs.presentingComplaint ?
-        `• ${inputs.presentingComplaint.split('\n').join('\n• ')}` :
-        `• Initial symptoms and when first noticed
+    `• ${inputs.presentingComplaint.split('\n').join('\n• ')}` :
+    `• Initial symptoms and when first noticed
 • Duration and progression of symptoms 
 • Owner's observations and concerns
 • Changes in behavior or routine
@@ -36,8 +36,8 @@ ${getEnabledContent('presentingComplaint', `Presenting Complaint:\n${inputs.pres
 • Factors that worsen or improve symptoms`}`)}
 
 ${getEnabledContent('history', `History:\n${inputs.history ?
-            `• ${inputs.history.split('\n').join('\n• ')}` :
-            `• Not provided - Previous medical conditions and treatments
+      `• ${inputs.history.split('\n').join('\n• ')}` :
+      `• Not provided - Previous medical conditions and treatments
 • Not provided - Recent changes in health, behavior, or lifestyle
 • Not provided - Vaccination and preventative care history 
 • Not provided - Diet and exercise routine
@@ -45,6 +45,7 @@ ${getEnabledContent('history', `History:\n${inputs.history ?
 • Not provided - Family history if relevant`}`)}
     
 ${getEnabledContent('physicalExamFindings', `Physical Exam Findings: ${new Date().toLocaleString()}\n${inputs.physicalExamFindings || "IMPORTANT: Keep the exact same structure and data that the input gives you at all times!!!. Do not give a paragraph. Compensate for capitalization errors, example: NORAML = normal. Here is an example: "}`)}
+
 ${getEnabledContent('diagnosticTests', `Diagnostic Tests:\n${inputs.diagnosticTests || `• Complete Blood Count (CBC)
 • Chemistry Panel
 • Urinalysis
@@ -116,7 +117,7 @@ ${inputs.clientCommunications || `Key points discussed:
 • Warning signs requiring immediate attention`}`)}
 
 ${getEnabledContent('planFollowUp', `Follow-Up:
-${inputs.planFollowUp || `Follow-up plan in bullet points:
+${inputs.planFollowUp || `
 • Next appointment: [specific number of days from today]
 • Reason for appointment`}`)}
 
@@ -146,33 +147,33 @@ End of Medical Record.
 
     If any information is missing or incomplete, fill in with best practices from similar cases. Always ensure the report is detailed and medically accurate, providing the owner with a clear understanding of the pet's condition, prognosis, and next steps for care. Recommend appropriate treatments where relevant. If the input is short,you should expand with two to three sentences. Don't ever leave a comment at the end of the report.`;
 
-    try {
-        const response = await axios.post(
-            'https://api.openai.com/v1/chat/completions',
-            {
-                model: 'gpt-4o-mini', // Updated model name
-                messages: [
-                    {
-                        role: 'system',
-                        content: prompt
-                    }
-                ],
-                temperature: 0.7,
-                max_tokens: 2000
-            },
-            {
-                headers: {
-                    'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            }
-        );
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4o-mini', // Updated model name
+        messages: [
+          {
+            role: 'system',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-        return response.data.choices[0].message.content;
-    } catch (error) {
-        console.error('Error generating report:', error);
-        throw new Error('Failed to generate report. Please try again.');
-    }
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating report:', error);
+    throw new Error('Failed to generate report. Please try again.');
+  }
 };
 
 export default GenerateReport;

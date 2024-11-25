@@ -5,6 +5,9 @@ import '../styles/SavedReports.css';
 import { FaTimes } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
+import { createEditor } from 'slate';
+import { Slate, Editable, withReact } from 'slate-react';
+import { withHistory } from 'slate-history';
 
 const mainHeaders = [
     'Veterinary Report',
@@ -114,6 +117,72 @@ const PDFButton = ({ reportText, reportName }) => {
     );
 };
 
+const deserializeSlateValue = (text) => {
+    if (!text) return [{ type: 'paragraph', children: [{ text: '' }] }];
+    return createSlateValue(text);
+};
+
+const createSlateValue = (text) => {
+    // Split text into paragraphs
+    const paragraphs = text.split('\n');
+
+    return paragraphs.map(paragraph => {
+        // Check for headers
+        if (mainHeaders.some(header =>
+            paragraph.trim() === header ||
+            paragraph.startsWith(header)
+        )) {
+            return {
+                type: 'heading',
+                children: [{
+                    text: paragraph,
+                    bold: true
+                }]
+            };
+        }
+
+        // Check for indented lines
+        if ((paragraph.includes('•') ||
+            (paragraph.includes('-') &&
+                !paragraph.includes('Date:') &&
+                !paragraph.includes('Signature:'))) &&
+            !paragraph.trim().match(/^\d+[\.\)]/)) {
+            return {
+                type: 'indented',
+                children: [{ text: paragraph }]
+            };
+        }
+
+        // Default paragraph
+        return {
+            type: 'paragraph',
+            children: [{ text: paragraph }]
+        };
+    });
+};
+
+const renderElement = props => {
+    switch (props.element.type) {
+        case 'heading':
+            return <div {...props.attributes} style={{ fontWeight: 'bold' }}>{props.children}</div>;
+        case 'indented':
+            return <div {...props.attributes} style={{ paddingLeft: '20px' }}>{props.children}</div>;
+        default:
+            return <div {...props.attributes}>{props.children}</div>;
+    }
+};
+
+const renderLeaf = props => {
+    return (
+        <span
+            {...props.attributes}
+            style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal' }}
+        >
+            {props.children}
+        </span>
+    );
+};
+
 const SavedReports = () => {
     const { user, isAuthenticated, isLoading } = useAuth0();
     const [reports, setReports] = useState([]);
@@ -121,13 +190,13 @@ const SavedReports = () => {
     const [editingIndex, setEditingIndex] = useState(null);
     const [newReportName, setNewReportName] = useState('');
     const [error, setError] = useState(null);
+    const [editor] = useState(() => withHistory(withReact(createEditor())));
 
     useEffect(() => {
         const fetchReports = async () => {
             if (!isAuthenticated || !user) return;
 
             try {
-                // Get user's ID from users table
                 const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('id')
@@ -136,35 +205,30 @@ const SavedReports = () => {
 
                 if (userError) throw userError;
 
-                const userId = userData?.id; // Optional chaining to prevent undefined error
+                const userId = userData?.id;
 
                 if (!userId) {
                     console.error("User ID is undefined. Aborting fetch.");
                     return;
                 }
 
-                // Get reports associated with the user's ID
                 const { data: reportsData, error: reportsError } = await supabase
                     .from('saved_reports')
                     .select('id, report_name, report_text')
-                    .eq('user_id', userId);
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false });
 
                 if (reportsError) {
                     console.error("Error fetching reports:", reportsError);
                     return;
                 }
 
-                // console.log("Fetched reports data:", reportsData); // Log the fetched data
                 setReports(reportsData);
-
-                // Log current state of reports
-                // console.log("Current reports state after setting:", reportsData); // Check the state after setting
             } catch (error) {
                 setError("Failed to fetch reports. Please try again later.");
                 console.error("Unexpected error fetching reports:", error);
             }
         };
-
 
         fetchReports();
     }, [isAuthenticated, user]);
@@ -285,23 +349,25 @@ const SavedReports = () => {
                         </div>
                     </div>
                     <div className="report-content">
-                        <div
-                            className="report-text-editor"
-                            dangerouslySetInnerHTML={{
-                                __html: selectedReport.report_text.split('\n').map(line => {
-                                    if (mainHeaders.some(header =>
-                                        line.trim() === header ||
-                                        (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
-                                    )) {
-                                        return `<strong>${line}</strong>`;
-                                    }
-                                    if (line.includes('-') && !line.trim().startsWith('•')) {
-                                        return `<div style="padding-left: 20px">${line}</div>`;
-                                    }
-                                    return line + '\n';
-                                }).join('')
-                            }}
-                        />
+                        <div className="editor-wrapper">
+                            <Slate
+                                editor={editor}
+                                initialValue={deserializeSlateValue(selectedReport.report_text)}
+                                value={deserializeSlateValue(selectedReport.report_text)}
+                                onChange={() => { }}
+                            >
+                                <Editable
+                                    readOnly
+                                    renderElement={renderElement}
+                                    renderLeaf={renderLeaf}
+                                    style={{
+                                        minHeight: '100%',
+                                        padding: '20px',
+                                        whiteSpace: 'pre-wrap'
+                                    }}
+                                />
+                            </Slate>
+                        </div>
                     </div>
                 </div>
             )}
