@@ -6,24 +6,80 @@ import { FaTimes } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 
+const mainHeaders = [
+    'Veterinary Report',
+    'Presenting Complaint:',
+    'History:',
+    'Physical Exam Findings:',
+    'Diagnostic Tests:',
+    'Assessment:',
+    'Diagnosis:',
+    'Differential Diagnosis:',
+    'Plan:',
+    'Treatment:',
+    'Monitoring:',
+    'Medicine Interactions:',
+    'Naturopathic Medicine:',
+    'Client Communications:',
+    'Follow-Up:',
+    'Client Education:'
+];
+
 const PDFDocument = ({ reportText }) => {
     const styles = StyleSheet.create({
         page: {
             padding: 40,
             fontSize: 12,
             fontFamily: 'Helvetica',
-            lineHeight: 1.5
+            lineHeight: 1.2
         },
         text: {
-            marginBottom: 10,
+            marginBottom: 5,
             whiteSpace: 'pre-wrap'
+        },
+        strongText: {
+            fontFamily: 'Helvetica-Bold',
+            marginBottom: 15,
+            marginTop: 10
+        },
+        indentedText: {
+            marginLeft: 20,
+            marginBottom: 5
+        },
+        title: {
+            fontFamily: 'Helvetica-Bold',
+            fontSize: 14,
+            marginBottom: 20
         }
     });
+
+    const formatText = (text) => {
+        return text.split('\n').map((line, index) => {
+            if (!line.trim()) {
+                return null;
+            }
+
+            if (line.trim() === 'Veterinary Report') {
+                return <Text key={index} style={styles.title}>{line}</Text>;
+            }
+
+            if (mainHeaders.some(header =>
+                line.trim() === header ||
+                (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
+            )) {
+                return <Text key={index} style={styles.strongText}>{line}</Text>;
+            }
+            if (line.includes('-') && !line.trim().startsWith('•')) {
+                return <Text key={index} style={styles.indentedText}>{line}</Text>;
+            }
+            return <Text key={index} style={styles.text}>{line}</Text>;
+        }).filter(Boolean);
+    };
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                <Text style={styles.text}>{reportText}</Text>
+                {formatText(reportText)}
             </Page>
         </Document>
     );
@@ -229,9 +285,23 @@ const SavedReports = () => {
                         </div>
                     </div>
                     <div className="report-content">
-                        {selectedReport.report_text.split('\n').map((paragraph, index) => (
-                            <p key={index}>{paragraph}</p>
-                        ))}
+                        <div
+                            className="report-text-editor"
+                            dangerouslySetInnerHTML={{
+                                __html: selectedReport.report_text.split('\n').map(line => {
+                                    if (mainHeaders.some(header =>
+                                        line.trim() === header ||
+                                        (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
+                                    )) {
+                                        return `<strong>${line}</strong>`;
+                                    }
+                                    if (line.includes('-') && !line.trim().startsWith('•')) {
+                                        return `<div style="padding-left: 20px">${line}</div>`;
+                                    }
+                                    return line + '\n';
+                                }).join('')
+                            }}
+                        />
                     </div>
                 </div>
             )}

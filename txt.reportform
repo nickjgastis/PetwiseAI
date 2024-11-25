@@ -6,80 +6,24 @@ import { supabase } from '../supabaseClient';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 
-// Add this before PDFDocument component
-const mainHeaders = [
-    'Presenting Complaint:',
-    'History:',
-    'Physical Exam Findings:',
-    'Diagnostic Tests:',
-    'Assessment:',
-    'Diagnosis:',
-    'Differential Diagnosis:',
-    'Plan',
-    'Treatment:',
-    'Monitoring:',
-    'Drug Interactions/Side Effects:',
-    'Naturopathic Medicine:',
-    'Client Communications:',
-    'Follow-Up:',
-    'Client Education:'
-];
-
 const PDFDocument = ({ reportText }) => {
     const styles = StyleSheet.create({
         page: {
             padding: 40,
             fontSize: 12,
             fontFamily: 'Helvetica',
-            lineHeight: 1.2
+            lineHeight: 1.5
         },
         text: {
-            marginBottom: 5,
+            marginBottom: 10,
             whiteSpace: 'pre-wrap'
-        },
-        strongText: {
-            fontFamily: 'Helvetica-Bold',
-            marginBottom: 15,
-            marginTop: 10
-        },
-        indentedText: {
-            marginLeft: 20,
-            marginBottom: 5
-        },
-        title: {
-            fontFamily: 'Helvetica-Bold',
-            fontSize: 14,
-            marginBottom: 20
         }
     });
-
-    const formatText = (text) => {
-        return text.split('\n').map((line, index) => {
-            if (!line.trim()) {
-                return null;
-            }
-
-            if (line.trim() === 'Veterinary Report') {
-                return <Text key={index} style={styles.title}>{line}</Text>;
-            }
-
-            if (mainHeaders.some(header =>
-                line.trim() === header ||
-                (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
-            )) {
-                return <Text key={index} style={styles.strongText}>{line}</Text>;
-            }
-            if (line.includes('-') && !line.trim().startsWith('•')) {
-                return <Text key={index} style={styles.indentedText}>{line}</Text>;
-            }
-            return <Text key={index} style={styles.text}>{line}</Text>;
-        }).filter(Boolean);
-    };
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {formatText(reportText)}
+                <Text style={styles.text}>{reportText}</Text>
             </Page>
         </Document>
     );
@@ -184,10 +128,7 @@ const ReportForm = () => {
 
     // Loading and error states
     const [loading, setLoading] = useState(false);
-    const [reportText, setReportText] = useState(() => {
-        const savedText = localStorage.getItem('currentReportText');
-        return savedText || '';
-    });
+    const [reportText, setReportText] = useState(() => localStorage.getItem('currentReportText') || '');
     const [previewVisible, setPreviewVisible] = useState(() => localStorage.getItem('previewVisible') === 'true');
     const [error, setError] = useState('');
 
@@ -258,8 +199,7 @@ const ReportForm = () => {
             treatment: true,
             naturopathicMedicine: true,
             clientCommunications: true,
-            planFollowUp: true,
-            clientEducation: true
+            planFollowUp: true
         };
     });
 
@@ -298,27 +238,15 @@ const ReportForm = () => {
     }, [user]);
 
     useEffect(() => {
-        // Load all saved form fields from localStorage
         const savedReportText = localStorage.getItem('currentReportText');
         const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
 
-        // Only set the report text if it exists in localStorage
-        if (savedReportText) {
+        if (savedReportText !== null && savedReportText !== '') {
             setReportText(savedReportText);
         }
 
         setPreviewVisible(savedPreviewVisible);
-
-        // Load other form fields...
-        const savedPatientName = localStorage.getItem('patientName');
-        const savedAge = localStorage.getItem('age');
-        const savedDoctor = localStorage.getItem('doctor');
-        // ... etc
-
-        if (savedPatientName) setPatientName(savedPatientName);
-        if (savedAge) setAge(savedAge);
-        if (savedDoctor) setDoctor(savedDoctor);
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
     useEffect(() => {
         localStorage.setItem('currentReportText', reportText);
@@ -339,18 +267,19 @@ const ReportForm = () => {
         setPatientInfoSubmitted(false);
     };
 
-    // Add this with your other refs at the top of the component
-    const previewContentRef = useRef(null);
-
-    // Modify the handleExamSubmit function
+    // Submit exam info and generate report
     const handleExamSubmit = async (e) => {
         e.preventDefault();
         if (isGenerating.current) return;
+        if (reportsUsed >= reportLimit) {
+            setError(`Daily report limit reached (${reportsUsed}/${reportLimit}). Please upgrade your plan for more reports.`);
+            return;
+        }
+
+        setLoading(true);
+        isGenerating.current = true;
 
         try {
-            setLoading(true);
-            isGenerating.current = true;
-
             const inputs = {
                 patientName, species, sex, breed, colorMarkings, weight, weightUnit, age,
                 ownerName, address, telephone, examDate, doctor, presentingComplaint, history,
@@ -362,11 +291,9 @@ const ReportForm = () => {
             const generatedReport = await GenerateReport(inputs, enabledFields);
             setReportText(generatedReport);
             setPreviewVisible(true);
-
-            // Force scroll to top immediately after state updates
-            if (previewContentRef.current) {
-                previewContentRef.current.scrollTop = 0;
-            }
+            localStorage.setItem('currentReportText', generatedReport);
+            localStorage.setItem('previewVisible', 'true');
+            localStorage.setItem('patientName', patientName);
 
             // Update reports_used_today in Supabase
             const { error: updateError } = await supabase
@@ -376,6 +303,7 @@ const ReportForm = () => {
 
             if (updateError) throw updateError;
 
+            // Update local state
             setReportsUsed(prev => prev + 1);
         } catch (error) {
             if (error.message.includes('Daily report limit reached')) {
@@ -616,49 +544,6 @@ const ReportForm = () => {
             localStorage.removeItem(fieldName);
         }
     };
-
-    // Add new state with the other state declarations
-    const [clientEducation, setClientEducation] = useState(() => localStorage.getItem('clientEducation') || '');
-
-    // Add mainHeaders at the top of the component
-    const mainHeaders = [
-        'Veterinary Report',
-        'Assessment:',
-        'Diagnosis:',
-        'Differential Diagnosis:',
-        'Plan',
-        'Treatment:',
-        'Monitoring:',
-        'Drug Interactions/Side Effects:',
-        'Naturopathic Medicine:',
-        'Client Communications:',
-        'Client Education:',
-        'Follow-Up:',
-        'Physical Exam Findings:',
-        'History:',
-        'Presenting Complaint:',
-        'Diagnostic Tests:'
-    ];
-
-    // Add this effect to save reportText changes
-    useEffect(() => {
-        if (reportText) {
-            localStorage.setItem('currentReportText', reportText);
-        }
-    }, [reportText]);
-
-    // Add this near your other useEffects
-    useEffect(() => {
-        if (reportText) {
-            const previewContent = document.querySelector('.report-preview-content');
-            if (previewContent) {
-                previewContent.scrollTo({
-                    top: 0,
-                    behavior: 'instant'
-                });
-            }
-        }
-    }, [reportText]); // Trigger when reportText changes
 
     return (
         <div className="report-container">
@@ -976,7 +861,7 @@ const ReportForm = () => {
                     </div>
 
                     <div className="form-field-container">
-                        <label className="form-label">Client Communications:</label>
+                        <label className="form-label">Client Education:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
                                 className={`form-input ${!enabledFields.clientCommunications ? 'disabled' : ''}`}
@@ -993,7 +878,7 @@ const ReportForm = () => {
                     </div>
 
                     <div className="form-field-container">
-                        <label className="form-label">Follow-up:</label>
+                        <label className="form-label">Plan/Follow-up:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
                                 className={`form-input ${!enabledFields.planFollowUp ? 'disabled' : ''}`}
@@ -1004,23 +889,6 @@ const ReportForm = () => {
                             <ToggleSwitch
                                 fieldName="planFollowUp"
                                 enabled={enabledFields.planFollowUp}
-                                onChange={handleToggleField}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-field-container">
-                        <label className="form-label">Client Education:</label>
-                        <div className="input-toggle-wrapper">
-                            <textarea
-                                className={`form-input ${!enabledFields.clientEducation ? 'disabled' : ''}`}
-                                value={clientEducation}
-                                onChange={(e) => handleInputChange(e, 'clientEducation', setClientEducation)}
-                                disabled={!enabledFields.clientEducation}
-                            />
-                            <ToggleSwitch
-                                fieldName="clientEducation"
-                                enabled={enabledFields.clientEducation}
                                 onChange={handleToggleField}
                             />
                         </div>
@@ -1054,7 +922,7 @@ const ReportForm = () => {
                     )}
                 </div>
 
-                <div className="report-preview-content" ref={previewContentRef}>
+                <div className="report-preview-content">
                     {loading ? (
                         <div className="loading-container">
                             <div className="loading-dots">
@@ -1067,26 +935,42 @@ const ReportForm = () => {
                     ) : previewVisible ? (
                         <div
                             className="report-text-editor"
+                            contentEditable={true}
+                            onInput={(e) => {
+                                const selection = window.getSelection();
+                                const range = selection.getRangeAt(0);
+                                setReportText(e.currentTarget.textContent);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }}
                             dangerouslySetInnerHTML={{
                                 __html: reportText.split('\n').map(line => {
-                                    // Check for Physical Exam Findings specifically
-                                    if (line.startsWith('Physical Exam Findings:')) {
-                                        return `<strong>${line}</strong>`;
-                                    }
+                                    // Complete list of main section headers
+                                    const mainHeaders = [
+                                        'Veterinary Report',
+                                        'Assessment:',
+                                        'Diagnosis:',
+                                        'Differential Diagnosis:',
+                                        'Plan:',
+                                        'Treatment:',
+                                        'Monitoring:',
+                                        'Medicine Interactions:',
+                                        'Naturopathic Medicine:',
+                                        'Client Education:',
+                                        'Follow-Up:',
+                                        'Physical Exam Findings:',
+                                        'History:',
+                                        'Presenting Complaint:',
+                                        'Diagnostic Tests:'
+                                    ];
 
-                                    // Check for other headers
-                                    if (mainHeaders.some(header => line.trim() === header)) {
-                                        return `<strong>${line}</strong>`;
+                                    // Check for exact match or match with timestamp for Physical Exam Findings
+                                    if (mainHeaders.some(header =>
+                                        line.trim() === header ||
+                                        (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
+                                    )) {
+                                        return `<strong>${line}</strong>\n`;
                                     }
-
-                                    // Only indent if line has a bullet point (•) or dash (-) that's part of a list
-                                    if ((line.includes('•') ||
-                                        (line.includes('-') && !line.includes('Date:') && !line.includes('Signature:'))) &&
-                                        !line.trim().match(/^\d+[\.\)]/)) {
-                                        return `<div style="padding-left: 20px">${line}</div>`;
-                                    }
-
-                                    // All other lines stay at start
                                     return line + '\n';
                                 }).join('')
                             }}
