@@ -37,6 +37,10 @@
     padding: 20px;
     text-align: center;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar-logo a {
@@ -44,24 +48,30 @@
     text-decoration: none;
     font-family: Georgia, 'Times New Roman', Times, serif;
     transition: color 0.3s ease;
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 1.5rem;
 }
 
-/* Remove the before/after content approach */
-.sidebar-logo a span {
-    display: block;
+.sidebar-favicon {
+    display: none;
+    width: 32px;
+    height: 32px;
 }
 
-/* Clean up collapsed state */
+/* Collapsed state styles */
+.sidebar-collapsed .sidebar-logo {
+    padding: 10px;
+}
+
 .sidebar-collapsed .sidebar-logo a span {
     display: none;
 }
 
 .sidebar-collapsed .sidebar-favicon {
-    width: 24px;
-    height: 24px;
     display: block;
+    margin: 0 auto;
 }
 
 /* Remove these conflicting styles */

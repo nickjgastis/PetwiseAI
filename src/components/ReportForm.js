@@ -14,13 +14,16 @@ import { Node } from 'slate';
 
 // Add this before PDFDocument component
 const mainHeaders = [
+    'Veterinary Medical Record:',
+    'Patient Information:',
+    'Client Information:',
     'Presenting Complaint:',
     'History:',
     'Physical Exam Findings:',
     'Diagnostic Tests:',
     'Assessment:',
     'Diagnosis:',
-    'Differential Diagnosis:',
+    'Differential Diagnoses:',
     'Plan',
     'Treatment:',
     'Monitoring:',
@@ -28,7 +31,8 @@ const mainHeaders = [
     'Naturopathic Medicine:',
     'Client Communications:',
     'Follow-Up:',
-    'Client Education:'
+    'Patient Visit Summary:',
+    'Notes:'
 ];
 
 const PDFDocument = ({ reportText }) => {
@@ -37,56 +41,92 @@ const PDFDocument = ({ reportText }) => {
             padding: 40,
             fontSize: 12,
             fontFamily: 'Helvetica',
-            lineHeight: 1.2
+            lineHeight: 1.1
         },
         text: {
-            marginBottom: 5,
-            whiteSpace: 'pre-wrap'
+            marginBottom: 2,
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'Helvetica'
         },
         strongText: {
             fontFamily: 'Helvetica-Bold',
-            marginBottom: 15,
-            marginTop: 10
+            marginBottom: 8,
+            marginTop: 16,
+            fontSize: 12
         },
         indentedText: {
             marginLeft: 20,
-            marginBottom: 5
-        },
-        title: {
-            fontFamily: 'Helvetica-Bold',
-            fontSize: 14,
-            marginBottom: 20
+            marginBottom: 2,
+            fontFamily: 'Helvetica'
         }
     });
 
     const formatText = (text) => {
-        return text.split('\n').map((line, index) => {
-            if (!line.trim()) {
-                return null;
+        const paragraphs = text.split('\n');
+        let isInPatientInfo = false;
+        let mainContent = [];
+        let summaryAndNotes = [];
+        let isInSummaryOrNotes = false;
+
+        paragraphs.forEach((paragraph, index) => {
+            let trimmedParagraph = paragraph.trim();
+            if (!trimmedParagraph) return;
+
+            // Check if we're entering summary or notes section
+            if (trimmedParagraph === 'Patient Visit Summary:' || trimmedParagraph === 'Notes:') {
+                isInSummaryOrNotes = true;
             }
 
-            if (line.trim() === 'Veterinary Report') {
-                return <Text key={index} style={styles.title}>{line}</Text>;
+            // Clean the text
+            if (!isInPatientInfo) {
+                trimmedParagraph = trimmedParagraph
+                    .replace(/^[•\-]\s*/, '')
+                    .replace(/\*\*(\w[^*]*\w)\*\*/g, '$1')
+                    .trim();
             }
 
-            if (mainHeaders.some(header =>
-                line.trim() === header ||
-                (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
-            )) {
-                return <Text key={index} style={styles.strongText}>{line}</Text>;
+            // Update patient info tracking
+            if (trimmedParagraph === 'Patient Information:') {
+                isInPatientInfo = true;
+            } else if (mainHeaders.some(header => trimmedParagraph === header)) {
+                isInPatientInfo = false;
             }
-            if (line.includes('-') && !line.trim().startsWith('•')) {
-                return <Text key={index} style={styles.indentedText}>{line}</Text>;
+
+            // Create text element
+            let textElement;
+            if (mainHeaders.includes(trimmedParagraph)) {
+                textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
+            } else if (isInPatientInfo) {
+                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
+            } else if (paragraph.startsWith('    ')) {
+                textElement = <Text key={index} style={styles.indentedText}>{trimmedParagraph}</Text>;
+            } else {
+                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
             }
-            return <Text key={index} style={styles.text}>{line}</Text>;
-        }).filter(Boolean);
+
+            // Add to appropriate array
+            if (isInSummaryOrNotes) {
+                summaryAndNotes.push(textElement);
+            } else {
+                mainContent.push(textElement);
+            }
+        });
+
+        return { mainContent, summaryAndNotes };
     };
+
+    const { mainContent, summaryAndNotes } = formatText(reportText);
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {formatText(reportText)}
+                {mainContent}
             </Page>
+            {summaryAndNotes.length > 0 && (
+                <Page size="A4" style={styles.page}>
+                    {summaryAndNotes}
+                </Page>
+            )}
         </Document>
     );
 };
@@ -127,6 +167,7 @@ const ToggleSwitch = ({ fieldName, enabled, onChange }) => (
                 type="checkbox"
                 checked={enabled}
                 onChange={() => onChange(fieldName)}
+                tabIndex="-1"
             />
             <span className="slider round"></span>
         </label>
@@ -138,9 +179,9 @@ const API_URL = process.env.NODE_ENV === 'production'
     : 'http://localhost:3001';
 
 const DEFAULT_PHYSICAL_EXAM = `General Appearance: Bright, Alert
-Temperature: 
-Heart Rate:
-Respiratory Rate:
+Temperature: Within normal limits
+Heart Rate: Within normal limits
+Respiratory Rate: Within normal limits
 Body Condition Score: 5/9 (Ideal=5/9)
 Mucous Membranes: Pink, moist, CRT <2s
 Eyes: No abnormal findings
@@ -157,42 +198,55 @@ Musculoskeletal: No abnormal findings
 Neurologic: No abnormal findings
 Urogenital: No abnormal findings`;
 
+const DEFAULT_DIAGNOSTIC_TESTS = '';
+
 const createSlateValue = (text) => {
-    // Split text into paragraphs
     const paragraphs = text.split('\n');
+    let isInPatientInfo = false;
 
     return paragraphs.map(paragraph => {
-        // Check for headers (including partial matches for headers like "Physical Exam Findings:")
+        const trimmedParagraph = paragraph.trim();
+
+        // Check for Patient Information section start/end
+        if (trimmedParagraph === 'Patient Information:') {
+            isInPatientInfo = true;
+        } else if (mainHeaders.some(header => trimmedParagraph === header) && isInPatientInfo) {
+            isInPatientInfo = false;
+        }
+
+        // Handle headers
         if (mainHeaders.some(header =>
-            paragraph.trim() === header ||
-            paragraph.startsWith(header) ||
-            paragraph.trim() === 'Veterinary Report'
+            trimmedParagraph === header ||
+            trimmedParagraph.startsWith(header) ||
+            trimmedParagraph === 'Veterinary Medical Record'
         )) {
             return {
                 type: 'heading',
                 children: [{
-                    text: paragraph,
+                    text: trimmedParagraph.replace(/:$/, ''),
                     bold: true
                 }]
             };
         }
 
-        // Check for indented lines
-        if ((paragraph.includes('•') ||
-            (paragraph.includes('-') &&
-                !paragraph.includes('Date:') &&
-                !paragraph.includes('Signature:'))) &&
-            !paragraph.trim().match(/^\d+[\.\)]/)) {
+        // Handle patient info section with consistent indentation
+        if (isInPatientInfo && trimmedParagraph.includes(':')) {
             return {
-                type: 'indented',
+                type: 'paragraph',
                 children: [{ text: paragraph }]
             };
         }
 
-        // Default paragraph
+        // Remove bullets and dashes from the start of lines
+        let cleanedText = paragraph;
+        if (!isInPatientInfo) {
+            cleanedText = paragraph.replace(/^[•\-]\s*/, '').trim();
+        }
+
+        // Default paragraph with consistent indentation
         return {
             type: 'paragraph',
-            children: [{ text: paragraph }]
+            children: [{ text: cleanedText }]
         };
     });
 };
@@ -200,11 +254,15 @@ const createSlateValue = (text) => {
 const renderElement = props => {
     switch (props.element.type) {
         case 'heading':
-            return <div {...props.attributes} style={{ fontWeight: 'bold' }}>{props.children}</div>;
-        case 'indented':
-            return <div {...props.attributes} style={{ paddingLeft: '20px' }}>{props.children}</div>;
+            return <div {...props.attributes} style={{
+                fontWeight: 'bold',
+                marginTop: '10px',
+                marginBottom: '5px'
+            }}>{props.children}</div>;
         default:
-            return <div {...props.attributes}>{props.children}</div>;
+            return <div {...props.attributes} style={{
+                marginBottom: '3px'
+            }}>{props.children}</div>;
     }
 };
 
@@ -223,6 +281,34 @@ const renderLeaf = props => {
 const deserializeSlateValue = (text) => {
     if (!text) return [{ type: 'paragraph', children: [{ text: '' }] }];
     return createSlateValue(text);
+};
+
+// Add these helper functions at the top of the file
+const formatDateForInput = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0]; // Keeps the HTML date input format (yyyy-mm-dd)
+};
+
+const formatDateForDisplay = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+};
+
+// Add this helper function at the top level
+const formatDateForReport = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
 };
 
 const ReportForm = () => {
@@ -248,7 +334,9 @@ const ReportForm = () => {
     const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
     const [history, setHistory] = useState(() => localStorage.getItem('history') || '');
     const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || DEFAULT_PHYSICAL_EXAM);
-    const [diagnosticTests, setDiagnosticTests] = useState(() => localStorage.getItem('diagnosticTests') || '');
+    const [diagnosticTests, setDiagnosticTests] = useState(() =>
+        localStorage.getItem('diagnosticTests') || DEFAULT_DIAGNOSTIC_TESTS
+    );
     const [assessment, setAssessment] = useState(() => localStorage.getItem('assessment') || '');
     const [diagnosis, setDiagnosis] = useState(() => localStorage.getItem('diagnosis') || '');
     const [differentialDiagnosis, setDifferentialDiagnosis] = useState(() => localStorage.getItem('differentialDiagnosis') || '');
@@ -308,18 +396,8 @@ const ReportForm = () => {
 
     // Add near other state declarations
     const [enabledFields, setEnabledFields] = useState(() => {
-        const saved = localStorage.getItem('enabledFields');
-        return saved ? JSON.parse(saved) : {
-            patientName: true,
-            species: true,
-            sex: true,
-            breed: true,
-            colorMarkings: true,
-            weight: true,
-            age: true,
-            ownerName: true,
-            address: true,
-            telephone: true,
+        const savedFields = localStorage.getItem('enabledFields');
+        return savedFields ? JSON.parse(savedFields) : {
             examDate: true,
             doctor: true,
             presentingComplaint: true,
@@ -330,10 +408,12 @@ const ReportForm = () => {
             diagnosis: true,
             differentialDiagnosis: true,
             treatment: true,
+            monitoring: true,
             naturopathicMedicine: true,
             clientCommunications: true,
             planFollowUp: true,
-            clientEducation: true
+            patientVisitSummary: true,
+            notes: true
         };
     });
 
@@ -427,10 +507,10 @@ const ReportForm = () => {
 
             const inputs = {
                 patientName, species, sex, breed, colorMarkings, weight, weightUnit, age,
-                ownerName, address, telephone, examDate, doctor, presentingComplaint, history,
+                ownerName, address, telephone, examDate: formatDateForReport(examDate), doctor, presentingComplaint, history,
                 physicalExamFindings, diagnosticTests, assessment, diagnosis,
                 differentialDiagnosis, treatment, clientCommunications, planFollowUp,
-                naturopathicMedicine
+                naturopathicMedicine, patientVisitSummary, notes
             };
 
             const generatedReport = await GenerateReport(inputs, enabledFields);
@@ -582,7 +662,7 @@ const ReportForm = () => {
         setPresentingComplaint('');
         setHistory('');
         setPhysicalExamFindings(DEFAULT_PHYSICAL_EXAM); // Reset to default template
-        setDiagnosticTests('');
+        setDiagnosticTests(DEFAULT_DIAGNOSTIC_TESTS); // Reset to default template
         setAssessment('');
         setDiagnosis('');
         setDifferentialDiagnosis('');
@@ -598,6 +678,7 @@ const ReportForm = () => {
 
         // Reset physical exam to default in localStorage
         localStorage.setItem('physicalExamFindings', DEFAULT_PHYSICAL_EXAM);
+        localStorage.setItem('diagnosticTests', DEFAULT_DIAGNOSTIC_TESTS);
 
         // Keep enabled fields state
         const defaultEnabledFields = {
@@ -611,12 +692,18 @@ const ReportForm = () => {
             diagnosis: true,
             differentialDiagnosis: true,
             treatment: true,
+            monitoring: true,
             naturopathicMedicine: true,
             clientCommunications: true,
             planFollowUp: true
         };
         setEnabledFields(defaultEnabledFields);
         localStorage.setItem('enabledFields', JSON.stringify(defaultEnabledFields));
+
+        setPatientVisitSummary('');
+        setNotes('');
+        localStorage.removeItem('patientVisitSummary');
+        localStorage.removeItem('notes');
     };
 
     const handleBreedChange = (e) => {
@@ -673,10 +760,14 @@ const ReportForm = () => {
     }, [enabledFields]);
 
     const handleToggleField = (fieldName) => {
-        setEnabledFields(prev => ({
-            ...prev,
-            [fieldName]: !prev[fieldName]
-        }));
+        setEnabledFields((prevFields) => {
+            const updatedFields = {
+                ...prevFields,
+                [fieldName]: !prevFields[fieldName]
+            };
+            localStorage.setItem('enabledFields', JSON.stringify(updatedFields));
+            return updatedFields;
+        });
     };
 
     // Update the onChange handlers to also update localStorage immediately
@@ -692,15 +783,16 @@ const ReportForm = () => {
     };
 
     // Add new state with the other state declarations
-    const [clientEducation, setClientEducation] = useState(() => localStorage.getItem('clientEducation') || '');
+    const [patientVisitSummary, setPatientVisitSummary] = useState(() => localStorage.getItem('patientVisitSummary') || '');
+    const [notes, setNotes] = useState(() => localStorage.getItem('notes') || '');
 
     // Add mainHeaders at the top of the component
     const mainHeaders = [
-        'Veterinary Report',
+        'Veterinary Medical Record:',
         'Assessment:',
         'Diagnosis:',
         'Differential Diagnosis:',
-        'Plan',
+        'Plan:',
         'Treatment:',
         'Monitoring:',
         'Drug Interactions/Side Effects:',
@@ -891,14 +983,18 @@ const ReportForm = () => {
                             <input
                                 type="date"
                                 className={`form-input ${!enabledFields.examDate ? 'disabled' : ''}`}
-                                value={examDate}
-                                onChange={(e) => handleInputChange(e, 'examDate', setExamDate)}
+                                value={formatDateForInput(examDate)}
+                                onChange={(e) => {
+                                    const date = e.target.value;
+                                    handleInputChange(e, 'examDate', setExamDate);
+                                    localStorage.setItem('examDate', date);
+                                }}
                                 disabled={!enabledFields.examDate}
                             />
                             <ToggleSwitch
                                 fieldName="examDate"
                                 enabled={enabledFields.examDate}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('examDate')}
                             />
                         </div>
                     </div>
@@ -916,7 +1012,7 @@ const ReportForm = () => {
                             <ToggleSwitch
                                 fieldName="doctor"
                                 enabled={enabledFields.doctor}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('doctor')}
                             />
                         </div>
                     </div>
@@ -929,11 +1025,12 @@ const ReportForm = () => {
                                 value={presentingComplaint}
                                 onChange={(e) => handleInputChange(e, 'presentingComplaint', setPresentingComplaint)}
                                 disabled={!enabledFields.presentingComplaint}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="presentingComplaint"
                                 enabled={enabledFields.presentingComplaint}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('presentingComplaint')}
                             />
                         </div>
                     </div>
@@ -946,11 +1043,12 @@ const ReportForm = () => {
                                 value={history}
                                 onChange={(e) => handleInputChange(e, 'history', setHistory)}
                                 disabled={!enabledFields.history}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="history"
                                 enabled={enabledFields.history}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('history')}
                             />
                         </div>
                     </div>
@@ -967,7 +1065,7 @@ const ReportForm = () => {
                             <ToggleSwitch
                                 fieldName="physicalExamFindings"
                                 enabled={enabledFields.physicalExamFindings}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('physicalExamFindings')}
                             />
                         </div>
                     </div>
@@ -976,16 +1074,16 @@ const ReportForm = () => {
                         <label className="form-label">Diagnostic Tests:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
-                                className={`form-input ${!enabledFields.diagnosticTests ? 'disabled' : ''}`}
+                                className={`form-input diagnostic-tests-input ${!enabledFields.diagnosticTests ? 'disabled' : ''}`}
                                 value={diagnosticTests}
                                 onChange={(e) => handleInputChange(e, 'diagnosticTests', setDiagnosticTests)}
                                 disabled={!enabledFields.diagnosticTests}
-
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="diagnosticTests"
                                 enabled={enabledFields.diagnosticTests}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('diagnosticTests')}
                             />
                         </div>
                     </div>
@@ -998,11 +1096,12 @@ const ReportForm = () => {
                                 value={assessment}
                                 onChange={(e) => handleInputChange(e, 'assessment', setAssessment)}
                                 disabled={!enabledFields.assessment}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="assessment"
                                 enabled={enabledFields.assessment}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('assessment')}
                             />
                         </div>
                     </div>
@@ -1015,11 +1114,12 @@ const ReportForm = () => {
                                 value={diagnosis}
                                 onChange={(e) => handleInputChange(e, 'diagnosis', setDiagnosis)}
                                 disabled={!enabledFields.diagnosis}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="diagnosis"
                                 enabled={enabledFields.diagnosis}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('diagnosis')}
                             />
                         </div>
                     </div>
@@ -1032,11 +1132,12 @@ const ReportForm = () => {
                                 value={differentialDiagnosis}
                                 onChange={(e) => handleInputChange(e, 'differentialDiagnosis', setDifferentialDiagnosis)}
                                 disabled={!enabledFields.differentialDiagnosis}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="differentialDiagnosis"
                                 enabled={enabledFields.differentialDiagnosis}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('differentialDiagnosis')}
                             />
                         </div>
                     </div>
@@ -1049,11 +1150,12 @@ const ReportForm = () => {
                                 value={treatment}
                                 onChange={(e) => handleInputChange(e, 'treatment', setTreatment)}
                                 disabled={!enabledFields.treatment}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="treatment"
                                 enabled={enabledFields.treatment}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('treatment')}
                             />
                         </div>
                     </div>
@@ -1066,11 +1168,12 @@ const ReportForm = () => {
                                 value={naturopathicMedicine}
                                 onChange={(e) => handleInputChange(e, 'naturopathicMedicine', setNaturopathicMedicine)}
                                 disabled={!enabledFields.naturopathicMedicine}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="naturopathicMedicine"
                                 enabled={enabledFields.naturopathicMedicine}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('naturopathicMedicine')}
                             />
                         </div>
                     </div>
@@ -1083,11 +1186,12 @@ const ReportForm = () => {
                                 value={clientCommunications}
                                 onChange={(e) => handleInputChange(e, 'clientCommunications', setClientCommunications)}
                                 disabled={!enabledFields.clientCommunications}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="clientCommunications"
                                 enabled={enabledFields.clientCommunications}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('clientCommunications')}
                             />
                         </div>
                     </div>
@@ -1100,28 +1204,48 @@ const ReportForm = () => {
                                 value={planFollowUp}
                                 onChange={(e) => handleInputChange(e, 'planFollowUp', setPlanFollowUp)}
                                 disabled={!enabledFields.planFollowUp}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
                                 fieldName="planFollowUp"
                                 enabled={enabledFields.planFollowUp}
-                                onChange={handleToggleField}
+                                onChange={() => handleToggleField('planFollowUp')}
                             />
                         </div>
                     </div>
 
                     <div className="form-field-container">
-                        <label className="form-label">Client Education:</label>
+                        <label className="form-label">Patient Visit Summary:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
-                                className={`form-input ${!enabledFields.clientEducation ? 'disabled' : ''}`}
-                                value={clientEducation}
-                                onChange={(e) => handleInputChange(e, 'clientEducation', setClientEducation)}
-                                disabled={!enabledFields.clientEducation}
+                                className={`form-input ${!enabledFields.patientVisitSummary ? 'disabled' : ''}`}
+                                value={patientVisitSummary}
+                                onChange={(e) => handleInputChange(e, 'patientVisitSummary', setPatientVisitSummary)}
+                                disabled={!enabledFields.patientVisitSummary}
+                                placeholder='Add data or leave blank to auto-populate'
                             />
                             <ToggleSwitch
-                                fieldName="clientEducation"
-                                enabled={enabledFields.clientEducation}
-                                onChange={handleToggleField}
+                                fieldName="patientVisitSummary"
+                                enabled={enabledFields.patientVisitSummary}
+                                onChange={() => handleToggleField('patientVisitSummary')}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-field-container">
+                        <label className="form-label">Notes:</label>
+                        <div className="input-toggle-wrapper">
+                            <textarea
+                                className={`form-input ${!enabledFields.notes ? 'disabled' : ''}`}
+                                value={notes}
+                                onChange={(e) => handleInputChange(e, 'notes', setNotes)}
+                                disabled={!enabledFields.notes}
+                                placeholder='Add notes you wish to generate'
+                            />
+                            <ToggleSwitch
+                                fieldName="notes"
+                                enabled={enabledFields.notes}
+                                onChange={() => handleToggleField('notes')}
                             />
                         </div>
                     </div>

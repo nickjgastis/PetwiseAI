@@ -1,0 +1,190 @@
+import React from 'react';
+import axios from 'axios';
+
+const GenerateReport = async (inputs, enabledFields) => {
+  const getEnabledContent = (fieldName, content) => {
+    if (!enabledFields || !enabledFields[fieldName]) {
+      return '';
+    }
+    return content;
+  };
+
+  const prompt = `You are a highly experienced veterinarian. Based on the following input details, write a comprehensive veterinary prognosis report that adheres to the specified template. IMPORTANT: Maintain exact bullet point format (•) as shown in the template. Do not convert bullets to dashes or other formats. If a section is empty, keep the bullet points and provide data based on best practices from similar cases IMPORTANT: For patient information fields marked as "Provide here", leave them exactly as "Provide here" - do not generate or make up any patient information. Only fill in medical content in the sections below the patient information.
+
+Veterinary Report
+    
+Patient: ${inputs.patientName ? inputs.patientName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
+Species: ${inputs.species ? inputs.species.charAt(0).toUpperCase() + inputs.species.slice(1).toLowerCase() : "Provide here"}  
+Sex: ${inputs.sex ? inputs.sex.charAt(0).toUpperCase() + inputs.sex.slice(1).toLowerCase() : "Provide here"}  
+Breed: ${inputs.breed ? inputs.breed.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
+Color/Markings: ${inputs.colorMarkings ? inputs.colorMarkings.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
+Weight: ${inputs.weight || "Provide here"} ${inputs.weightUnit || "lbs"}  
+Age: ${inputs.age || "Provide here"}  
+Owner: ${inputs.ownerName ? inputs.ownerName.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
+Address: ${inputs.address ? inputs.address.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
+Telephone: ${inputs.telephone || "Provide here"}  
+${getEnabledContent('examDate', `Exam Date: ${inputs.examDate || "Provide here"}`)}  
+${getEnabledContent('doctor', `Doctor: ${inputs.doctor ? inputs.doctor.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}`)}
+
+${getEnabledContent('presentingComplaint', `Presenting Complaint:
+  ${inputs.presentingComplaint
+      ? `The following text describes the presenting complaint. Correct spelling, grammar, and capitalization. Clearly separate and list distinct issues on individual lines while maintaining the structure and intent of the input. Do not use bullets or numbering; simply format each issue on a new line:
+  
+  Input: "${inputs.presentingComplaint}"
+  
+  Output:`
+      : 'No presenting complaint provided'}`)}
+  
+  ${getEnabledContent('history', `History:
+  ${inputs.history
+          ? `The following text describes the history. Correct spelling, grammar, and capitalization. Clearly separate and list distinct issues or descriptions on individual lines while preserving the input's structure and intent. Do not use bullets or numbering; simply format each entry on a new line:
+  
+  Input: "${inputs.history}"
+  
+  Output:`
+          : 'No history provided'}`)}
+  
+${getEnabledContent('physicalExamFindings', `Physical Exam Findings: ${new Date().toLocaleString()}
+${inputs.physicalExamFindings
+              ? `Correct capitalization throughout the text, but do not alter the structure, order, or content of the input. Maintain the exact formatting provided, including line breaks or other delimiters:
+            
+Input: "${inputs.physicalExamFindings}"
+            
+Output:`
+              : 'No physical exam findings provided'}`)}
+            
+              ${getEnabledContent('diagnosticTests', `Diagnostic Tests:
+${inputs.diagnosticTests
+                  ? `Correct capitalization throughout the text, but do not alter the structure, order, or content of the input. Maintain the exact formatting provided, including line breaks or other delimiters. If a test category is empty, suggest common tests that would be appropriate based on the presenting complaint and history:
+
+Input: "${inputs.diagnosticTests}"
+
+Output:`
+                  : 'No diagnostic tests provided'}`)}
+                
+${getEnabledContent('assessment', `Assessment:
+${inputs.assessment || `Provide assessment in bullet points:
+• Current clinical status and overall condition
+• Key physical exam findings and their significance
+• Relevant test results and their interpretation
+• Disease progression or improvement if applicable
+• Impact on patient's quality of life`}`)}
+
+${getEnabledContent('diagnosis', `Diagnosis:
+${inputs.diagnosis || `List primary diagnoses in bullet points:
+• Main diagnosis with supporting evidence
+• Stage or severity of condition
+• Expected progression
+• Prognosis and factors affecting outcome
+• Confidence level in diagnosis`}`)}
+
+${getEnabledContent('differentialDiagnosis', `Differential Diagnosis:
+${inputs.differentialDiagnosis || `List differential diagnoses in order of likelihood, get your information from the 5 minute veterinary consult:
+1. [condition] - supporting evidence
+2. [condition] - supporting evidence
+3. [same format] - supporting evidence
+• Ruled out: [conditions] - reasons for exclusion`}`)}
+
+${getEnabledContent('treatment', `Plan
+Treatment:
+${inputs.treatment || `List the most commmon treatment in bullet points:
+[Drug Name] (dose mg/kg, route, frequency - SID/BID/TID/QID/EOD, Duration: [specify])
+  - Special instructions: [if any]
+[same format]`}`)}
+
+${getEnabledContent('monitoring', `Monitoring:
+Pull from the diagnosis section and provide bullet points on what to monitor based on the condition.`)}
+
+Drug Interactions/Side Effects:
+• Drug Interactions:
+  - Potential interactions between prescribed medications
+  - Specific combinations to avoid
+• Side Effects:
+  - Common side effects for each medication
+  - Warning signs to watch for
+• Contraindications:
+  - Specific conditions that affect medication use
+  - Required monitoring parameters
+• Special Considerations:
+  - Drug-specific monitoring requirements
+  - Timing considerations between medications
+
+${getEnabledContent('naturopathicMedicine', `Naturopathic Medicine:
+${inputs.naturopathicMedicine || `List natural treatments in bullet points:
+• Treatment 1:
+  - Dosing and administration
+  - Expected benefits
+  - Potential interactions
+  - Contraindications
+• Treatment 2: [same format]
+• Treatment 3: [same format]`}`)}
+
+${getEnabledContent('clientCommunications', `Client Communications:
+${inputs.clientCommunications || `Key points discussed:
+• Diagnosis explanation and implications
+• Treatment plan overview
+• Expected outcomes and timeline
+• Side effects to watch for
+• Warning signs requiring immediate attention`}`)}
+
+${getEnabledContent('planFollowUp', `Follow-Up:
+${inputs.planFollowUp || `
+• Next appointment: [specific number of days from today]
+• Reason for appointment`}`)}
+
+${getEnabledContent('clientEducation', `Client Education:
+${inputs.clientEducation || `Please write a report to the client that includes:
+• Brief overview of their pet's diagnosed condition
+• Summary of:
+  - The prescribed treatments and medications
+  - Home care instructions and lifestyle changes
+  - Warning signs to watch for
+  - Diet and exercise recommendations
+  - Any environmental changes needed
+• Available resources and support
+• Follow-up appointment details
+• Doctors name
+
+The tone should be warm and supportive while maintaining medical accuracy. Include specific details from their visit and personalize based on any particular concerns they expressed.`}`)}
+
+${getEnabledContent('doctor', inputs.doctor || "Provide here")}
+    
+
+Veterinarian: Dr. ${inputs.doctor || "[Name]"}
+Signature: ________________________
+Date: ${new Date().toLocaleDateString()}
+
+End of Medical Record.
+
+    If any information is missing or incomplete, fill in with best practices from similar cases. Always ensure the report is detailed and medically accurate, providing the owner with a clear understanding of the pet's condition, prognosis, and next steps for care. Recommend appropriate treatments where relevant. If the input is short,you should expand with two to three sentences. Don't ever leave a comment at the end of the report.`;
+
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4o-mini', // Updated model name
+        messages: [
+          {
+            role: 'system',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error('Error generating report:', error);
+    throw new Error('Failed to generate report. Please try again.');
+  }
+};
+
+export default GenerateReport;

@@ -26,7 +26,7 @@ const Navbar = () => {
     return (
         <nav className="navbar">
             <div className="navbar-logo">
-                <Link to="/">PetWise</Link>
+                <Link to="/">petwise.vet</Link>
             </div>
             <ul className="navbar-links">
                 {!isAuthenticated && (

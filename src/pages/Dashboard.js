@@ -118,7 +118,7 @@ const Dashboard = () => {
             <aside className="sidebar">
                 <div className="sidebar-logo">
                     <Link to="/dashboard">
-                        <span className="logo-text">PetWise</span>
+                        <span className="logo-text">petwise.vet</span>
                         {isSidebarCollapsed && (
                             <img
                                 src="/favicon.ico"

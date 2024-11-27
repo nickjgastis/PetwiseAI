@@ -14,6 +14,7 @@ const QuickQuery = () => {
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const [copiedIndex, setCopiedIndex] = useState(null);
 
     useEffect(() => {
         scrollToBottom();
@@ -126,37 +127,58 @@ Recommendation: Final advice here.`
         localStorage.removeItem('quickQueryMessages');
     };
 
+    const handleCopy = async (text, index) => {
+        await navigator.clipboard.writeText(text);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+    };
+
     return (
-        <div className="quick-query-container">
-            <div className="quick-query-header">
+        <div className="qq-container">
+            <div className="qq-header">
                 <h2>QuickMed Query</h2>
                 {messages.length > 0 && (
-                    <button
-                        onClick={handleClear}
-                        className="clear-button"
-                    >
+                    <button onClick={handleClear} className="qq-clear-button">
                         Clear Chat
                     </button>
                 )}
             </div>
-            <div className="chat-container">
-                <div className="messages-container">
+            <div className="qq-chat-container">
+                <div className="qq-messages-container">
                     {messages.length === 0 && (
-                        <div className="welcome-message">
+                        <div className="qq-welcome-message">
                             <h3>Welcome to QuickMed Query!</h3>
                             <p>Ask any veterinary-related question and get instant assistance.</p>
                         </div>
                     )}
                     {messages.map((message, index) => (
-                        <div key={index} className={`message ${message.role}`}>
-                            <div className="message-content">
+                        <div key={index} className={`qq-message ${message.role}`}>
+                            <div className="qq-message-content">
                                 {message.content}
+                                {message.role === 'assistant' && (
+                                    <button
+                                        className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
+                                        onClick={() => handleCopy(message.content, index)}
+                                        aria-label="Copy message"
+                                    >
+                                        {copiedIndex === index ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
+                                                <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="message assistant">
-                            <div className="message-content loading">
+                        <div className="qq-message assistant">
+                            <div className="qq-message-content loading">
                                 <div className="typing-indicator">
                                     <span></span>
                                     <span></span>
@@ -167,18 +189,18 @@ Recommendation: Final advice here.`
                     )}
                     <div ref={messagesEndRef} />
                 </div>
-                <form onSubmit={handleSubmit} className="input-form">
+                <form onSubmit={handleSubmit} className="qq-input-form">
                     <input
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
                         placeholder="Ask a veterinary question..."
-                        className="message-input"
+                        className="qq-message-input"
                         disabled={isLoading}
                     />
                     <button
                         type="submit"
-                        className="send-button"
+                        className="qq-send-button"
                         disabled={isLoading || !inputMessage.trim()}
                         aria-label="Send message"
                     >
