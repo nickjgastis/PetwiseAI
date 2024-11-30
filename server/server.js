@@ -297,9 +297,11 @@ app.post('/cancel-subscription', async (req, res) => {
 // ================ TRIAL ENDPOINT ================
 app.post('/activate-trial', async (req, res) => {
     try {
-        const { user_id } = req.body;
+        const { user_id, emailOptOut } = req.body;
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
+
+        console.log('Received email opt out:', emailOptOut);
 
         const { data, error } = await supabase
             .from('users')
@@ -310,7 +312,8 @@ app.post('/activate-trial', async (req, res) => {
                 subscription_end_date: trialEndDate.toISOString(),
                 has_used_trial: true,
                 reports_used_today: 0,
-                last_report_date: new Date().toISOString().split('T')[0]
+                last_report_date: new Date().toISOString().split('T')[0],
+                email_opt_out: emailOptOut
             })
             .eq('auth0_user_id', user_id)
             .select();

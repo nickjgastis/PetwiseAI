@@ -74,11 +74,14 @@ const Dashboard = () => {
         }
     }, [isAuthenticated, user]);
 
-    const handleAcceptTerms = async () => {
+    const handleAcceptTerms = async ({ emailOptOut }) => {
         try {
             const { error } = await supabase
                 .from('users')
-                .update({ has_accepted_terms: true })
+                .update({
+                    has_accepted_terms: true,
+                    email_opt_out: emailOptOut
+                })
                 .eq('auth0_user_id', user.sub);
 
             if (error) throw error;

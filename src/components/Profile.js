@@ -181,6 +181,15 @@ const Profile = () => {
         }
     }, [isAuthenticated, user]);
 
+    useEffect(() => {
+        const location = window.location;
+        if (location.state?.openCheckout) {
+            setShowCheckout(true);
+            // Clean up the state
+            window.history.replaceState({}, document.title)
+        }
+    }, []);
+
     // Show loading state only when auth0 is loading or subscription is loading
     if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
         return <div className="profile-loading">Loading ...</div>;

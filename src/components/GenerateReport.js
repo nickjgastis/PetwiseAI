@@ -141,7 +141,7 @@ const GenerateReport = async (inputs, enabledFields) => {
   - Use professional medical terminology`
         : `Generate differential diagnoses based on the diagnosis and assessment.`}` : ''}
   
-  Plan
+  PLAN
   ${getEnabledContent('treatment', inputs.treatment) !== null ? `
   Treatment:
   ${getEnabledContent('treatment', inputs.treatment)

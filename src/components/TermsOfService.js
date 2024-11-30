@@ -4,6 +4,7 @@ import '../styles/TermsOfService.css';
 const TermsOfService = ({ onAccept }) => {
     const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
     const [hasAccepted, setHasAccepted] = useState(false);
+    const [emailOptOut, setEmailOptOut] = useState(false);
 
     useEffect(() => {
         const element = document.querySelector('.terms-content');
@@ -27,7 +28,8 @@ const TermsOfService = ({ onAccept }) => {
 
     const handleAccept = () => {
         if (isScrolledToBottom && hasAccepted) {
-            onAccept();
+            console.log('Email opt out value:', emailOptOut);
+            onAccept({ emailOptOut });
         }
     };
 
@@ -133,6 +135,15 @@ const TermsOfService = ({ onAccept }) => {
                         disabled={!isScrolledToBottom}
                     />
                     I have read and agree to the Terms of Service and Privacy Policy
+                </label>
+
+                <label className="marketing-checkbox">
+                    <input
+                        type="checkbox"
+                        checked={emailOptOut}
+                        onChange={(e) => setEmailOptOut(e.target.checked)}
+                    />
+                    Don't send me promotional or marketing materials
                 </label>
 
                 <button

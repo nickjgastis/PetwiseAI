@@ -9,6 +9,7 @@ import { createEditor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Node } from 'slate';
+import { Link, useNavigate } from 'react-router-dom';
 
 
 
@@ -24,7 +25,7 @@ const mainHeaders = [
     'Assessment:',
     'Diagnosis:',
     'Differential Diagnoses:',
-    'Plan',
+    'PLAN',
     'Treatment:',
     'Monitoring:',
     'Drug Interactions/Side Effects:',
@@ -501,6 +502,13 @@ const ReportForm = () => {
         e.preventDefault();
         if (isGenerating.current) return;
 
+        setShowLimitWarning(false);
+
+        if (reportsUsed >= reportLimit) {
+            setError('Report limit reached. Please upgrade your plan for more reports.');
+            return;
+        }
+
         try {
             setLoading(true);
             isGenerating.current = true;
@@ -532,11 +540,7 @@ const ReportForm = () => {
 
             setReportsUsed(prev => prev + 1);
         } catch (error) {
-            if (error.message.includes('Daily report limit reached')) {
-                setError(`Daily report limit reached (${reportsUsed}/${reportLimit}). Please upgrade your plan for more reports.`);
-            } else {
-                setError(error.message || 'An error occurred while generating the report.');
-            }
+            setError(error.message || 'An error occurred while generating the report.');
         } finally {
             setLoading(false);
             isGenerating.current = false;
@@ -851,6 +855,43 @@ const ReportForm = () => {
             setReportText(savedReport);
         }
     }, []);
+
+    // Add near your other state declarations
+    const [showLimitWarning, setShowLimitWarning] = useState(false);
+
+    // Add this effect to monitor report usage
+    useEffect(() => {
+        if (reportLimit - reportsUsed <= 3 && reportLimit !== 0) {
+            setShowLimitWarning(true);
+        } else {
+            setShowLimitWarning(false);
+        }
+    }, [reportsUsed, reportLimit]);
+
+    // Add this state to handle navigation
+    const navigate = useNavigate(); // Add useNavigate import at the top
+
+    // Modify the LimitWarningPopup component
+    const LimitWarningPopup = () => (
+        <div className="limit-warning-popup">
+            <button
+                className="close-warning"
+                onClick={() => setShowLimitWarning(false)}
+            >
+                ×
+            </button>
+            <p>You have {reportLimit - reportsUsed} reports remaining today.</p>
+            <p>Need more? <button
+                className="upgrade-link"
+                onClick={() => {
+                    setShowLimitWarning(false);
+                    navigate('/profile', { state: { openCheckout: true } });
+                }}
+            >
+                Upgrade your plan
+            </button></p>
+        </div>
+    );
 
     return (
         <div className="report-container">
@@ -1257,10 +1298,11 @@ const ReportForm = () => {
                         <button
                             type="submit"
                             className="generate-report-button"
-                            disabled={loading}
+                            disabled={loading || reportsUsed >= reportLimit}
                         >
                             {loading ? 'Generating...' : 'Generate Report'}
                         </button>
+                        {showLimitWarning && <LimitWarningPopup />}
                         <button type="button" className="clear-button" onClick={resetEntireForm}>
                             Clear All
                         </button>
