@@ -23,9 +23,11 @@
 
 .pricing-container {
     display: flex;
-    gap: 24px;
-    justify-content: center;
-    margin: 32px 0;
+    flex-direction: column;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 .pricing-card {
@@ -186,4 +188,16 @@
 .back-button:hover {
     background: #f5f5f5;
     transform: translateY(-2px);
+}
+
+/* Style the trial card */
+.pricing-card.free {
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+/* Style the Stripe pricing table */
+stripe-pricing-table {
+    width: 100%;
+    margin: 0 auto;
 }

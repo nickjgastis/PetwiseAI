@@ -381,6 +381,35 @@ async function checkReportLimit(req, res, next) {
             return res.status(400).json({ error: 'User ID required' });
         }
 
+        // Get current time with seconds
+        const now = new Date();
+        const timeKey = now.toISOString().split('T')[0]; // Use full date format
+
+        // First, check and reset if needed
+        const { data: resetCheck } = await supabase
+            .from('users')
+            .select('last_report_date')
+            .eq('auth0_user_id', user.sub)
+            .single();
+
+        console.log('Reset Check:', {
+            currentTimeKey: timeKey,
+            lastReportDate: resetCheck?.last_report_date,
+            shouldReset: !resetCheck?.last_report_date || resetCheck.last_report_date !== timeKey
+        });
+
+        // Reset if timeKey different (every 10 seconds)
+        if (!resetCheck?.last_report_date || resetCheck.last_report_date !== timeKey) {
+            await supabase
+                .from('users')
+                .update({
+                    reports_used_today: 0,
+                    last_report_date: timeKey
+                })
+                .eq('auth0_user_id', user.sub);
+        }
+
+        // Then get the updated user data
         const { data: userData, error } = await supabase
             .from('users')
             .select('subscription_type, reports_used_today, last_report_date')
@@ -389,44 +418,24 @@ async function checkReportLimit(req, res, next) {
 
         if (error) throw error;
 
-        // Reset counter if it's a new day
-        const today = new Date().toISOString().split('T')[0];
-        if (userData.last_report_date !== today) {
-            await supabase
-                .from('users')
-                .update({
-                    reports_used_today: 0,
-                    last_report_date: today
-                })
-                .eq('auth0_user_id', user.sub);
-            userData.reports_used_today = 0;
-        }
-
         // Get limit based on subscription type
-        let limit;
-        switch (userData.subscription_type) {
-            case 'trial': limit = REPORT_LIMITS.trial; break;
-            case 'singleUser': limit = REPORT_LIMITS.singleUser; break;
-            case 'multiUser': limit = REPORT_LIMITS.multiUser; break;
-            case 'clinic': limit = REPORT_LIMITS.clinic; break;
-            default: limit = 0;
-        }
+        let limit = REPORT_LIMITS[userData.subscription_type] || 0;
 
         if (userData.reports_used_today >= limit) {
             return res.status(403).json({
-                error: 'Daily report limit reached',
+                error: 'Report limit reached',
                 limit,
                 used: userData.reports_used_today
             });
         }
 
-        // Attach to request for later use
         req.reportData = {
             currentCount: userData.reports_used_today,
             limit
         };
         next();
     } catch (error) {
+        console.error('Check report limit error:', error);
         res.status(500).json({ error: error.message });
     }
 }
@@ -484,6 +493,113 @@ app.get('/', (req, res) => {
     });
 });
 
+// Add this new debug endpoint to test the reset
+app.get('/test-reset/:userId', async (req, res) => {
+    try {
+        const now = new Date();
+        const timeKey = now.toISOString().split('T')[0];
+
+        // First check expiration
+        const { data: expirationCheck } = await supabase
+            .from('users')
+            .select('subscription_end_date')
+            .eq('auth0_user_id', req.params.userId)
+            .single();
+
+        if (expirationCheck?.subscription_end_date < now.toISOString()) {
+            await supabase
+                .from('users')
+                .update({ subscription_status: 'inactive' })
+                .eq('auth0_user_id', req.params.userId);
+        }
+
+        // Then reset reports
+        const { data: updateData, error } = await supabase
+            .from('users')
+            .update({
+                reports_used_today: 0,
+                last_report_date: timeKey
+            })
+            .eq('auth0_user_id', req.params.userId)
+            .select();
+
+        if (error) throw error;
+
+        console.log('Reset result:', updateData);
+        res.json(updateData);
+    } catch (error) {
+        console.error('Test reset error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add this test endpoint
+app.post('/test-expiration/:userId', async (req, res) => {
+    try {
+        // Set subscription to expire in 1 minute
+        const expirationDate = new Date(Date.now() + 1 * 60 * 1000);
+
+        const { data, error } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'active',
+                subscription_end_date: expirationDate.toISOString()
+            })
+            .eq('auth0_user_id', req.params.userId)
+            .select();
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add this test endpoint after your other test endpoints
+app.post('/test-cancellation-flow/:userId', async (req, res) => {
+    try {
+        const now = new Date();
+        const futureDate = new Date(now.getTime() + 2 * 60 * 1000); // 2 minutes in future
+
+        // First set up a subscription that's cancelled but not yet expired
+        const { data: setupData, error: setupError } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'active',
+                cancel_at_period_end: true,
+                subscription_end_date: futureDate.toISOString()
+            })
+            .eq('auth0_user_id', req.params.userId)
+            .select();
+
+        if (setupError) throw setupError;
+
+        console.log('Initial setup:', setupData);
+
+        // Wait 3 seconds then check if checkTrialExpirations catches it
+        setTimeout(async () => {
+            await checkTrialExpirations();
+
+            // Get final state
+            const { data: finalData } = await supabase
+                .from('users')
+                .select('subscription_status, subscription_end_date, cancel_at_period_end')
+                .eq('auth0_user_id', req.params.userId)
+                .single();
+
+            console.log('Final state:', finalData);
+        }, 3000);
+
+        res.json({
+            message: 'Test started. Check server logs.',
+            initialState: setupData[0]
+        });
+    } catch (error) {
+        console.error('Test error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ================ SERVER STARTUP ================
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
@@ -496,8 +612,45 @@ app.listen(PORT, () => {
     });
 });
 
-// Run at midnight every day
-cron.schedule('0 0 * * *', () => {
-    checkTrialExpirations();
+// Run at midnight every day (0 0 * * *)
+cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log('Running daily midnight job at:', new Date().toISOString());
+
+        // First check trial/subscription expirations
+        const now = new Date().toISOString();
+        const { data: expiredUsers, error: expirationError } = await supabase
+            .from('users')
+            .update({ subscription_status: 'inactive' })
+            .lt('subscription_end_date', now)
+            .eq('subscription_status', 'active')
+            .select();
+
+        if (expirationError) {
+            console.error('Error checking expirations:', expirationError);
+        } else {
+            console.log(`Deactivated ${expiredUsers?.length || 0} expired subscriptions`);
+        }
+
+        // Then reset report counts for remaining active users
+        const today = new Date().toISOString().split('T')[0];
+        const { data: resetUsers, error: resetError } = await supabase
+            .from('users')
+            .update({
+                reports_used_today: 0,
+                last_report_date: today
+            })
+            .eq('subscription_status', 'active')
+            .select();
+
+        if (resetError) {
+            console.error('Reset error:', resetError);
+        } else {
+            console.log(`Reset report counts for ${resetUsers?.length || 0} active users`);
+        }
+
+    } catch (error) {
+        console.error('Daily cron job error:', error);
+    }
 });
 

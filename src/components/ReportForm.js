@@ -880,7 +880,7 @@ const ReportForm = () => {
             >
                 ×
             </button>
-            <p>You have {reportLimit - reportsUsed} reports remaining today.</p>
+            <p>You have {reportLimit - reportsUsed} reports remaining today. Reports will reset tomorrow.</p>
             <p>Need more? <button
                 className="upgrade-link"
                 onClick={() => {
