@@ -5,7 +5,6 @@ const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const cron = require('node-cron');
 
 // ================ APP INITIALIZATION ================
 const app = express();
@@ -612,45 +611,21 @@ app.listen(PORT, () => {
     });
 });
 
-// Run at midnight every day (0 0 * * *)
-cron.schedule('0 0 * * *', async () => {
+// Add a manual reset endpoint for testing
+app.post('/manual-reset', async (req, res) => {
     try {
-        console.log('Running daily midnight job at:', new Date().toISOString());
-
-        // First check trial/subscription expirations
-        const now = new Date().toISOString();
-        const { data: expiredUsers, error: expirationError } = await supabase
-            .from('users')
-            .update({ subscription_status: 'inactive' })
-            .lt('subscription_end_date', now)
-            .eq('subscription_status', 'active')
-            .select();
-
-        if (expirationError) {
-            console.error('Error checking expirations:', expirationError);
-        } else {
-            console.log(`Deactivated ${expiredUsers?.length || 0} expired subscriptions`);
-        }
-
-        // Then reset report counts for remaining active users
-        const today = new Date().toISOString().split('T')[0];
-        const { data: resetUsers, error: resetError } = await supabase
+        const { data, error } = await supabase
             .from('users')
             .update({
                 reports_used_today: 0,
-                last_report_date: today
+                last_report_date: new Date().toISOString().split('T')[0]
             })
-            .eq('subscription_status', 'active')
-            .select();
+            .not('subscription_status', 'eq', 'inactive');
 
-        if (resetError) {
-            console.error('Reset error:', resetError);
-        } else {
-            console.log(`Reset report counts for ${resetUsers?.length || 0} active users`);
-        }
-
+        if (error) throw error;
+        res.json({ message: 'Manual reset successful', timestamp: new Date().toISOString() });
     } catch (error) {
-        console.error('Daily cron job error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 

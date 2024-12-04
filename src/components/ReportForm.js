@@ -398,7 +398,8 @@ const ReportForm = () => {
     // Add near other state declarations
     const [enabledFields, setEnabledFields] = useState(() => {
         const savedFields = localStorage.getItem('enabledFields');
-        return savedFields ? JSON.parse(savedFields) : {
+        // Always default to all fields enabled
+        const defaultFields = {
             examDate: true,
             doctor: true,
             presentingComplaint: true,
@@ -416,40 +417,65 @@ const ReportForm = () => {
             patientVisitSummary: true,
             notes: true
         };
+        return savedFields ? JSON.parse(savedFields) : defaultFields;
     });
 
     const [reportsUsed, setReportsUsed] = useState(0);
     const [reportLimit, setReportLimit] = useState(0);
 
-    useEffect(() => {
-        const fetchReportUsage = async () => {
-            if (!user) return;
+    const fetchReportUsage = async () => {
+        if (!user) return;
 
-            try {
-                const { data, error } = await supabase
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('reports_used_today, subscription_type, last_report_date')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (error) throw error;
+
+            const today = new Date().toISOString().split('T')[0];
+
+            // Reset if the last report date is different from today
+            if (data.last_report_date !== today) {
+                const { error: updateError } = await supabase
                     .from('users')
-                    .select('reports_used_today, subscription_type')
-                    .eq('auth0_user_id', user.sub)
-                    .single();
+                    .update({
+                        reports_used_today: 0,
+                        last_report_date: today
+                    })
+                    .eq('auth0_user_id', user.sub);
 
-                if (error) throw error;
-
+                if (updateError) throw updateError;
+                setReportsUsed(0);
+            } else {
                 setReportsUsed(data.reports_used_today);
-
-                // Set limit based on subscription type
-                const limits = {
-                    trial: 10,
-                    singleUser: 25,
-                    multiUser: 120,
-                    clinic: 400
-                };
-                setReportLimit(limits[data.subscription_type] || 0);
-            } catch (error) {
-                console.error('Error fetching report usage:', error);
             }
-        };
 
+            // Set limit based on subscription type
+            const limits = {
+                trial: 10,
+                singleUser: 25,
+                multiUser: 120,
+                clinic: 400
+            };
+            setReportLimit(limits[data.subscription_type] || 0);
+
+            // Show warning when within 3 reports of limit
+            if (limits[data.subscription_type] - data.reports_used_today <= 3) {
+                setShowLimitWarning(true);
+            }
+        } catch (error) {
+            console.error('Error fetching report usage:', error);
+        }
+    };
+
+    // Check on component mount and every 5 minutes
+    useEffect(() => {
         fetchReportUsage();
+        const interval = setInterval(fetchReportUsage, 5 * 60 * 1000);
+        return () => clearInterval(interval);
     }, [user]);
 
     useEffect(() => {
@@ -665,8 +691,8 @@ const ReportForm = () => {
         setDoctor('');
         setPresentingComplaint('');
         setHistory('');
-        setPhysicalExamFindings(DEFAULT_PHYSICAL_EXAM); // Reset to default template
-        setDiagnosticTests(DEFAULT_DIAGNOSTIC_TESTS); // Reset to default template
+        setPhysicalExamFindings(DEFAULT_PHYSICAL_EXAM);
+        setDiagnosticTests(DEFAULT_DIAGNOSTIC_TESTS);
         setAssessment('');
         setDiagnosis('');
         setDifferentialDiagnosis('');
@@ -676,38 +702,21 @@ const ReportForm = () => {
         setPlanFollowUp('');
         setReportText('');
         setPreviewVisible(false);
+        setPatientVisitSummary('');
+        setNotes('');
 
-        // Clear all localStorage
+        // Clear localStorage except for enabledFields
+        const savedEnabledFields = localStorage.getItem('enabledFields');
         localStorage.clear();
 
-        // Reset physical exam to default in localStorage
+        // Restore default templates
         localStorage.setItem('physicalExamFindings', DEFAULT_PHYSICAL_EXAM);
         localStorage.setItem('diagnosticTests', DEFAULT_DIAGNOSTIC_TESTS);
 
-        // Keep enabled fields state
-        const defaultEnabledFields = {
-            examDate: true,
-            doctor: true,
-            presentingComplaint: true,
-            history: true,
-            physicalExamFindings: true,
-            diagnosticTests: true,
-            assessment: true,
-            diagnosis: true,
-            differentialDiagnosis: true,
-            treatment: true,
-            monitoring: true,
-            naturopathicMedicine: true,
-            clientCommunications: true,
-            planFollowUp: true
-        };
-        setEnabledFields(defaultEnabledFields);
-        localStorage.setItem('enabledFields', JSON.stringify(defaultEnabledFields));
-
-        setPatientVisitSummary('');
-        setNotes('');
-        localStorage.removeItem('patientVisitSummary');
-        localStorage.removeItem('notes');
+        // Restore enabled fields
+        if (savedEnabledFields) {
+            localStorage.setItem('enabledFields', savedEnabledFields);
+        }
     };
 
     const handleBreedChange = (e) => {
