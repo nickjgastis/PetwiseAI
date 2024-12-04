@@ -471,11 +471,39 @@ const ReportForm = () => {
         }
     };
 
-    // Check on component mount and every 5 minutes
+    // Add lastFetchTime to track when we last checked
+    const lastFetchTime = useRef(0);
+    const MIN_FETCH_INTERVAL = 30000; // 30 seconds minimum between fetches
+
+    const debouncedFetchReportUsage = () => {
+        const now = Date.now();
+        if (now - lastFetchTime.current > MIN_FETCH_INTERVAL) {
+            fetchReportUsage();
+            lastFetchTime.current = now;
+        }
+    };
+
     useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                debouncedFetchReportUsage();
+            }
+        };
+
+        // Initial fetch
         fetchReportUsage();
-        const interval = setInterval(fetchReportUsage, 5 * 60 * 1000);
-        return () => clearInterval(interval);
+        lastFetchTime.current = Date.now();
+
+        // Add visibility change listener
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        // 5-minute interval check
+        const interval = setInterval(debouncedFetchReportUsage, 5 * 60 * 1000);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearInterval(interval);
+        };
     }, [user]);
 
     useEffect(() => {
