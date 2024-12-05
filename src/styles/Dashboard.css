@@ -160,18 +160,7 @@
     margin-left: var(--sidebar-collapsed-width);
 }
 
-/* Heading Styling */
-h1 {
-    font-size: 2.5rem;
-    color: #2c3e50;
-    /* Dark, modern text */
-    margin-bottom: 20px;
-    border-bottom: 2px solid #2390c2;
-    /* Adds a modern underline effect */
-    padding-bottom: 10px;
-    letter-spacing: 0.5px;
-    /* Letter-spacing for readability */
-}
+
 
 h3 {
     margin-top: 10px;
@@ -370,4 +359,95 @@ h3 {
     white-space: nowrap;
     margin-left: 10px;
     z-index: 1000;
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: fixed;
+        width: 250px;
+        height: 100vh;
+        left: -250px;
+        transition: left 0.3s ease-in-out;
+    }
+
+    .sidebar.active {
+        left: 0;
+    }
+
+    .main-content {
+        margin-left: 0;
+        margin-top: 60px;
+        /* Height of mobile header */
+        width: 100%;
+        padding: 15px;
+    }
+
+    /* Mobile Header */
+    .mobile-header {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background-color: #65a8d2;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 15px;
+        z-index: 998;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .mobile-logo {
+        color: white;
+        font-size: 1.5rem;
+        font-family: Georgia, 'Times New Roman', Times, serif;
+    }
+
+    .mobile-hamburger {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        width: 30px;
+        height: 25px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        z-index: 999;
+    }
+
+    .mobile-hamburger span {
+        width: 30px;
+        height: 3px;
+        background: white;
+        border-radius: 10px;
+        transition: all 0.3s linear;
+    }
+
+    /* Hide desktop sidebar toggle */
+    .sidebar-toggle {
+        display: none;
+    }
+
+    /* Overlay when sidebar is open */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 997;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
 }

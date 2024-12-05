@@ -20,6 +20,7 @@ const Dashboard = () => {
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
     const [userData, setUserData] = useState(null);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
@@ -117,8 +118,29 @@ const Dashboard = () => {
     // ================ RENDER COMPONENT ================
     return (
         <div className={`dashboard-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+            {/* Mobile Header */}
+            {window.innerWidth <= 768 && (
+                <>
+                    <div className="mobile-header">
+                        <button
+                            className="mobile-hamburger"
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        >
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                        <div className="mobile-logo">petwise.vet</div>
+                    </div>
+                    <div
+                        className={`sidebar-overlay ${isMobileMenuOpen ? 'active' : ''}`}
+                        onClick={() => setIsMobileMenuOpen(false)}
+                    />
+                </>
+            )}
+
             {/* Sidebar Navigation */}
-            <aside className="sidebar">
+            <aside className={`sidebar ${isMobileMenuOpen ? 'active' : ''}`}>
                 <div className="sidebar-logo">
                     <Link to="/dashboard">
                         <span className="logo-text">petwise.vet</span>

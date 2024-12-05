@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import '../styles/HomePage.css'; // Import the CSS file
+import { BsArrowRight } from 'react-icons/bs';  // Add this import at the top
+import { HiChevronDoubleDown } from 'react-icons/hi';  // Add this import
 
 const HomePage = () => {
     const { loginWithRedirect } = useAuth0();
@@ -15,9 +17,7 @@ const HomePage = () => {
             });
         }, { threshold: 0.5 });
 
-        sections.forEach((section) => {
-            observer.observe(section);
-        });
+        sections.forEach((section) => observer.observe(section));
     }, []);
 
     const signUpOptions = {
@@ -26,150 +26,246 @@ const HomePage = () => {
         }
     };
 
+    const features = [
+        {
+            title: 'Patient History & Symptoms',
+            detail: `• Species, breed, age, sex documentation
+• Current complaints and history
+• Diet and medication information`
+        },
+        {
+            title: 'Physical Examination',
+            detail: `• Vital signs and body condition score
+• Full body system observations
+• Detailed abnormal findings`
+        },
+        {
+            title: 'Diagnostic Planning',
+            detail: `• AI-assisted test selection
+• Lab work recommendations
+• Imaging study suggestions`
+        },
+        {
+            title: 'Assessment & Diagnosis',
+            detail: `• Primary diagnosis analysis
+• Differential diagnoses list
+• Evidence-based conclusions`
+        },
+        {
+            title: 'Treatment Plan',
+            detail: `• Medication recommendations
+• Monitoring parameters
+• Lifestyle modifications`
+        },
+        {
+            title: 'Follow-up & Monitoring',
+            detail: `• Follow-up schedule
+• Home care instructions
+• Emergency guidelines`
+        }
+    ];
+
     return (
         <div className="page-content">
-            <header className="hero-section">
-                <div className="hero-text fade-in-section">
-                    <h1>Create Veterinary Medical Records In Seconds</h1>
-                    <p>Petwise AI: Save 90% of your medical record entry time. Let AI do the work.</p>
-                </div>
-                <div className="hero-features fade-in-section">
-                    <div className="features-card">
-                        <div className="features-content">
-                            <h3>Minimal Data Entry</h3>
-
-                            <h4>Report generates:</h4>
-                            <ul>
-                                <li>Diagnostic Plan</li>
-                                <li>Assessment</li>
-                                <li>Diagnosis</li>
-                                <li>Differential diagnosis</li>
-                                <li>Treatment Plan
-                                    <ul>
-                                        <li>Drug names, dosages, interval</li>
-                                    </ul>
-                                </li>
-                                <li>Expected Course/Prognosis</li>
-                                <li>Client Communications/Recommendations
-                                    <ul>
-                                        <li>Drug side effects/interactions</li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
-                        <button onClick={() => loginWithRedirect(signUpOptions)} className="cta-button">
+            <section className="homepage-hero">
+                <div className="homepage-hero-content">
+                    <div className="homepage-hero-left">
+                        <h1>Create Veterinary Medical Records In Seconds</h1>
+                        <img src="/PW.png" alt="Petwise Logo" className="homepage-hero-logo" />
+                        <p>Save 90% of your medical record entry time. Let AI do the work.</p>
+                        <button
+                            onClick={() => loginWithRedirect(signUpOptions)}
+                            className="hero-cta-button"
+                        >
                             Start Your Free Trial - No Credit Card Required
                         </button>
                     </div>
-                </div>
-            </header>
-
-            <section className="trusted-section fade-in-section">
-                <h2>Trusted by Veterinary Professionals Worldwide</h2>
-                <p>Join the growing community of satisfied Petwise AI users.</p>
-                <div className="trusted-stats">
-                    <div className="stat-box">
-                        <h3>10+</h3>
-                        <p>Clinics</p>
-                    </div>
-                    <div className="stat-box">
-                        <h3>100+</h3>
-                        <p>Veterinarians</p>
-                    </div>
-                    <div className="stat-box">
-                        <h3>1M+</h3>
-                        <p>Reports Generated</p>
+                    <div className="homepage-hero-right">
+                        <div className="homepage-hero-features">
+                            {features.map((feature, index) => (
+                                <React.Fragment key={index}>
+                                    <div className="homepage-hero-feature">
+                                        <h3>{feature.title}</h3>
+                                        <p className="feature-detail">{feature.detail}</p>
+                                    </div>
+                                    {index < features.length - 1 && (
+                                        <div className="feature-arrow">
+                                            <HiChevronDoubleDown size={24} />
+                                        </div>
+                                    )}
+                                </React.Fragment>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section className="how-it-works fade-in-section">
-                <h2>How Petwise AI Works</h2>
-                <div className="steps">
-                    <div className="step">
-                        <h3>1. Sign Up</h3>
-                        <p>Create your account and start your free 1-month trial.</p>
-                    </div>
-                    <div className="step">
-                        <h3>2. Input Data</h3>
-                        <p>Enter patient details and clinical findings quickly and easily.</p>
-                    </div>
-                    <div className="step">
-                        <h3>3. Generate Report</h3>
-                        <p>Get comprehensive, AI-driven veterinary reports in seconds.</p>
-                    </div>
+            <section className="workflow-section">
+                <div className="workflow-header">
+                    <h2>Three-Step Workflow</h2>
+                    <p>Transform your veterinary practice with our simple three-step process</p>
                 </div>
+                <div className="workflow-steps">
+                    {[
+                        {
+                            title: 'Input Exam Data',
+                            description: 'Enter patient symptoms and clinical findings into our intuitive interface',
+                            image: '/exam.png'
+                        },
+                        {
+                            title: 'Generate Report',
+                            description: 'Our AI processes the information and generates comprehensive medical records',
+                            image: '/generate.png'
+                        },
+                        {
+                            title: 'Review & Approve',
+                            description: 'Review, edit if needed, and approve the AI-generated documentation',
+                            image: '/report.png'
+                        }
+                    ].map((step, index, array) => (
+                        <React.Fragment key={index}>
+                            <div className="workflow-step">
+                                <img
+                                    src={step.image}
+                                    alt={step.title}
+                                    className="workflow-image"
+                                />
+                                <h3>{step.title}</h3>
+                                <p>{step.description}</p>
+                            </div>
+                            {index < array.length - 1 && (
+                                <div className="workflow-arrow">
+                                    <BsArrowRight size={30} />
+                                </div>
+                            )}
+                        </React.Fragment>
+                    ))}
+                </div>
+                <button
+                    onClick={() => loginWithRedirect(signUpOptions)}
+                    className="workflow-cta-button"
+                >
+                    Start Your Free Trial - No Credit Card Required
+                </button>
             </section>
-            <section className="video-section fade-in-section">
-                <h2>See Petwise AI in Action</h2>
+
+            <section className="video-section">
+                <div className="video-header">
+                    <h2>How It Works</h2>
+                </div>
                 <div className="video-container">
                     <iframe
-                        width="560"
-                        height="315"
                         src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
-                        title="Petwise AI Demo"
+                        title="How Petwise AI Works"
                         frameBorder="0"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen>
-                    </iframe>
+                        allowFullScreen
+                    ></iframe>
                 </div>
             </section>
 
-            <section className="testimonials fade-in-section">
-                <h2>What Our Users Say</h2>
-                <div className="testimonial-container">
-                    <div className="testimonial">
-                        <p>"Petwise AI has transformed our clinic's efficiency. It's like having an expert assistant always at hand."</p>
-                        <h4>Dr. Emily Chen</h4>
-                        <p>Small Animal Specialist</p>
-                    </div>
-                    <div className="testimonial">
-                        <p>"The accuracy and depth of the reports generated by Petwise AI are impressive. It's a game-changer for our practice."</p>
-                        <h4>Dr. Michael Rodriguez</h4>
-                        <p>Veterinary Surgeon</p>
-                    </div>
+            <section className="pricing-section">
+                <div className="pricing-header">
+                    <h2>Choose Your Plan</h2>
+                    <p>Get full access to all premium features</p>
                 </div>
-            </section>
-
-
-            <section className="pricing fade-in-section">
-                <h2>Choose Your Plan</h2>
                 <div className="pricing-container">
-                    <div className="pricing-card">
-                        <h3>Free Trial</h3>
-                        <p className="price">7 Days</p>
-                        <ul>
-                            <li>Full access to all features</li>
+                    <div className="pricing-card free">
+                        <div className="pricing-header">
+                            <h3>Free Trial</h3>
+                            <p className="price">$0<span>/14 days</span></p>
+                        </div>
+                        <ul className="pricing-features">
+                            <li>10 reports per day</li>
                             <li>No credit card required</li>
+                            <li>Quick Query</li>
                         </ul>
-                        <button onClick={() => loginWithRedirect(signUpOptions)} className="pricing-button">Start Free Trial</button>
+                        <div className="pricing-footer">
+                            <button
+                                onClick={() => loginWithRedirect(signUpOptions)}
+                                className="trial-button"
+                            >
+                                Start Free Trial - No Credit Card Required
+                            </button>
+                        </div>
                     </div>
+
                     <div className="pricing-card">
-                        <h3>Single Device</h3>
-                        <p className="price">$70/month</p>
-                        <ul>
-                            <li>Unlimited reports</li>
-                            <li>24/7 support</li>
-                            <li>Regular updates</li>
+                        <div className="pricing-header">
+                            <h3>Single User</h3>
+                            <div className="price-options">
+                                <p className="price">$79.99<span>/mo</span></p>
+                                <span className="price-divider">|</span>
+                                <p className="price yearly">$859.99<span>/yr</span></p>
+                            </div>
+                        </div>
+                        <ul className="pricing-features">
+                            <li>25 reports per day</li>
+                            <li>Saved reports</li>
+                            <li>Quick Query</li>
+                            <li>For 1 user</li>
                         </ul>
-                        <button onClick={() => loginWithRedirect(signUpOptions)} className="pricing-button">Choose Plan</button>
+                        <div className="pricing-footer">
+                            <button
+                                onClick={() => loginWithRedirect(signUpOptions)}
+                                className="subscribe-button"
+                            >
+                                Get Started
+                            </button>
+                        </div>
                     </div>
+
                     <div className="pricing-card">
-                        <h3>Clinic Plan</h3>
-                        <p className="price">$1000/month</p>
-                        <ul>
-                            <li>Unlimited devices</li>
-                            <li>Priority support</li>
-                            <li>Custom integrations</li>
+                        <div className="pricing-header">
+                            <h3>Multi User</h3>
+                            <div className="price-options">
+                                <p className="price">$249.99<span>/mo</span></p>
+                                <span className="price-divider">|</span>
+                                <p className="price yearly">$2849.99<span>/yr</span></p>
+                            </div>
+                        </div>
+                        <ul className="pricing-features">
+                            <li>120 reports per day</li>
+                            <li>Saved reports</li>
+                            <li>Quick Query</li>
+                            <li>For 2-5 users</li>
                         </ul>
-                        <button onClick={() => loginWithRedirect(signUpOptions)} className="pricing-button">Contact Sales</button>
+                        <div className="pricing-footer">
+                            <button
+                                onClick={() => loginWithRedirect(signUpOptions)}
+                                className="subscribe-button"
+                            >
+                                Get Started
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="pricing-card">
+                        <div className="pricing-header">
+                            <h3>Clinic Subscription</h3>
+                            <div className="price-options">
+                                <p className="price">$479.99<span>/mo</span></p>
+                                <span className="price-divider">|</span>
+                                <p className="price yearly">$5199.99<span>/yr</span></p>
+                            </div>
+                        </div>
+                        <ul className="pricing-features">
+                            <li>400 reports per day</li>
+                            <li>Saved reports</li>
+                            <li>Quick Query</li>
+                            <li>For full clinics</li>
+                        </ul>
+                        <div className="pricing-footer">
+                            <button
+                                onClick={() => loginWithRedirect(signUpOptions)}
+                                className="subscribe-button"
+                            >
+                                Get Started
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
-
-            <footer className="homepage-footer fade-in-section">
-                <p>&copy; 2024 Petwise AI. All rights reserved.</p>
-            </footer>
         </div>
     );
 };

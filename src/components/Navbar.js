@@ -1,6 +1,6 @@
 // src/components/Navbar.js
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import LoginButton from './LoginButton';
@@ -9,6 +9,7 @@ import '../styles/Navbar.css'
 const Navbar = () => {
     const { isAuthenticated, isLoading } = useAuth0();
     const location = useLocation();
+    const [isOpen, setIsOpen] = useState(false);
 
     if (isLoading) {
         return (
@@ -28,14 +29,19 @@ const Navbar = () => {
             <div className="navbar-logo">
                 <Link to="/">petwise.vet</Link>
             </div>
-            <ul className="navbar-links">
+            <button className="hamburger" onClick={() => setIsOpen(!isOpen)}>
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul className={`navbar-links ${isOpen ? 'active' : ''}`}>
                 {!isAuthenticated && (
                     <>
-                        <li><Link to="/">Home</Link></li>
-                        <li><Link to="/about">About</Link></li>
+                        <li><Link to="/" onClick={() => setIsOpen(false)}>Home</Link></li>
+                        <li><Link to="/about" onClick={() => setIsOpen(false)}>About</Link></li>
                     </>
                 )}
-                {isAuthenticated && <li><Link to="/dashboard">Dashboard</Link></li>}
+                {isAuthenticated && <li><Link to="/dashboard" onClick={() => setIsOpen(false)}>Dashboard</Link></li>}
                 {!isAuthenticated && <li><LoginButton /></li>}
             </ul>
         </nav>

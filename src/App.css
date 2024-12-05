@@ -1,7 +1,11 @@
+/* General Styling */
 body {
-    /* font-family: Arial, sans-serif; */
+    font-family: 'Arial', sans-serif;
     margin: 0;
     padding: 0;
+    color: #333;
+    overflow-x: hidden;
+    min-height: 100vh;
 }
 
 .homepage-container {

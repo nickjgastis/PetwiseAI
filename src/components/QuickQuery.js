@@ -146,9 +146,28 @@ Recommendation: Final advice here.`
             <div className="qq-chat-container">
                 <div className="qq-messages-container">
                     {messages.length === 0 && (
-                        <div className="qq-welcome-message">
-                            <h3>Welcome to QuickMed Query!</h3>
-                            <p>Ask any veterinary-related question and get instant assistance.</p>
+                        <div className="qq-suggestions">
+                            <div
+                                className="suggestion-box"
+                                onClick={() => setInputMessage("What is the recommended treatment protocol for canine parvovirus?")}
+                            >
+                                <h4>Treatment Protocols</h4>
+                                <p>What is the recommended treatment protocol for canine parvovirus?</p>
+                            </div>
+                            <div
+                                className="suggestion-box"
+                                onClick={() => setInputMessage("What are the dosages for emergency seizure management in dogs?")}
+                            >
+                                <h4>Emergency Medicine</h4>
+                                <p>What are the dosages for emergency seizure management in dogs?</p>
+                            </div>
+                            <div
+                                className="suggestion-box"
+                                onClick={() => setInputMessage("What antibiotics are most effective for treating resistant UTIs in cats?")}
+                            >
+                                <h4>Medication Guidance</h4>
+                                <p>What antibiotics are most effective for treating resistant UTIs in cats?</p>
+                            </div>
                         </div>
                     )}
                     {messages.map((message, index) => (

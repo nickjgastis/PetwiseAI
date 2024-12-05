@@ -2,5 +2,15 @@ body {
   /* font-family: Arial, Helvetica, sans-serif; */
   background-color: #ffffff;
   margin: 0;
-  padding: 20px;
+
+}
+
+/* General Styling */
+body {
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #333;
+  overflow-x: hidden;
+  min-height: 100vh;
 }
