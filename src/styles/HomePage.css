@@ -54,24 +54,107 @@ html {
 
 .homepage-hero {
     margin-top: calc(-1 * var(--navbar-height));
-    /* This will pull it up under the navbar */
     padding-top: var(--navbar-height);
-    /* This compensates for the margin-top */
     min-height: 100vh;
     width: 100vw;
     background: linear-gradient(135deg, #a5e5ffdc 0%, #0090d7ea 50%, #0c8fccf7 100%);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    padding-bottom: 2rem;
 }
 
 .homepage-hero-content {
     width: 100%;
-    padding: 0 4rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 2rem;
+    transform: translateY(-20px);
+    margin-bottom: 0;
+}
+
+.hero-extra-content {
+    text-align: center;
+    margin-top: -4rem;
+    padding: 2rem;
+    width: 100%;
+}
+
+.process-squares {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    gap: 3rem;
+    margin: 0 auto;
+    max-width: 1000px;
+    padding: 0 4rem;
+}
+
+.process-square {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.process-icon {
+    width: 100%;
+    height: auto;
+    max-height: 80%;
+    object-fit: contain;
+    margin-bottom: 0.5rem;
+}
+
+.process-square span {
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.process-square:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+    .process-squares {
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .process-square:not(:last-child)::after {
+        left: 50%;
+        top: 120px;
+        width: 2px;
+        height: calc(2rem - 2px);
+        transform: translateX(-50%);
+    }
+}
+
+/* Update connecting lines */
+.process-square:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 135%;
+    width: 3rem;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-50%);
 }
 
 .homepage-hero-left {
@@ -102,7 +185,8 @@ html {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
+    gap: 2rem;
 }
 
 .homepage-hero-logo {
@@ -544,5 +628,22 @@ html {
 
     .features-items {
         width: 100%;
+    }
+}
+
+.desktop-preview {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+}
+
+@media (max-width: 768px) {
+    .desktop-preview {
+        max-width: 100%;
+        margin-bottom: 1.5rem;
     }
 }

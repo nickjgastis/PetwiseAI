@@ -26,51 +26,12 @@ const HomePage = () => {
         }
     };
 
-    const features = [
-        {
-            title: 'Patient History & Symptoms',
-            detail: `• Species, breed, age, sex documentation
-• Current complaints and history
-• Diet and medication information`
-        },
-        {
-            title: 'Physical Examination',
-            detail: `• Vital signs and body condition score
-• Full body system observations
-• Detailed abnormal findings`
-        },
-        {
-            title: 'Diagnostic Planning',
-            detail: `• AI-assisted test selection
-• Lab work recommendations
-• Imaging study suggestions`
-        },
-        {
-            title: 'Assessment & Diagnosis',
-            detail: `• Primary diagnosis analysis
-• Differential diagnoses list
-• Evidence-based conclusions`
-        },
-        {
-            title: 'Treatment Plan',
-            detail: `• Medication recommendations
-• Monitoring parameters
-• Lifestyle modifications`
-        },
-        {
-            title: 'Follow-up & Monitoring',
-            detail: `• Follow-up schedule
-• Home care instructions
-• Emergency guidelines`
-        }
-    ];
-
     return (
         <div className="page-content">
             <section className="homepage-hero">
                 <div className="homepage-hero-content">
                     <div className="homepage-hero-left">
-                        <h1>Create Veterinary Medical Records In Seconds</h1>
+                        <h1>Veterinary Medical Records In Seconds</h1>
                         <img src="/PW.png" alt="Petwise Logo" className="homepage-hero-logo" />
                         <p>Save 90% of your medical record entry time. Let AI do the work.</p>
                         <button
@@ -81,20 +42,22 @@ const HomePage = () => {
                         </button>
                     </div>
                     <div className="homepage-hero-right">
-                        <div className="homepage-hero-features">
-                            {features.map((feature, index) => (
-                                <React.Fragment key={index}>
-                                    <div className="homepage-hero-feature">
-                                        <h3>{feature.title}</h3>
-                                        <p className="feature-detail">{feature.detail}</p>
-                                    </div>
-                                    {index < features.length - 1 && (
-                                        <div className="feature-arrow">
-                                            <HiChevronDoubleDown size={24} />
-                                        </div>
-                                    )}
-                                </React.Fragment>
-                            ))}
+                        <img src="/desktop.png" alt="Desktop Preview" className="desktop-preview" />
+                    </div>
+                </div>
+                <div className="hero-extra-content">
+                    <div className="process-squares">
+                        <div className="process-square">
+                            <img src="/form.png" alt="Input Form" className="process-icon" />
+                            <span>Input</span>
+                        </div>
+                        <div className="process-square">
+                            <img src="/ai.png" alt="Generate" className="process-icon" />
+                            <span>Generate</span>
+                        </div>
+                        <div className="process-square">
+                            <img src="/review.png" alt="Review" className="process-icon" />
+                            <span>Review</span>
                         </div>
                     </div>
                 </div>
