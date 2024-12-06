@@ -105,8 +105,9 @@ const GenerateReport = async (inputs, enabledFields) => {
   - Ensure proper capitalization and grammar
   - List each assessment point on a new line
   - Use professional medical terminology
-  - Maintain clinical relevance and priority`
-                        : `Generate an assessment based on diagnostic tests, presenting complaints, and physical exam findings. Provide concise, single-line observations.`}` : ''}
+  - Maintain clinical relevance and priority
+  - Discuss the lab results`
+                        : `Generate an assessment based on diagnostic tests, presenting complaints, and physical exam findings. Provide concise, single-line observations. Discuss the lab results.`}` : ''}
   
   ${getEnabledContent('diagnosis', inputs.diagnosis) !== null ? `
   Diagnosis:  

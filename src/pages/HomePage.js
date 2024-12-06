@@ -77,7 +77,7 @@ const HomePage = () => {
                         },
                         {
                             title: 'Generate Report',
-                            description: 'Our AI processes the information and generates comprehensive medical records',
+                            description: 'Our AI processes the information and generates comprehensive medical records in seconds',
                             image: '/ai.png'
                         },
                         {
