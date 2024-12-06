@@ -179,25 +179,25 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const DEFAULT_PHYSICAL_EXAM = `General Appearance: Bright, Alert
-Temperature: Within normal limits
-Heart Rate: Within normal limits
-Respiratory Rate: Within normal limits
-Body Condition Score: 5/9 (Ideal=5/9)
-Mucous Membranes: Pink, moist, CRT <2s
-Eyes: No abnormal findings
-Ears: No abnormal findings
-Nose: No abnormal findings
-Throat: No abnormal findings
-Oral: Gd. 1 tartar
-Heart: No abnormal findings
-Lungs: Clear on auscultation, no abnormal sounds
-Abdomen Palpation: No abnormal findings
-Lymph Nodes: No enlargement 
-Skin and Coat: No lesions, normal coat condition, no ectoparasites observed
-Musculoskeletal: No abnormal findings
-Neurologic: No abnormal findings
-Urogenital: No abnormal findings`;
+const DEFAULT_PHYSICAL_EXAM = `General Appearance:   Bright, Alert
+Temperature:   Within normal limits
+Heart Rate:   Within normal limits
+Respiratory Rate:   Within normal limits
+Body Condition Score:   5/9 (Ideal=5/9)
+Mucous Membranes:   Pink, moist, CRT <2s
+Eyes:   No abnormal findings
+Ears:   No abnormal findings
+Nose:   No abnormal findings
+Throat:   No abnormal findings
+Oral:   Gd. 1 tartar
+Heart:   No abnormal findings
+Lungs:   Clear on auscultation, no abnormal sounds
+Abdomen Palpation:   No abnormal findings
+Lymph Nodes:   No enlargement 
+Skin and Coat:   No lesions, normal coat condition, no ectoparasites observed
+Musculoskeletal:   No abnormal findings
+Neurologic:   No abnormal findings
+Urogenital:   No abnormal findings`;
 
 const DEFAULT_DIAGNOSTIC_TESTS = '';
 

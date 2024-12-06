@@ -31,18 +31,18 @@ const HomePage = () => {
             <section className="homepage-hero">
                 <div className="homepage-hero-content">
                     <div className="homepage-hero-left">
-                        <h1>Veterinary Medical Records In Seconds</h1>
-                        <img src="/PW.png" alt="Petwise Logo" className="homepage-hero-logo" />
-                        <p>Save 90% of your medical record entry time. Let AI do the work.</p>
+                        <h1>Veterinary Medical Records Fast</h1>
+                        <p>Let AI do the work</p>
                         <button
                             onClick={() => loginWithRedirect(signUpOptions)}
                             className="hero-cta-button"
                         >
-                            Start Your Free Trial - No Credit Card Required
+                            Start Your Free 14 Day Trial
                         </button>
+                        <p className="no-card-text">No credit card required</p>
                     </div>
                     <div className="homepage-hero-right">
-                        <img src="/desktop.png" alt="Desktop Preview" className="desktop-preview" />
+                        <img src="/desktop3.png" alt="Desktop Preview" className="desktop-preview" />
                     </div>
                 </div>
                 <div className="hero-extra-content">
@@ -71,14 +71,14 @@ const HomePage = () => {
                 <div className="workflow-steps">
                     {[
                         {
-                            title: 'Input Exam Data',
+                            title: 'Input Exam Findings',
                             description: 'Enter patient symptoms and clinical findings into our intuitive interface',
                             image: '/exam.png'
                         },
                         {
                             title: 'Generate Report',
                             description: 'Our AI processes the information and generates comprehensive medical records',
-                            image: '/generate.png'
+                            image: '/ai.png'
                         },
                         {
                             title: 'Review & Approve',
