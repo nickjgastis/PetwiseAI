@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';  // Make sure this import matches your 
 import Dashboard from './pages/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
 import AboutPage from './pages/AboutPage';
+import ProductPage from './pages/ProductPage';
 
 const AppRoutes = () => {
     const { isLoading, isAuthenticated } = useAuth0();
@@ -22,6 +23,7 @@ const AppRoutes = () => {
                 element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <HomePage />}
             />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/product" element={<ProductPage />} />
             <Route
                 path="/dashboard/*"
                 element={

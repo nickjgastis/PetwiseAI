@@ -57,7 +57,7 @@ const AppContent = () => {
     checkOrCreateUser();
   }, [isAuthenticated, isLoading, user]);
 
-  if (isLoading) return <div>Loading...</div>;
+  // if (isLoading) return <div></div>;
 
   return (
     <div>

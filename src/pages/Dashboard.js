@@ -7,9 +7,10 @@ import SavedReports from '../components/SavedReports';
 import Profile from '../components/Profile';
 import TermsOfService from '../components/TermsOfService';
 import QuickQuery from '../components/QuickQuery';
+import Help from '../components/Help';
 import '../styles/Dashboard.css';
 import { supabase } from '../supabaseClient';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle } from 'react-icons/fa';
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -188,6 +189,12 @@ const Dashboard = () => {
                         </Link>
                     </li>
                     <li className="sidebar-item">
+                        <Link to="/dashboard/help" data-tooltip="Help">
+                            <FaQuestionCircle className="sidebar-icon" />
+                            <span className="sidebar-text">Help</span>
+                        </Link>
+                    </li>
+                    <li className="sidebar-item">
                         <button onClick={handleLogout} className="sidebar-link logout-button" data-tooltip="Logout">
                             <FaSignOutAlt className="sidebar-icon" />
                             <span className="sidebar-text">Logout</span>
@@ -233,6 +240,7 @@ const Dashboard = () => {
                         }
                     />
                     <Route path="profile" element={<Profile />} />
+                    <Route path="help" element={<Help />} />
                 </Routes>
             </main>
         </div>

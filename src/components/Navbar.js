@@ -39,6 +39,7 @@ const Navbar = () => {
                     <>
                         <li><Link to="/" onClick={() => setIsOpen(false)}>Home</Link></li>
                         <li><Link to="/about" onClick={() => setIsOpen(false)}>About</Link></li>
+                        <li><Link to="/product" onClick={() => setIsOpen(false)}>Product</Link></li>
                     </>
                 )}
                 {isAuthenticated && <li><Link to="/dashboard" onClick={() => setIsOpen(false)}>Dashboard</Link></li>}

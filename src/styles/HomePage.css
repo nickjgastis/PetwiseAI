@@ -45,7 +45,14 @@ html {
     flex-direction: column;
     animation: fadeIn 0.6s ease-out forwards;
     opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
     /* Start invisible */
+}
+
+.page-content.loaded {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 :root {
@@ -731,5 +738,136 @@ html {
     .workflow-step:nth-child(3) .workflow-image {
         min-height: 120px;
         max-width: 120px;
+    }
+}
+
+.quickmed-section {
+    padding: 6rem 4rem;
+    background: #ffffff;
+}
+
+.quickmed-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    margin-top: -3rem;
+}
+
+.quickmed-header h2 {
+    font-size: 2.8rem;
+    color: #0090d7;
+    margin-bottom: 1rem;
+}
+
+.quickmed-header p {
+    font-size: 1.2rem;
+    color: #666;
+    max-width: 800px;
+    margin: 0 auto;
+
+}
+
+.quickmed-subheader {
+    font-size: 2rem;
+    color: #0882d3;
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.quickmed-content {
+    display: flex;
+    gap: 8rem;
+    max-width: 1800px;
+    margin: 0 auto;
+    align-items: center;
+    padding: 0 2rem;
+    margin-top: 4rem;
+}
+
+.quickmed-image {
+    flex: 0 0 60%;
+}
+
+.quickmed-preview {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.quickmed-features {
+    flex: 0 0 30%;
+}
+
+.quickmed-features ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.quickmed-features li {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+    transition: transform 0.3s ease;
+}
+
+.feature-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0090d7;
+    margin-bottom: 0.4rem;
+    display: block;
+}
+
+.quickmed-features li p {
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.4;
+    margin: 0;
+}
+
+@media (max-width: 1024px) {
+    .quickmed-content {
+        flex-direction: column;
+        gap: 4rem;
+    }
+
+    .quickmed-image {
+        flex: 0 0 100%;
+    }
+
+    .quickmed-features {
+        flex: 0 0 100%;
+    }
+}
+
+.loading-container {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #fff;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #0090d7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
     }
 }

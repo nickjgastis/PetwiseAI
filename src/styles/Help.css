@@ -1,0 +1,94 @@
+/* Help Page Container */
+.help-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.help-container h1 {
+    color: #34495e;
+    margin-bottom: 2rem;
+    font-size: 2.2rem;
+}
+
+/* Help Sections Grid */
+.help-sections {
+    display: grid;
+    gap: 2rem;
+}
+
+/* Individual Help Section Cards */
+.help-section {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.help-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.help-section h2 {
+    color: #0090d7;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* List Styling */
+.help-section ul {
+    list-style: none;
+    padding: 0;
+}
+
+.help-section li {
+    padding: 0.8rem 0;
+    border-bottom: 1px solid #eee;
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.help-section li:last-child {
+    border-bottom: none;
+}
+
+/* Links */
+.help-section a {
+    color: #0090d7;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.help-section a:hover {
+    color: #006699;
+    text-decoration: underline;
+}
+
+/* Contact Section */
+.contact-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .help-container {
+        padding: 1rem;
+    }
+
+    .help-container h1 {
+        font-size: 1.8rem;
+    }
+
+    .help-section {
+        padding: 1.2rem;
+    }
+}
