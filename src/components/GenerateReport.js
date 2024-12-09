@@ -190,7 +190,7 @@ Output:`
                         ? `Use the input below to format the client visit summary into a professional and friendly letter to the client. This will be used to send to the client. Ensure proper grammar, capitalization, and spelling while maintaining the structure of the provided information.  
   Input: "${getEnabledContent('patientVisitSummary', inputs.patientVisitSummary)}"  
   Formatted Output:`
-                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. After stating a diagosis or medical term, write the common term in parenthesis.Start with Dear [Client Name], and sign of with "/nThank you for the opertunity to help,/n [Doctor name]"`}` : ''}
+                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. After stating a diagosis or medical term, write the common term in parenthesis. IMPORTANT: Do not say Dear [Client Name], Sign of with "/nThank you for the opertunity to help,/n [Doctor name]"`}` : ''}
   
   ${getEnabledContent('notes', inputs.notes) !== null ? `
   Notes:  

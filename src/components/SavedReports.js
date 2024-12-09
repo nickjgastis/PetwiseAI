@@ -10,22 +10,25 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 
 const mainHeaders = [
-    'Veterinary Report',
+    'Veterinary Medical Record:',
+    'Patient Information:',
+    'Client Information:',
     'Presenting Complaint:',
     'History:',
     'Physical Exam Findings:',
     'Diagnostic Tests:',
     'Assessment:',
     'Diagnosis:',
-    'Differential Diagnosis:',
-    'Plan:',
+    'Differential Diagnoses:',
+    'PLAN',
     'Treatment:',
     'Monitoring:',
-    'Medicine Interactions:',
+    'Drug Interactions/Side Effects:',
     'Naturopathic Medicine:',
     'Client Communications:',
     'Follow-Up:',
-    'Client Education:'
+    'Patient Visit Summary:',
+    'Notes:'
 ];
 
 const PDFDocument = ({ reportText }) => {
@@ -34,56 +37,87 @@ const PDFDocument = ({ reportText }) => {
             padding: 40,
             fontSize: 12,
             fontFamily: 'Helvetica',
-            lineHeight: 1.2
+            lineHeight: 1.1
         },
         text: {
-            marginBottom: 5,
-            whiteSpace: 'pre-wrap'
+            marginBottom: 2,
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'Helvetica'
         },
         strongText: {
             fontFamily: 'Helvetica-Bold',
-            marginBottom: 15,
-            marginTop: 10
+            marginBottom: 8,
+            marginTop: 16,
+            fontSize: 12
         },
         indentedText: {
             marginLeft: 20,
-            marginBottom: 5
-        },
-        title: {
-            fontFamily: 'Helvetica-Bold',
-            fontSize: 14,
-            marginBottom: 20
+            marginBottom: 2,
+            fontFamily: 'Helvetica'
         }
     });
 
     const formatText = (text) => {
-        return text.split('\n').map((line, index) => {
-            if (!line.trim()) {
-                return null;
+        const paragraphs = text.split('\n');
+        let isInPatientInfo = false;
+        let mainContent = [];
+        let summaryAndNotes = [];
+        let isInSummaryOrNotes = false;
+
+        paragraphs.forEach((paragraph, index) => {
+            let trimmedParagraph = paragraph.trim();
+            if (!trimmedParagraph) return;
+
+            if (trimmedParagraph === 'Patient Visit Summary:' || trimmedParagraph === 'Notes:') {
+                isInSummaryOrNotes = true;
             }
 
-            if (line.trim() === 'Veterinary Report') {
-                return <Text key={index} style={styles.title}>{line}</Text>;
+            if (!isInPatientInfo) {
+                trimmedParagraph = trimmedParagraph
+                    .replace(/^[•\-]\s*/, '')
+                    .replace(/\*\*(\w[^*]*\w)\*\*/g, '$1')
+                    .trim();
             }
 
-            if (mainHeaders.some(header =>
-                line.trim() === header ||
-                (header === 'Physical Exam Findings:' && line.startsWith('Physical Exam Findings:'))
-            )) {
-                return <Text key={index} style={styles.strongText}>{line}</Text>;
+            if (trimmedParagraph === 'Patient Information:') {
+                isInPatientInfo = true;
+            } else if (mainHeaders.some(header => trimmedParagraph === header)) {
+                isInPatientInfo = false;
             }
-            if (line.includes('-') && !line.trim().startsWith('•')) {
-                return <Text key={index} style={styles.indentedText}>{line}</Text>;
+
+            let textElement;
+            if (mainHeaders.includes(trimmedParagraph)) {
+                textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
+            } else if (isInPatientInfo) {
+                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
+            } else if (paragraph.startsWith('    ')) {
+                textElement = <Text key={index} style={styles.indentedText}>{trimmedParagraph}</Text>;
+            } else {
+                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
             }
-            return <Text key={index} style={styles.text}>{line}</Text>;
-        }).filter(Boolean);
+
+            if (isInSummaryOrNotes) {
+                summaryAndNotes.push(textElement);
+            } else {
+                mainContent.push(textElement);
+            }
+        });
+
+        return { mainContent, summaryAndNotes };
     };
+
+    const { mainContent, summaryAndNotes } = formatText(reportText);
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {formatText(reportText)}
+                {mainContent}
             </Page>
+            {summaryAndNotes.length > 0 && (
+                <Page size="A4" style={styles.page}>
+                    {summaryAndNotes}
+                </Page>
+            )}
         </Document>
     );
 };
@@ -113,6 +147,29 @@ const PDFButton = ({ reportText, reportName }) => {
             disabled={isPreparing}
         >
             {isPreparing ? 'Preparing PDF...' : 'Download PDF'}
+        </button>
+    );
+};
+
+const PrintButton = ({ reportText }) => {
+    const handlePrint = async () => {
+        const doc = <PDFDocument reportText={reportText} />;
+        const blob = await pdf(doc).toBlob();
+        const url = URL.createObjectURL(blob);
+
+        const printWindow = window.open(url, '_blank');
+        printWindow.onload = () => {
+            printWindow.print();
+            printWindow.onafterprint = () => {
+                printWindow.close();
+                URL.revokeObjectURL(url);
+            };
+        };
+    };
+
+    return (
+        <button className="copy-button" onClick={handlePrint}>
+            Print Report
         </button>
     );
 };
@@ -321,6 +378,7 @@ const SavedReports = () => {
                                     reportText={report.report_text}
                                     reportName={report.report_name}
                                 />
+                                <PrintButton reportText={report.report_text} />
                                 <button className="copy-button" onClick={() => handleEditClick(index)}>Edit Name</button>
                                 <button className="delete-button" onClick={() => handleDeleteReport(report.id)}>Delete</button>
                             </div>
@@ -340,6 +398,7 @@ const SavedReports = () => {
                                 reportText={selectedReport.report_text}
                                 reportName={selectedReport.report_name}
                             />
+                            <PrintButton reportText={selectedReport.report_text} />
                             <button
                                 className="close-button"
                                 onClick={() => setSelectedReport(null)}

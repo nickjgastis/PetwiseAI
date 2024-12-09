@@ -161,6 +161,32 @@ const PDFButton = ({ reportText, patientName }) => {
     );
 };
 
+const PrintButton = ({ reportText }) => {
+    const handlePrint = async () => {
+        // Generate PDF same way as PDFButton
+        const doc = <PDFDocument reportText={reportText} />;
+        const blob = await pdf(doc).toBlob();
+        const url = URL.createObjectURL(blob);
+
+        // Open PDF in new window and print
+        const printWindow = window.open(url, '_blank');
+        printWindow.onload = () => {
+            printWindow.print();
+            // Only close and cleanup after print dialog is closed
+            printWindow.onafterprint = () => {
+                printWindow.close();
+                URL.revokeObjectURL(url);
+            };
+        };
+    };
+
+    return (
+        <button className="copy-button" onClick={handlePrint}>
+            Print Report
+        </button>
+    );
+};
+
 const ToggleSwitch = ({ fieldName, enabled, onChange }) => (
     <div className="toggle-switch">
         <label className="switch">
@@ -1411,12 +1437,17 @@ const ReportForm = () => {
                             {copiedMessageVisible && <span className="copied-message">Copied</span>}
                         </div>
                         {reportText && (
-                            <div className="copy-button-container">
-                                <PDFButton
-                                    reportText={reportText}
-                                    patientName={patientName}
-                                />
-                            </div>
+                            <>
+                                <div className="copy-button-container">
+                                    <PDFButton
+                                        reportText={reportText}
+                                        patientName={patientName}
+                                    />
+                                </div>
+                                <div className="copy-button-container">
+                                    <PrintButton reportText={reportText} />
+                                </div>
+                            </>
                         )}
                     </div>
 
