@@ -204,47 +204,58 @@
 
 @media (max-width: 768px) {
     .about-hero {
-        padding: 60px 20px;
+        padding: 40px 15px;
     }
 
     .about-hero h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 
     .about-hero p {
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
 
-    h2 {
-        font-size: 1.8rem;
+    .about-mission h2,
+    .about-features h2,
+    .about-stats h2,
+    .about-cta h2 {
+        font-size: 1.6rem;
+        margin-bottom: 20px;
+    }
+
+    .about-mission p {
+        font-size: 1.1rem;
+        padding: 0;
     }
 
     .feature-grid {
         grid-template-columns: 1fr;
-        gap: 25px;
+        gap: 20px;
         padding: 10px;
     }
 
-    .stats-container {
-        flex-direction: column;
+    .feature-item {
+        padding: 20px;
     }
 
-    .about-testimonial {
-        padding: 40px 20px;
+    .stat-item h3 {
+        font-size: 2rem;
     }
 
-    .about-testimonial blockquote {
-        font-size: 1.2rem;
+    .about-cta {
+        padding: 40px 15px;
+        margin-bottom: 40px;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .about-hero {
+        padding: 60px 20px;
     }
 
-    .cta-button {
-        font-size: 1rem;
-        padding: 0.8rem 2rem;
-    }
-
-    .about-mission {
-        margin-bottom: 60px;
-        padding: 30px 15px;
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 25px;
     }
 
     .about-mission h2 {
@@ -253,32 +264,9 @@
 
     .about-mission p {
         font-size: 1.4rem;
-        padding: 0 10px;
     }
 
-    .feature-item {
-        padding: 25px;
-    }
-
-    .feature-item h3 {
-        font-size: 1.5rem;
-    }
-
-    .about-cta {
-        padding: 60px 20px;
-    }
-
-    .about-cta h2 {
-        font-size: 2rem;
-    }
-
-    .about-cta p {
-        font-size: 1.2rem;
-    }
-}
-
-@media (max-width: 1024px) {
-    .feature-grid {
-        grid-template-columns: repeat(2, 1fr);
+    .stat-item h3 {
+        font-size: 2.5rem;
     }
 }

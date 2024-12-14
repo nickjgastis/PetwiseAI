@@ -956,6 +956,32 @@ const ReportForm = () => {
         </div>
     );
 
+    const [loadingText, setLoadingText] = useState('Generating report...');
+
+    useEffect(() => {
+        if (loading) {
+            const messages = [
+                'Generating Report...',
+                'Analyzing Details...',
+                'Fetching Insights...',
+                'Compiling Data...',
+                'Reviewing Inputs...',
+                'Preparing Summary...',
+                'Processing Request...',
+                'Assembling Report...',
+                'Finalizing Details...',
+                'Optimizing Results...'
+            ];
+            let index = 0;
+            const interval = setInterval(() => {
+                setLoadingText(messages[index]);
+                index = (index + 1) % messages.length;
+            }, 2000);
+
+            return () => clearInterval(interval);
+        }
+    }, [loading]);
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -1385,13 +1411,9 @@ const ReportForm = () => {
 
                 <div className="report-preview-content" ref={previewContentRef}>
                     {loading ? (
-                        <div className="loading-container">
-                            <div className="loading-dots">
-                                <div className="loading-dot"></div>
-                                <div className="loading-dot"></div>
-                                <div className="loading-dot"></div>
-                            </div>
-                            <p className="loading-text">Generating report...</p>
+                        <div className="report-form-loading-container">
+                            <div className="report-form-loading-spinner"></div>
+                            <p className="loading-text">{loadingText}</p>
                         </div>
                     ) : previewVisible ? (
                         <div className="editor-wrapper">

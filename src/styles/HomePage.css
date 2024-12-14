@@ -1,4 +1,3 @@
-/* Reset all margins and paddings */
 * {
     margin: 0;
     padding: 0;
@@ -144,11 +143,7 @@ html {
     }
 
     .process-square:not(:last-child)::after {
-        left: 50%;
-        top: 120px;
-        width: 2px;
-        height: calc(2rem - 2px);
-        transform: translateX(-50%);
+        display: none;
     }
 }
 
@@ -220,8 +215,9 @@ html {
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    margin-top: 2rem;
-    margin-bottom: 0.5rem;
+    margin: 2rem auto 0.5rem;
+    display: block;
+    width: fit-content;
 }
 
 .hero-cta-button:hover {
@@ -238,6 +234,28 @@ html {
     .hero-cta-button {
         font-size: 1rem;
         padding: 0.8rem 2rem;
+        margin: 2rem auto 0.5rem;
+        width: auto;
+    }
+
+    .homepage-hero-left {
+        padding: 2rem;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hero-cta-button {
+        font-size: 1rem;
+        padding: 0.8rem 2rem;
+        margin: 2rem auto 0.5rem;
+        width: auto;
+    }
+
+    .homepage-hero-left h1 {
+        font-size: 2rem;
+        white-space: normal;
     }
 }
 
@@ -455,6 +473,7 @@ html {
     .workflow-arrow {
         transform: rotate(90deg);
         margin: 1rem 0;
+        align-self: center;
     }
 }
 
@@ -495,17 +514,13 @@ html {
     .workflow-cta-button {
         font-size: 1rem;
         padding: 0.8rem 2rem;
+        margin: 4rem auto 0;
+        margin-bottom: 2rem;
     }
 }
 
-.cta-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 144, 215, 0.4);
-    background: #0083c4;
-}
-
-.cta-button:active {
-    transform: translateY(0);
+.cta-button {
+    display: none;
 }
 
 .video-section {
@@ -746,6 +761,12 @@ html {
     background: #ffffff;
 }
 
+@media (max-width: 768px) {
+    .quickmed-section {
+        padding: 2rem 1rem;
+    }
+}
+
 .quickmed-header {
     text-align: center;
     margin-bottom: 2rem;
@@ -870,4 +891,123 @@ html {
     100% {
         transform: rotate(360deg);
     }
+}
+
+@media (max-width: 768px) {
+    .homepage-hero-content {
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .homepage-hero-left h1 {
+        font-size: 2rem;
+    }
+
+    .hero-cta-button {
+        font-size: 1rem;
+        padding: 0.8rem 2rem;
+    }
+
+    .process-squares {
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .workflow-steps {
+        grid-template-columns: 1fr;
+        gap: 4rem;
+    }
+
+    .workflow-header h2 {
+        font-size: 2rem;
+    }
+
+    .workflow-image {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .workflow-arrow {
+        transform: rotate(90deg);
+        margin: 1rem 0;
+    }
+
+    .pricing-card {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+
+    .desktop-preview {
+        max-width: 300px;
+        margin-bottom: 1.5rem;
+    }
+
+    .quickmed-content {
+        flex-direction: column;
+        gap: 4rem;
+    }
+
+    .quickmed-image,
+    .quickmed-features {
+        flex: 0 0 100%;
+    }
+
+    .quickmed-preview {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        margin: 0 auto;
+    }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+    .homepage-hero-content {
+        padding: 3rem;
+    }
+
+    .workflow-steps {
+        grid-template-columns: 1fr auto 1fr;
+        gap: 2rem;
+    }
+
+    .pricing-card {
+        flex: 1 1 calc(50% - 1.5rem);
+    }
+
+    .desktop-preview {
+        max-width: 400px;
+    }
+
+    .quickmed-content {
+        gap: 6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .homepage-hero {
+        padding-top: calc(var(--navbar-height) + 5rem);
+    }
+
+    .homepage-hero-left {
+        padding-top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .quickmed-preview {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        margin: 0 auto;
+    }
+}
+
+.homepage-loading-container {
+    /* Existing styles */
+}
+
+.homepage-loading-spinner {
+    /* Existing styles */
 }

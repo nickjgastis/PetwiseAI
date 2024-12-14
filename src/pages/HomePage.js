@@ -31,8 +31,8 @@ const HomePage = () => {
 
     if (isLoading) {
         return (
-            <div className="loading-container">
-                <div className="loading-spinner"></div>
+            <div className="homepage-loading-container">
+                <div className="homepage-loading-spinner"></div>
             </div>
         );
     }
