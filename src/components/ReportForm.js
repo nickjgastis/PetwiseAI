@@ -132,22 +132,78 @@ const PDFDocument = ({ reportText }) => {
     );
 };
 
-const PDFButton = ({ reportText, patientName }) => {
+// Add this helper function to process the Slate value
+const processSlateForPDF = (nodes) => {
+    let formattedText = '';
+    let currentSection = '';
+
+    nodes.forEach(node => {
+        const text = node.children[0].text;
+
+        // Check if this is a header
+        const isHeader = mainHeaders.some(header =>
+            text.trim() === header ||
+            text.trim() === header.replace(':', '')
+        );
+
+        // Handle headers
+        if (isHeader) {
+            currentSection = text;
+            // Special case for PLAN
+            if (text.trim() === 'PLAN') {
+                formattedText += 'PLAN\n';
+            } else {
+                // Normal header handling
+                formattedText += `${text.endsWith(':') ? text : text + ':'}\n`;
+            }
+        }
+        // Handle empty lines
+        else if (!text.trim()) {
+            formattedText += '\n';
+        }
+        // Handle regular text
+        else {
+            // Preserve bold formatting from Slate
+            if (node.children[0].bold || node.type === 'heading') {
+                formattedText += `**${text}**\n`;
+            } else {
+                formattedText += `${text}\n`;
+            }
+        }
+    });
+
+    return formattedText;
+};
+
+// Update PDFButton component
+const PDFButton = ({ reportText, patientName, editor }) => {
     const [isPreparing, setIsPreparing] = useState(false);
 
     const generatePDF = async () => {
-        setIsPreparing(true);
-        const doc = <PDFDocument reportText={reportText} />;
-        const blob = await pdf(doc).toBlob();
-        const url = URL.createObjectURL(blob);
+        try {
+            setIsPreparing(true);
 
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${patientName || 'Report'}-${new Date().toLocaleDateString()}.pdf`;
-        link.click();
+            // Get current content from Slate editor
+            const slateContent = editor.children;
+            // Process Slate content to preserve formatting
+            const formattedText = processSlateForPDF(slateContent);
 
-        URL.revokeObjectURL(url);
-        setIsPreparing(false);
+            const doc = <PDFDocument reportText={formattedText} />;
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${patientName || 'Report'}-${new Date().toLocaleDateString()}.pdf`;
+            link.click();
+
+            URL.revokeObjectURL(url);
+            setIsPreparing(false);
+        } catch (error) {
+            console.error('PDF generation error:', error);
+        } finally {
+            setIsPreparing(false);
+        }
     };
 
     return (
@@ -161,23 +217,30 @@ const PDFButton = ({ reportText, patientName }) => {
     );
 };
 
-const PrintButton = ({ reportText }) => {
+// Update PrintButton similarly
+const PrintButton = ({ reportText, editor }) => {
     const handlePrint = async () => {
-        // Generate PDF same way as PDFButton
-        const doc = <PDFDocument reportText={reportText} />;
-        const blob = await pdf(doc).toBlob();
-        const url = URL.createObjectURL(blob);
+        try {
+            const slateContent = editor.children;
+            const formattedText = processSlateForPDF(slateContent);
 
-        // Open PDF in new window and print
-        const printWindow = window.open(url, '_blank');
-        printWindow.onload = () => {
-            printWindow.print();
-            // Only close and cleanup after print dialog is closed
-            printWindow.onafterprint = () => {
-                printWindow.close();
-                URL.revokeObjectURL(url);
+            const doc = <PDFDocument reportText={formattedText} />;
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            // Open PDF in new window and print
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = () => {
+                printWindow.print();
+                // Only close and cleanup after print dialog is closed
+                printWindow.onafterprint = () => {
+                    printWindow.close();
+                    URL.revokeObjectURL(url);
+                };
             };
-        };
+        } catch (error) {
+            console.error('Print error:', error);
+        }
     };
 
     return (
@@ -982,6 +1045,30 @@ const ReportForm = () => {
         }
     }, [loading]);
 
+    useEffect(() => {
+        const lastUser = localStorage.getItem('lastUserId');
+        const currentUser = user?.sub;
+
+        // Clear storage if user changed
+        if (lastUser && currentUser && lastUser !== currentUser) {
+            // Clear all report-related localStorage items
+            const keysToKeep = ['enabledFields']; // Keep any settings that should persist
+            Object.keys(localStorage).forEach(key => {
+                if (!keysToKeep.includes(key)) {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            // Reset all state
+            resetEntireForm();
+        }
+
+        // Update stored user
+        if (currentUser) {
+            localStorage.setItem('lastUserId', currentUser);
+        }
+    }, [user]);
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -1464,10 +1551,11 @@ const ReportForm = () => {
                                     <PDFButton
                                         reportText={reportText}
                                         patientName={patientName}
+                                        editor={editor}
                                     />
                                 </div>
                                 <div className="copy-button-container">
-                                    <PrintButton reportText={reportText} />
+                                    <PrintButton reportText={reportText} editor={editor} />
                                 </div>
                             </>
                         )}

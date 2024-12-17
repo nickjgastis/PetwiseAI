@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/QuickQuery.css';
+import { useAuth0 } from "@auth0/auth0-react";
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
 const QuickQuery = () => {
+    const { user } = useAuth0();
     const [messages, setMessages] = useState(() => {
         const saved = localStorage.getItem('quickQueryMessages');
         return saved ? JSON.parse(saved) : [];
@@ -15,6 +17,20 @@ const QuickQuery = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
+
+    useEffect(() => {
+        const lastUser = localStorage.getItem('lastUserId');
+        const currentUser = user?.sub;
+
+        if (lastUser && currentUser && lastUser !== currentUser) {
+            localStorage.removeItem('quickQueryMessages');
+            setMessages([]);
+        }
+
+        if (currentUser) {
+            localStorage.setItem('lastUserId', currentUser);
+        }
+    }, [user]);
 
     useEffect(() => {
         scrollToBottom();
