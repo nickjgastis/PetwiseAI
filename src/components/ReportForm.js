@@ -95,7 +95,7 @@ const PDFDocument = ({ reportText }) => {
 
             // Create text element
             let textElement;
-            if (mainHeaders.includes(trimmedParagraph)) {
+            if (mainHeaders.includes(trimmedParagraph) || trimmedParagraph.startsWith('Physical Exam Findings:')) {
                 textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
             } else if (isInPatientInfo) {
                 textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
@@ -376,8 +376,13 @@ const deserializeSlateValue = (text) => {
 // Add these helper functions at the top of the file
 const formatDateForInput = (dateString) => {
     if (!dateString) return '';
+    // If it's already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+        return dateString;
+    }
+    // Otherwise, create a date and format it
     const date = new Date(dateString);
-    return date.toISOString().split('T')[0]; // Keeps the HTML date input format (yyyy-mm-dd)
+    return date.toISOString().split('T')[0];
 };
 
 const formatDateForDisplay = (dateString) => {
@@ -419,7 +424,16 @@ const ReportForm = () => {
     const [telephone, setTelephone] = useState(() => localStorage.getItem('telephone') || '');
 
     // Exam Info State
-    const [examDate, setExamDate] = useState(() => localStorage.getItem('examDate') || '');
+    const [examDate, setExamDate] = useState(() => {
+        // First try to get from localStorage
+        const savedDate = localStorage.getItem('examDate');
+        if (savedDate) return savedDate;
+
+        // If no saved date, use current date formatted as YYYY-MM-DD
+        const today = new Date();
+        const formattedDate = today.toISOString().split('T')[0];
+        return formattedDate;
+    });
     const [doctor, setDoctor] = useState(() => localStorage.getItem('doctor') || '');
     const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
     const [history, setHistory] = useState(() => localStorage.getItem('history') || '');
@@ -658,7 +672,7 @@ const ReportForm = () => {
 
             const inputs = {
                 patientName, species, sex, breed, colorMarkings, weight, weightUnit, age,
-                ownerName, address, telephone, examDate: formatDateForReport(examDate), doctor, presentingComplaint, history,
+                ownerName, address, telephone, examDate: examDate, doctor, presentingComplaint, history,
                 physicalExamFindings, diagnosticTests, assessment, diagnosis,
                 differentialDiagnosis, treatment, clientCommunications, planFollowUp,
                 naturopathicMedicine, patientVisitSummary, notes
@@ -792,6 +806,9 @@ const ReportForm = () => {
     };
 
     const resetEntireForm = () => {
+        // Get current date in YYYY-MM-DD format
+        const today = new Date().toISOString().split('T')[0];
+
         // Clear all form states
         setPatientName('');
         setSpecies('');
@@ -804,7 +821,7 @@ const ReportForm = () => {
         setOwnerName('');
         setAddress('');
         setTelephone('');
-        setExamDate('');
+        setExamDate(today); // Set to current date instead of empty string
         setDoctor('');
         setPresentingComplaint('');
         setHistory('');
@@ -826,9 +843,10 @@ const ReportForm = () => {
         const savedEnabledFields = localStorage.getItem('enabledFields');
         localStorage.clear();
 
-        // Restore default templates
+        // Restore default templates and current date
         localStorage.setItem('physicalExamFindings', DEFAULT_PHYSICAL_EXAM);
         localStorage.setItem('diagnosticTests', DEFAULT_DIAGNOSTIC_TESTS);
+        localStorage.setItem('examDate', today); // Save current date to localStorage
 
         // Restore enabled fields
         if (savedEnabledFields) {

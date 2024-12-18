@@ -78,7 +78,11 @@ const GenerateReport = async (inputs, enabledFields) => {
                         : `Generate a history based on presenting complaints and the typical background for this species or breed. Provide concise, single-line entries.`}` : ''}
   
   ${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings) !== null ? `
-  Physical Exam Findings: - ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+  Physical Exam Findings: - ${inputs.examDate.split('-').map((part, i) => {
+                              if (i === 1) return new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(2000, part - 1));
+                              if (i === 2) return parseInt(part);
+                              return part;
+                        }).reverse().join(' ')}
   ${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings)
                         ? `${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings)}`
                         : `Generate physical exam findings based on presenting complaints, diagnosis, and typical findings for this species or breed.`}` : ''}
@@ -190,7 +194,7 @@ Output:`
                         ? `Use the input below to format the client visit summary into a professional and friendly letter to the client. This will be used to send to the client. Ensure proper grammar, capitalization, and spelling while maintaining the structure of the provided information.  
   Input: "${getEnabledContent('patientVisitSummary', inputs.patientVisitSummary)}"  
   Formatted Output:`
-                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. After stating a diagosis or medical term, write the common term in parenthesis. IMPORTANT: Do not say Dear [Client Name], Sign of with "/nThank you for the opertunity to help,/n [Doctor name]"`}` : ''}
+                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. After stating a diagosis or medical term, write the common term in parenthesis. IMPORTANT: Do not say Dear [Client Name], Sign off 2 spaces below: "Thank you for the opertunity to help, [Doctor name]"`}` : ''}
   
   ${getEnabledContent('notes', inputs.notes) !== null ? `
   Notes:  
