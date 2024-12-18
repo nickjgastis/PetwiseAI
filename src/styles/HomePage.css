@@ -13,6 +13,7 @@ html {
     height: 100%;
 }
 
+/* Re-add the fadeIn animation */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -25,33 +26,61 @@ html {
     }
 }
 
-/* Remove any potential gaps */
-#root {
-    min-height: 100%;
-    width: 100vw;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-}
-
-.page-content {
+/* Base styles for all pages */
+.page-content,
+.product-content,
+.homepage-content {
     margin: 0;
     padding: 0;
     flex: 1;
     display: flex;
     flex-direction: column;
+}
+
+/* Homepage-specific animations */
+.homepage-content {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.homepage-content.loaded {
+    visibility: visible;
     animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Product page specific styles */
+.product-content {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Ensure sections are visible on product page */
+.product-content .video-section,
+.product-content .pricing-section {
+    opacity: 1;
+    transform: none;
+    visibility: visible;
+    transition: none;
+}
+
+/* Keep homepage animations */
+.homepage-content .video-section,
+.homepage-content .pricing-section {
     opacity: 0;
     transform: translateY(20px);
     transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-    /* Start invisible */
 }
 
-.page-content.loaded {
+.homepage-content.loaded .video-section {
     opacity: 1;
     transform: translateY(0);
+    transition-delay: 0.4s;
+}
+
+.homepage-content.loaded .pricing-section {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.5s;
 }
 
 :root {
@@ -69,6 +98,15 @@ html {
     align-items: center;
     justify-content: flex-start;
     padding-bottom: 2rem;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.loaded .homepage-hero {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.1s;
 }
 
 .homepage-hero-content {
@@ -373,6 +411,15 @@ html {
     display: flex;
     flex-direction: column;
     align-items: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.loaded .workflow-section {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
 }
 
 .workflow-header {
@@ -526,6 +573,15 @@ html {
 .video-section {
     padding: 3rem 4rem;
     background: #f8f9fa;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.loaded .video-section {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.4s;
 }
 
 .video-header {
@@ -575,6 +631,15 @@ html {
 .pricing-section {
     padding: 6rem 4rem;
     background: #fff;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.loaded .pricing-section {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.5s;
 }
 
 .pricing-section .pricing-header {
@@ -759,6 +824,15 @@ html {
 .quickmed-section {
     padding: 6rem 4rem;
     background: #ffffff;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.loaded .quickmed-section {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.3s;
 }
 
 @media (max-width: 768px) {
@@ -1010,4 +1084,52 @@ html {
 
 .homepage-loading-spinner {
     /* Existing styles */
+}
+
+/* Update the base section styles for homepage only */
+.homepage-content .homepage-hero,
+.homepage-content .workflow-section,
+.homepage-content .quickmed-section,
+.homepage-content .video-section,
+.homepage-content .pricing-section {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out, visibility 0s linear 0.5s;
+}
+
+/* Homepage loaded states */
+.homepage-content.loaded .homepage-hero {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.1s;
+}
+
+.homepage-content.loaded .workflow-section {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.2s;
+}
+
+.homepage-content.loaded .quickmed-section {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.3s;
+}
+
+.homepage-content.loaded .video-section {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.4s;
+}
+
+.homepage-content.loaded .pricing-section {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.5s;
 }

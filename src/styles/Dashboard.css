@@ -52,34 +52,31 @@
     align-items: center;
     justify-content: center;
     font-size: 1.5rem;
+    gap: 10px;
 }
 
-.sidebar-favicon {
-    display: none;
+.logo-img {
     width: 32px;
     height: 32px;
+    object-fit: contain;
 }
 
-/* Collapsed state styles */
+/* Update collapsed state styles */
 .sidebar-collapsed .sidebar-logo {
     padding: 10px;
 }
 
-.sidebar-collapsed .sidebar-logo a span {
+.sidebar-collapsed .logo-text {
+    display: none;
+}
+
+/* Remove these unused styles */
+.sidebar-favicon {
     display: none;
 }
 
 .sidebar-collapsed .sidebar-favicon {
-    display: block;
-    margin: 0 auto;
-}
-
-/* Remove these conflicting styles */
-.sidebar-logo a::before,
-.sidebar-logo a::after,
-.sidebar-collapsed .sidebar-logo a::before,
-.sidebar-collapsed .sidebar-logo a::after {
-    content: none;
+    display: none;
 }
 
 /* Sidebar Menu */
@@ -257,30 +254,50 @@ h3 {
 /* Sidebar Toggle Button */
 .sidebar-toggle {
     position: absolute;
-    top: 15px;
-    right: -15px;
-    width: 30px;
-    height: 30px;
-    background-color: #65a8d2;
-    border: none;
+    top: 60%;
+    right: -16px;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #65a8d2, #3f8ddb);
+    border: 2px solid #9fd5ff;
     border-radius: 50%;
-    color: white;
-    font-size: 18px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     z-index: 1000;
 }
 
 .sidebar-toggle:hover {
-    background-color: #3f8ddb;
+    width: 40px;
+    height: 40px;
+    right: -20px;
+    font-size: 20px;
+    background: linear-gradient(135deg, #3f8ddb, #2980b9);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.sidebar-toggle:active {
+    transform: translateY(-50%) scale(0.95);
 }
 
 .sidebar-collapsed .sidebar-toggle {
-    right: -15px;
+    right: -16px;
+}
+
+.sidebar-collapsed .sidebar-toggle:hover {
+    right: -20px;
+}
+
+/* Remove the connecting line */
+.sidebar-toggle::before {
+    display: none;
 }
 
 /* Remove any conflicting styles */
@@ -407,6 +424,9 @@ h3 {
         color: white;
         font-size: 1.5rem;
         font-family: Georgia, 'Times New Roman', Times, serif;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
     .mobile-hamburger {

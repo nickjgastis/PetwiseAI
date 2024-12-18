@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { Navigate } from 'react-router-dom';
 import Footer from '../components/Footer';
@@ -7,6 +7,21 @@ import '../styles/HomePage.css';
 
 const ProductPage = () => {
     const { isAuthenticated, loginWithRedirect } = useAuth0();
+
+    useEffect(() => {
+        const sections = document.querySelectorAll('.fade-in-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('show');
+                }
+            });
+        }, { threshold: 0.5 });
+
+        sections.forEach((section) => {
+            observer.observe(section);
+        });
+    }, []);
 
     const signUpOptions = {
         authorizationParams: {
@@ -20,13 +35,13 @@ const ProductPage = () => {
 
     return (
         <>
-            <div className="page-content">
-                <section className="about-hero">
+            <div className="product-content">
+                <section className="about-hero fade-in-section">
                     <h1>Our Product</h1>
                     <p>Discover how our AI-powered solution transforms veterinary practice</p>
                 </section>
 
-                <section className="video-section" style={{ marginTop: '-4rem', textAlign: 'center' }}>
+                <section className="video-section fade-in-section" style={{ marginTop: '-4rem', textAlign: 'center' }}>
                     <div className="video-header">
                         <h2>How It Works</h2>
                     </div>
@@ -52,7 +67,7 @@ const ProductPage = () => {
                     </div>
                 </section>
 
-                <section className="pricing-section">
+                <section className="pricing-section fade-in-section">
                     <div className="pricing-header">
                         <h2>Choose Your Plan</h2>
                         <p>Get full access to all premium features</p>

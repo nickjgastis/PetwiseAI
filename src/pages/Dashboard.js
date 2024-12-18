@@ -131,7 +131,10 @@ const Dashboard = () => {
                             <span></span>
                             <span></span>
                         </button>
-                        <div className="mobile-logo">petwise.vet</div>
+                        <div className="mobile-logo">
+                            <img src="/PW.png" alt="PW" className="logo-img" />
+                            petwise.vet
+                        </div>
                     </div>
                     <div
                         className={`sidebar-overlay ${isMobileMenuOpen ? 'active' : ''}`}
@@ -144,18 +147,12 @@ const Dashboard = () => {
             <aside className={`sidebar ${isMobileMenuOpen ? 'active' : ''}`}>
                 <div className="sidebar-logo">
                     <Link to="/dashboard">
+                        <img src="/PW.png" alt="PW" className="logo-img" />
                         <span className="logo-text">petwise.vet</span>
-                        {isSidebarCollapsed && (
-                            <img
-                                src="/favicon.ico"
-                                alt="PetWise"
-                                className="sidebar-favicon"
-                            />
-                        )}
                     </Link>
                 </div>
-                <button className="sidebar-toggle" onClick={toggleSidebar}>
-                    {isSidebarCollapsed ? '>' : '<'}
+                <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle Sidebar">
+                    {isSidebarCollapsed ? '›' : '‹'}
                 </button>
                 <ul className="sidebar-menu">
                     {isSubscribed && (

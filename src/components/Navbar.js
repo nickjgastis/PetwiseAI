@@ -27,6 +27,7 @@ const Navbar = () => {
     return (
         <nav className="navbar">
             <div className="navbar-logo">
+                <img src="/PW.png" alt="Petwise Logo" className="navbar-logo-image" />
                 <Link to="/">petwise.vet</Link>
             </div>
             <button className="hamburger" onClick={() => setIsOpen(!isOpen)}>

@@ -50,7 +50,7 @@ const Footer = () => {
             </div>
 
             <div className="footer-bottom">
-                <p>&copy; {currentYear} PetWise. All rights reserved.</p>
+                <p>&copy; {currentYear} PETWISE TECHNOLOGIES. All rights reserved.</p>
             </div>
         </footer>
     );

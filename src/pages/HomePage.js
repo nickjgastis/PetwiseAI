@@ -8,8 +8,12 @@ import '../styles/HomePage.css';
 const HomePage = () => {
     const { loginWithRedirect } = useAuth0();
     const [isLoading, setIsLoading] = useState(true);
+    const [contentVisible, setContentVisible] = useState(false);
 
     useEffect(() => {
+        // Hide content initially
+        document.body.style.overflow = 'hidden';
+
         // Wait for images to load
         Promise.all(
             Array.from(document.images)
@@ -19,15 +23,30 @@ const HomePage = () => {
                 }))
         ).then(() => {
             setIsLoading(false);
+            // Small delay before showing content
+            setTimeout(() => {
+                setContentVisible(true);
+                document.body.style.overflow = '';
+            }, 100);
         });
 
-        // Fallback in case there are no images
+        // Fallback timer
         const fallbackTimer = setTimeout(() => {
             setIsLoading(false);
-        }, 500);
+            setTimeout(() => {
+                setContentVisible(true);
+                document.body.style.overflow = '';
+            }, 100);
+        }, 1000);
 
-        return () => clearTimeout(fallbackTimer);
+        return () => {
+            clearTimeout(fallbackTimer);
+            document.body.style.overflow = '';
+        };
     }, []);
+
+    // Update the className based on both loading states
+    const contentClassName = `homepage-content${contentVisible ? ' loaded' : ''}`;
 
     if (isLoading) {
         return (
@@ -45,7 +64,7 @@ const HomePage = () => {
 
     return (
         <>
-            <div className="page-content loaded">
+            <div className={contentClassName} style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
                 <section className="homepage-hero">
                     <div className="homepage-hero-content">
                         <div className="homepage-hero-left">
