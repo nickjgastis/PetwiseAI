@@ -254,7 +254,7 @@ h3 {
 /* Sidebar Toggle Button */
 .sidebar-toggle {
     position: absolute;
-    top: 60%;
+    top: 80%;
     right: -16px;
     transform: translateY(-50%);
     width: 32px;

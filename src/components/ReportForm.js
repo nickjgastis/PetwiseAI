@@ -89,13 +89,14 @@ const PDFDocument = ({ reportText }) => {
             // Update patient info tracking
             if (trimmedParagraph === 'Patient Information:') {
                 isInPatientInfo = true;
-            } else if (mainHeaders.some(header => trimmedParagraph === header)) {
+            } else if (mainHeaders.some(header => trimmedParagraph.endsWith(':'))) {
                 isInPatientInfo = false;
             }
 
             // Create text element
             let textElement;
-            if (mainHeaders.includes(trimmedParagraph) || trimmedParagraph.startsWith('Physical Exam Findings:')) {
+            // Check if the paragraph ends with a colon for headers
+            if (trimmedParagraph.endsWith(':')) {
                 textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
             } else if (isInPatientInfo) {
                 textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
@@ -135,36 +136,18 @@ const PDFDocument = ({ reportText }) => {
 // Add this helper function to process the Slate value
 const processSlateForPDF = (nodes) => {
     let formattedText = '';
-    let currentSection = '';
 
     nodes.forEach(node => {
         const text = node.children[0].text;
 
-        // Check if this is a header
-        const isHeader = mainHeaders.some(header =>
-            text.trim() === header ||
-            text.trim() === header.replace(':', '')
-        );
-
-        // Handle headers
-        if (isHeader) {
-            currentSection = text;
-            // Special case for PLAN
-            if (text.trim() === 'PLAN') {
-                formattedText += 'PLAN\n';
-            } else {
-                // Normal header handling
-                formattedText += `${text.endsWith(':') ? text : text + ':'}\n`;
-            }
-        }
-        // Handle empty lines
-        else if (!text.trim()) {
+        if (node.type === 'heading') {
+            // Always ensure heading ends with a colon
+            const formattedHeader = text.endsWith(':') ? text : `${text}:`;
+            formattedText += `${formattedHeader}\n`;
+        } else if (!text.trim()) {
             formattedText += '\n';
-        }
-        // Handle regular text
-        else {
-            // Preserve bold formatting from Slate
-            if (node.children[0].bold || node.type === 'heading') {
+        } else {
+            if (node.children[0].bold) {
                 formattedText += `**${text}**\n`;
             } else {
                 formattedText += `${text}\n`;
