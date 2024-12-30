@@ -45,10 +45,7 @@ const GenerateReport = async (inputs, enabledFields) => {
   Weight: ${inputs.weight || "Provide here"} ${inputs.weightUnit || "lbs"}  
   Age: ${inputs.age || "Provide here"}  
 
-  Client Information:
-  Owner: ${inputs.ownerName || "Provide here"}  
-  Address: ${inputs.address || "Provide here"}  
-  Telephone: ${inputs.telephone || "Provide here"}  
+  Staff:
   Doctor: Dr. ${inputs.doctor ? inputs.doctor.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
   ${getEnabledContent('examDate', inputs.examDate) !== null ? `Exam Date: ${getEnabledContent('examDate', inputs.examDate) || "Provide here"}` : ''}  
   

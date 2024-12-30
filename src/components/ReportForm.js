@@ -17,7 +17,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const mainHeaders = [
     'Veterinary Medical Record:',
     'Patient Information:',
-    'Client Information:',
+    'Staff:',
     'Presenting Complaint:',
     'History:',
     'Physical Exam Findings:',
@@ -755,9 +755,6 @@ const ReportForm = () => {
         setWeight('');
         setWeightUnit('lbs');
         setAge('');
-        setOwnerName('');
-        setAddress('');
-        setTelephone('');
         setDoctor('');
 
         // Clear localStorage for each field
@@ -769,22 +766,38 @@ const ReportForm = () => {
         localStorage.removeItem('weight');
         localStorage.removeItem('weightUnit');
         localStorage.removeItem('age');
-        localStorage.removeItem('ownerName');
-        localStorage.removeItem('address');
-        localStorage.removeItem('telephone');
         localStorage.removeItem('doctor');
     };
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(reportText).then(() => {
+        // Create HTML content with explicit styling
+        const htmlContent = slateValue.map(node => {
+            if (node.type === 'heading' || (node.children[0] && node.children[0].bold)) {
+                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
+            }
+            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
+        }).join('<br>');
+
+        // Wrap in a div with explicit styling
+        const wrappedHtml = `
+            <div style="color: black; background: none; background-color: transparent;">
+                ${htmlContent}
+            </div>
+        `;
+
+        // Use the Clipboard API instead of execCommand
+        const clipboardData = new ClipboardItem({
+            'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
+            'text/plain': new Blob([slateValue.map(node => Node.string(node)).join('\n')], { type: 'text/plain' })
+        });
+
+        navigator.clipboard.write([clipboardData]).then(() => {
             setCopyButtonText('Copied!');
             setCopiedMessageVisible(true);
             setTimeout(() => {
                 setCopyButtonText('Copy to Clipboard');
                 setCopiedMessageVisible(false);
-            }, 2000); // Reset after 2 seconds
-        }, (err) => {
-            console.error('Could not copy text: ', err);
+            }, 2000);
         });
     };
 
@@ -801,10 +814,6 @@ const ReportForm = () => {
         setWeight('');
         setWeightUnit('lbs');
         setAge('');
-        setOwnerName('');
-        setAddress('');
-        setTelephone('');
-        setExamDate(today); // Set to current date instead of empty string
         setDoctor('');
         setPresentingComplaint('');
         setHistory('');
@@ -862,10 +871,6 @@ const ReportForm = () => {
         localStorage.setItem('weight', weight);
         localStorage.setItem('weightUnit', weightUnit);
         localStorage.setItem('age', age);
-        localStorage.setItem('ownerName', ownerName);
-        localStorage.setItem('address', address);
-        localStorage.setItem('telephone', telephone);
-
         // Exam info
         localStorage.setItem('examDate', examDate);
         localStorage.setItem('doctor', doctor);
@@ -881,7 +886,7 @@ const ReportForm = () => {
         localStorage.setItem('planFollowUp', planFollowUp);
         localStorage.setItem('naturopathicMedicine', naturopathicMedicine);
     }, [species, sex, breed, colorMarkings, weight, weightUnit, age,
-        ownerName, address, telephone, examDate, doctor, presentingComplaint,
+        examDate, doctor, presentingComplaint,
         history, physicalExamFindings, diagnosticTests, assessment,
         diagnosis, differentialDiagnosis, treatment, clientCommunications, planFollowUp, naturopathicMedicine]);
 
@@ -1163,18 +1168,8 @@ const ReportForm = () => {
                             className="form-input"
                             value={age}
                             onChange={(e) => setAge(e.target.value)}
-
                         />
                     </div>
-
-                    <label className="form-label">Owner Name:</label>
-                    <input type="text" className="form-input" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-
-                    <label className="form-label">Address:</label>
-                    <input type="text" className="form-input" value={address} onChange={(e) => setAddress(e.target.value)} />
-
-                    <label className="form-label">Telephone:</label>
-                    <input type="text" className="form-input" value={telephone} onChange={(e) => setTelephone(e.target.value)} />
 
                     <div className="button-container">
                         <button type="submit" className="continue-button">
@@ -1525,6 +1520,32 @@ const ReportForm = () => {
                                         minHeight: '100%',
                                         padding: '10px',
                                         whiteSpace: 'pre-wrap'
+                                    }}
+                                    onCopy={(event) => {
+                                        event.preventDefault();
+                                        const selection = window.getSelection();
+
+                                        // Create HTML content for rich text copying with explicit styling
+                                        const selectedNodes = slateValue.filter(node => {
+                                            const nodeText = Node.string(node);
+                                            return selection.toString().includes(nodeText);
+                                        });
+
+                                        const htmlContent = selectedNodes.map(node => {
+                                            if (node.type === 'heading' || (node.children[0] && node.children[0].bold)) {
+                                                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
+                                            }
+                                            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
+                                        }).join('<br>');
+
+                                        const wrappedHtml = `
+                                            <div style="color: black; background: none; background-color: transparent;">
+                                                ${htmlContent}
+                                            </div>
+                                        `;
+
+                                        event.clipboardData.setData('text/html', wrappedHtml);
+                                        event.clipboardData.setData('text/plain', selection.toString());
                                     }}
                                 />
                             </Slate>
