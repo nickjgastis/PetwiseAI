@@ -57,10 +57,15 @@ const ManageAccount = ({ user, onBack }) => {
                 throw new Error(error.message || 'Failed to delete account');
             }
 
-            await logout({
-                returnTo: 'https://www.petwise.vet',
-                clientId: process.env.REACT_APP_AUTH0_CLIENT_ID
-            });
+            // First logout from Auth0
+            await logout({ clientId: process.env.REACT_APP_AUTH0_CLIENT_ID });
+
+            // Use environment-specific URL
+            const homeUrl = process.env.NODE_ENV === 'production'
+                ? 'https://www.petwise.vet'
+                : 'http://localhost:3000';
+
+            window.location.href = homeUrl;
         } catch (error) {
             console.error('Delete error:', error);
             setError(error.message);
