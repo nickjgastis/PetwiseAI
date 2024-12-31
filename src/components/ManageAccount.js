@@ -57,7 +57,11 @@ const ManageAccount = ({ user, onBack }) => {
                 throw new Error(error.message || 'Failed to delete account');
             }
 
-            await logout({ returnTo: window.location.origin });
+            const returnUrl = process.env.NODE_ENV === 'production'
+                ? 'https://petwise.vet'
+                : window.location.origin;
+
+            await logout({ returnTo: returnUrl });
         } catch (error) {
             console.error('Delete error:', error);
             setError(error.message);
