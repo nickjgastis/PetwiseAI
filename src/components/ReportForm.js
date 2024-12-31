@@ -287,16 +287,22 @@ const createSlateValue = (text) => {
             isInPatientInfo = false;
         }
 
-        // Handle headers
-        if (mainHeaders.some(header =>
-            trimmedParagraph === header ||
-            trimmedParagraph.startsWith(header) ||
-            trimmedParagraph === 'Veterinary Medical Record'
-        )) {
+        // Handle headers - only match exact headers or complete phrases
+        const isHeader =
+            mainHeaders.some(header =>
+                trimmedParagraph === header || // Exact match
+                trimmedParagraph === header.replace(':', '') || // Match without colon
+                trimmedParagraph === 'Veterinary Medical Record' ||
+                trimmedParagraph === 'PLAN'
+            ) ||
+            // Only match if the colon is at the end and it's not part of a longer sentence
+            (trimmedParagraph.endsWith(':') && !trimmedParagraph.includes(' '));
+
+        if (isHeader) {
             return {
                 type: 'heading',
                 children: [{
-                    text: trimmedParagraph.replace(/:$/, ''),
+                    text: trimmedParagraph,
                     bold: true
                 }]
             };
@@ -1499,7 +1505,13 @@ const ReportForm = () => {
                             <p className="loading-text">{loadingText}</p>
                         </div>
                     ) : previewVisible ? (
-                        <div className="editor-wrapper">
+                        <div className="editor-wrapper" style={{
+                            height: '100%',
+                            overflowY: 'auto',
+                            backgroundColor: 'white',
+                            padding: '20px',
+                            borderRadius: '4px'
+                        }}>
                             <Slate
                                 editor={editor}
                                 initialValue={slateValue}
@@ -1519,7 +1531,9 @@ const ReportForm = () => {
                                     style={{
                                         minHeight: '100%',
                                         padding: '10px',
-                                        whiteSpace: 'pre-wrap'
+                                        whiteSpace: 'pre-wrap',
+                                        lineHeight: '1.5',
+                                        fontSize: '14px'
                                     }}
                                     onCopy={(event) => {
                                         event.preventDefault();

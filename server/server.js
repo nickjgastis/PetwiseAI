@@ -599,6 +599,87 @@ app.post('/test-cancellation-flow/:userId', async (req, res) => {
     }
 });
 
+// Add this new endpoint for account deletion
+app.post('/delete-account', async (req, res) => {
+    try {
+        const { user_id } = req.body;
+        console.log('Attempting to delete user:', user_id);
+
+        if (!user_id) {
+            return res.status(400).json({ error: 'user_id is required' });
+        }
+
+        // First check if user exists in Supabase
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('auth0_user_id', user_id)
+            .single();
+
+        console.log('Found user data:', userData);
+
+        if (userError) {
+            console.error('Error finding user:', userError);
+            throw userError;
+        }
+
+        // Delete user data from Supabase with explicit response checking
+        const { data: deleteData, error: deleteError } = await supabase
+            .from('users')
+            .delete()
+            .eq('auth0_user_id', user_id)
+            .select(); // Add .select() to get back the deleted row
+
+        console.log('Delete response:', { deleteData, deleteError }); // Add this log
+
+        if (deleteError) {
+            console.error('Supabase delete error:', deleteError);
+            throw deleteError;
+        }
+
+        if (!deleteData || deleteData.length === 0) {
+            throw new Error('User deletion failed - no rows deleted');
+        }
+
+        // Only try to delete Stripe data if it exists
+        if (userData?.stripe_customer_id) {
+            try {
+                console.log('Starting Stripe deletion for customer:', userData.stripe_customer_id);
+
+                const subscriptions = await stripe.subscriptions.list({
+                    customer: userData.stripe_customer_id,
+                    limit: 1,
+                });
+                console.log('Found subscriptions:', subscriptions.data);
+
+                if (subscriptions.data.length > 0) {
+                    console.log('Cancelling subscription:', subscriptions.data[0].id);
+                    await stripe.subscriptions.cancel(subscriptions.data[0].id);
+                    console.log('Subscription cancelled successfully');
+                }
+
+                console.log('Deleting Stripe customer');
+                await stripe.customers.del(userData.stripe_customer_id);
+                console.log('Stripe customer deleted successfully');
+            } catch (stripeError) {
+                console.error('Stripe deletion error:', stripeError);
+                throw stripeError; // Throw error to see full details
+            }
+        }
+
+        res.json({
+            success: true,
+            deletedUser: deleteData[0]
+        });
+    } catch (error) {
+        console.error('Delete account error:', error);
+        res.status(500).json({
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
 // ================ SERVER STARTUP ================
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

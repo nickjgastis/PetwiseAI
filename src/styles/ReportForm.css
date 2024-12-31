@@ -769,40 +769,33 @@ input:checked+.slider:before {
     width: 100px;
     height: 100px;
     background-image: url('../../public/PW.png');
-    /* Changed path to absolute */
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    animation: pulse 3s ease-in-out infinite;
+    animation: fade 3s ease-in-out infinite;
     margin-bottom: 20px;
-    transform-origin: center;
-    /* Add this to ensure scaling from center */
     display: block;
-    /* Add this to ensure proper rendering */
 }
 
-@keyframes pulse {
+@keyframes fade {
 
     0%,
     100% {
         opacity: 1;
-        transform: scale(1) translateZ(0);
     }
 
     50% {
-        opacity: 0.5;
-        transform: scale(1.4) translateZ(0);
+        opacity: 0.4;
     }
 }
 
-
-
 .loading-text {
     font-size: 1rem;
-    color: #2c3e50;
+    color: #3498db;
     text-align: center;
-    opacity: 0;
-    animation: fadeIn 1s ease-in-out forwards;
+    margin-top: 10px;
+    animation: none;
+    opacity: 1;
 }
 
 @keyframes fadeIn {
