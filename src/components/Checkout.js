@@ -3,6 +3,8 @@ import { loadStripe } from '@stripe/stripe-js';
 import CancelSubscription from './CancelSubscription';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../supabaseClient';
+import '../styles/Checkout.css';
+import '../styles/Profile.css';
 
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
 
@@ -12,8 +14,6 @@ const API_URL = process.env.NODE_ENV === 'production'
 
 const Checkout = ({ onBack, user, subscriptionStatus }) => {
     const { logout } = useAuth0();
-    const [isTrial, setIsTrial] = useState(false);
-    const [subscriptionType, setSubscriptionType] = useState(null);
     const [subscriptionInterval, setSubscriptionInterval] = useState(null);
 
     useEffect(() => {
@@ -28,7 +28,6 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     }
                 });
                 const data = await response.json();
-                setSubscriptionType(data.subscription_type);
                 setSubscriptionInterval(data.subscription_interval);
             } catch (error) {
                 console.error('Error fetching subscription info:', error);
@@ -38,16 +37,11 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
         fetchSubscriptionInfo();
     }, [user]);
 
-    const handleCheckout = async (planType = 'singleUserMonthly') => {
+    const handleCheckout = async (planType) => {
         try {
             const stripe = await stripePromise;
-            if (!stripe) {
-                throw new Error('Stripe failed to initialize');
-            }
-
-            if (!user) {
-                throw new Error('No user data available');
-            }
+            if (!stripe) throw new Error('Stripe failed to initialize');
+            if (!user) throw new Error('No user data available');
 
             const response = await fetch(`${API_URL}/create-checkout-session`, {
                 method: 'POST',
@@ -57,7 +51,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                 },
                 body: JSON.stringify({
                     user,
-                    planType
+                    planType // This will be either 'monthly' or 'yearly'
                 }),
             });
 
@@ -78,23 +72,37 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
 
     const handleTrialActivation = async () => {
         try {
+            console.log('Starting trial activation for user:', user.sub);
+
             const response = await fetch(`${API_URL}/activate-trial`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ user_id: user.sub }),
+                body: JSON.stringify({
+                    user_id: user.sub,
+                    emailOptOut: false
+                }),
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message);
+                throw new Error(data.error || 'Failed to activate trial');
             }
 
-            window.location.reload();
+            console.log('Trial activation response:', data);
+
+            if (data && data.length > 0) {
+                window.location.reload();
+            } else {
+                throw new Error('No data returned from trial activation');
+            }
         } catch (error) {
             console.error('Trial activation error:', error);
+            // You might want to show this error to the user
+            alert(`Failed to activate trial: ${error.message}`);
         }
     };
 
@@ -119,11 +127,10 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                                 Current Plan: {(() => {
                                     const planTypes = {
                                         trial: 'Free Trial (10 reports/day)',
-                                        singleUser: 'Single User Plan (25 reports/day)',
-                                        multiUser: 'Multi User Plan (120 reports/day)',
-                                        clinic: 'Clinic Plan (400 reports/day)'
+                                        monthly: 'Monthly Plan',
+                                        yearly: 'Yearly Plan'
                                     };
-                                    return `${planTypes[subscriptionType] || 'Unknown Plan'} - Features Active`;
+                                    return `${planTypes[subscriptionInterval] || 'Unknown Plan'} - Features Active`;
                                 })()}
                             </>
                         ) : (
@@ -133,16 +140,15 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                 </div>
 
                 <div className="pricing-container">
-                    {/* Always show trial card, but disabled if used */}
+                    {/* Free Trial Card */}
                     <div className={`pricing-card free ${user.has_used_trial ? 'disabled' : ''}`}>
                         <div className="pricing-header">
-                            <h3>Free Trial</h3>
-                            <p className="price">$0<span>/7 days</span></p>
+                            <h3>14 Day Free Trial</h3>
+                            <p className="price">$0<span>/mo</span></p>
                         </div>
                         <ul className="pricing-features">
-                            <li>10 reports per day</li>
                             <li>No credit card required</li>
-
+                            <li>10 reports per day</li>
                             <li>Quick Query</li>
                         </ul>
                         <div className="pricing-footer">
@@ -153,105 +159,54 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                             >
                                 {user.has_used_trial ? 'Trial Used' : 'Start Free Trial'}
                             </button>
-
                         </div>
                     </div>
 
-                    <div className={`pricing-card ${subscriptionType === 'singleUser' ? 'current' : ''}`}>
+                    {/* Monthly Plan Card */}
+                    <div className={`pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
                         <div className="pricing-header">
-                            <h3>Single User</h3>
-                            <div className="price-options">
-                                <p className="price">$79.99<span>/mo</span></p>
-                                <span className="price-divider">|</span>
-                                <p className="price yearly">$859.99<span>/yr</span></p>
-                            </div>
+                            <h3>Monthly</h3>
+                            <p className="price">$129<span>/Vet/Month</span></p>
                         </div>
                         <ul className="pricing-features">
-                            <li>25 reports per day</li>
+                            <li>Unlimited SOAP reports</li>
+                            <li>Unlimited Quick Query</li>
                             <li>Saved reports</li>
-                            <li>Quick Query</li>
-                            <li>For 1 user</li>
+                            <li>Priority support</li>
+
                         </ul>
                         <div className="pricing-footer">
                             <button
-                                onClick={() => handleCheckout('singleUserMonthly')}
+                                onClick={() => handleCheckout('monthly')}
                                 className="subscribe-button"
-                                disabled={subscriptionType === 'singleUser' && !user.cancel_at_period_end}
+                                disabled={subscriptionInterval === 'monthly' && !user.cancel_at_period_end}
                             >
-                                {subscriptionType === 'singleUser' ? 'Current Plan' : 'Monthly Plan'}
-                            </button>
-                            <button
-                                onClick={() => handleCheckout('singleUserYearly')}
-                                className="subscribe-button yearly"
-                                disabled={subscriptionType === 'singleUser' && !user.cancel_at_period_end}
-                            >
-                                {subscriptionType === 'singleUser' ? 'Current Plan' : 'Yearly Plan'}
+                                {subscriptionInterval === 'monthly' ? 'Current Plan' : 'Sign Up Now'}
                             </button>
                         </div>
                     </div>
 
-                    <div className={`pricing-card ${subscriptionType === 'multiUser' ? 'current' : ''}`}>
+                    {/* Yearly Plan Card */}
+                    <div className={`pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
                         <div className="pricing-header">
-                            <h3>Multi User</h3>
-                            <div className="price-options">
-                                <p className="price">$249.99<span>/mo</span></p>
-                                <span className="price-divider">|</span>
-                                <p className="price yearly">$2849.99<span>/yr</span></p>
-                            </div>
+                            <h3>Yearly</h3>
+                            <p className="price">$89<span>/Vet/Month</span></p>
+                            <p className="savings">Save 31%</p>
                         </div>
                         <ul className="pricing-features">
-                            <li>120 reports per day</li>
+                            <li>Unlimited SOAP reports</li>
+                            <li>Unlimited Quick Query</li>
                             <li>Saved reports</li>
-                            <li>Quick Query</li>
-                            <li>For 2-5 users</li>
-                        </ul>
-                        <div className="pricing-footer">
-                            <button
-                                onClick={() => handleCheckout('multiUserMonthly')}
-                                className="subscribe-button"
-                                disabled={subscriptionType === 'multiUser' && !user.cancel_at_period_end}
-                            >
-                                {subscriptionType === 'multiUser' ? 'Current Plan' : 'Monthly Plan'}
-                            </button>
-                            <button
-                                onClick={() => handleCheckout('multiUserYearly')}
-                                className="subscribe-button yearly"
-                                disabled={subscriptionType === 'multiUser' && !user.cancel_at_period_end}
-                            >
-                                {subscriptionType === 'multiUser' ? 'Current Plan' : 'Yearly Plan'}
-                            </button>
-                        </div>
-                    </div>
+                            <li>Priority support</li>
 
-                    <div className={`pricing-card ${subscriptionType === 'clinic' ? 'current' : ''}`}>
-                        <div className="pricing-header">
-                            <h3>Clinic Subscription</h3>
-                            <div className="price-options">
-                                <p className="price">$479.99<span>/mo</span></p>
-                                <span className="price-divider">|</span>
-                                <p className="price yearly">$5199.99<span>/yr</span></p>
-                            </div>
-                        </div>
-                        <ul className="pricing-features">
-                            <li>400 reports per day</li>
-                            <li>Saved reports</li>
-                            <li>Quick Query</li>
-                            <li>For full clinics</li>
                         </ul>
                         <div className="pricing-footer">
                             <button
-                                onClick={() => handleCheckout('clinicMonthly')}
+                                onClick={() => handleCheckout('yearly')}
                                 className="subscribe-button"
-                                disabled={subscriptionType === 'clinic' && !user.cancel_at_period_end}
+                                disabled={subscriptionInterval === 'yearly' && !user.cancel_at_period_end}
                             >
-                                {subscriptionType === 'clinic' ? 'Current Plan' : 'Monthly Plan'}
-                            </button>
-                            <button
-                                onClick={() => handleCheckout('clinicYearly')}
-                                className="subscribe-button yearly"
-                                disabled={subscriptionType === 'clinic' && !user.cancel_at_period_end}
-                            >
-                                {subscriptionType === 'clinic' ? 'Current Plan' : 'Yearly Plan'}
+                                {subscriptionInterval === 'yearly' ? 'Current Plan' : 'Sign Up Now'}
                             </button>
                         </div>
                     </div>

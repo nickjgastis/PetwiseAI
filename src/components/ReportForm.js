@@ -521,7 +521,7 @@ const ReportForm = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('reports_used_today, subscription_type, last_report_date')
+                .select('reports_used_today, subscription_interval, last_report_date')
                 .eq('auth0_user_id', user.sub)
                 .single();
 
@@ -545,18 +545,13 @@ const ReportForm = () => {
                 setReportsUsed(data.reports_used_today);
             }
 
-            // Set limit based on subscription type
-            const limits = {
-                trial: 10,
-                singleUser: 25,
-                multiUser: 120,
-                clinic: 400
-            };
-            setReportLimit(limits[data.subscription_type] || 0);
-
-            // Show warning when within 3 reports of limit
-            if (limits[data.subscription_type] - data.reports_used_today <= 3) {
-                setShowLimitWarning(true);
+            // Only set limit and show warnings for trial users
+            if (data.subscription_interval === 'trial') {
+                setReportLimit(10);
+                // Warning logic moved to the useEffect above
+            } else {
+                setReportLimit(Infinity);
+                setShowLimitWarning(false); // Ensure warning is hidden for paid users
             }
         } catch (error) {
             console.error('Error fetching report usage:', error);
@@ -997,12 +992,17 @@ const ReportForm = () => {
     // Add near your other state declarations
     const [showLimitWarning, setShowLimitWarning] = useState(false);
 
-    // Add this effect to monitor report usage
+    // Update the useEffect that monitors report usage
     useEffect(() => {
-        if (reportLimit - reportsUsed <= 3 && reportLimit !== 0) {
-            setShowLimitWarning(true);
+        if (reportLimit === 10) {  // Only show warning for trial users (10 report limit)
+            const remainingReports = Math.max(0, reportLimit - reportsUsed);
+            if (remainingReports <= 3) {
+                setShowLimitWarning(true);
+            } else {
+                setShowLimitWarning(false);
+            }
         } else {
-            setShowLimitWarning(false);
+            setShowLimitWarning(false); // Always hide warning for paid subscriptions
         }
     }, [reportsUsed, reportLimit]);
 
@@ -1010,26 +1010,35 @@ const ReportForm = () => {
     const navigate = useNavigate(); // Add useNavigate import at the top
 
     // Modify the LimitWarningPopup component
-    const LimitWarningPopup = () => (
-        <div className="limit-warning-popup">
-            <button
-                className="close-warning"
-                onClick={() => setShowLimitWarning(false)}
-            >
-                ×
-            </button>
-            <p>You have {reportLimit - reportsUsed} reports remaining today. Reports will reset tomorrow.</p>
-            <p>Need more? <button
-                className="upgrade-link"
-                onClick={() => {
-                    setShowLimitWarning(false);
-                    navigate('/profile', { state: { openCheckout: true } });
-                }}
-            >
-                Upgrade your plan
-            </button></p>
-        </div>
-    );
+    const LimitWarningPopup = () => {
+        const remainingReports = Math.max(0, reportLimit - reportsUsed);
+        const isAtLimit = reportsUsed >= reportLimit;
+
+        return (
+            <div className="limit-warning-popup">
+                <button
+                    className="close-warning"
+                    onClick={() => setShowLimitWarning(false)}
+                >
+                    ×
+                </button>
+                {isAtLimit ? (
+                    <p>You've reached your daily report limit. Sign up for unlimited reports!</p>
+                ) : (
+                    <p>You have {remainingReports} reports remaining today. Reports will reset tomorrow.</p>
+                )}
+                <p>Need more? <button
+                    className="upgrade-link"
+                    onClick={() => {
+                        setShowLimitWarning(false);
+                        navigate('/dashboard/profile', { state: { openCheckout: true } });
+                    }}
+                >
+                    Upgrade your plan
+                </button></p>
+            </div>
+        );
+    };
 
     const [loadingText, setLoadingText] = useState('Generating report...');
 

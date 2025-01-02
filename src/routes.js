@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
 import AboutPage from './pages/AboutPage';
 import ProductPage from './pages/ProductPage';
+import Profile from './components/Profile';
 
 const AppRoutes = () => {
     const { isLoading, isAuthenticated } = useAuth0();
@@ -29,6 +30,14 @@ const AppRoutes = () => {
                 element={
                     <PrivateRoute>
                         <Dashboard />
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/profile"
+                element={
+                    <PrivateRoute>
+                        <Profile />
                     </PrivateRoute>
                 }
             />

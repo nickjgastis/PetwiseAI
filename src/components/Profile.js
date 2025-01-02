@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
 import "../styles/Profile.css";
 import Checkout from './Checkout';
 import { supabase } from '../supabaseClient';
@@ -22,7 +22,6 @@ const PricingOptions = ({ onSubscribe, hasUsedTrial }) => {
                     </div>
                     <ul className="pricing-features">
                         <li>No credit card required</li>
-
                         <li>10 reports per day</li>
                         <li>Quick Query</li>
                     </ul>
@@ -36,99 +35,45 @@ const PricingOptions = ({ onSubscribe, hasUsedTrial }) => {
 
             <div className="pricing-card">
                 <div className="pricing-header">
-                    <h3>Single User</h3>
-                    <div className="price-options">
-                        <p className="price">$79.99<span>/mo</span></p>
-                        <span className="price-divider">|</span>
-                        <p className="price yearly">
-                            $859.99<span>/yr</span>
-                        </p>
-                    </div>
+                    <h3>Monthly</h3>
+                    <p className="price">$129<span>/Vet/Month</span></p>
                 </div>
                 <ul className="pricing-features">
-                    <li>25 reports per day</li>
+                    <li>Unlimited SOAP reports</li>
+                    <li>Unlimited Quick Query</li>
                     <li>Saved reports</li>
-                    <li>Quick Query</li>
-                    <li>For 1 user</li>
+                    <li>Priority support</li>
+
                 </ul>
                 <div className="pricing-footer">
                     <button
                         onClick={() => onSubscribe('monthly')}
                         className="subscribe-button"
                     >
-                        Monthly Plan
+                        Sign Up Now
                     </button>
+                </div>
+            </div>
+
+            <div className="pricing-card">
+                <div className="pricing-header">
+                    <h3>Yearly</h3>
+                    <p className="price">$89<span>/Vet/Month</span></p>
+                    <p className="savings">Save 31%</p>
+                </div>
+                <ul className="pricing-features">
+                    <li>Unlimited SOAP reports</li>
+                    <li>Unlimited Quick Query</li>
+                    <li>Saved reports</li>
+                    <li>Priority support</li>
+
+                </ul>
+                <div className="pricing-footer">
                     <button
                         onClick={() => onSubscribe('yearly')}
-                        className="subscribe-button yearly"
-                    >
-                        Yearly Plan
-                    </button>
-                </div>
-            </div>
-
-            <div className="pricing-card">
-                <div className="pricing-header">
-                    <h3>Multi User</h3>
-                    <div className="price-options">
-                        <p className="price">$199.99<span>/mo</span></p>
-                        <span className="price-divider">|</span>
-                        <p className="price yearly">
-                            $2159.99<span>/yr</span>
-                        </p>
-                    </div>
-                </div>
-                <ul className="pricing-features">
-                    <li>120 reports per day</li>
-                    <li>Saved reports</li>
-                    <li>Quick Query</li>
-                    <li>For 2-5 users</li>
-                </ul>
-                <div className="pricing-footer">
-                    <button
-                        onClick={() => onSubscribe('multiUserMonthly')}
                         className="subscribe-button"
                     >
-                        Monthly Plan
-                    </button>
-                    <button
-                        onClick={() => onSubscribe('multiUserYearly')}
-                        className="subscribe-button yearly"
-                    >
-                        Yearly Plan
-                    </button>
-                </div>
-            </div>
-
-            <div className="pricing-card">
-                <div className="pricing-header">
-                    <h3>Clinic Subscription</h3>
-                    <div className="price-options">
-                        <p className="price">$499.99<span>/mo</span></p>
-                        <span className="price-divider">|</span>
-                        <p className="price yearly">
-                            $5399.99<span>/yr</span>
-                        </p>
-                    </div>
-                </div>
-                <ul className="pricing-features">
-                    <li>400 reports per day</li>
-                    <li>Saved reports</li>
-                    <li>Quick Query</li>
-                    <li>For full clinics</li>
-                </ul>
-                <div className="pricing-footer">
-                    <button
-                        onClick={() => onSubscribe('clinicMonthly')}
-                        className="subscribe-button"
-                    >
-                        Monthly Plan
-                    </button>
-                    <button
-                        onClick={() => onSubscribe('clinicYearly')}
-                        className="subscribe-button yearly"
-                    >
-                        Yearly Plan
+                        Sign Up Now
                     </button>
                 </div>
             </div>
@@ -139,6 +84,7 @@ const PricingOptions = ({ onSubscribe, hasUsedTrial }) => {
 const Profile = () => {
     const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
     const navigate = useNavigate();
+    const location = useLocation();
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
     const [subscriptionEndDate, setSubscriptionEndDate] = useState(null);
     const [showCheckout, setShowCheckout] = useState(false);
@@ -155,7 +101,14 @@ const Profile = () => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, subscription_end_date, stripe_customer_id, has_used_trial, subscription_type, subscription_interval')
+                    .select(`
+                        subscription_status,
+                        subscription_end_date,
+                        stripe_customer_id,
+                        has_used_trial,
+                        subscription_interval,
+                        cancel_at_period_end
+                    `)
                     .eq('auth0_user_id', user.sub)
                     .single();
 
@@ -182,13 +135,11 @@ const Profile = () => {
     }, [isAuthenticated, user]);
 
     useEffect(() => {
-        const location = window.location;
         if (location.state?.openCheckout) {
             setShowCheckout(true);
-            // Clean up the state
-            window.history.replaceState({}, document.title)
+            navigate(location.pathname, { replace: true });
         }
-    }, []);
+    }, [location, navigate]);
 
     // Show loading state only when auth0 is loading or subscription is loading
     if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
@@ -205,6 +156,55 @@ const Profile = () => {
             month: 'long',
             day: 'numeric'
         });
+    };
+
+    const getSubscriptionDisplay = () => {
+        if (isSubscriptionLoading) {
+            return <span>Loading...</span>;
+        }
+
+        if (subscriptionStatus !== 'active') {
+            return <span>None</span>;
+        }
+
+        const planType = userData?.subscription_interval === 'trial' ? 'Trial' : 'Full Access';
+        const planInterval = userData?.subscription_interval
+            ? ` (${userData.subscription_interval.charAt(0).toUpperCase() + userData.subscription_interval.slice(1)})`
+            : '';
+
+        return (
+            <>
+                {planType}
+                <span className="subscription-plan">{planInterval}</span>
+            </>
+        );
+    };
+
+    const getSubscriptionStatus = () => {
+        if (isSubscriptionLoading) {
+            return <span>Loading...</span>;
+        }
+
+        if (subscriptionStatus !== 'active') {
+            return <span className="status-inactive">Inactive - Subscribe to access all features</span>;
+        }
+
+        return (
+            <>
+                <span className="status-active">Active</span>
+                {subscriptionEndDate && (
+                    <span className="subscription-end">
+                        {' '}(Expires: {formatDate(subscriptionEndDate)}
+                        {userData?.subscription_interval !== 'trial' && userData?.stripe_customer_id ? (
+                            userData.cancel_at_period_end ?
+                                ' - Will not renew' :
+                                ' - Will renew automatically'
+                        ) : null}
+                        )
+                    </span>
+                )}
+            </>
+        );
     };
 
     return (
@@ -227,7 +227,7 @@ const Profile = () => {
                     />
                 ) : (
                     <>
-                        {!isSubscriptionLoading && subscriptionStatus !== 'active' && (
+                        {!isSubscriptionLoading && (!subscriptionStatus || subscriptionStatus === 'inactive') && (
                             <div className="pricing-section">
                                 <h3>Choose Your Plan</h3>
                                 <p className="pricing-subtext">
@@ -263,50 +263,13 @@ const Profile = () => {
                                 <div className="info-item">
                                     <span className="info-label">Subscription Status:</span>
                                     <span className="info-value">
-                                        {isSubscriptionLoading ? (
-                                            <span>Loading...</span>
-                                        ) : subscriptionStatus === 'active' ? (
-                                            <>
-                                                <span className="status-active">Active</span>
-                                                {subscriptionEndDate && (
-                                                    <span className="subscription-end">
-                                                        {' '}(Expires: {formatDate(subscriptionEndDate)}
-                                                        {userData?.stripe_customer_id ? (
-                                                            cancelAtPeriodEnd ?
-                                                                ' - Will not renew' :
-                                                                ' - Will renew automatically'
-                                                        ) : null}
-                                                        )
-                                                    </span>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <span className="status-inactive">Inactive - Subscribe to access all features</span>
-                                        )}
+                                        {getSubscriptionStatus()}
                                     </span>
                                 </div>
                                 <div className="info-item">
                                     <span className="info-label">Subscription Type:</span>
                                     <span className="info-value">
-                                        {isSubscriptionLoading ? (
-                                            <span>Loading...</span>
-                                        ) : subscriptionStatus === 'active' ? (
-                                            <>
-                                                {userData?.subscription_type === 'singleUser' && 'Single User'}
-                                                {userData?.subscription_type === 'multiUser' && 'Multi User'}
-                                                {userData?.subscription_type === 'clinic' && 'Clinic'}
-                                                {userData?.subscription_type === 'trial' && 'Trial'}
-                                                <span className="subscription-plan">
-                                                    {userData?.subscription_interval && (
-                                                        userData?.subscription_interval === 'trial'
-                                                            ? ' (Trial)'
-                                                            : ` (${userData.subscription_interval.charAt(0).toUpperCase() + userData.subscription_interval.slice(1)} Plan)`
-                                                    )}
-                                                </span>
-                                            </>
-                                        ) : (
-                                            <span>None</span>
-                                        )}
+                                        {getSubscriptionDisplay()}
                                     </span>
                                 </div>
                             </div>

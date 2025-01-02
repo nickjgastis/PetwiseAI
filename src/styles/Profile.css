@@ -174,176 +174,181 @@
 
 .pricing-container {
     display: flex;
-    gap: 12px;
+    gap: 24px;
     justify-content: center;
-    margin: 1rem auto;
+    margin: 2rem auto;
     flex-wrap: nowrap;
     padding: 0 24px;
-    max-width: 1100px;
+    max-width: 1200px;
 }
 
 .pricing-card {
-    flex: 0 0 240px;
-    min-width: 240px;
-    max-width: 240px;
+    flex: 0 0 320px;
+    min-width: 320px;
+    max-width: 320px;
     min-height: 420px;
-    padding: 16px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(21, 101, 192, 0.1);
+    transition: all 0.4s ease;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(21, 101, 192, 0.1);
 }
 
 .pricing-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 32px rgba(21, 101, 192, 0.15);
+    border-color: rgba(21, 101, 192, 0.2);
 }
 
 .pricing-header {
-    padding: 20px 16px;
-    border-bottom: 1px solid #f5f5f5;
+    min-height: 120px;
+    padding: 0 0 16px 0;
+    border-bottom: 1px solid rgba(21, 101, 192, 0.1);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
 }
 
 .pricing-header h3 {
-    font-size: 20px;
+    font-size: 24px;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #1565C0;
     margin-bottom: 16px;
     letter-spacing: -0.5px;
 }
 
-.price-options {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    margin: 0px 0;
-}
-
 .price {
-    font-size: 20px;
+    font-size: 48px;
     font-weight: 700;
     color: #1a1a1a;
-    display: inline-flex;
+    display: flex;
     align-items: baseline;
-    position: relative;
-    letter-spacing: -0.5px;
+    justify-content: center;
+    gap: 4px;
+    letter-spacing: -1px;
+    margin: 8px 0 4px 0;
 }
 
 .price span {
-    font-size: 14px;
+    font-size: 16px;
     color: #666;
     font-weight: 500;
-    margin-left: 2px;
     letter-spacing: normal;
 }
 
-.price-divider {
-    color: #e0e0e0;
-    margin: 0 4px;
-    font-size: 20px;
-}
-
-.price.yearly {
-    color: #1565C0;
-    background: linear-gradient(135deg, #1976D2, #1565C0);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-
+.savings {
+    margin-top: 4px;
+    margin-bottom: 0;
+    padding: 4px 12px;
+    background: rgba(76, 175, 80, 0.1);
+    color: #4CAF50;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-block;
 }
 
 .pricing-features {
-    margin: 12px 0;
+    margin: 16px 0;
     padding: 0;
     list-style: none;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
 }
 
 .pricing-features li {
-    padding: 4px 0;
+    padding: 8px 0;
     color: #444;
-    font-size: 12px;
+    font-size: 15px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    border-bottom: 1px solid rgba(21, 101, 192, 0.05);
+    text-align: left;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+.pricing-features li:last-child {
+    border-bottom: none;
 }
 
 .pricing-features li::before {
     content: "✓";
-    color: #4caf50;
+    color: #1565C0;
     font-weight: bold;
+    background: rgba(21, 101, 192, 0.1);
+    min-width: 20px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 12px;
+    flex-shrink: 0;
 }
 
 .pricing-footer {
     margin-top: auto;
     padding-top: 16px;
-    border-top: 1px solid #eee;
-    display: flex;
-    gap: 12px;
-    flex-direction: column;
 }
 
 .subscribe-button {
-    padding: 12px 24px;
-    border-radius: 8px;
+    padding: 16px 24px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
     transition: all 0.3s ease;
     width: 100%;
     border: none;
     color: white;
     cursor: pointer;
-    background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
-}
-
-.subscribe-button.yearly {
-    background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
-    box-shadow: 0 2px 8px rgba(21, 101, 192, 0.3);
+    background: linear-gradient(135deg, #1976D2, #1565C0);
+    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.2);
 }
 
 .subscribe-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
-    filter: brightness(110%);
+    box-shadow: 0 6px 16px rgba(21, 101, 192, 0.3);
+    background: linear-gradient(135deg, #1E88E5, #1976D2);
 }
 
-.subscribe-button.yearly:hover {
-    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.4);
+.pricing-card.free {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.subscribe-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(33, 150, 243, 0.2);
+.pricing-card.free .pricing-header h3 {
+    color: #495057;
 }
 
 .trial-button {
-    padding: 12px 24px;
-    border-radius: 8px;
+    padding: 16px 24px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 14px;
+    font-size: 16px;
     transition: all 0.3s ease;
     width: 100%;
     border: none;
     color: white;
     cursor: pointer;
-    background: linear-gradient(135deg, #9c9c9c 0%, #7c947d 100%);
-    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+    background: linear-gradient(135deg, #6c757d, #495057);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.2);
 }
 
 .trial-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(114, 151, 115, 0.4);
-    filter: brightness(110%);
-}
-
-.trial-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+    box-shadow: 0 6px 16px rgba(108, 117, 125, 0.3);
+    background: linear-gradient(135deg, #495057, #343a40);
 }
 
 .ribbon {
@@ -397,15 +402,22 @@
     font-size: 2rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
     .pricing-container {
         flex-wrap: wrap;
-        gap: 16px;
+        gap: 32px;
     }
 
     .pricing-card {
-        flex: 1 1 240px;
-        max-width: 240px;
+        flex: 1 1 calc(50% - 16px);
+        min-width: 280px;
+        max-width: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .pricing-card {
+        flex: 1 1 100%;
     }
 }
 

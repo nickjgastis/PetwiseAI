@@ -62,21 +62,14 @@ app.use(cors({
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
-    singleUserMonthly: 'price_1QMxUrFpF2XskoMKxt7UOtMV',
-    singleUserYearly: 'price_1QMxVTFpF2XskoMKvEIdvxEj',
-
-    multiUserMonthly: 'price_1QNJ9RFpF2XskoMKnvtvwX6C',
-    multiUserYearly: 'price_1QNJB9FpF2XskoMKDeUPWNXp',
-
-    clinicMonthly: 'price_1QNJFEFpF2XskoMKVpGm131E',
-    clinicYearly: 'price_1QNJG0FpF2XskoMKqNG8CXjh'
+    monthly: 'price_1QcwX5FpF2XskoMKrTsq1kHc',
+    yearly: 'price_1QcwYWFpF2XskoMKH9MJisoy',
 };
 const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
     trial: 10,
-    singleUser: 25,
-    multiUser: 120,
-    clinic: 400
+    monthly: Infinity,
+    yearly: Infinity
 };
 
 // ================ CHECKOUT ENDPOINT ================
@@ -157,48 +150,16 @@ app.post('/webhook', async (req, res) => {
 
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
-            console.log('Processing checkout session:', session.id);
 
             try {
                 const subscription = await stripe.subscriptions.retrieve(session.subscription);
-
-                // Determine subscription type and interval
-                let subscriptionType, subscriptionInterval;
                 const priceId = subscription.items.data[0].price.id;
 
-                // Match price ID to subscription type and interval
-                switch (priceId) {
-                    case PRICE_IDS.singleUserMonthly:
-                        subscriptionType = 'singleUser';
-                        subscriptionInterval = 'monthly';
-                        break;
-                    case PRICE_IDS.singleUserYearly:
-                        subscriptionType = 'singleUser';
-                        subscriptionInterval = 'yearly';
-                        break;
-                    case PRICE_IDS.multiUserMonthly:
-                        subscriptionType = 'multiUser';
-                        subscriptionInterval = 'monthly';
-                        break;
-                    case PRICE_IDS.multiUserYearly:
-                        subscriptionType = 'multiUser';
-                        subscriptionInterval = 'yearly';
-                        break;
-                    case PRICE_IDS.clinicMonthly:
-                        subscriptionType = 'clinic';
-                        subscriptionInterval = 'monthly';
-                        break;
-                    case PRICE_IDS.clinicYearly:
-                        subscriptionType = 'clinic';
-                        subscriptionInterval = 'yearly';
-                        break;
-                    default:
-                        throw new Error('Invalid price ID');
-                }
+                // Simplified subscription type matching
+                const subscriptionInterval = priceId === PRICE_IDS.monthly ? 'monthly' : 'yearly';
 
                 const updateData = {
                     subscription_status: 'active',
-                    subscription_type: subscriptionType,
                     subscription_interval: subscriptionInterval,
                     stripe_customer_id: session.customer,
                     subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
@@ -208,20 +169,17 @@ app.post('/webhook', async (req, res) => {
                     cancel_at_period_end: false
                 };
 
-                console.log('Update Data:', updateData);
+                console.log('Updating user with data:', updateData);
 
-                const { data, error } = await supabase
+                const { error } = await supabase
                     .from('users')
                     .update(updateData)
-                    .eq('auth0_user_id', session.client_reference_id)
-                    .select();
+                    .eq('auth0_user_id', session.client_reference_id);
 
                 if (error) {
                     console.error('Supabase update error:', error);
                     throw error;
                 }
-
-                console.log('Update successful:', data);
             } catch (error) {
                 console.error('Subscription processing error:', error);
                 return res.status(500).json({ error: error.message });
@@ -296,30 +254,43 @@ app.post('/cancel-subscription', async (req, res) => {
 // ================ TRIAL ENDPOINT ================
 app.post('/activate-trial', async (req, res) => {
     try {
-        const { user_id, emailOptOut } = req.body;
+        const { user_id, emailOptOut = false } = req.body;
+        console.log('Trial activation request:', { user_id, emailOptOut });
+
+        if (!user_id) {
+            throw new Error('user_id is required');
+        }
+
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
 
-        console.log('Received email opt out:', emailOptOut);
+        const updateData = {
+            subscription_status: 'active',
+            subscription_interval: 'trial',
+            subscription_end_date: trialEndDate.toISOString(),
+            has_used_trial: true,
+            reports_used_today: 0,
+            last_report_date: new Date().toISOString().split('T')[0],
+            email_opt_out: emailOptOut
+        };
+
+        console.log('Updating user with data:', updateData);
 
         const { data, error } = await supabase
             .from('users')
-            .update({
-                subscription_status: 'active',
-                subscription_type: 'trial',
-                subscription_interval: 'trial',
-                subscription_end_date: trialEndDate.toISOString(),
-                has_used_trial: true,
-                reports_used_today: 0,
-                last_report_date: new Date().toISOString().split('T')[0],
-                email_opt_out: emailOptOut
-            })
+            .update(updateData)
             .eq('auth0_user_id', user_id)
             .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+        }
+
+        console.log('Trial activation successful:', data);
         res.json(data);
     } catch (error) {
+        console.error('Trial activation error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -380,57 +351,28 @@ async function checkReportLimit(req, res, next) {
             return res.status(400).json({ error: 'User ID required' });
         }
 
-        // Get current time with seconds
-        const now = new Date();
-        const timeKey = now.toISOString().split('T')[0]; // Use full date format
-
-        // First, check and reset if needed
-        const { data: resetCheck } = await supabase
-            .from('users')
-            .select('last_report_date')
-            .eq('auth0_user_id', user.sub)
-            .single();
-
-        console.log('Reset Check:', {
-            currentTimeKey: timeKey,
-            lastReportDate: resetCheck?.last_report_date,
-            shouldReset: !resetCheck?.last_report_date || resetCheck.last_report_date !== timeKey
-        });
-
-        // Reset if timeKey different (every 10 seconds)
-        if (!resetCheck?.last_report_date || resetCheck.last_report_date !== timeKey) {
-            await supabase
-                .from('users')
-                .update({
-                    reports_used_today: 0,
-                    last_report_date: timeKey
-                })
-                .eq('auth0_user_id', user.sub);
-        }
-
-        // Then get the updated user data
         const { data: userData, error } = await supabase
             .from('users')
-            .select('subscription_type, reports_used_today, last_report_date')
+            .select('subscription_interval, reports_used_today, last_report_date')
             .eq('auth0_user_id', user.sub)
             .single();
 
         if (error) throw error;
 
-        // Get limit based on subscription type
-        let limit = REPORT_LIMITS[userData.subscription_type] || 0;
-
-        if (userData.reports_used_today >= limit) {
-            return res.status(403).json({
-                error: 'Report limit reached',
-                limit,
-                used: userData.reports_used_today
-            });
+        // Only check limits for trial users
+        if (userData.subscription_interval === 'trial') {
+            if (userData.reports_used_today >= REPORT_LIMITS.trial) {
+                return res.status(403).json({
+                    error: 'Trial report limit reached',
+                    limit: REPORT_LIMITS.trial,
+                    used: userData.reports_used_today
+                });
+            }
         }
 
         req.reportData = {
             currentCount: userData.reports_used_today,
-            limit
+            limit: userData.subscription_interval === 'trial' ? REPORT_LIMITS.trial : Infinity
         };
         next();
     } catch (error) {

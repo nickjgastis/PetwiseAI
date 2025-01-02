@@ -15,7 +15,13 @@ const ManageAccount = ({ user, onBack }) => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, subscription_end_date, subscription_type, subscription_interval, cancel_at_period_end')
+                    .select(`
+                        subscription_status,
+                        subscription_end_date,
+                        subscription_interval,
+                        cancel_at_period_end,
+                        stripe_customer_id
+                    `)
                     .eq('auth0_user_id', user.sub)
                     .single();
 
@@ -98,12 +104,11 @@ const ManageAccount = ({ user, onBack }) => {
                             <div className="detail-item">
                                 <span>Plan:</span>
                                 <span>
-                                    {userData?.subscription_type ? (
+                                    {userData?.subscription_interval ? (
                                         <>
-                                            {userData.subscription_type === 'singleUser' && 'Single User'}
-                                            {userData.subscription_type === 'multiUser' && 'Multi User'}
-                                            {userData.subscription_type === 'clinic' && 'Clinic'}
-                                            {userData.subscription_type === 'trial' && 'Trial'}
+                                            {userData.subscription_interval === 'trial' && 'Trial'}
+                                            {userData.subscription_interval === 'monthly' && 'Monthly'}
+                                            {userData.subscription_interval === 'yearly' && 'Yearly'}
                                         </>
                                     ) : (
                                         'None'
@@ -115,9 +120,11 @@ const ManageAccount = ({ user, onBack }) => {
                                     <span>Renewal Date:</span>
                                     <span>
                                         {new Date(userData.subscription_end_date).toLocaleDateString()}
-                                        {userData.cancel_at_period_end ?
-                                            ' (Will not renew)' :
-                                            ' (Will auto-renew)'}
+                                        {userData.subscription_interval !== 'trial' && userData.stripe_customer_id && (
+                                            userData.cancel_at_period_end ?
+                                                ' (Will not renew)' :
+                                                ' (Will auto-renew)'
+                                        )}
                                     </span>
                                 </div>
                             ) : null}

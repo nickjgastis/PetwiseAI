@@ -75,12 +75,12 @@ const ProductPage = () => {
                     <div className="pricing-container">
                         <div className="pricing-card free">
                             <div className="pricing-header">
-                                <h3>Free Trial</h3>
-                                <p className="price">$0<span>/14 days</span></p>
+                                <h3>14 Day Free Trial</h3>
+                                <p className="price">$0<span>/mo</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>10 reports per day</li>
                                 <li>No credit card required</li>
+                                <li>10 reports per day</li>
                                 <li>Quick Query</li>
                             </ul>
                             <div className="pricing-footer">
@@ -88,82 +88,52 @@ const ProductPage = () => {
                                     onClick={() => loginWithRedirect(signUpOptions)}
                                     className="trial-button"
                                 >
-                                    Start Free Trial - No Credit Card Required
+                                    Start Free Trial
                                 </button>
                             </div>
                         </div>
 
                         <div className="pricing-card">
                             <div className="pricing-header">
-                                <h3>Single User</h3>
-                                <div className="price-options">
-                                    <p className="price">$79.99<span>/mo</span></p>
-                                    <span className="price-divider">|</span>
-                                    <p className="price yearly">$859.99<span>/yr</span></p>
-                                </div>
+                                <h3>Monthly</h3>
+                                <p className="price">$129<span>/Vet/Month</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>25 reports per day</li>
+                                <li>Unlimited SOAP reports</li>
+                                <li>Unlimited Quick Query</li>
                                 <li>Saved reports</li>
-                                <li>Quick Query</li>
-                                <li>For 1 user</li>
+                                <li>Priority support</li>
+
                             </ul>
                             <div className="pricing-footer">
                                 <button
                                     onClick={() => loginWithRedirect(signUpOptions)}
                                     className="subscribe-button"
                                 >
-                                    Get Started
+                                    Sign Up Now
                                 </button>
                             </div>
                         </div>
 
                         <div className="pricing-card">
                             <div className="pricing-header">
-                                <h3>Multi User</h3>
-                                <div className="price-options">
-                                    <p className="price">$249.99<span>/mo</span></p>
-                                    <span className="price-divider">|</span>
-                                    <p className="price yearly">$2849.99<span>/yr</span></p>
-                                </div>
+                                <h3>Yearly</h3>
+                                <p className="price">$89<span>/Vet/Month</span></p>
+                                <p className="savings">Save 31%</p>
                             </div>
                             <ul className="pricing-features">
-                                <li>120 reports per day</li>
+                                <li>Unlimited SOAP reports</li>
+                                <li>Unlimited Quick Query</li>
                                 <li>Saved reports</li>
-                                <li>Quick Query</li>
-                                <li>For 2-5 users</li>
-                            </ul>
-                            <div className="pricing-footer">
-                                <button
-                                    onClick={() => loginWithRedirect(signUpOptions)}
-                                    className="subscribe-button"
-                                >
-                                    Get Started
-                                </button>
-                            </div>
-                        </div>
+                                <li>Priority support</li>
 
-                        <div className="pricing-card">
-                            <div className="pricing-header">
-                                <h3>Clinic Subscription</h3>
-                                <div className="price-options">
-                                    <p className="price">$479.99<span>/mo</span></p>
-                                    <span className="price-divider">|</span>
-                                    <p className="price yearly">$5199.99<span>/yr</span></p>
-                                </div>
-                            </div>
-                            <ul className="pricing-features">
-                                <li>400 reports per day</li>
-                                <li>Saved reports</li>
-                                <li>Quick Query</li>
-                                <li>For full clinics</li>
                             </ul>
                             <div className="pricing-footer">
                                 <button
                                     onClick={() => loginWithRedirect(signUpOptions)}
                                     className="subscribe-button"
                                 >
-                                    Get Started
+                                    Sign Up Now
                                 </button>
                             </div>
                         </div>
