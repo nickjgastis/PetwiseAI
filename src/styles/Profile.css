@@ -162,6 +162,7 @@
 }
 
 .pricing-section {
+    margin-top: -4rem;
     margin-bottom: 2rem;
     text-align: center;
     opacity: 1 !important;
@@ -170,6 +171,18 @@
     width: 100vw;
     margin-left: calc(-50vw + 50%);
     margin-right: calc(-50vw + 50%);
+}
+
+.pricing-section h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.pricing-subtext {
+    margin-bottom: 2.5rem;
+    color: #666;
+    font-size: 1.1rem;
 }
 
 .pricing-container {
@@ -207,12 +220,14 @@
 }
 
 .pricing-header {
-    min-height: 120px;
+    min-height: 140px;
     padding: 0 0 16px 0;
     border-bottom: 1px solid rgba(21, 101, 192, 0.1);
     text-align: center;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
+    margin-bottom: 0;
 }
 
 .pricing-header h3 {
@@ -232,7 +247,7 @@
     justify-content: center;
     gap: 4px;
     letter-spacing: -1px;
-    margin: 8px 0 4px 0;
+    margin: 4px 0;
 }
 
 .price span {
@@ -243,8 +258,7 @@
 }
 
 .savings {
-    margin-top: 4px;
-    margin-bottom: 0;
+    margin: 4px 0 0 0;
     padding: 4px 12px;
     background: rgba(76, 175, 80, 0.1);
     color: #4CAF50;
@@ -252,10 +266,12 @@
     font-size: 14px;
     font-weight: 600;
     display: inline-block;
+    align-self: center;
 }
 
 .pricing-features {
-    margin: 16px 0;
+    margin: 16px 0 0 0;
+    margin-top: 0rem;
     padding: 0;
     list-style: none;
     flex: 1;
@@ -425,4 +441,8 @@
     color: #1565C0;
     font-size: 0.9em;
     margin-left: 4px;
+}
+
+.pricing-features li:first-child {
+    padding-top: 0;
 }

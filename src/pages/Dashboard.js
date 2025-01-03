@@ -34,18 +34,19 @@ const Dashboard = () => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, stripe_customer_id, has_accepted_terms')
+                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname')
                     .eq('auth0_user_id', user.sub)
                     .single();
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        // Create new user
+                        // Create new user with both email and nickname
                         const { data: newUser, error: createError } = await supabase
                             .from('users')
                             .insert([{
                                 auth0_user_id: user.sub,
                                 email: user.email,
+                                nickname: user.nickname || user.name, // Auth0 might provide either
                                 subscription_status: 'inactive',
                                 has_accepted_terms: false
                             }])
@@ -53,12 +54,25 @@ const Dashboard = () => {
                             .single();
 
                         if (createError) throw createError;
-
                         setHasAcceptedTerms(false);
                     } else {
                         throw error;
                     }
                 } else {
+                    // Check and update both email and nickname if they're different
+                    if (!data.email || data.email !== user.email ||
+                        !data.nickname || data.nickname !== (user.nickname || user.name)) {
+                        const { error: updateError } = await supabase
+                            .from('users')
+                            .update({
+                                email: user.email,
+                                nickname: user.nickname || user.name
+                            })
+                            .eq('auth0_user_id', user.sub);
+
+                        if (updateError) console.error('Error updating user info:', updateError);
+                    }
+
                     setHasAcceptedTerms(data.has_accepted_terms);
                     setSubscriptionStatus(data.subscription_status);
                     setIsSubscribed(data.subscription_status === 'active');

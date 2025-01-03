@@ -139,22 +139,22 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     </p>
                 </div>
 
-                <div className="pricing-container">
+                <div className="checkout-pricing-container">
                     {/* Free Trial Card */}
-                    <div className={`pricing-card free ${user.has_used_trial ? 'disabled' : ''}`}>
-                        <div className="pricing-header">
+                    <div className={`checkout-pricing-card free ${user.has_used_trial ? 'disabled' : ''}`}>
+                        <div className="checkout-pricing-header">
                             <h3>14 Day Free Trial</h3>
-                            <p className="price">$0<span>/mo</span></p>
+                            <p className="checkout-price">$0<span>/mo</span></p>
                         </div>
-                        <ul className="pricing-features">
+                        <ul className="checkout-pricing-features">
                             <li>No credit card required</li>
                             <li>10 reports per day</li>
                             <li>Quick Query</li>
                         </ul>
-                        <div className="pricing-footer">
+                        <div className="checkout-footer">
                             <button
                                 onClick={handleTrialActivation}
-                                className="trial-button"
+                                className="checkout-trial-button"
                                 disabled={user.has_used_trial || subscriptionStatus === 'active'}
                             >
                                 {user.has_used_trial ? 'Trial Used' : 'Start Free Trial'}
@@ -163,22 +163,22 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     </div>
 
                     {/* Monthly Plan Card */}
-                    <div className={`pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
-                        <div className="pricing-header">
+                    <div className={`checkout-pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
+                        <div className="checkout-pricing-header">
                             <h3>Monthly</h3>
-                            <p className="price">$129<span>/Vet/Month</span></p>
+                            <p className="checkout-price">$129<span>/Vet/Month</span></p>
                         </div>
-                        <ul className="pricing-features">
+                        <ul className="checkout-pricing-features">
                             <li>Unlimited SOAP reports</li>
                             <li>Unlimited Quick Query</li>
                             <li>Saved reports</li>
                             <li>Priority support</li>
 
                         </ul>
-                        <div className="pricing-footer">
+                        <div className="checkout-footer">
                             <button
                                 onClick={() => handleCheckout('monthly')}
-                                className="subscribe-button"
+                                className="checkout-subscribe-button"
                                 disabled={subscriptionInterval === 'monthly' && !user.cancel_at_period_end}
                             >
                                 {subscriptionInterval === 'monthly' ? 'Current Plan' : 'Sign Up Now'}
@@ -187,23 +187,23 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     </div>
 
                     {/* Yearly Plan Card */}
-                    <div className={`pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
-                        <div className="pricing-header">
+                    <div className={`checkout-pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
+                        <div className="checkout-pricing-header">
                             <h3>Yearly</h3>
-                            <p className="price">$89<span>/Vet/Month</span></p>
-                            <p className="savings">Save 31%</p>
+                            <p className="checkout-price">$89<span>/Vet/Month</span></p>
+                            <p className="checkout-savings">Save 31%</p>
                         </div>
-                        <ul className="pricing-features">
+                        <ul className="checkout-pricing-features">
                             <li>Unlimited SOAP reports</li>
                             <li>Unlimited Quick Query</li>
                             <li>Saved reports</li>
                             <li>Priority support</li>
 
                         </ul>
-                        <div className="pricing-footer">
+                        <div className="checkout-footer">
                             <button
                                 onClick={() => handleCheckout('yearly')}
-                                className="subscribe-button"
+                                className="checkout-subscribe-button"
                                 disabled={subscriptionInterval === 'yearly' && !user.cancel_at_period_end}
                             >
                                 {subscriptionInterval === 'yearly' ? 'Current Plan' : 'Sign Up Now'}
@@ -213,7 +213,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                 </div>
 
                 <div className="checkout-footer">
-                    <button onClick={onBack} className="back-button">
+                    <button onClick={onBack} className="checkout-back-button">
                         ← Back
                     </button>
                     {subscriptionStatus === 'active' && (

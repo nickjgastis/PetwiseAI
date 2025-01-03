@@ -241,7 +241,12 @@ const Profile = () => {
                         )}
 
                         <div className="profile-header">
-                            <img src={user.picture} alt={user.name} className="profile-picture" />
+                            <img
+                                src={user?.picture || '/default-avatar.png'}
+                                alt={user?.name || 'User'}
+                                className="profile-picture"
+                                onError={(e) => e.target.src = '/default-avatar.png'}
+                            />
                             <h2>{user.name}</h2>
                             <p className="profile-email">{user.email}</p>
                         </div>

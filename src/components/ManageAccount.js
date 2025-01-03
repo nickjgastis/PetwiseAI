@@ -84,7 +84,12 @@ const ManageAccount = ({ user, onBack }) => {
 
             <div className="user-info-section">
                 <div className="user-profile">
-                    <img src={user.picture} alt={user.name} className="profile-picture" />
+                    <img
+                        src={user?.picture || '/default-avatar.png'}
+                        alt={user?.name || 'User'}
+                        className="profile-picture"
+                        onError={(e) => e.target.src = '/default-avatar.png'}
+                    />
                     <div className="user-details">
                         <h3>{user.name}</h3>
                         <p className="user-email">{user.email}</p>

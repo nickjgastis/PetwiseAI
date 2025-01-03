@@ -46,8 +46,7 @@ const AppContent = () => {
             console.log("User created successfully:", newUser);
           }
         } else {
-          // Log the existing user
-          console.log("User already exists:", existingUser);
+
         }
       } catch (error) {
         console.error("Unexpected error:", error);
