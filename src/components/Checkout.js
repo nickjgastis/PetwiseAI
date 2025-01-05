@@ -6,7 +6,11 @@ import { supabase } from '../supabaseClient';
 import '../styles/Checkout.css';
 import '../styles/Profile.css';
 
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe(
+    process.env.NODE_ENV === 'production'
+        ? process.env.REACT_APP_STRIPE_PUBLIC_KEY_LIVE
+        : process.env.REACT_APP_STRIPE_PUBLIC_KEY
+);
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'

@@ -8,7 +8,11 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // ================ APP INITIALIZATION ================
 const app = express();
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = Stripe(
+    process.env.NODE_ENV === 'production'
+        ? process.env.STRIPE_SECRET_KEY_LIVE
+        : process.env.STRIPE_SECRET_KEY
+);
 const supabase = createClient(
     process.env.REACT_APP_SUPABASE_URL,
     process.env.REACT_APP_SUPABASE_ANON_KEY
@@ -62,8 +66,12 @@ app.use(cors({
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
-    monthly: 'price_1QcwX5FpF2XskoMKrTsq1kHc',
-    yearly: 'price_1QcwYWFpF2XskoMKH9MJisoy',
+    monthly: process.env.NODE_ENV === 'production'
+        ? 'price_1OqGKsFpF2XskoMKgNwN9m3B'  // Live monthly price
+        : 'price_1QcwX5FpF2XskoMKrTsq1kHc',  // Test monthly price
+    yearly: process.env.NODE_ENV === 'production'
+        ? 'price_1OqGLiFpF2XskoMKPxpzGEj4'   // Live yearly price
+        : 'price_1QcwYWFpF2XskoMKH9MJisoy'   // Test yearly price
 };
 const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
@@ -129,7 +137,7 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const webhookSecret = process.env.NODE_ENV === 'production'
-        ? process.env.STRIPE_WEBHOOK_SECRET_DEPLOYED
+        ? process.env.STRIPE_WEBHOOK_SECRET_LIVE
         : process.env.STRIPE_WEBHOOK_SECRET;
 
     console.log('Webhook Debug:', {
