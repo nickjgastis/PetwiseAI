@@ -7,8 +7,12 @@ const LoginButton = () => {
     const handleLogin = () => {
         loginWithRedirect({
             authorizationParams: {
-                prompt: 'select_account'
-            }
+                prompt: "select_account",
+            },
+            // Force a fresh login experience
+            ignoreCache: true,
+            // Clear any existing SSO session
+            clearSession: true
         });
     };
 

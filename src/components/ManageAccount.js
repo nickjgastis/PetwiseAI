@@ -3,6 +3,26 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../supabaseClient';
 import '../styles/ManageAccount.css';
 
+const getOptimizedImageUrl = (url) => {
+    if (!url) return null;
+
+    if (url.includes('googleusercontent.com')) {
+        const baseUrl = url.split('=')[0];
+        return `${baseUrl}=s200-c`;
+    }
+
+    if (url.includes('gravatar.com')) {
+        const hash = url.split('/').pop().split('?')[0];
+        return `https://secure.gravatar.com/avatar/${hash}?s=200&d=mp`;
+    }
+
+    if (url.includes('cdn.auth0.com')) {
+        return url.split('?')[0];
+    }
+
+    return url;
+};
+
 const ManageAccount = ({ user, onBack }) => {
     const { logout } = useAuth0();
     const [error, setError] = useState('');
@@ -63,15 +83,13 @@ const ManageAccount = ({ user, onBack }) => {
                 throw new Error(error.message || 'Failed to delete account');
             }
 
-            // First logout from Auth0
-            await logout({ clientId: process.env.REACT_APP_AUTH0_CLIENT_ID });
+            // Logout with returnTo and federated parameters
+            await logout({
+                clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
+                returnTo: window.location.origin,
+                federated: true // This forces a complete logout
+            });
 
-            // Use environment-specific URL
-            const homeUrl = process.env.NODE_ENV === 'production'
-                ? 'https://www.petwise.vet'
-                : 'http://localhost:3000';
-
-            window.location.href = homeUrl;
         } catch (error) {
             console.error('Delete error:', error);
             setError(error.message);
@@ -85,10 +103,23 @@ const ManageAccount = ({ user, onBack }) => {
             <div className="user-info-section">
                 <div className="user-profile">
                     <img
-                        src={user?.picture || '/default-avatar.png'}
+                        src={getOptimizedImageUrl(user?.picture)}
                         alt={user?.name || 'User'}
                         className="profile-picture"
-                        onError={(e) => e.target.src = '/default-avatar.png'}
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                            console.log('ManageAccount image error, falling back to SVG');
+                            e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+                        }}
+                        style={{
+                            width: '100px',
+                            height: '100px',
+                            borderRadius: '50%',
+                            objectFit: 'cover',
+                            border: '2px solid #eee',
+                            backgroundColor: '#f5f5f5'
+                        }}
                     />
                     <div className="user-details">
                         <h3>{user.name}</h3>
