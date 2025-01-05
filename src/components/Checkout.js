@@ -216,22 +216,6 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     </div>
                 </div>
 
-                {/* Add test button outside the pricing container but before the footer */}
-                <button
-                    onClick={() => handleCheckout('test')}
-                    style={{
-                        padding: '10px 20px',
-                        margin: '20px auto',
-                        display: 'block',
-                        backgroundColor: '#f0f0f0',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                    }}
-                >
-                    Test Payment ($1)
-                </button>
-
                 <div className="checkout-footer">
                     <button onClick={onBack} className="checkout-back-button">
                         ← Back
