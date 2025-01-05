@@ -75,13 +75,13 @@ const GenerateReport = async (inputs, enabledFields) => {
                         : `Generate a history based on presenting complaints and the typical background for this species or breed. Provide concise, single-line entries.`}` : ''}
   
   ${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings) !== null ? `
-  Physical Exam Findings: - ${inputs.examDate.split('-').map((part, i) => {
+Physical Exam Findings: - ${inputs.examDate.split('-').map((part, i) => {
                               if (i === 1) return new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(2000, part - 1));
                               if (i === 2) return parseInt(part);
                               return part;
                         }).reverse().join(' ')}
-  ${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings)
-                        ? `${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings)}`
+${getEnabledContent('physicalExamFindings', inputs.physicalExamFindings)
+                        ? `${inputs.physicalExamFindings}`
                         : `Generate physical exam findings based on presenting complaints, diagnosis, and typical findings for this species or breed.`}` : ''}
   ${getEnabledContent('diagnosticTests', inputs.diagnosticTests) !== null ? `
   Diagnostic Tests:  

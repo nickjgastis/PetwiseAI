@@ -78,8 +78,13 @@ const PDFDocument = ({ reportText }) => {
                 isInSummaryOrNotes = true;
             }
 
-            // Clean the text
-            if (!isInPatientInfo) {
+            // Update the header check to include date-containing headers
+            const isHeader = trimmedParagraph.startsWith('Physical Exam Findings: -') ||
+                trimmedParagraph.endsWith(':') ||
+                mainHeaders.some(header => trimmedParagraph.startsWith(header));
+
+            // Clean the text only if it's not a header
+            if (!isInPatientInfo && !isHeader) {
                 trimmedParagraph = trimmedParagraph
                     .replace(/^[•\-]\s*/, '')
                     .replace(/\*\*(\w[^*]*\w)\*\*/g, '$1')
@@ -93,10 +98,9 @@ const PDFDocument = ({ reportText }) => {
                 isInPatientInfo = false;
             }
 
-            // Create text element
+            // Create text element with appropriate styling
             let textElement;
-            // Check if the paragraph ends with a colon for headers
-            if (trimmedParagraph.endsWith(':')) {
+            if (isHeader) {
                 textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
             } else if (isInPatientInfo) {
                 textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
@@ -287,15 +291,15 @@ const createSlateValue = (text) => {
             isInPatientInfo = false;
         }
 
-        // Handle headers - only match exact headers or complete phrases
+        // Update header detection to match PDF formatting
         const isHeader =
             mainHeaders.some(header =>
-                trimmedParagraph === header || // Exact match
-                trimmedParagraph === header.replace(':', '') || // Match without colon
+                trimmedParagraph === header ||
+                trimmedParagraph === header.replace(':', '') ||
                 trimmedParagraph === 'Veterinary Medical Record' ||
                 trimmedParagraph === 'PLAN'
             ) ||
-            // Only match if the colon is at the end and it's not part of a longer sentence
+            trimmedParagraph.match(/^Physical Exam Findings: - \d+ \w+ \d{4}$/) ||
             (trimmedParagraph.endsWith(':') && !trimmedParagraph.includes(' '));
 
         if (isHeader) {
