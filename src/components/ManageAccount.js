@@ -83,14 +83,14 @@ const ManageAccount = ({ user, onBack }) => {
                 throw new Error(error.message || 'Failed to delete account');
             }
 
-            // First logout from Auth0
+            // First logout from Auth0 without returnTo
             await logout({
                 clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
-                returnTo: window.location.hostname.includes('petwise.vet')
-                    ? 'https://www.petwise.vet'
-                    : 'http://localhost:3000',
                 federated: true
             });
+
+            // Then force redirect to the production URL
+            window.location.href = 'https://www.petwise.vet';
 
         } catch (error) {
             console.error('Delete error:', error);
