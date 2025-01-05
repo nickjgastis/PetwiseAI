@@ -7,7 +7,7 @@ const LogoutButton = () => {
     return (
         <button onClick={() => logout({
             clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
-            returnTo: process.env.NODE_ENV === 'production'
+            returnTo: window.location.hostname.includes('petwise.vet')
                 ? 'https://www.petwise.vet'
                 : 'http://localhost:3000',
             federated: true
