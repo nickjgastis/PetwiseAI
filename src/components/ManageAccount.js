@@ -86,7 +86,9 @@ const ManageAccount = ({ user, onBack }) => {
             // First logout from Auth0
             await logout({
                 clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
-                returnTo: 'https://www.petwise.vet', // Always redirect to production URL
+                returnTo: process.env.NODE_ENV === 'production'
+                    ? 'https://www.petwise.vet'
+                    : 'http://localhost:3000',
                 federated: true
             });
 
