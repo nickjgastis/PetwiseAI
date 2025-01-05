@@ -67,11 +67,14 @@ app.use(cors({
 // ================ CONSTANTS ================
 const PRICE_IDS = {
     monthly: process.env.NODE_ENV === 'production'
-        ? 'price_1OqGKsFpF2XskoMKgNwN9m3B'  // Live monthly price
+        ? 'price_1QdhwtFpF2XskoMK2RjFj916'  // Live monthly price
         : 'price_1QcwX5FpF2XskoMKrTsq1kHc',  // Test monthly price
     yearly: process.env.NODE_ENV === 'production'
-        ? 'price_1OqGLiFpF2XskoMKPxpzGEj4'   // Live yearly price
-        : 'price_1QcwYWFpF2XskoMKH9MJisoy'   // Test yearly price
+        ? 'price_1Qdhz7FpF2XskoMK7O7GjJTn'   // Live yearly price
+        : 'price_1QcwYWFpF2XskoMKH9MJisoy',   // Test yearly price
+    test: process.env.NODE_ENV === 'production'
+        ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
+        : 'price_1QcwYWFpF2XskoMKH9MJisoy'  // Using yearly test price as fallback
 };
 const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
@@ -140,11 +143,11 @@ app.post('/webhook', async (req, res) => {
         ? process.env.STRIPE_WEBHOOK_SECRET_LIVE
         : process.env.STRIPE_WEBHOOK_SECRET;
 
-    console.log('Webhook Debug:', {
+    console.log('Webhook received:', {
         hasSignature: !!sig,
         hasBody: !!req.body,
         env: process.env.NODE_ENV,
-        hasSecret: !!webhookSecret
+        webhookSecret: webhookSecret ? 'present' : 'missing'
     });
 
     try {
@@ -158,13 +161,18 @@ app.post('/webhook', async (req, res) => {
 
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
+            console.log('Checkout Session:', session);
 
             try {
                 const subscription = await stripe.subscriptions.retrieve(session.subscription);
+                console.log('Subscription:', subscription);
+
                 const priceId = subscription.items.data[0].price.id;
+                console.log('Price ID:', priceId);
 
                 // Simplified subscription type matching
                 const subscriptionInterval = priceId === PRICE_IDS.monthly ? 'monthly' : 'yearly';
+                console.log('Subscription Interval:', subscriptionInterval);
 
                 const updateData = {
                     subscription_status: 'active',
@@ -177,17 +185,23 @@ app.post('/webhook', async (req, res) => {
                     cancel_at_period_end: false
                 };
 
-                console.log('Updating user with data:', updateData);
+                console.log('Updating user with data:', {
+                    auth0_user_id: session.client_reference_id,
+                    ...updateData
+                });
 
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('users')
                     .update(updateData)
-                    .eq('auth0_user_id', session.client_reference_id);
+                    .eq('auth0_user_id', session.client_reference_id)
+                    .select();
 
                 if (error) {
                     console.error('Supabase update error:', error);
                     throw error;
                 }
+
+                console.log('Update successful:', data);
             } catch (error) {
                 console.error('Subscription processing error:', error);
                 return res.status(500).json({ error: error.message });
@@ -196,7 +210,7 @@ app.post('/webhook', async (req, res) => {
 
         res.json({ received: true });
     } catch (err) {
-        console.error('Webhook error:', err);
+        console.error('Webhook Error:', err);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 });
