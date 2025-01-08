@@ -138,7 +138,8 @@ const Profile = () => {
                         stripe_customer_id,
                         has_used_trial,
                         subscription_interval,
-                        cancel_at_period_end
+                        cancel_at_period_end,
+                        dvm_name
                     `)
                     .eq('auth0_user_id', user.sub)
                     .single();
@@ -282,7 +283,7 @@ const Profile = () => {
                             <div className="profile-picture-container">
                                 <img
                                     src={getOptimizedImageUrl(user?.picture)}
-                                    alt={user?.name || 'User'}
+                                    alt={userData?.dvm_name || user?.name || 'User'}
                                     className="profile-picture"
                                     crossOrigin="anonymous"
                                     referrerPolicy="no-referrer"
@@ -300,20 +301,23 @@ const Profile = () => {
                                     }}
                                 />
                             </div>
-                            <h2>{user.name}</h2>
+                            <h2>{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
                             <p className="profile-email">{user.email}</p>
                         </div>
                         <div className="profile-details">
                             <h3>Profile Information</h3>
                             <div className="profile-info">
                                 <div className="info-item">
+                                    <span className="info-label">DVM Name:</span>
+                                    <span className="info-value">
+                                        {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set'}
+                                    </span>
+                                </div>
+                                <div className="info-item">
                                     <span className="info-label">Nickname:</span>
                                     <span className="info-value">{user.nickname || 'Not set'}</span>
                                 </div>
-                                <div className="info-item">
-                                    <span className="info-label">Email Verified:</span>
-                                    <span className="info-value">{user.email_verified ? 'Yes' : 'No'}</span>
-                                </div>
+
                                 <div className="info-item">
                                     <span className="info-label">Last Updated:</span>
                                     <span className="info-value">{new Date(user.updated_at).toLocaleDateString()}</span>

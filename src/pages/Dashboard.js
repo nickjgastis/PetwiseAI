@@ -8,6 +8,7 @@ import Profile from '../components/Profile';
 import TermsOfService from '../components/TermsOfService';
 import QuickQuery from '../components/QuickQuery';
 import Help from '../components/Help';
+import Welcome from '../components/Welcome';
 import '../styles/Dashboard.css';
 import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle } from 'react-icons/fa';
@@ -22,6 +23,7 @@ const Dashboard = () => {
     const [userData, setUserData] = useState(null);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [needsWelcome, setNeedsWelcome] = useState(false);
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
@@ -34,49 +36,43 @@ const Dashboard = () => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname')
+                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name')
                     .eq('auth0_user_id', user.sub)
                     .single();
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        // Create new user with both email and nickname
+                        // Create new user
                         const { data: newUser, error: createError } = await supabase
                             .from('users')
                             .insert([{
                                 auth0_user_id: user.sub,
                                 email: user.email,
-                                nickname: user.nickname || user.name, // Auth0 might provide either
+                                nickname: user.nickname || user.name,
                                 subscription_status: 'inactive',
-                                has_accepted_terms: false
+                                has_accepted_terms: false,
+                                dvm_name: null
                             }])
                             .select()
                             .single();
 
                         if (createError) throw createError;
                         setHasAcceptedTerms(false);
+                        setNeedsWelcome(true);
+                        setUserData(newUser);
                     } else {
                         throw error;
                     }
                 } else {
-                    // Check and update both email and nickname if they're different
-                    if (!data.email || data.email !== user.email ||
-                        !data.nickname || data.nickname !== (user.nickname || user.name)) {
-                        const { error: updateError } = await supabase
-                            .from('users')
-                            .update({
-                                email: user.email,
-                                nickname: user.nickname || user.name
-                            })
-                            .eq('auth0_user_id', user.sub);
-
-                        if (updateError) console.error('Error updating user info:', updateError);
-                    }
-
                     setHasAcceptedTerms(data.has_accepted_terms);
                     setSubscriptionStatus(data.subscription_status);
                     setIsSubscribed(data.subscription_status === 'active');
                     setUserData(data);
+
+                    // Check for existing users without DVM name
+                    if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
+                        setNeedsWelcome(true);
+                    }
                 }
             } catch (err) {
                 console.error('Error:', err);
@@ -92,16 +88,20 @@ const Dashboard = () => {
 
     const handleAcceptTerms = async ({ emailOptOut }) => {
         try {
-            const { error } = await supabase
+            const { data, error } = await supabase
                 .from('users')
                 .update({
                     has_accepted_terms: true,
                     email_opt_out: emailOptOut
                 })
-                .eq('auth0_user_id', user.sub);
+                .eq('auth0_user_id', user.sub)
+                .select()
+                .single();
 
             if (error) throw error;
             setHasAcceptedTerms(true);
+            setUserData(data);
+            setNeedsWelcome(true);
         } catch (err) {
             console.error('Error accepting terms:', err);
         }
@@ -112,9 +112,17 @@ const Dashboard = () => {
         return <div>Loading...</div>;
     }
 
-    // Show Terms of Service if not accepted
+    // Check terms first
     if (!hasAcceptedTerms) {
         return <TermsOfService onAccept={handleAcceptTerms} />;
+    }
+
+    // Then check if they need to set their DVM name
+    if (needsWelcome || !userData?.dvm_name) {
+        return <Welcome onComplete={(updatedData) => {
+            setNeedsWelcome(false);
+            setUserData(updatedData);
+        }} />;
     }
 
     // ================ EVENT HANDLERS ================
@@ -164,6 +172,9 @@ const Dashboard = () => {
                         <img src="/PW.png" alt="PW" className="logo-img" />
                         <span className="logo-text">petwise.vet</span>
                     </Link>
+                    {userData?.dvm_name && (
+                        <div className="dvm-name">Dr. {userData.dvm_name}</div>
+                    )}
                 </div>
                 <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle Sidebar">
                     {isSidebarCollapsed ? '›' : '‹'}

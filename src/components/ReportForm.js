@@ -1094,6 +1094,27 @@ const ReportForm = () => {
         }
     }, [user]);
 
+    const [userData, setUserData] = useState(null);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            if (!user?.sub) return;
+
+            const { data, error } = await supabase
+                .from('users')
+                .select('dvm_name')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (!error && data) {
+                setUserData(data);
+                setDoctor(data.dvm_name); // Set the doctor field
+            }
+        };
+
+        fetchUserData();
+    }, [user]);
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -1210,6 +1231,16 @@ const ReportForm = () => {
                     </div>
 
                     <div className="form-field-container">
+                        <label className="form-label">Doctor:</label>
+                        <input
+                            type="text"
+                            className="form-input doctor-input"
+                            value={`Dr. ${userData?.dvm_name || ''}`}
+                            disabled
+                        />
+                    </div>
+
+                    <div className="form-field-container">
                         <label className="form-label">Exam Date:</label>
                         <div className="input-toggle-wrapper">
                             <input
@@ -1227,24 +1258,6 @@ const ReportForm = () => {
                                 fieldName="examDate"
                                 enabled={enabledFields.examDate}
                                 onChange={() => handleToggleField('examDate')}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="form-field-container">
-                        <label className="form-label">Doctor:</label>
-                        <div className="input-toggle-wrapper">
-                            <input
-                                type="text"
-                                className={`form-input ${!enabledFields.doctor ? 'disabled' : ''}`}
-                                value={doctor}
-                                onChange={(e) => handleInputChange(e, 'doctor', setDoctor)}
-                                disabled={!enabledFields.doctor}
-                            />
-                            <ToggleSwitch
-                                fieldName="doctor"
-                                enabled={enabledFields.doctor}
-                                onChange={() => handleToggleField('doctor')}
                             />
                         </div>
                     </div>

@@ -1,0 +1,148 @@
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.welcome-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #65a8d2 0%, #3f8ddb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.welcome-content {
+    max-width: 600px;
+    padding: 3.5rem;
+    text-align: center;
+    background: rgba(25, 45, 65, 0.95);
+    border-radius: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(20px);
+    animation: fadeIn 0.6s ease-out;
+}
+
+.welcome-content .welcome-logo {
+    width: 120px;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.welcome-content h1 {
+    color: white;
+    margin-bottom: 1.5rem;
+    font-size: 2.8rem;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: -0.02em;
+}
+
+.welcome-content .welcome-description {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.welcome-content .permanent-notice {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+    margin-bottom: 2rem;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+}
+
+.welcome-content .input-group {
+    margin: 1.5rem 0;
+    text-align: left;
+}
+
+.welcome-content .input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+.welcome-content .input-prefix {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.3s ease;
+}
+
+.welcome-content .input-prefix span {
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+    font-weight: 600;
+}
+
+.welcome-content .input-prefix input {
+    flex: 1;
+    border: none;
+    padding: 0.75rem;
+    font-size: 1rem;
+    outline: none;
+    background: transparent;
+    color: white;
+}
+
+.welcome-content .input-prefix input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.welcome-content .input-prefix:focus-within {
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.welcome-content .error-message {
+    color: #ff6b6b;
+    margin: 1rem 0;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 107, 107, 0.15);
+    border-radius: 8px;
+    font-size: 0.95rem;
+}
+
+.welcome-content button {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.1));
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1.1rem 3.5rem;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1.5rem;
+}
+
+.welcome-content button:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.15));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.welcome-content button:active {
+    transform: translateY(0);
+}
