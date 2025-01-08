@@ -9,6 +9,12 @@ const ProductPage = () => {
     const { isAuthenticated, loginWithRedirect } = useAuth0();
 
     useEffect(() => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+    }, []);
+
+    useEffect(() => {
         const sections = document.querySelectorAll('.fade-in-section');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
@@ -41,16 +47,15 @@ const ProductPage = () => {
                     <p>Discover how our AI-powered solution transforms veterinary practice</p>
                 </section>
 
-                <section className="video-section fade-in-section" style={{ marginTop: '-4rem', textAlign: 'center' }}>
+                <section className="video-section fade-in-section" style={{ marginTop: '-4rem' }}>
                     <div className="video-header">
                         <h2>How It Works</h2>
                     </div>
                     <div className="video-container">
                         <iframe
-                            src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+                            src="https://www.youtube.com/embed/BZtpas--SL4?si=DwlVcfKJawf-LxZ4&controls=1&modestbranding=1&rel=0&playlist=BZtpas--SL4"
                             title="How Petwise AI Works"
                             frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                         ></iframe>
                     </div>

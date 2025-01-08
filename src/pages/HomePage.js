@@ -11,6 +11,10 @@ const HomePage = () => {
     const [contentVisible, setContentVisible] = useState(false);
 
     useEffect(() => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+
         // Hide content initially
         document.body.style.overflow = 'hidden';
 
@@ -192,10 +196,9 @@ const HomePage = () => {
                     </div>
                     <div className="video-container">
                         <iframe
-                            src="https://www.youtube.com/embed/YOUR_VIDEO_ID"
+                            src="https://www.youtube.com/embed/BZtpas--SL4?si=DwlVcfKJawf-LxZ4&controls=1&modestbranding=1&rel=0&playlist=BZtpas--SL4"
                             title="How Petwise AI Works"
                             frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                             allowFullScreen
                         ></iframe>
                     </div>

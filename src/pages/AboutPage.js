@@ -4,6 +4,12 @@ import '../styles/AboutPage.css';
 
 const AboutPage = () => {
     useEffect(() => {
+        window.scrollTo(0, 0);
+        document.body.scrollTop = 0;    // For Safari
+        document.documentElement.scrollTop = 0;  // For Chrome, Firefox, IE and Opera
+    }, []);
+
+    useEffect(() => {
         const sections = document.querySelectorAll('.fade-in-section');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((entry) => {
