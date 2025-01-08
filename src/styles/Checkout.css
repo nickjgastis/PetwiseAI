@@ -299,3 +299,17 @@
 .checkout-pricing-card:not(:has(.checkout-savings)) .checkout-pricing-features {
     margin-top: 32px;
 }
+
+.checkout-container.embedded {
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
+}
+
+.checkout-container.embedded .checkout-options {
+    padding: 0;
+}
+
+.checkout-container.embedded .checkout-header {
+    padding-top: 0;
+}

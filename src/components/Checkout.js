@@ -16,7 +16,7 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const Checkout = ({ onBack, user, subscriptionStatus }) => {
+const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
     const { logout } = useAuth0();
     const [subscriptionInterval, setSubscriptionInterval] = useState(null);
 
@@ -25,6 +25,12 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
             if (!user?.sub) return;
 
             try {
+                // First try to get from user object if available
+                if (user.subscription_interval) {
+                    setSubscriptionInterval(user.subscription_interval);
+                    return;
+                }
+
                 const response = await fetch(`${API_URL}/check-subscription/${user.sub}`, {
                     credentials: 'include',
                     headers: {
@@ -32,14 +38,22 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     }
                 });
                 const data = await response.json();
-                setSubscriptionInterval(data.subscription_interval);
+
+                // Set the interval based on the response or user data
+                const interval = data.subscription_interval || user.subscription_interval;
+                if (interval) {
+                    setSubscriptionInterval(interval);
+                } else if (subscriptionStatus === 'active') {
+                    // If active but no interval specified, check if it's a trial
+                    setSubscriptionInterval(user.has_used_trial ? 'trial' : null);
+                }
             } catch (error) {
                 console.error('Error fetching subscription info:', error);
             }
         };
 
         fetchSubscriptionInfo();
-    }, [user]);
+    }, [user, subscriptionStatus]);
 
     const handleCheckout = async (planType) => {
         try {
@@ -121,7 +135,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
     };
 
     return (
-        <div className="checkout-container">
+        <div className={`checkout-container ${embedded ? 'embedded' : ''}`}>
             <div className="checkout-options">
                 <div className="checkout-header">
                     <h3>{subscriptionStatus === 'active' ? 'Manage Subscription' : 'Choose Your Plan'}</h3>
@@ -138,7 +152,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                                 })()}
                             </>
                         ) : (
-                            'Get full access to all premium features'
+                            'Experience the full power of PetwiseAI! Start with a free trial - no credit card required.'
                         )}
                     </p>
                 </div>
@@ -216,17 +230,19 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     </div>
                 </div>
 
-                <div className="checkout-footer">
-                    <button onClick={onBack} className="checkout-back-button">
-                        ← Back
-                    </button>
-                    {subscriptionStatus === 'active' && (
-                        <CancelSubscription
-                            user={user}
-                            onCancel={() => window.location.reload()}
-                        />
-                    )}
-                </div>
+                {!embedded && (
+                    <div className="checkout-footer">
+                        <button onClick={onBack} className="checkout-back-button">
+                            ← Back
+                        </button>
+                        {subscriptionStatus === 'active' && (
+                            <CancelSubscription
+                                user={user}
+                                onCancel={() => window.location.reload()}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

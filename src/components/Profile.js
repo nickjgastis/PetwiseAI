@@ -6,80 +6,17 @@ import Checkout from './Checkout';
 import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
 import ManageAccount from './ManageAccount';
+import { loadStripe } from '@stripe/stripe-js';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const PricingOptions = ({ onSubscribe, hasUsedTrial }) => {
-    return (
-        <div className="pricing-container">
-            {!hasUsedTrial && (
-                <div className="pricing-card free">
-                    <div className="pricing-header">
-                        <h3>14 Day Free Trial</h3>
-                        <p className="price">$0<span>/mo</span></p>
-                    </div>
-                    <ul className="pricing-features">
-                        <li>No credit card required</li>
-                        <li>10 reports per day</li>
-                        <li>Quick Query</li>
-                    </ul>
-                    <div className="pricing-footer">
-                        <button onClick={onSubscribe} className="trial-button">
-                            Start Free Trial
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            <div className="pricing-card">
-                <div className="pricing-header">
-                    <h3>Monthly</h3>
-                    <p className="price">$129<span>/Vet/Month</span></p>
-                </div>
-                <ul className="pricing-features">
-                    <li>Unlimited SOAP reports</li>
-                    <li>Unlimited Quick Query</li>
-                    <li>Saved reports</li>
-                    <li>Priority support</li>
-
-                </ul>
-                <div className="pricing-footer">
-                    <button
-                        onClick={() => onSubscribe('monthly')}
-                        className="subscribe-button"
-                    >
-                        Sign Up Now
-                    </button>
-                </div>
-            </div>
-
-            <div className="pricing-card">
-                <div className="pricing-header">
-                    <h3>Yearly</h3>
-                    <p className="price">$89<span>/Vet/Month</span></p>
-                    <p className="savings">Save 31%</p>
-                </div>
-                <ul className="pricing-features">
-                    <li>Unlimited SOAP reports</li>
-                    <li>Unlimited Quick Query</li>
-                    <li>Saved reports</li>
-                    <li>Priority support</li>
-
-                </ul>
-                <div className="pricing-footer">
-                    <button
-                        onClick={() => onSubscribe('yearly')}
-                        className="subscribe-button"
-                    >
-                        Sign Up Now
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
+const stripePromise = loadStripe(
+    process.env.NODE_ENV === 'production'
+        ? process.env.REACT_APP_STRIPE_PUBLIC_KEY_LIVE
+        : process.env.REACT_APP_STRIPE_PUBLIC_KEY
+);
 
 const Profile = () => {
     const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
@@ -266,18 +203,22 @@ const Profile = () => {
                     />
                 ) : (
                     <>
-                        {!isSubscriptionLoading && (!subscriptionStatus || subscriptionStatus === 'inactive') && (
-                            <div className="pricing-section">
-                                <h3>Choose Your Plan</h3>
-                                <p className="pricing-subtext">
-                                    Experience the full power of PetwiseAI! Start with a free trial - no credit card required.
-                                </p>
-                                <PricingOptions
-                                    onSubscribe={handleBillingClick}
-                                    hasUsedTrial={userData?.has_used_trial}
-                                />
-                            </div>
-                        )}
+                        {!isSubscriptionLoading &&
+                            (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
+                                <div className="pricing-section">
+
+                                    <Checkout
+                                        user={{
+                                            ...user,
+                                            ...userData,
+                                            cancel_at_period_end: cancelAtPeriodEnd
+                                        }}
+                                        subscriptionStatus={subscriptionStatus}
+                                        onBack={null}
+                                        embedded={true}
+                                    />
+                                </div>
+                            )}
 
                         <div className="profile-header">
                             <div className="profile-picture-container">
