@@ -9,6 +9,9 @@ import PrivateRoute from './components/PrivateRoute';
 import AboutPage from './pages/AboutPage';
 import ProductPage from './pages/ProductPage';
 import Profile from './components/Profile';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import Terms from './components/Terms';
+import Help from './components/Help';
 
 const AppRoutes = () => {
     const { isLoading, isAuthenticated } = useAuth0();
@@ -50,6 +53,9 @@ const AppRoutes = () => {
                     </PrivateRoute>
                 }
             />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/help" element={<Help />} />
             <Route
                 path="*"
                 element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}

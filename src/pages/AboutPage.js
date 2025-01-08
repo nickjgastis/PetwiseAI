@@ -86,7 +86,7 @@ const AboutPage = () => {
 
                 <section className="about-cta fade-in-section">
                     <h2>Experience the Future of Veterinary Care</h2>
-                    <p>Join thousands of satisfied veterinary professionals and revolutionize your practice with Petwise AI.</p>
+                    <p>Join us and revolutionize your veterinary practice with Petwise AI.</p>
                     <button className="cta-button">Start Your Free Trial Today</button>
                 </section>
             </div>
