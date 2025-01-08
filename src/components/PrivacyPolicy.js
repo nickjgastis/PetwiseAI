@@ -17,7 +17,7 @@ const PrivacyPolicy = () => {
                 <div className="legal-content">
                     <section>
                         <h2>Privacy Policy</h2>
-                        <p><strong>Effective Date:</strong> January 1, 2024</p>
+                        <p><strong>Effective Date:</strong> January 1, 2025</p>
 
                         <h3>1. Data Collection</h3>
                         <h4>Personal Information</h4>

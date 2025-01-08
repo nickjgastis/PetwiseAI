@@ -45,7 +45,7 @@ const TermsOfService = ({ onAccept }) => {
 
             <div className="terms-content">
                 <h2>Terms of Service</h2>
-                <p><strong>Effective Date:</strong> January 1, 2024</p>
+                <p><strong>Effective Date:</strong> January 1, 2025</p>
 
                 <p>
                     These Terms and Conditions govern the use of the PetWise service and website

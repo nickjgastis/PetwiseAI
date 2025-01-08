@@ -9,7 +9,7 @@ const Footer = () => {
         <footer className="footer">
             <div className="footer-content">
                 <div className="footer-section">
-                    <h4>PetWise</h4>
+                    <h4>petwise.vet</h4>
                     <p>Revolutionizing veterinary care with AI-powered solutions.</p>
                 </div>
 

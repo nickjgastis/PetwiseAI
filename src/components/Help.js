@@ -28,7 +28,7 @@ const Help = () => {
             content: [
                 {
                     question: 'How do I create my first report?',
-                    answer: 'To create your first report:\n1. Click "New Report" in the dashboard\n2. Select the species and enter patient details\n3. Fill in the clinical findings\n4. Click "Generate Report"\n5. Review and edit the generated report as needed\n6. Save or download your report'
+                    answer: 'To create your first report:\n1. Navigate to "Report Genereator" on the dashboard\n2. Select the species and enter patient details\n3. Fill in the clinical findings\n4. Click "Generate Report"\n5. Review and edit the generated report as needed\n6. Save or download your report'
                 },
                 {
                     question: 'What information should I include?',
