@@ -461,7 +461,10 @@ const ReportForm = () => {
 
     const isGenerating = useRef(false); // Track if report generation is ongoing
 
-    const speciesOptions = ['Canine', 'Feline', 'Avian', 'Reptile', 'Bovine', 'Equine', 'Ovine', 'Porcine'];
+    const speciesOptions = [
+        'Canine', 'Feline', 'Avian', 'Reptile', 'Small Mammals', 'Fish', 'Amphibians',
+        'Bovine', 'Equine', 'Ovine', 'Porcine'
+    ];
     const sexOptions = ['Female Spayed', 'Female Intact', 'Male Neutered', 'Male Intact'];
 
     const dogBreeds = [
@@ -488,8 +491,53 @@ const ReportForm = () => {
         'Toyger', 'Turkish Angora', 'Turkish Van'
     ];
 
-    // Set breed options based on species
-    const breedOptions = species === 'Canine' ? dogBreeds : species === 'Feline' ? felineBreeds : [];
+    // Add these new breed lists
+    const smallMammalBreeds = [
+        'Rabbit - Holland Lop',
+        'Rabbit - Netherland Dwarf',
+        'Rabbit - Mini Rex',
+        'Guinea Pig - American',
+        'Guinea Pig - Abyssinian',
+        'Hamster - Syrian',
+        'Hamster - Dwarf Campbell',
+        'Ferret',
+        'Chinchilla',
+        'Gerbil'
+    ];
+
+    const fishBreeds = [
+        'Betta Fish',
+        'Goldfish',
+        'Guppy',
+        'Tetra',
+        'Angelfish',
+        'Molly',
+        'Platy',
+        'Discus',
+        'Cichlid',
+        'Koi'
+    ];
+
+    const amphibianBreeds = [
+        'African Clawed Frog',
+        'Fire-Bellied Toad',
+        'Red-Eyed Tree Frog',
+        'Axolotl',
+        'Pac-Man Frog',
+        'Tiger Salamander',
+        'Fire Salamander',
+        'Green Tree Frog',
+        'Poison Dart Frog',
+        'Japanese Fire-Bellied Newt'
+    ];
+
+    // Update the breedOptions logic in the component
+    const breedOptions = species === 'Canine' ? dogBreeds
+        : species === 'Feline' ? felineBreeds
+            : species === 'Small Mammals' ? smallMammalBreeds
+                : species === 'Fish' ? fishBreeds
+                    : species === 'Amphibians' ? amphibianBreeds
+                        : [];
 
     // Add near other state declarations
     const [enabledFields, setEnabledFields] = useState(() => {
