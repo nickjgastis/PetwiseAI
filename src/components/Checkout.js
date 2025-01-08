@@ -99,19 +99,13 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
             console.log('Trial activation response:', data);
 
             if (data && data.length > 0) {
-                const subscriptionResponse = await fetch(`${API_URL}/check-subscription/${user.sub}`, {
-                    credentials: 'include',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                const subscriptionData = await subscriptionResponse.json();
-                setSubscriptionInterval(subscriptionData.subscription_interval);
+                window.location.reload();
             } else {
                 throw new Error('No data returned from trial activation');
             }
         } catch (error) {
             console.error('Trial activation error:', error);
+            // You might want to show this error to the user
             alert(`Failed to activate trial: ${error.message}`);
         }
     };
@@ -229,16 +223,7 @@ const Checkout = ({ onBack, user, subscriptionStatus }) => {
                     {subscriptionStatus === 'active' && (
                         <CancelSubscription
                             user={user}
-                            onCancel={async () => {
-                                const response = await fetch(`${API_URL}/check-subscription/${user.sub}`, {
-                                    credentials: 'include',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    }
-                                });
-                                const data = await response.json();
-                                setSubscriptionInterval(data.subscription_interval);
-                            }}
+                            onCancel={() => window.location.reload()}
                         />
                     )}
                 </div>
