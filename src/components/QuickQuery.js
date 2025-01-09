@@ -3,6 +3,7 @@ import axios from 'axios';
 import '../styles/QuickQuery.css';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
+import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -22,6 +23,97 @@ const formatMessage = (content) => {
     // .replace(/^\s*(\d+)\.\s+(.*)$/gm, '<li><span class="number">$1.</span><div>$2</div></li>')
     // Preserve line breaks
     // .replace(/\n/g, '<br/>');
+};
+
+const formatMessageForPDF = (content) => {
+    const styles = StyleSheet.create({
+        page: {
+            padding: 40,
+            fontSize: 12,
+            fontFamily: 'Helvetica',
+            lineHeight: 1.4
+        },
+        text: {
+            marginBottom: 4,
+            fontFamily: 'Helvetica'
+        },
+        header: {
+            fontFamily: 'Helvetica-Bold',
+            fontSize: 13,
+            marginTop: 16,
+            marginBottom: 8
+        },
+        bold: {
+            fontFamily: 'Helvetica-Bold'
+        },
+        listItem: {
+            marginLeft: 20,
+            marginBottom: 4
+        }
+    });
+
+    const formatParagraphs = (text) => {
+        const lines = text.split('\n');
+        return lines.map((line, index) => {
+            // Check if it's a header (ends with ':' or matches number pattern)
+            if (line.endsWith(':') && !line.match(/^\d+\./)) {
+                return (
+                    <Text key={index} style={styles.header}>
+                        {line.replace(/\*\*/g, '')}
+                    </Text>
+                );
+            }
+
+            // Handle numbered sections with bold parts
+            if (line.match(/^\d+\.\s+\*\*/)) {
+                const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                return (
+                    <Text key={index} style={styles.text}>
+                        {parts.map((part, partIndex) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                                return (
+                                    <Text key={partIndex} style={styles.bold}>
+                                        {part.replace(/\*\*/g, '')}
+                                    </Text>
+                                );
+                            }
+                            return part;
+                        })}
+                    </Text>
+                );
+            }
+
+            // Handle bold text within lines
+            if (line.includes('**')) {
+                const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                return (
+                    <Text key={index} style={styles.text}>
+                        {parts.map((part, partIndex) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                                return (
+                                    <Text key={partIndex} style={styles.bold}>
+                                        {part.replace(/\*\*/g, '')}
+                                    </Text>
+                                );
+                            }
+                            return part;
+                        })}
+                    </Text>
+                );
+            }
+
+            // Regular text
+            return <Text key={index} style={styles.text}>{line}</Text>;
+        });
+    };
+
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                {formatParagraphs(content)}
+            </Page>
+        </Document>
+    );
 };
 
 const QuickQuery = () => {
@@ -268,6 +360,25 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         setTimeout(() => setCopiedIndex(null), 2000);
     };
 
+    const handlePrint = async (content) => {
+        try {
+            const doc = formatMessageForPDF(content);
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = () => {
+                printWindow.print();
+                printWindow.onafterprint = () => {
+                    printWindow.close();
+                    URL.revokeObjectURL(url);
+                };
+            };
+        } catch (error) {
+            console.error('Print error:', error);
+        }
+    };
+
     return (
         <div className="qq-container">
             <div className="qq-header">
@@ -314,22 +425,33 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     message.content
                                 )}
                                 {message.role === 'assistant' && (
-                                    <button
-                                        className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
-                                        onClick={() => handleCopy(message.content, index)}
-                                        aria-label="Copy message"
-                                    >
-                                        {copiedIndex === index ? (
+                                    <div className="qq-button-group">
+                                        <button
+                                            className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
+                                            onClick={() => handleCopy(message.content, index)}
+                                            aria-label="Copy message"
+                                        >
+                                            {copiedIndex === index ? (
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                    <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                                                </svg>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                    <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
+                                                    <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
+                                                </svg>
+                                            )}
+                                        </button>
+                                        <button
+                                            className="qq-print-button"
+                                            onClick={() => handlePrint(message.content)}
+                                            aria-label="Print message"
+                                        >
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                                                <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
                                             </svg>
-                                        ) : (
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
-                                                <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
-                                            </svg>
-                                        )}
-                                    </button>
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>

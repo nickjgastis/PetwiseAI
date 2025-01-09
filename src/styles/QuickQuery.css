@@ -310,7 +310,7 @@
 
 .qq-copy-button {
     position: relative;
-    margin-top: 8px;
+    margin-top: 0;
     padding: 4px 6px;
     background: white;
     border: 1px solid var(--border);
@@ -406,4 +406,36 @@
     .qq-suggestions {
         grid-template-columns: 1fr;
     }
+}
+
+.qq-button-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.qq-print-button {
+    padding: 4px 6px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.qq-print-button::after {
+    content: 'Print';
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.qq-print-button:hover {
+    background: var(--bg-light);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow);
 }
