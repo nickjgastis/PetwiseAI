@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import '../styles/SavedReports.css';
-import { FaTimes } from 'react-icons/fa';
+import { FaTimes, FaEdit } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { createEditor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
+import { Node } from 'slate';
 
 const mainHeaders = [
     'Veterinary Medical Record:',
@@ -176,7 +177,40 @@ const PrintButton = ({ reportText }) => {
 
 const deserializeSlateValue = (text) => {
     if (!text) return [{ type: 'paragraph', children: [{ text: '' }] }];
-    return createSlateValue(text);
+
+    const paragraphs = text.split('\n');
+    return paragraphs.map(paragraph => {
+        let trimmedParagraph = paragraph.trim();
+
+        // Remove leading bullet points or dashes
+        trimmedParagraph = trimmedParagraph.replace(/^[•\-]\s*/, '');
+
+        // Check for headers
+        const isHeader = trimmedParagraph.startsWith('Physical Exam Findings: -') ||
+            trimmedParagraph.endsWith(':') ||
+            mainHeaders.some(header => trimmedParagraph.startsWith(header));
+
+        if (isHeader) {
+            return {
+                type: 'heading',
+                children: [{ text: trimmedParagraph, bold: true }]
+            };
+        }
+
+        // Check for indented lines
+        if (paragraph.startsWith('    ')) {
+            return {
+                type: 'indented',
+                children: [{ text: trimmedParagraph }]
+            };
+        }
+
+        // Default paragraph
+        return {
+            type: 'paragraph',
+            children: [{ text: trimmedParagraph }]
+        };
+    });
 };
 
 const createSlateValue = (text) => {
@@ -218,6 +252,12 @@ const createSlateValue = (text) => {
     });
 };
 
+const serializeSlateValue = (nodes) => {
+    return nodes
+        .map(n => Node.string(n))
+        .join('\n');
+};
+
 const renderElement = props => {
     switch (props.element.type) {
         case 'heading':
@@ -248,6 +288,8 @@ const SavedReports = () => {
     const [newReportName, setNewReportName] = useState('');
     const [error, setError] = useState(null);
     const [editor] = useState(() => withHistory(withReact(createEditor())));
+    const [searchTerm, setSearchTerm] = useState('');
+    const [editingReport, setEditingReport] = useState(null);
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -347,6 +389,41 @@ const SavedReports = () => {
         }
     };
 
+    const filteredReports = reports.filter(report =>
+        report.report_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.report_text.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleSaveEdit = async (report) => {
+        try {
+            const { error } = await supabase
+                .from('saved_reports')
+                .update({ report_text: report.report_text })
+                .eq('id', report.id);
+
+            if (error) throw error;
+
+            // Update local state
+            setReports(reports.map(r =>
+                r.id === report.id ? report : r
+            ));
+            setEditingReport(null);
+
+        } catch (error) {
+            setError("Failed to save changes");
+            console.error("Error updating report:", error);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingReport(null);
+    };
+
+    const handleCloseReport = () => {
+        setEditingReport(null);
+        setSelectedReport(null);
+    };
+
     if (isLoading) return <div>Loading...</div>; // Handle loading state
 
     if (!isAuthenticated) {
@@ -358,9 +435,19 @@ const SavedReports = () => {
             <h2>Saved Reports</h2>
             {error && <div className="error-message">{error}</div>}
 
+            <div className="search-container">
+                <input
+                    type="text"
+                    placeholder="Search reports..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                />
+            </div>
+
             <div className={`report-list ${selectedReport ? 'hidden' : ''}`}>
-                {reports.length > 0 ? (
-                    reports.map((report, index) => (
+                {filteredReports.length > 0 ? (
+                    filteredReports.map((report, index) => (
                         <div key={report.id} className="report-item">
                             {editingIndex === index ? (
                                 <input
@@ -371,16 +458,29 @@ const SavedReports = () => {
                                     autoFocus
                                 />
                             ) : (
-                                <span onClick={() => handleReportClick(report)}>{report.report_name}</span>
+                                <span onClick={() => handleReportClick(report)}>
+                                    {report.report_name}
+                                </span>
                             )}
                             <div className="button-group">
-                                <PDFButton
-                                    reportText={report.report_text}
-                                    reportName={report.report_name}
-                                />
-                                <PrintButton reportText={report.report_text} />
-                                <button className="copy-button" onClick={() => handleEditClick(index)}>Edit Name</button>
-                                <button className="delete-button" onClick={() => handleDeleteReport(report.id)}>Delete</button>
+                                <button
+                                    className="edit-button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditClick(index);
+                                    }}
+                                >
+                                    <FaEdit />
+                                </button>
+                                <button
+                                    className="delete-button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteReport(report.id);
+                                    }}
+                                >
+                                    <FaTimes />
+                                </button>
                             </div>
                         </div>
                     ))
@@ -394,6 +494,29 @@ const SavedReports = () => {
                     <div className="report-card-header">
                         <h3>{selectedReport.report_name}</h3>
                         <div className="button-group">
+                            {editingReport?.id === selectedReport.id ? (
+                                <>
+                                    <button
+                                        className="save-button"
+                                        onClick={() => handleSaveEdit(editingReport)}
+                                    >
+                                        Save
+                                    </button>
+                                    <button
+                                        className="cancel-button"
+                                        onClick={handleCancelEdit}
+                                    >
+                                        Cancel
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    className="edit-button"
+                                    onClick={() => setEditingReport({ ...selectedReport })}
+                                >
+                                    Edit
+                                </button>
+                            )}
                             <PDFButton
                                 reportText={selectedReport.report_text}
                                 reportName={selectedReport.report_name}
@@ -401,7 +524,7 @@ const SavedReports = () => {
                             <PrintButton reportText={selectedReport.report_text} />
                             <button
                                 className="close-button"
-                                onClick={() => setSelectedReport(null)}
+                                onClick={handleCloseReport}
                             >
                                 <FaTimes />
                             </button>
@@ -409,23 +532,47 @@ const SavedReports = () => {
                     </div>
                     <div className="report-content">
                         <div className="editor-wrapper">
-                            <Slate
-                                editor={editor}
-                                initialValue={deserializeSlateValue(selectedReport.report_text)}
-                                value={deserializeSlateValue(selectedReport.report_text)}
-                                onChange={() => { }}
-                            >
-                                <Editable
-                                    readOnly
-                                    renderElement={renderElement}
-                                    renderLeaf={renderLeaf}
-                                    style={{
-                                        minHeight: '100%',
-                                        padding: '20px',
-                                        whiteSpace: 'pre-wrap'
+                            {editingReport?.id === selectedReport.id ? (
+                                <Slate
+                                    editor={editor}
+                                    value={deserializeSlateValue(editingReport.report_text)}
+                                    onChange={value => {
+                                        const newText = serializeSlateValue(value);
+                                        setEditingReport({
+                                            ...editingReport,
+                                            report_text: newText
+                                        });
                                     }}
-                                />
-                            </Slate>
+                                >
+                                    <Editable
+                                        renderElement={renderElement}
+                                        renderLeaf={renderLeaf}
+                                        style={{
+                                            minHeight: '100%',
+                                            padding: '20px',
+                                            whiteSpace: 'pre-wrap'
+                                        }}
+                                    />
+                                </Slate>
+                            ) : (
+                                <Slate
+                                    editor={editor}
+                                    initialValue={deserializeSlateValue(selectedReport.report_text)}
+                                    value={deserializeSlateValue(selectedReport.report_text)}
+                                    onChange={() => { }}
+                                >
+                                    <Editable
+                                        readOnly
+                                        renderElement={renderElement}
+                                        renderLeaf={renderLeaf}
+                                        style={{
+                                            minHeight: '100%',
+                                            padding: '20px',
+                                            whiteSpace: 'pre-wrap'
+                                        }}
+                                    />
+                                </Slate>
+                            )}
                         </div>
                     </div>
                 </div>

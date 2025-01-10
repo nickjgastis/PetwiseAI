@@ -1,5 +1,5 @@
 .saved-reports {
-    padding: 24px;
+    padding: 16px 24px;
     max-width: 800px;
     margin: 0 auto;
     background: #f8f9fa;
@@ -85,7 +85,7 @@
     border-radius: 4px;
     margin-top: 8px;
     animation: slideIn 0.3s ease;
-    height: calc(100vh - 150px);
+    height: calc(100vh - 200px);
     overflow-y: auto;
     margin-left: 0;
 }
@@ -102,27 +102,42 @@
     z-index: 1;
 }
 
-.close-button {
+.close-button,
+.delete-button {
     background: transparent;
     color: #5f6368;
-    padding: 8px;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: none;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    box-shadow: none;
 }
 
-.close-button:hover {
-    background: #f1f3f4;
+.close-button:hover,
+.delete-button:hover {
+    background: rgba(95, 99, 104, 0.1);
+    color: #202124;
+    transform: none;
+}
+
+.close-button svg,
+.delete-button svg {
+    width: 16px;
+    height: 16px;
 }
 
 .report-content {
     padding: 0;
     max-width: 800px;
     margin: 0;
-    height: calc(100vh - 200px);
+    height: calc(100vh - 280px);
     overflow: hidden;
 }
 
@@ -131,7 +146,7 @@
     height: 100%;
     overflow-y: auto;
     scroll-padding: 20px;
-    padding-left: 24px;
+    padding: 0 24px;
 }
 
 .report-card-header h3 {
@@ -160,12 +175,13 @@ button {
 }
 
 .delete-button {
-    background: #dc3545;
-    color: white;
+    background: transparent;
+    color: #5f6368;
 }
 
 .delete-button:hover {
-    background: #c82333;
+    background: rgba(95, 99, 104, 0.1);
+    box-shadow: none;
 }
 
 @keyframes slideIn {
@@ -205,4 +221,111 @@ button {
 [data-slate-node="element"][data-slate-type="indented"] {
     padding-left: 20px;
     margin: 0.4em 0;
+}
+
+/* Add search styles that match existing design */
+.search-container {
+    padding: 16px 16px 12px;
+    background: #fff;
+    border-bottom: 1px solid #dadce0;
+    margin-bottom: 12px;
+}
+
+.search-input {
+    width: 100%;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 14px;
+    padding: 10px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    color: #202124;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    background: #fff;
+    border-color: #1a73e8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-input::placeholder {
+    color: #5f6368;
+}
+
+/* Update button styles to match existing */
+.edit-button,
+.save-button,
+.cancel-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.edit-button {
+    background: #1a73e8;
+    color: white;
+}
+
+.edit-button:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.save-button {
+    background: #1e8e3e;
+    color: white;
+}
+
+.save-button:hover {
+    background: #137333;
+    box-shadow: 0 2px 6px rgba(30, 142, 62, 0.3);
+    transform: translateY(-1px);
+}
+
+.cancel-button {
+    background: #5f6368;
+    color: white;
+}
+
+.cancel-button:hover {
+    background: #202124;
+    box-shadow: 0 2px 6px rgba(95, 99, 104, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Update report actions to match existing design */
+.report-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.report-item:hover .report-actions {
+    opacity: 1;
+}
+
+/* Update editing state styles */
+.report-content.editing {
+    padding: 16px 24px;
+    background: #fff;
+}
+
+[data-slate-editor="true"].editing {
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    background: #fff;
+    min-height: 200px;
 }
