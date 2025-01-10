@@ -62,7 +62,7 @@ body {
 }
 
 .physical-exam-input {
-    min-height: 340px;
+    min-height: 360px;
     max-height: 400px;
     resize: vertical;
 }
@@ -585,12 +585,19 @@ input:checked+.slider:before {
     display: flex;
     align-items: flex-start;
     gap: 10px;
+    position: relative;
 }
 
-/* Adjust input width to make room for toggle */
+/* Reset general input width to original */
 .input-toggle-wrapper .form-input {
     width: calc(100% - 60px);
-    /* 50px for toggle + 10px gap */
+    /* Original width for most inputs (space for toggle only) */
+}
+
+/* Special case for physical exam input */
+.input-toggle-wrapper .physical-exam-input {
+    width: calc(100% - 140px);
+    /* Extra space only for physical exam input */
 }
 
 .toggle-switch {
@@ -661,11 +668,11 @@ input:checked+.slider:before {
 }
 
 /* Keep original physical exam input styles separate */
-.physical-exam-input {
+/* .physical-exam-input {
     min-height: 340px;
     max-height: 400px;
     resize: vertical;
-}
+} */
 
 /* Handle all other textareas */
 .input-toggle-wrapper textarea.form-input:not(.physical-exam-input) {
@@ -806,4 +813,64 @@ input:checked+.slider:before {
     100% {
         opacity: 1;
     }
+}
+
+/* Template Control Styles */
+.template-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    width: auto;
+    /* Remove fixed width */
+    margin-left: 0;
+    /* Align with left edge */
+}
+
+.save-template-button,
+.default-template-button {
+    padding: 6px 12px;
+    height: 28px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    /* Fixed width instead of flex: 1 */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.save-template-button {
+    background-color: #66b4e8;
+    color: #ffffff;
+}
+
+.save-template-button:hover {
+    background-color: #3d7e9c;
+}
+
+.default-template-button {
+    background-color: #4f7080;
+    color: #ffffff;
+}
+
+.default-template-button:hover {
+    background-color: #6787aa;
+    color: white;
+}
+
+/* Update physical exam container */
+.physical-exam-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Keep input width consistent */
+.input-toggle-wrapper .form-input {
+    width: calc(100% - 60px);
 }

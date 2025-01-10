@@ -255,7 +255,7 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const DEFAULT_PHYSICAL_EXAM = `General Appearance:   Bright, Alert
+const PETWISE_DEFAULT_PHYSICAL_EXAM = `General Appearance:   Bright, Alert
 Temperature:   Within normal limits
 Heart Rate:   Within normal limits
 Respiratory Rate:   Within normal limits
@@ -430,7 +430,7 @@ const ReportForm = () => {
     const [doctor, setDoctor] = useState(() => localStorage.getItem('doctor') || '');
     const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
     const [history, setHistory] = useState(() => localStorage.getItem('history') || '');
-    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || DEFAULT_PHYSICAL_EXAM);
+    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || PETWISE_DEFAULT_PHYSICAL_EXAM);
     const [diagnosticTests, setDiagnosticTests] = useState(() =>
         localStorage.getItem('diagnosticTests') || DEFAULT_DIAGNOSTIC_TESTS
     );
@@ -870,7 +870,8 @@ const ReportForm = () => {
         setDoctor('');
         setPresentingComplaint('');
         setHistory('');
-        setPhysicalExamFindings(DEFAULT_PHYSICAL_EXAM);
+        // Use custom template if it exists, otherwise use default
+        setPhysicalExamFindings(customTemplate || PETWISE_DEFAULT_PHYSICAL_EXAM);
         setDiagnosticTests(DEFAULT_DIAGNOSTIC_TESTS);
         setAssessment('');
         setDiagnosis('');
@@ -889,9 +890,9 @@ const ReportForm = () => {
         localStorage.clear();
 
         // Restore default templates and current date
-        localStorage.setItem('physicalExamFindings', DEFAULT_PHYSICAL_EXAM);
+        localStorage.setItem('physicalExamFindings', customTemplate || PETWISE_DEFAULT_PHYSICAL_EXAM);
         localStorage.setItem('diagnosticTests', DEFAULT_DIAGNOSTIC_TESTS);
-        localStorage.setItem('examDate', today); // Save current date to localStorage
+        localStorage.setItem('examDate', today);
 
         // Restore enabled fields
         if (savedEnabledFields) {
@@ -1150,18 +1151,91 @@ const ReportForm = () => {
 
             const { data, error } = await supabase
                 .from('users')
-                .select('dvm_name')
+                .select('dvm_name, custom_physical_exam_template')
                 .eq('auth0_user_id', user.sub)
                 .single();
 
             if (!error && data) {
                 setUserData(data);
-                setDoctor(data.dvm_name); // Set the doctor field
+                setDoctor(data.dvm_name);
+                // Set physical exam to custom template if it exists
+                if (data.custom_physical_exam_template) {
+                    setCustomTemplate(data.custom_physical_exam_template);
+                    setPhysicalExamFindings(data.custom_physical_exam_template);
+                } else {
+                    setPhysicalExamFindings(PETWISE_DEFAULT_PHYSICAL_EXAM);
+                }
             }
         };
 
         fetchUserData();
     }, [user]);
+
+    // Add these new functions
+    const saveCustomTemplate = async () => {
+        if (!user?.sub) {
+            setError("Please log in to save a custom template");
+            return;
+        }
+
+        try {
+            const { error } = await supabase
+                .from('users')
+                .update({ custom_physical_exam_template: physicalExamFindings })
+                .eq('auth0_user_id', user.sub);
+
+            if (error) throw error;
+
+            setCustomTemplate(physicalExamFindings);
+            // Show success message
+            const templateBtn = document.querySelector('.save-template-button');
+            const originalText = templateBtn.textContent;
+            templateBtn.textContent = 'Template Saved!';
+            setTimeout(() => {
+                templateBtn.textContent = originalText;
+            }, 2000);
+
+        } catch (err) {
+            setError("Failed to save custom template");
+            console.error(err);
+        }
+    };
+
+    const resetToDefault = async () => {
+        try {
+            // Update Supabase to clear the custom template
+            if (user?.sub) {
+                const { error } = await supabase
+                    .from('users')
+                    .update({ custom_physical_exam_template: null })
+                    .eq('auth0_user_id', user.sub);
+
+                if (error) throw error;
+            }
+
+            // Clear the custom template from state
+            setCustomTemplate(null);
+
+            // Reset to PetWise default
+            setPhysicalExamFindings(PETWISE_DEFAULT_PHYSICAL_EXAM);
+            localStorage.setItem('physicalExamFindings', PETWISE_DEFAULT_PHYSICAL_EXAM);
+
+            // Show success message
+            const defaultBtn = document.querySelector('.default-template-button');
+            const originalText = defaultBtn.textContent;
+            defaultBtn.textContent = 'Reset Complete!';
+            setTimeout(() => {
+                defaultBtn.textContent = originalText;
+            }, 2000);
+
+        } catch (err) {
+            setError("Failed to reset template");
+            console.error(err);
+        }
+    };
+
+    // Add near your other state declarations at the top of ReportForm component
+    const [customTemplate, setCustomTemplate] = useState(null);
 
     return (
         <div className="report-container">
@@ -1360,6 +1434,22 @@ const ReportForm = () => {
                                 enabled={enabledFields.physicalExamFindings}
                                 onChange={() => handleToggleField('physicalExamFindings')}
                             />
+                        </div>
+                        <div className="template-controls">
+                            <button
+                                type="button"
+                                className="save-template-button"
+                                onClick={saveCustomTemplate}
+                            >
+                                Set as Template
+                            </button>
+                            <button
+                                type="button"
+                                className="default-template-button"
+                                onClick={resetToDefault}
+                            >
+                                Reset to Default
+                            </button>
                         </div>
                     </div>
 
