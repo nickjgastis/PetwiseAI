@@ -290,12 +290,14 @@ const SavedReports = () => {
     const [editor] = useState(() => withHistory(withReact(createEditor())));
     const [searchTerm, setSearchTerm] = useState('');
     const [editingReport, setEditingReport] = useState(null);
+    const [isLoadingReports, setIsLoadingReports] = useState(true);
 
     useEffect(() => {
         const fetchReports = async () => {
             if (!isAuthenticated || !user) return;
 
             try {
+                setIsLoadingReports(true);
                 const { data: userData, error: userError } = await supabase
                     .from('users')
                     .select('id')
@@ -317,15 +319,14 @@ const SavedReports = () => {
                     .eq('user_id', userId)
                     .order('created_at', { ascending: false });
 
-                if (reportsError) {
-                    console.error("Error fetching reports:", reportsError);
-                    return;
-                }
+                if (reportsError) throw reportsError;
 
                 setReports(reportsData);
             } catch (error) {
                 setError("Failed to fetch reports. Please try again later.");
                 console.error("Unexpected error fetching reports:", error);
+            } finally {
+                setIsLoadingReports(false);
             }
         };
 
@@ -446,7 +447,11 @@ const SavedReports = () => {
             </div>
 
             <div className={`report-list ${selectedReport ? 'hidden' : ''}`}>
-                {filteredReports.length > 0 ? (
+                {isLoadingReports ? (
+                    <div className="reports-loading">
+                        <div className="reports-loader"></div>
+                    </div>
+                ) : filteredReports.length > 0 ? (
                     filteredReports.map((report, index) => (
                         <div key={report.id} className="report-item">
                             {editingIndex === index ? (

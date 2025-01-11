@@ -295,16 +295,61 @@
 
 @media (max-width: 768px) {
     .qq-container {
-        padding: 16px;
-        height: calc(100vh - 32px);
+        padding: 12px;
+        height: calc(100vh - 60px);
+        margin-top: 60px;
+        margin-bottom: 0;
+        border-radius: 0;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden;
+    }
+
+    .qq-header {
+        margin-bottom: 12px;
+        padding: 0 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 1;
+    }
+
+    .qq-container h2 {
+        font-size: 22px;
+        flex: 1;
+        margin-right: 8px;
+    }
+
+    .qq-chat-container {
+        border-radius: 12px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .qq-messages-container {
-        padding: 20px;
+        padding: 16px;
+        overflow-y: auto;
+        flex: 1;
     }
 
-    .qq-message-content {
-        max-width: 90%;
+    .qq-input-form {
+        padding: 12px;
+        position: relative;
+        background: var(--bg-white);
+    }
+
+    .qq-clear-button {
+        padding: 8px 12px;
+        font-size: 12px;
+        background: rgba(96, 165, 250, 0.9);
+        backdrop-filter: blur(4px);
+        white-space: nowrap;
+        min-width: auto;
     }
 }
 
@@ -325,7 +370,6 @@
 
 .qq-copy-button.copied {
     margin-top: 8px;
-    /* Keep consistent spacing when copied */
     background: var(--primary);
     color: white;
     border-color: var(--primary);

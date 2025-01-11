@@ -42,16 +42,22 @@ const Dashboard = () => {
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        // Create new user
+                        // Create new user - ensure email is captured
+                        if (!user.email) {
+                            console.error('No email provided from Auth0');
+                            throw new Error('Email is required for registration');
+                        }
+
                         const { data: newUser, error: createError } = await supabase
                             .from('users')
                             .insert([{
                                 auth0_user_id: user.sub,
-                                email: user.email,
+                                email: user.email,  // This is already being captured
                                 nickname: user.nickname || user.name,
                                 subscription_status: 'inactive',
                                 has_accepted_terms: false,
-                                dvm_name: null
+                                dvm_name: null,
+                                created_at: new Date().toISOString() // Add creation timestamp
                             }])
                             .select()
                             .single();
@@ -64,12 +70,21 @@ const Dashboard = () => {
                         throw error;
                     }
                 } else {
+                    // Update email if it changed in Auth0
+                    if (data.email !== user.email) {
+                        const { error: updateError } = await supabase
+                            .from('users')
+                            .update({ email: user.email })
+                            .eq('auth0_user_id', user.sub);
+
+                        if (updateError) console.error('Error updating email:', updateError);
+                    }
+
                     setHasAcceptedTerms(data.has_accepted_terms);
                     setSubscriptionStatus(data.subscription_status);
                     setIsSubscribed(data.subscription_status === 'active');
                     setUserData(data);
 
-                    // Check for existing users without DVM name
                     if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
                         setNeedsWelcome(true);
                     }
@@ -138,6 +153,10 @@ const Dashboard = () => {
         });
     };
 
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+    };
+
     // ================ RENDER COMPONENT ================
     return (
         <div className={`dashboard-container ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -172,10 +191,10 @@ const Dashboard = () => {
                         <img src="/PW.png" alt="PW" className="logo-img" />
                         <span className="logo-text">petwise.vet</span>
                     </Link>
-                    {userData?.dvm_name && (
-                        <div className="dvm-name">Dr. {userData.dvm_name}</div>
-                    )}
                 </div>
+                {userData?.dvm_name && (
+                    <div className="dvm-section">Dr. {userData.dvm_name}</div>
+                )}
                 <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle Sidebar">
                     {isSidebarCollapsed ? '›' : '‹'}
                 </button>
@@ -183,13 +202,13 @@ const Dashboard = () => {
                     {isSubscribed && (
                         <>
                             <li className="sidebar-item">
-                                <Link to="/dashboard/report-form" data-tooltip="Report Generator">
+                                <Link to="/dashboard/report-form" onClick={closeMobileMenu} data-tooltip="Report Generator">
                                     <FaFileAlt className="sidebar-icon" />
                                     <span className="sidebar-text">Report Generator</span>
                                 </Link>
                             </li>
                             <li className="sidebar-item">
-                                <Link to="/dashboard/quick-query" data-tooltip="QuickMed Query">
+                                <Link to="/dashboard/quick-query" onClick={closeMobileMenu} data-tooltip="QuickMed Query">
                                     <FaSearch className="sidebar-icon" />
                                     <span className="sidebar-text">QuickMed Query</span>
                                 </Link>
@@ -205,19 +224,26 @@ const Dashboard = () => {
                         </>
                     )}
                     <li className="sidebar-item">
-                        <Link to="/dashboard/profile" data-tooltip="Profile">
+                        <Link to="/dashboard/profile" onClick={closeMobileMenu} data-tooltip="Profile">
                             <FaUser className="sidebar-icon" />
                             <span className="sidebar-text">Profile</span>
                         </Link>
                     </li>
                     <li className="sidebar-item">
-                        <Link to="/dashboard/help" data-tooltip="Help">
+                        <Link to="/dashboard/help" onClick={closeMobileMenu} data-tooltip="Help">
                             <FaQuestionCircle className="sidebar-icon" />
                             <span className="sidebar-text">Help</span>
                         </Link>
                     </li>
                     <li className="sidebar-item">
-                        <button onClick={handleLogout} className="sidebar-link logout-button" data-tooltip="Logout">
+                        <button
+                            onClick={() => {
+                                closeMobileMenu();
+                                handleLogout();
+                            }}
+                            className="sidebar-link logout-button"
+                            data-tooltip="Logout"
+                        >
                             <FaSignOutAlt className="sidebar-icon" />
                             <span className="sidebar-text">Logout</span>
                         </button>

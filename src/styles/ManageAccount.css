@@ -12,9 +12,69 @@
 /* Add responsive styling to match Profile.css */
 @media (max-width: 768px) {
     .manage-account-container {
-        width: calc(100% - 32px);
-        margin: 16px;
+        width: 100%;
+        margin: 0;
         padding: 16px;
+        border-radius: 0;
+        margin-top: 60px;
+        /* Account for mobile header */
+        box-shadow: none;
+    }
+
+    .user-info-section {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .user-profile {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+
+    .user-details {
+        width: 100%;
+        text-align: center;
+    }
+
+    .detail-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+
+    .detail-item span:first-child {
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .detail-item span:last-child {
+        font-size: 1rem;
+        width: 100%;
+    }
+
+    .confirm-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .confirm-delete-button,
+    .cancel-delete-button,
+    .delete-account-button,
+    .back-button {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+    }
+
+    .danger-zone {
+        margin-top: 24px;
+        padding: 16px;
+    }
+
+    .confirm-delete p {
+        font-size: 0.9rem;
+        line-height: 1.4;
     }
 }
 

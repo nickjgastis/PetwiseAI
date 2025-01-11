@@ -148,10 +148,66 @@
 
 @media (max-width: 768px) {
     .profile-container {
-        width: calc(100% - 32px);
-        margin: 16px;
+        width: 100%;
+        margin: 0;
         padding: 16px;
-        height: calc(100vh - 32px);
+        height: 100vh;
+        border-radius: 0;
+        margin-top: 60px;
+        /* Account for mobile header */
+    }
+
+    /* Adjust header spacing */
+    .profile-header {
+        margin-top: 1rem;
+    }
+
+    /* Make info items stack vertically */
+    .info-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+        padding: 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    .info-value {
+        font-size: 1rem;
+        width: 100%;
+    }
+
+    /* Adjust subscription status display */
+    .subscription-end {
+        display: block;
+        margin-left: 0;
+        margin-top: 4px;
+    }
+
+    /* Stack action buttons */
+    .profile-actions {
+        flex-direction: column;
+        gap: 12px;
+        padding: 0 16px;
+    }
+
+    .profile-button {
+        width: 100%;
+        padding: 12px;
+        font-size: 1rem;
+    }
+
+    /* Adjust pricing section */
+    .pricing-section {
+        margin-top: 1rem;
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
     }
 }
 

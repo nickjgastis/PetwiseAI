@@ -210,8 +210,60 @@
 }
 
 @media (max-width: 768px) {
+    .checkout-container {
+        padding: 12px;
+        margin-top: 60px;
+        /* Account for mobile header */
+    }
+
+    .checkout-pricing-container {
+        padding: 0;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+
     .checkout-pricing-card {
-        flex: 1 1 100%;
+        width: 100%;
+        min-width: unset;
+        max-width: 100%;
+        min-height: unset;
+        margin: 0 auto;
+    }
+
+    .checkout-header {
+        margin-bottom: 16px;
+        padding: 0 12px;
+    }
+
+    .checkout-header h3 {
+        font-size: 1.5rem;
+    }
+
+    .checkout-subtitle {
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        padding: 0 8px;
+    }
+
+    /* Make buttons more tappable on mobile */
+    .checkout-trial-button,
+    .checkout-subscribe-button {
+        padding: 16px;
+        min-height: 52px;
+    }
+
+    /* Adjust footer spacing */
+    .checkout-footer {
+        flex-direction: column;
+        gap: 12px;
+        align-items: stretch;
+    }
+
+    .checkout-back-button,
+    .cancel-subscription {
+        width: 100%;
+        padding: 12px;
     }
 }
 
