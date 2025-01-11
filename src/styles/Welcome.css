@@ -21,6 +21,8 @@
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    overflow: hidden;
+    /* Prevent scrolling */
 }
 
 .welcome-content {
@@ -145,4 +147,52 @@
 
 .welcome-content button:active {
     transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+    .welcome-content {
+        max-width: 100%;
+        width: 90%;
+        padding: 2rem;
+        margin: 1rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    .welcome-content .welcome-logo {
+        width: 80px;
+        margin-bottom: 1.5rem;
+    }
+
+    .welcome-content h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-content .welcome-description {
+        font-size: 1rem;
+    }
+
+    .welcome-content .permanent-notice {
+        font-size: 0.85rem;
+        padding: 0.75rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .welcome-content .input-group {
+        margin: 1rem 0;
+    }
+
+    .welcome-content .input-prefix span,
+    .welcome-content .input-prefix input {
+        padding: 0.6rem;
+        font-size: 0.95rem;
+    }
+
+    .welcome-content button {
+        padding: 0.9rem 2.5rem;
+        font-size: 1rem;
+        margin-top: 1rem;
+    }
 }
