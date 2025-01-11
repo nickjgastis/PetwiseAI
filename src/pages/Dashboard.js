@@ -67,17 +67,16 @@ const Dashboard = () => {
                         setNeedsWelcome(true);
                         setUserData(newUser);
                     } else {
-                        throw error;
+                        // Add retry for other errors
+                        console.error('Error fetching user data:', error);
+                        setTimeout(() => checkSubscription(), 2000);
+                        return;
                     }
                 } else {
-                    // Update email if it changed in Auth0
-                    if (data.email !== user.email) {
-                        const { error: updateError } = await supabase
-                            .from('users')
-                            .update({ email: user.email })
-                            .eq('auth0_user_id', user.sub);
-
-                        if (updateError) console.error('Error updating email:', updateError);
+                    // Add retry for pending states
+                    if (data.subscription_status === 'pending' || data.subscription_status === 'incomplete') {
+                        setTimeout(() => checkSubscription(), 2000);
+                        return;
                     }
 
                     setHasAcceptedTerms(data.has_accepted_terms);
@@ -91,6 +90,8 @@ const Dashboard = () => {
                 }
             } catch (err) {
                 console.error('Error:', err);
+                // Add retry for any other errors
+                setTimeout(() => checkSubscription(), 2000);
             } finally {
                 setIsLoading(false);
             }
