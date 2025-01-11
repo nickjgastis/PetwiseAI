@@ -75,11 +75,16 @@ const App = () => {
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
         redirect_uri: process.env.NODE_ENV === 'production'
-          ? 'https://www.petwise.vet/dashboard'
+          ? 'https://www.petwise.vet'
           : window.location.origin,
         scope: "openid profile email"
       }}
-      onRedirectCallback={(appState) => navigate(appState?.returnTo || '/dashboard')}
+      onRedirectCallback={(appState) => {
+        const targetUrl = appState?.returnTo || '/dashboard';
+        navigate(targetUrl);
+      }}
+      cacheLocation="localstorage"
+      useRefreshTokens={true}
     >
       <AppContent />
     </Auth0Provider>
