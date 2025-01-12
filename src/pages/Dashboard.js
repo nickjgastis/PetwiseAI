@@ -73,6 +73,17 @@ const Dashboard = () => {
                         return;
                     }
                 } else {
+                    // Add email check and update
+                    if (user.email && data.email !== user.email) {
+                        const { error: updateError } = await supabase
+                            .from('users')
+                            .update({ email: user.email })
+                            .eq('auth0_user_id', user.sub);
+
+                        if (updateError) console.error('Error updating email:', updateError);
+                        data.email = user.email; // Update local data
+                    }
+
                     // Add retry for pending states
                     if (data.subscription_status === 'pending' || data.subscription_status === 'incomplete') {
                         setTimeout(() => checkSubscription(), 2000);
