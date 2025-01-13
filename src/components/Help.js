@@ -38,7 +38,7 @@ const Help = () => {
         },
         {
             id: 'report-generator',
-            title: 'Report Generator',
+            title: 'Record Generator',
             content: [
                 {
                     question: 'How does the AI generate reports?',
@@ -75,6 +75,20 @@ const Help = () => {
                 {
                     question: 'What can I do with my reports?',
                     answer: 'You can:\n- View any saved report\n- Print reports\n- Make copies of reports\n- Download as PDF'
+                }
+            ]
+        },
+        {
+            id: 'sourced-material',
+            title: 'Sourced Material',
+            content: [
+                {
+                    question: 'What sources does PetWise use?',
+                    answer: 'PetWise is trained on a comprehensive collection of veterinary medical knowledge that goes far beyond this example list. Here are some examples of the types of sources used:\n\nVeterinary Medical Literature:\n- The Merck Veterinary Manual (Online Edition)\n- Frontiers in Veterinary Science\n- BMC Veterinary Research\n- Veterinary Clinics of North America\n\nUniversity and Academic Resources:\n- Cornell University College of Veterinary Medicine\n- Colorado State University Veterinary Teaching Hospital\n- University of Pennsylvania School of Veterinary Medicine\n- MIT OpenCourseWare\n\nGovernment and Regulatory Agencies:\n- CDC Zoonotic Diseases\n- World Organization for Animal Health (WOAH)\n- USDA APHIS\n\nOpen-Access Research and Journals:\n- PLOS ONE Veterinary Science\n- PubMed Central\n- Scientific Reports\n\nAnimal Welfare Organizations:\n- ASPCA\n- RSPCA\n- World Animal Protection\n\nProfessional Veterinary Organizations:\n- American Veterinary Medical Association\n- Royal College of Veterinary Surgeons\n- Canadian Veterinary Medical Association\n\nAnd many more sources including veterinary guidelines, clinical pathology journals, breed-specific resources, and ongoing research publications.'
+                },
+                {
+                    question: 'How current is the information?',
+                    answer: 'Our system is regularly updated with new veterinary research and guidelines. However, always verify critical information and use your professional judgment for clinical decisions.'
                 }
             ]
         }

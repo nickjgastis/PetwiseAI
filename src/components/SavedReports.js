@@ -291,6 +291,8 @@ const SavedReports = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingReport, setEditingReport] = useState(null);
     const [isLoadingReports, setIsLoadingReports] = useState(true);
+    const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
+    const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -425,6 +427,41 @@ const SavedReports = () => {
         setSelectedReport(null);
     };
 
+    const copyToClipboard = () => {
+        // Get current content from editor
+        const nodes = deserializeSlateValue(selectedReport.report_text);
+
+        // Create HTML content with explicit styling
+        const htmlContent = nodes.map(node => {
+            if (node.type === 'heading' || (node.children[0] && node.children[0].bold)) {
+                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
+            }
+            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
+        }).join('<br>');
+
+        // Wrap in a div with explicit styling
+        const wrappedHtml = `
+            <div style="color: black; background: none; background-color: transparent;">
+                ${htmlContent}
+            </div>
+        `;
+
+        // Use the Clipboard API
+        const clipboardData = new ClipboardItem({
+            'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
+            'text/plain': new Blob([selectedReport.report_text], { type: 'text/plain' })
+        });
+
+        navigator.clipboard.write([clipboardData]).then(() => {
+            setCopyButtonText('Copied!');
+            setCopiedMessageVisible(true);
+            setTimeout(() => {
+                setCopyButtonText('Copy to Clipboard');
+                setCopiedMessageVisible(false);
+            }, 2000);
+        });
+    };
+
     if (isLoading) return <div>Loading...</div>; // Handle loading state
 
     if (!isAuthenticated) {
@@ -439,7 +476,7 @@ const SavedReports = () => {
             <div className="search-container">
                 <input
                     type="text"
-                    placeholder="Search reports..."
+                    placeholder="Search records..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
@@ -522,6 +559,12 @@ const SavedReports = () => {
                                     Edit
                                 </button>
                             )}
+                            <div className="copy-button-container">
+                                <button className="copy-button" onClick={copyToClipboard}>
+                                    {copyButtonText}
+                                </button>
+                                {copiedMessageVisible && <span className="copied-message">Copied</span>}
+                            </div>
                             <PDFButton
                                 reportText={selectedReport.report_text}
                                 reportName={selectedReport.report_name}

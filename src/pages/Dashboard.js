@@ -216,7 +216,7 @@ const Dashboard = () => {
                             <li className="sidebar-item">
                                 <Link to="/dashboard/report-form" onClick={closeMobileMenu} data-tooltip="Report Generator">
                                     <FaFileAlt className="sidebar-icon" />
-                                    <span className="sidebar-text">Report Generator</span>
+                                    <span className="sidebar-text">Record Generator</span>
                                 </Link>
                             </li>
                             <li className="sidebar-item">
@@ -229,7 +229,7 @@ const Dashboard = () => {
                                 <li className="sidebar-item">
                                     <Link to="/dashboard/saved-reports" data-tooltip="Saved Reports">
                                         <FaSave className="sidebar-icon" />
-                                        <span className="sidebar-text">Saved Reports</span>
+                                        <span className="sidebar-text">Saved Records</span>
                                     </Link>
                                 </li>
                             )}
