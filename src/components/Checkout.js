@@ -184,7 +184,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     <div className={`checkout-pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
                         <div className="checkout-pricing-header">
                             <h3>Monthly</h3>
-                            <p className="checkout-price">$129<span>/Vet/Month</span></p>
+                            <p className="checkout-price">$129<span> USD/Vet/Month</span></p>
                         </div>
                         <ul className="checkout-pricing-features">
                             <li>Unlimited SOAP reports</li>
@@ -208,7 +208,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     <div className={`checkout-pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
                         <div className="checkout-pricing-header">
                             <h3>Yearly</h3>
-                            <p className="checkout-price">$89<span>/Vet/Month</span></p>
+                            <p className="checkout-price">$89<span> USD/Vet/Month</span></p>
                             <p className="checkout-savings">Save 31%</p>
                         </div>
                         <ul className="checkout-pricing-features">

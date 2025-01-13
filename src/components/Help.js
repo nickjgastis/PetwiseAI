@@ -21,6 +21,18 @@ const Help = () => {
         }));
     };
 
+    const formatText = (text) => {
+        return text.split('\n').map((line, i) => {
+            const formattedLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            return (
+                <React.Fragment key={i}>
+                    <span dangerouslySetInnerHTML={{ __html: formattedLine }} />
+                    <br />
+                </React.Fragment>
+            );
+        });
+    };
+
     const helpSections = [
         {
             id: 'getting-started',
@@ -41,12 +53,12 @@ const Help = () => {
             title: 'Record Generator',
             content: [
                 {
-                    question: 'How does the AI generate reports?',
-                    answer: 'Our AI analyzes your input data and generates comprehensive reports based on veterinary best practices. It structures information into clear sections including history, examination findings, assessment, and treatment plans.'
+                    question: 'How does the AI generate records?',
+                    answer: 'Our AI analyzes your input data and generates comprehensive records based on veterinary best practices. It structures information into clear sections including history, examination findings, assessment, and treatment plans.'
                 },
                 {
-                    question: 'Can I edit generated reports?',
-                    answer: 'Yes! After generation, you can:\n- Edit any section of the report\n- Add or remove information\n- Customize the format\n- Save multiple versions'
+                    question: 'Can I edit generated records?',
+                    answer: 'Yes! After generation, you can:\n- Edit any section of the record\n- Add or remove information\n- Customize the format\n- Save multiple versions'
                 }
             ]
         },
@@ -66,25 +78,25 @@ const Help = () => {
         },
         {
             id: 'saved-reports',
-            title: 'Managing Reports',
+            title: 'Managing Records',
             content: [
                 {
-                    question: 'How do I access saved reports?',
-                    answer: 'Access your saved reports by:\n1. Going to the Dashboard\n2. Clicking "Saved Reports"\n3. Viewing your list of reports'
+                    question: 'How do I access saved records?',
+                    answer: 'Access your saved records by:\n1. Going to the Dashboard\n2. Clicking "Saved Records"\n3. Viewing your list of records'
                 },
                 {
-                    question: 'What can I do with my reports?',
-                    answer: 'You can:\n- View any saved report\n- Print reports\n- Make copies of reports\n- Download as PDF'
+                    question: 'What can I do with my records?',
+                    answer: 'You can:\n- Search through your records\n- View any saved record\n- Print records\n- Make copies of records\n- Download as PDF'
                 }
             ]
         },
         {
             id: 'sourced-material',
-            title: 'Sourced Material',
+            title: 'Sourced Literature',
             content: [
                 {
                     question: 'What sources does PetWise use?',
-                    answer: 'PetWise is trained on a comprehensive collection of veterinary medical knowledge that goes far beyond this example list. Here are some examples of the types of sources used:\n\nVeterinary Medical Literature:\n- The Merck Veterinary Manual (Online Edition)\n- Frontiers in Veterinary Science\n- BMC Veterinary Research\n- Veterinary Clinics of North America\n\nUniversity and Academic Resources:\n- Cornell University College of Veterinary Medicine\n- Colorado State University Veterinary Teaching Hospital\n- University of Pennsylvania School of Veterinary Medicine\n- MIT OpenCourseWare\n\nGovernment and Regulatory Agencies:\n- CDC Zoonotic Diseases\n- World Organization for Animal Health (WOAH)\n- USDA APHIS\n\nOpen-Access Research and Journals:\n- PLOS ONE Veterinary Science\n- PubMed Central\n- Scientific Reports\n\nAnimal Welfare Organizations:\n- ASPCA\n- RSPCA\n- World Animal Protection\n\nProfessional Veterinary Organizations:\n- American Veterinary Medical Association\n- Royal College of Veterinary Surgeons\n- Canadian Veterinary Medical Association\n\nAnd many more sources including veterinary guidelines, clinical pathology journals, breed-specific resources, and ongoing research publications.'
+                    answer: 'PetWise is trained on a comprehensive collection of veterinary medical knowledge that goes far beyond this example list. Here are some examples of the types of sources used:\n\n**Veterinary Medical Literature:**\n- The Merck Veterinary Manual (Online Edition)\n- Frontiers in Veterinary Science\n- BMC Veterinary Research\n- Veterinary Clinics of North America\n\n**University and Academic Resources:**\n- Cornell University College of Veterinary Medicine\n- Colorado State University Veterinary Teaching Hospital\n- University of Pennsylvania School of Veterinary Medicine\n- MIT OpenCourseWare\n\n**Government and Regulatory Agencies:**\n- CDC Zoonotic Diseases\n- World Organization for Animal Health (WOAH)\n- USDA APHIS\n\n**Open-Access Research and Journals:**\n- PLOS ONE Veterinary Science\n- PubMed Central\n- Scientific Reports\n\n**Animal Welfare Organizations:**\n- ASPCA\n- RSPCA\n- World Animal Protection\n\n**Professional Veterinary Organizations:**\n- American Veterinary Medical Association\n- Royal College of Veterinary Surgeons\n- Canadian Veterinary Medical Association\n\nAnd many more sources including veterinary guidelines, clinical pathology journals, breed-specific resources, and ongoing research publications.'
                 },
                 {
                     question: 'How current is the information?',
@@ -114,12 +126,7 @@ const Help = () => {
                                 {section.content.map((item, index) => (
                                     <div key={index} className="help-item">
                                         <h3>{item.question}</h3>
-                                        <p>{item.answer.split('\n').map((line, i) => (
-                                            <React.Fragment key={i}>
-                                                {line}
-                                                <br />
-                                            </React.Fragment>
-                                        ))}</p>
+                                        <p>{formatText(item.answer)}</p>
                                     </div>
                                 ))}
                             </div>

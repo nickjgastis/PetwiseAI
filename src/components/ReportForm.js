@@ -1642,7 +1642,7 @@ const ReportForm = () => {
                             className="generate-report-button"
                             disabled={loading || reportsUsed >= reportLimit}
                         >
-                            {loading ? 'Generating...' : 'Generate Report'}
+                            {loading ? 'Generating...' : 'Generate Record'}
                         </button>
                         {showLimitWarning && <LimitWarningPopup />}
                         <button type="button" className="clear-button" onClick={resetEntireForm}>
@@ -1730,8 +1730,8 @@ const ReportForm = () => {
                         </div>
                     ) : (
                         <div className="report-placeholder">
-                            <h2>Report will appear here</h2>
-                            <p>Fill out the form and click "Generate Report" to see the preview</p>
+                            <h2>Record will appear here</h2>
+                            <p>Fill out the form and click "Generate Record" to see the preview</p>
                         </div>
                     )}
                 </div>

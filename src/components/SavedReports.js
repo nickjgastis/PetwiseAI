@@ -470,7 +470,7 @@ const SavedReports = () => {
 
     return (
         <div className="saved-reports">
-            <h2>Saved Reports</h2>
+            <h2>Saved Records</h2>
             {error && <div className="error-message">{error}</div>}
 
             <div className="search-container">
