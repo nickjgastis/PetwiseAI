@@ -365,3 +365,51 @@
 .checkout-container.embedded .checkout-header {
     padding-top: 0;
 }
+
+.checkout-enterprise-section {
+    text-align: center;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    max-width: 800px;
+    border: 1px solid rgba(21, 101, 192, 0.1);
+}
+
+.checkout-enterprise-section h3 {
+    color: #1565C0;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+}
+
+.checkout-enterprise-section p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.checkout-enterprise-section a {
+    color: #1565C0;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.checkout-enterprise-section a:hover {
+    color: #1976D2;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .checkout-enterprise-section {
+        margin: 1.5rem 1rem;
+        padding: 1.5rem;
+    }
+
+    .checkout-enterprise-section h3 {
+        font-size: 1.1rem;
+    }
+
+    .checkout-enterprise-section p {
+        font-size: 1rem;
+    }
+}

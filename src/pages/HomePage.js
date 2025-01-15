@@ -196,7 +196,7 @@ const HomePage = () => {
                     </div>
                     <div className="video-container">
                         <iframe
-                            src="https://www.youtube.com/embed/BZtpas--SL4?si=DwlVcfKJawf-LxZ4&controls=1&modestbranding=1&rel=0&playlist=BZtpas--SL4"
+                            src="https://www.youtube.com/embed/BZtpas--SL4?si=DwlVcfKJawf-LxZ4&controls=1&modestbranding=1&rel=0&showinfo=0&playlist=BZtpas--SL4&autoplay=1&mute=1"
                             title="How Petwise AI Works"
                             frameBorder="0"
                             allowFullScreen
@@ -274,6 +274,10 @@ const HomePage = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                    <div className="enterprise-section">
+                        <h3>Looking to sign up your whole clinic staff, or multiple clinics?</h3>
+                        <p>We've got you covered! Contact <a href="mailto:support@petwise.vet">support@petwise.vet</a></p>
                     </div>
                 </section>
             </div>

@@ -230,6 +230,11 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     </div>
                 </div>
 
+                <div className="checkout-enterprise-section">
+                    <h3>Looking to sign up your whole clinic staff, or multiple clinics?</h3>
+                    <p>We've got you covered! Contact <a href="mailto:support@petwise.vet">support@petwise.vet</a></p>
+                </div>
+
                 {!embedded && (
                     <div className="checkout-footer">
                         <button onClick={onBack} className="checkout-back-button">

@@ -1133,3 +1133,52 @@ html {
     transform: translateY(0);
     transition-delay: 0.5s;
 }
+
+.enterprise-section {
+    text-align: center;
+    margin-top: 4rem;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.enterprise-section h3 {
+    color: #0090d7;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.enterprise-section p {
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.enterprise-section a {
+    color: #0090d7;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.enterprise-section a:hover {
+    color: #04a7e7;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .enterprise-section {
+        margin: 3rem 1rem 0;
+        padding: 1.5rem;
+    }
+
+    .enterprise-section h3 {
+        font-size: 1.3rem;
+    }
+
+    .enterprise-section p {
+        font-size: 1rem;
+    }
+}
