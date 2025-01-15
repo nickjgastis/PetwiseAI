@@ -116,6 +116,89 @@ const formatMessageForPDF = (content) => {
     );
 };
 
+const SUGGESTIONS = [
+    {
+        category: "Treatment Protocols",
+        question: "What is the step-by-step treatment protocol for severe canine parvovirus, including fluid rates and antibiotic choices?"
+    },
+    {
+        category: "Emergency Medicine",
+        question: "What are the exact dosages and timing for diazepam, midazolam, and phenobarbital in status epilepticus?"
+    },
+    {
+        category: "Medication Guidance",
+        question: "For resistant feline UTIs, what culture-based antibiotic protocols do you recommend after amoxicillin failure?"
+    },
+    {
+        category: "Dermatology",
+        question: "What's the current ICADA protocol for severe canine atopic dermatitis, including Apoquel and Cytopoint timing?"
+    },
+    {
+        category: "Surgery",
+        question: "What pre-op lab work and medication adjustments are needed for dental procedures in cats over 12 years?"
+    },
+    {
+        category: "Oncology",
+        question: "What's the CHOP protocol dosing schedule for intermediate to high-grade feline lymphoma?"
+    },
+    {
+        category: "Cardiology",
+        question: "What's the emergency furosemide protocol for acute CHF with respiratory distress, including CRI rates?"
+    },
+    {
+        category: "Neurology",
+        question: "What's the diagnostic protocol for differentiating central vs peripheral vestibular disease in geriatric dogs?"
+    },
+    {
+        category: "Endocrinology",
+        question: "What's the insulin CRI protocol and fluid rates for treating DKA in cats with BG >400?"
+    },
+    {
+        category: "Emergency Medicine",
+        question: "What's the complete protocol for severe acute pancreatitis in dogs, including fluid rates and pain management?"
+    },
+    {
+        category: "Ophthalmology",
+        question: "What's the treatment protocol for deep stromal corneal ulcers in cats, including surgical options?"
+    },
+    {
+        category: "Toxicology",
+        question: "What's the decontamination and treatment protocol for dogs that ingested >3oz dark chocolate?"
+    },
+    {
+        category: "Reproduction",
+        question: "What's the medical and surgical protocol for managing dystocia in French Bulldogs?"
+    },
+    {
+        category: "Gastroenterology",
+        question: "What's the current stepwise approach for treating refractory IBD in cats after diet trials fail?"
+    },
+    {
+        category: "Orthopedics",
+        question: "What's the detailed 8-week post-op rehab protocol following TPLO surgery in large breed dogs?"
+    },
+    {
+        category: "Behavior",
+        question: "What are the current dosing protocols for fluoxetine and trazodone for severe separation anxiety?"
+    },
+    {
+        category: "Critical Care",
+        question: "What's the protocol for treating Eastern Diamondback rattlesnake bites, including antivenom dosing?"
+    },
+    {
+        category: "Respiratory",
+        question: "What's the emergency and maintenance protocol for severe feline asthma, including inhaler options?"
+    },
+    {
+        category: "Nutrition",
+        question: "What's the detailed refeeding protocol for hepatic lipidosis in cats, including tube feeding schedules?"
+    },
+    {
+        category: "Dentistry",
+        question: "What antibiotics and doses are recommended for stage 4 periodontal disease with osteomyelitis?"
+    }
+];
+
 const QuickQuery = () => {
     const { user } = useAuth0();
     const [userData, setUserData] = useState(null);
@@ -127,6 +210,9 @@ const QuickQuery = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [randomSuggestions, setRandomSuggestions] = useState(
+        SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 3)
+    );
 
     useEffect(() => {
         const lastUser = localStorage.getItem('lastUserId');
@@ -379,6 +465,61 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         }
     };
 
+    const handleSuggestionClick = async (question) => {
+        setMessages(prev => [...prev, { role: 'user', content: question }]);
+        setIsLoading(true);
+
+        try {
+            const conversationHistory = [
+                {
+                    role: 'system',
+                    content: `You are a **Veterinary Assistant AI**...` // your existing system prompt
+                },
+                ...messages.slice(-5),
+                {
+                    role: 'user',
+                    content: question
+                }
+            ];
+
+            const response = await axios.post(
+                'https://api.openai.com/v1/chat/completions',
+                {
+                    model: 'gpt-4o-mini',
+                    messages: conversationHistory,
+                    max_tokens: 500,
+                    temperature: 0.7,
+                    top_p: 0.9,
+                    frequency_penalty: 0.5,
+                    presence_penalty: 0.5
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (response.data.error) {
+                throw new Error(response.data.error);
+            }
+
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: response.data.choices[0].message.content
+            }]);
+        } catch (error) {
+            console.error('Error in QuickQuery:', error);
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: "I'm sorry, I encountered an error. Please try again."
+            }]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="qq-container">
             <div className="qq-header">
@@ -393,27 +534,16 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 <div className="qq-messages-container">
                     {messages.length === 0 && (
                         <div className="qq-suggestions">
-                            <div
-                                className="suggestion-box"
-                                onClick={() => setInputMessage("What is the recommended treatment protocol for canine parvovirus?")}
-                            >
-                                <h4>Treatment Protocols</h4>
-                                <p>What is the recommended treatment protocol for canine parvovirus?</p>
-                            </div>
-                            <div
-                                className="suggestion-box"
-                                onClick={() => setInputMessage("What are the dosages for emergency seizure management in dogs?")}
-                            >
-                                <h4>Emergency Medicine</h4>
-                                <p>What are the dosages for emergency seizure management in dogs?</p>
-                            </div>
-                            <div
-                                className="suggestion-box"
-                                onClick={() => setInputMessage("What antibiotics are most effective for treating resistant UTIs in cats?")}
-                            >
-                                <h4>Medication Guidance</h4>
-                                <p>What antibiotics are most effective for treating resistant UTIs in cats?</p>
-                            </div>
+                            {randomSuggestions.map((suggestion, index) => (
+                                <div
+                                    key={index}
+                                    className="suggestion-box"
+                                    onClick={() => handleSuggestionClick(suggestion.question)}
+                                >
+                                    <h4>{suggestion.category}</h4>
+                                    <p>{suggestion.question}</p>
+                                </div>
+                            ))}
                         </div>
                     )}
                     {messages.map((message, index) => (
@@ -474,7 +604,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder="Ask a veterinary question..."
+                        placeholder="What do you really want to know?"
                         className="qq-message-input"
                         disabled={isLoading}
                     />
