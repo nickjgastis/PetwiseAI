@@ -37,7 +37,7 @@ const GenerateReport = async (inputs, enabledFields) => {
   Veterinary Medical Record:
   
   Patient Information:  
-  Patient: ${inputs.patientName || "Provide here"}  
+  Patient: ${inputs.patientName ? inputs.patientName.charAt(0).toUpperCase() + inputs.patientName.slice(1) : "Provide here"}  
   Species: ${inputs.species || "Provide here"}  
   Breed: ${inputs.breed || "Provide here"}  
   Sex: ${inputs.sex || "Provide here"}  
@@ -191,20 +191,19 @@ Output:`
                         ? `Use the input below to format the client visit summary into a professional and friendly letter to the client. This will be used to send to the client. Ensure proper grammar, capitalization, and spelling while maintaining the structure of the provided information.  
   Input: "${getEnabledContent('patientVisitSummary', inputs.patientVisitSummary)}"  
   Formatted Output:`
-                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. After stating a diagosis or medical term, write the common term in parenthesis. IMPORTANT: Do not say Dear [Client Name], Sign off 2 spaces below: "Thank you for the opertunity to help, [Doctor name]"`}` : ''}
+                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. IMPORTANT: Do not say Dear [Client Name], Sign off 2 spaces below: "Thank you for the opertunity to help, [Doctor name]"`}` : ''}
   
   ${getEnabledContent('notes', inputs.notes) !== null ? `
   Notes:  
   ${getEnabledContent('notes', inputs.notes)
-                        ? `You are a veterinary medical assistant. List drugs used in the treatment plan, the drug action and their side effects. Then generate a concise, medically accurate response to this query. Use proper medical terminology, be direct, and focus on clinical relevance. No introductions or unnecessary explanations.IMPORTANT: After stating a medical term, ALWAYS write the common term in parenthesis.
+                        ? `You are a veterinary medical assistant. List drugs used in the treatment plan, the drug action and their side effects. Then generate a concise, medically accurate response to this query. Use proper medical terminology, be direct, and focus on clinical relevance. No introductions or unnecessary explanations.
   Input: "${getEnabledContent('notes', inputs.notes)}"  
   Output:
-  - After stating a medical term, ALWAYS write the common term in parenthesis.
   - Use bullet points for clarity
   - Include relevant medical terms and values
   - Focus on prognosis, complications, and key clinical considerations
   - Be direct and clinically focused`
-                        : `Generate notes based on the diagnosis, assessment, and treatment plan. List drugs used in the treatment plan, the drug action and their side effects. After stating a diagosis or medical term, write the common term in parenthesis.`}` : ''}
+                        : `Generate notes based on the diagnosis, assessment, and treatment plan. List drugs used in the treatment plan, the drug action and their side effects.`}` : ''}
   `;
 
 

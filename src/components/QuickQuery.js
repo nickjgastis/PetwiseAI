@@ -604,7 +604,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         type="text"
                         value={inputMessage}
                         onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder="What do you really want to know?"
+                        placeholder="What would you like to know?"
                         className="qq-message-input"
                         disabled={isLoading}
                     />
