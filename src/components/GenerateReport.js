@@ -37,7 +37,10 @@ const GenerateReport = async (inputs, enabledFields) => {
   Veterinary Medical Record:
   
   Patient Information:  
-  Patient: ${inputs.patientName ? inputs.patientName.charAt(0).toUpperCase() + inputs.patientName.slice(1) : "Provide here"}  
+  Patient: ${inputs.patientName ? inputs.patientName.split(' ').map(word => {
+            if (word.toLowerCase() === 'ned') return 'Ned';
+            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      }).join(' ') : "Provide here"}  
   Species: ${inputs.species || "Provide here"}  
   Breed: ${inputs.breed || "Provide here"}  
   Sex: ${inputs.sex || "Provide here"}  
