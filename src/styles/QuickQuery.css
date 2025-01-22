@@ -479,3 +479,28 @@
     transform: translateY(-1px);
     box-shadow: var(--shadow);
 }
+
+.qq-disclaimer {
+    margin-top: 15px;
+    padding: 4px 8px;
+    background-color: #cdf1ffad;
+    border: 1px solid #bae7ff;
+    border-radius: 4px;
+    color: #626262;
+    text-align: left;
+}
+
+.qq-disclaimer strong {
+    display: block;
+    margin-bottom: 2px;
+    font-size: 0.6rem !important;
+    text-align: left;
+}
+
+.qq-disclaimer p {
+    margin: 1px 0;
+    font-size: 0.6rem !important;
+    line-height: 1.1;
+    color: #626262;
+    text-align: left;
+}

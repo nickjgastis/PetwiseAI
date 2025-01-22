@@ -1656,7 +1656,7 @@ const ReportForm = () => {
 
             <div className="report-preview">
                 <div className="report-preview-header">
-                    <h3>Report Preview</h3>
+                    <h3>Record Preview</h3>
                     {previewVisible && (
                         <button className="close-button" onClick={() => setPreviewVisible(false)}>×</button>
                     )}
@@ -1732,6 +1732,10 @@ const ReportForm = () => {
                         <div className="report-placeholder">
                             <h2>Record will appear here</h2>
                             <p>Fill out the form and click "Generate Record" to see the preview</p>
+                            <div className="ai-warning">
+                                <p>Disclaimer: This record is generated using AI and is for educational purposes only. All content must be reviewed and verified by a licensed veterinarian before use. PetWise is not liable for any errors, omissions, or outcomes based on this record.</p>
+
+                            </div>
                         </div>
                     )}
                 </div>

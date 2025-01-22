@@ -115,6 +115,7 @@ app.post('/create-checkout-session', async (req, res) => {
             customer: customer.id,
             payment_method_types: ['card'],
             mode: 'subscription',
+            allow_promotion_codes: true,
             line_items: [{
                 price: priceId,
                 quantity: 1,

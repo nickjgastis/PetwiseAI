@@ -330,7 +330,7 @@ Diagnostics should be presented as actionable steps, prioritized based on the ca
    **Primary Objective:** Determine the cause and severity of anemia.
    **Recommended Diagnostics:**
      CBC with reticulocyte count: Assess severity and regenerative response.
-     Coombs’ test: Evaluate for immune-mediated hemolysis.
+     Coombs' test: Evaluate for immune-mediated hemolysis.
      Abdominal ultrasound: Rule out splenic masses or bleeding.
 
 ---
@@ -533,18 +533,25 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             <div className="qq-chat-container">
                 <div className="qq-messages-container">
                     {messages.length === 0 && (
-                        <div className="qq-suggestions">
-                            {randomSuggestions.map((suggestion, index) => (
-                                <div
-                                    key={index}
-                                    className="suggestion-box"
-                                    onClick={() => handleSuggestionClick(suggestion.question)}
-                                >
-                                    <h4>{suggestion.category}</h4>
-                                    <p>{suggestion.question}</p>
-                                </div>
-                            ))}
-                        </div>
+                        <>
+                            <div className="qq-disclaimer">
+                                <p>Disclaimer: QuickMed Query provides AI-generated responses for educational purposes only.
+                                    These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
+                                    Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
+                            </div>
+                            <div className="qq-suggestions">
+                                {randomSuggestions.map((suggestion, index) => (
+                                    <div
+                                        key={index}
+                                        className="suggestion-box"
+                                        onClick={() => handleSuggestionClick(suggestion.question)}
+                                    >
+                                        <h4>{suggestion.category}</h4>
+                                        <p>{suggestion.question}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
                     {messages.map((message, index) => (
                         <div key={index} className={`qq-message ${message.role}`}>
