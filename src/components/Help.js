@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from './Footer';
 import '../styles/Help.css';
+import { Link } from 'react-router-dom';
 
 const Help = () => {
     const { isAuthenticated } = useAuth0();
@@ -136,6 +137,7 @@ const Help = () => {
                     <section className="help-section">
                         <h2>Contact Support</h2>
                         <p>Need additional help? Email us at <a href="mailto:support@petwise.vet">support@petwise.vet</a></p>
+                        <p>View our <Link to="/privacy">Privacy Policy</Link> and <Link to="/terms">Terms of Service</Link></p>
                     </section>
                 </div>
             </div>
