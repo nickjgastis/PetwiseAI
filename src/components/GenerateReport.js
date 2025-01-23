@@ -176,7 +176,7 @@ Output:`
                         ? `Use the input below to format client communications into a clear list of professional sentences. Ensure proper grammar, capitalization, and readability. Each sentence should be on its own line.
   Input: "${getEnabledContent('clientCommunications', inputs.clientCommunications)}"  
   Formatted Output:`
-                        : `Generate the client communications explained based on the treatment plan and diagnosis in past tense. Don't say "the veterinarian said" or "the veterinarian recommended", Each sentence should be on its own line.`}` : ''}
+                        : `Generate the client communications explained based on the treatment plan and diagnosis in past tense. Include the prognosis. Don't say "the veterinarian said" or "the veterinarian recommended", Each sentence should be on its own line.`}` : ''}
   
   ${getEnabledContent('planFollowUp', inputs.planFollowUp) !== null ? `
   Follow-Up:  
@@ -194,7 +194,7 @@ Output:`
                         ? `Use the input below to format the client visit summary into a professional and friendly letter to the client. This will be used to send to the client. Ensure proper grammar, capitalization, and spelling while maintaining the structure of the provided information.  
   Input: "${getEnabledContent('patientVisitSummary', inputs.patientVisitSummary)}"  
   Formatted Output:`
-                        : `Generate a LETTER that educates the client on their pets condition. Every sentence should be on a new line. IMPORTANT: Do not say Dear [Client Name], Sign off 2 spaces below: "Thank you for the opertunity to help, [Doctor name]"`}` : ''}
+                        : `Generate a LETTER that educates the client on their pets condition. Include the prognosis. Every sentence should be on a new line. IMPORTANT: Do not say Dear [Client Name], Sign off 2 spaces below: "Thank you for the opertunity to help, [Doctor name]"`}` : ''}
   
   ${getEnabledContent('notes', inputs.notes) !== null ? `
   Notes:  

@@ -113,12 +113,11 @@
 
     /* Headers */
     & h3 {
-        font-size: 15px;
-        font-weight: 600;
-        margin: 32px 0 4px;
-
+        font-size: 17px;
+        font-weight: 700;
+        margin: 16px 0 4px;
         display: block;
-
+        color: var(--text-dark);
     }
 
     /* First header shouldn't have top margin */
@@ -128,7 +127,7 @@
 
     /* Double spacing between sections */
     & h3:not(:first-child) {
-        margin-top: 40px;
+        margin-top: 20px;
     }
 
     /* Bold text */
