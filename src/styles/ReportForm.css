@@ -425,7 +425,7 @@ body {
     color: white;
     border: none;
     border-radius: 6px;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -434,7 +434,7 @@ body {
     justify-content: center;
     width: 200px;
     box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
-    text-transform: uppercase;
+    text-transform: none;
     letter-spacing: 0.5px;
     margin: 0;
 }
