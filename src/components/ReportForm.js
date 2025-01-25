@@ -430,7 +430,14 @@ const ReportForm = () => {
     const [doctor, setDoctor] = useState(() => localStorage.getItem('doctor') || '');
     const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
     const [history, setHistory] = useState(() => localStorage.getItem('history') || '');
-    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => localStorage.getItem('physicalExamFindings') || PETWISE_DEFAULT_PHYSICAL_EXAM);
+    const [physicalExamFindings, setPhysicalExamFindings] = useState(() => {
+        // First check localStorage for user input
+        const savedFindings = localStorage.getItem('physicalExamFindings');
+        if (savedFindings) return savedFindings;
+
+        // If no saved input, use custom template or default
+        return PETWISE_DEFAULT_PHYSICAL_EXAM;
+    });
     const [diagnosticTests, setDiagnosticTests] = useState(() =>
         localStorage.getItem('diagnosticTests') || DEFAULT_DIAGNOSTIC_TESTS
     );
@@ -1158,12 +1165,9 @@ const ReportForm = () => {
             if (!error && data) {
                 setUserData(data);
                 setDoctor(data.dvm_name);
-                // Set physical exam to custom template if it exists
+                // Only set custom template, don't update physicalExamFindings
                 if (data.custom_physical_exam_template) {
                     setCustomTemplate(data.custom_physical_exam_template);
-                    setPhysicalExamFindings(data.custom_physical_exam_template);
-                } else {
-                    setPhysicalExamFindings(PETWISE_DEFAULT_PHYSICAL_EXAM);
                 }
             }
         };
