@@ -144,7 +144,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                             <>
                                 Current Plan: {(() => {
                                     const planTypes = {
-                                        trial: 'Free Trial (10 reports/day)',
+                                        trial: 'Free Trial (50 reports/day)',
                                         monthly: 'Monthly Plan',
                                         yearly: 'Yearly Plan'
                                     };
@@ -166,7 +166,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         </div>
                         <ul className="checkout-pricing-features">
                             <li>No credit card required</li>
-                            <li>10 reports per day</li>
+                            <li>50 records per day</li>
                             <li>Quick Query</li>
                         </ul>
                         <div className="checkout-footer">

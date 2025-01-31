@@ -78,7 +78,7 @@ const PRICE_IDS = {
 };
 const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
-    trial: 10,
+    trial: 50,
     monthly: Infinity,
     yearly: Infinity
 };

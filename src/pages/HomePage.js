@@ -217,7 +217,7 @@ const HomePage = () => {
                             </div>
                             <ul className="pricing-features">
                                 <li>No credit card required</li>
-                                <li>10 reports per day</li>
+                                <li>50 records per day</li>
                                 <li>Quick Query</li>
                             </ul>
                             <div className="pricing-footer">

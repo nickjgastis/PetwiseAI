@@ -588,7 +588,6 @@ const ReportForm = () => {
 
             const today = new Date().toISOString().split('T')[0];
 
-            // Reset if the last report date is different from today
             if (data.last_report_date !== today) {
                 const { error: updateError } = await supabase
                     .from('users')
@@ -604,13 +603,15 @@ const ReportForm = () => {
                 setReportsUsed(data.reports_used_today);
             }
 
-            // Only set limit and show warnings for trial users
+            // Get limit from server
+            const response = await fetch(`${API_URL}/check-subscription/${user.sub}`);
+            const limitData = await response.json();
+
             if (data.subscription_interval === 'trial') {
-                setReportLimit(10);
-                // Warning logic moved to the useEffect above
+                setReportLimit(50); // Server enforces 50 limit
             } else {
                 setReportLimit(Infinity);
-                setShowLimitWarning(false); // Ensure warning is hidden for paid users
+                setShowLimitWarning(false);
             }
         } catch (error) {
             console.error('Error fetching report usage:', error);
@@ -684,8 +685,11 @@ const ReportForm = () => {
     }, [reportText, previewVisible, patientName, age, doctor]);
 
     // Submit patient info
-    const handlePatientInfoSubmit = (e) => {
+    const handlePatientInfoSubmit = async (e) => {
         e.preventDefault();
+        if (user) {
+            await fetchReportUsage();
+        }
         setPatientInfoSubmitted(true);
     };
 
@@ -1054,15 +1058,11 @@ const ReportForm = () => {
 
     // Update the useEffect that monitors report usage
     useEffect(() => {
-        if (reportLimit === 10) {  // Only show warning for trial users (10 report limit)
+        if (reportLimit !== Infinity) {
             const remainingReports = Math.max(0, reportLimit - reportsUsed);
-            if (remainingReports <= 3) {
-                setShowLimitWarning(true);
-            } else {
-                setShowLimitWarning(false);
-            }
+            setShowLimitWarning(remainingReports <= 3);
         } else {
-            setShowLimitWarning(false); // Always hide warning for paid subscriptions
+            setShowLimitWarning(false);
         }
     }, [reportsUsed, reportLimit]);
 
