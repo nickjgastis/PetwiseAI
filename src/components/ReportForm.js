@@ -684,14 +684,19 @@ const ReportForm = () => {
         localStorage.setItem('doctor', doctor);
     }, [reportText, previewVisible, patientName, age, doctor]);
 
-    // Submit patient info
+    // Remove fetch from handlePatientInfoSubmit
     const handlePatientInfoSubmit = async (e) => {
         e.preventDefault();
-        if (user) {
-            await fetchReportUsage();
-        }
         setPatientInfoSubmitted(true);
     };
+
+    // Add useEffect to fetch when component loads
+    useEffect(() => {
+        if (user && !patientInfoSubmitted) {
+            fetchReportUsage();
+            lastFetchTime.current = Date.now();
+        }
+    }, [user, patientInfoSubmitted]); // Add patientInfoSubmitted to dependencies
 
     // Go back to patient info form
     const handleBackToPatientInfo = () => {
