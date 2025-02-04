@@ -226,22 +226,18 @@ const Dashboard = () => {
                                     <span className="sidebar-text">QuickMed Query</span>
                                 </Link>
                             </li>
-                            {userData?.stripe_customer_id && (
-                                <>
-                                    <li className="sidebar-item">
-                                        <Link to="/dashboard/saved-reports" data-tooltip="Saved Reports">
-                                            <FaSave className="sidebar-icon" />
-                                            <span className="sidebar-text">Saved Records</span>
-                                        </Link>
-                                    </li>
-                                    <li className="sidebar-item">
-                                        <Link to="/dashboard/templates" data-tooltip="My Templates">
-                                            <FaClipboard className="sidebar-icon" />
-                                            <span className="sidebar-text">My Templates</span>
-                                        </Link>
-                                    </li>
-                                </>
-                            )}
+                            <li className="sidebar-item">
+                                <Link to="/dashboard/saved-reports" data-tooltip="Saved Reports">
+                                    <FaSave className="sidebar-icon" />
+                                    <span className="sidebar-text">Saved Records</span>
+                                </Link>
+                            </li>
+                            <li className="sidebar-item">
+                                <Link to="/dashboard/templates" data-tooltip="My Templates">
+                                    <FaClipboard className="sidebar-icon" />
+                                    <span className="sidebar-text">My Templates</span>
+                                </Link>
+                            </li>
                         </>
                     )}
                     <li className="sidebar-item">
@@ -303,7 +299,7 @@ const Dashboard = () => {
                     <Route
                         path="saved-reports"
                         element={
-                            (isSubscribed && userData?.stripe_customer_id) ?
+                            isSubscribed ?
                                 <SavedReports /> :
                                 <Navigate to="/dashboard/profile" replace />
                         }
@@ -311,7 +307,7 @@ const Dashboard = () => {
                     <Route
                         path="templates"
                         element={
-                            (isSubscribed && userData?.stripe_customer_id) ?
+                            isSubscribed ?
                                 <Templates /> :
                                 <Navigate to="/dashboard/profile" replace />
                         }

@@ -615,6 +615,11 @@ const ReportForm = () => {
 
             if (data.subscription_interval === 'trial') {
                 setReportLimit(50); // Server enforces 50 limit
+                // Only show warning if not loading a saved report
+                const loadedReportId = localStorage.getItem('currentReportId');
+                if (!loadedReportId) {
+                    setShowLimitWarning(data.reports_used_today >= 50);
+                }
             } else {
                 setReportLimit(Infinity);
                 setShowLimitWarning(false);
@@ -718,6 +723,13 @@ const ReportForm = () => {
                     }
                 });
             }, 0);
+
+            // Set preview visible and clear warning banner
+            setPreviewVisible(true);
+            setShowLimitWarning(false);
+
+            // Clear form_data from localStorage after loading
+            localStorage.removeItem('form_data');
         } else {
             // Fall back to individual localStorage items
             // ... your existing localStorage loading code ...
@@ -1226,8 +1238,13 @@ const ReportForm = () => {
     // Update the useEffect that monitors report usage
     useEffect(() => {
         if (reportLimit !== Infinity) {
-            const remainingReports = Math.max(0, reportLimit - reportsUsed);
-            setShowLimitWarning(remainingReports <= 3);
+            const loadedReportId = localStorage.getItem('currentReportId');
+            if (!loadedReportId) {  // Only show warning if not loading a saved report
+                const remainingReports = Math.max(0, reportLimit - reportsUsed);
+                setShowLimitWarning(remainingReports <= 3 || reportsUsed >= reportLimit);
+            } else {
+                setShowLimitWarning(false);
+            }
         } else {
             setShowLimitWarning(false);
         }
