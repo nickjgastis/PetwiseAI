@@ -276,8 +276,13 @@ const QuickQuery = () => {
         const newMessage = { role: 'user', content: inputMessage.trim() };
         setMessages(prev => [...prev, newMessage]);
         setInputMessage('');
-        localStorage.removeItem('quickQueryInput');
         setIsLoading(true);
+
+        // Collapse textarea
+        const textarea = document.querySelector('.qq-message-input');
+        if (textarea) {
+            textarea.style.height = '56px';
+        }
 
         try {
             const conversationHistory = [

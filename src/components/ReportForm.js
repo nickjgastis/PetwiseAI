@@ -73,15 +73,16 @@ const PDFDocument = ({ reportText }) => {
             let trimmedParagraph = paragraph.trim();
             if (!trimmedParagraph) return;
 
+            // Enhanced header detection for pasted content
+            const isHeader = trimmedParagraph.startsWith('Physical Exam Findings: -') ||
+                trimmedParagraph.endsWith(':') ||
+                mainHeaders.some(header => trimmedParagraph.startsWith(header)) ||
+                trimmedParagraph.match(/^\d+\.\s+.*:/); // Numbered headers
+
             // Check if we're entering summary or notes section
             if (trimmedParagraph === 'Patient Visit Summary:' || trimmedParagraph === 'Notes:') {
                 isInSummaryOrNotes = true;
             }
-
-            // Update the header check to include date-containing headers
-            const isHeader = trimmedParagraph.startsWith('Physical Exam Findings: -') ||
-                trimmedParagraph.endsWith(':') ||
-                mainHeaders.some(header => trimmedParagraph.startsWith(header));
 
             // Clean the text only if it's not a header
             if (!isInPatientInfo && !isHeader) {
@@ -137,26 +138,45 @@ const PDFDocument = ({ reportText }) => {
     );
 };
 
-// Add this helper function to process the Slate value
+// Update processSlateForPDF to handle pasted content
 const processSlateForPDF = (nodes) => {
     let formattedText = '';
+    let previousWasHeader = false;
+    let previousWasNumbered = false;
 
-    nodes.forEach(node => {
-        const text = node.children[0].text;
+    nodes.forEach((node, index) => {
+        const text = Node.string(node);
+        const isHeader = node.type === 'heading' ||
+            (node.children[0]?.bold && text.endsWith(':'));
+        const isNumberedItem = text.match(/^\d+\.\s+/);
+        const isSubItem = text.match(/^(Drug Name|Dose|Route|Frequency|Duration):/);
 
-        if (node.type === 'heading') {
-            // Always ensure heading ends with a colon
-            const formattedHeader = text.endsWith(':') ? text : `${text}:`;
-            formattedText += `${formattedHeader}\n`;
-        } else if (!text.trim()) {
+        // Add extra line before headers (except first)
+        if (isHeader && index > 0) {
             formattedText += '\n';
-        } else {
-            if (node.children[0].bold) {
-                formattedText += `**${text}**\n`;
-            } else {
-                formattedText += `${text}\n`;
-            }
         }
+
+        // Add spacing after numbered items
+        if (previousWasNumbered && !isSubItem) {
+            formattedText += '\n';
+        }
+
+        // Add the text
+        formattedText += text;
+
+        // Add appropriate line breaks
+        if (isHeader) {
+            formattedText += '\n\n';
+        } else if (isNumberedItem) {
+            formattedText += '\n';
+        } else if (isSubItem) {
+            formattedText += '\n';
+        } else if (text.trim()) {
+            formattedText += '\n';
+        }
+
+        previousWasHeader = isHeader;
+        previousWasNumbered = isNumberedItem;
     });
 
     return formattedText;
@@ -280,71 +300,75 @@ const DEFAULT_DIAGNOSTIC_TESTS = '';
 const createSlateValue = (text) => {
     const paragraphs = text.split('\n');
     let isInPatientInfo = false;
+    let previousWasHeader = false;
 
-    return paragraphs.map(paragraph => {
+    return paragraphs.map((paragraph, index) => {
         const trimmedParagraph = paragraph.trim();
 
-        // Check for Patient Information section start/end
-        if (trimmedParagraph === 'Patient Information:') {
-            isInPatientInfo = true;
-        } else if (mainHeaders.some(header => trimmedParagraph === header) && isInPatientInfo) {
-            isInPatientInfo = false;
+        // Skip empty lines but preserve spacing after headers
+        if (!trimmedParagraph) {
+            return {
+                type: 'paragraph',
+                children: [{ text: '' }]
+            };
         }
 
-        // Update header detection to match PDF formatting
-        const isHeader =
-            mainHeaders.some(header =>
-                trimmedParagraph === header ||
-                trimmedParagraph === header.replace(':', '') ||
-                trimmedParagraph === 'Veterinary Medical Record' ||
-                trimmedParagraph === 'PLAN'
-            ) ||
+        // Header detection logic
+        const isHeader = mainHeaders.some(header =>
+            trimmedParagraph === header ||
+            trimmedParagraph === header.replace(':', '') ||
+            trimmedParagraph === 'Veterinary Medical Record' ||
+            trimmedParagraph === 'PLAN'
+        ) ||
             trimmedParagraph.match(/^Physical Exam Findings: - \d+ \w+ \d{4}$/) ||
             (trimmedParagraph.endsWith(':') && !trimmedParagraph.includes(' '));
 
+        // Add extra spacing before headers (except the first one)
+        if (isHeader && index > 0 && !previousWasHeader) {
+            previousWasHeader = true;
+            return [
+                {
+                    type: 'paragraph',
+                    children: [{ text: '' }]
+                },
+                {
+                    type: 'heading',
+                    children: [{ text: trimmedParagraph, bold: true }]
+                }
+            ];
+        }
+
+        previousWasHeader = isHeader;
+
+        // Rest of your existing createSlateValue logic...
         if (isHeader) {
             return {
                 type: 'heading',
-                children: [{
-                    text: trimmedParagraph,
-                    bold: true
-                }]
+                children: [{ text: trimmedParagraph, bold: true }]
             };
         }
 
-        // Handle patient info section with consistent indentation
-        if (isInPatientInfo && trimmedParagraph.includes(':')) {
-            return {
-                type: 'paragraph',
-                children: [{ text: paragraph }]
-            };
-        }
-
-        // Remove bullets and dashes from the start of lines
-        let cleanedText = paragraph;
-        if (!isInPatientInfo) {
-            cleanedText = paragraph.replace(/^[•\-]\s*/, '').trim();
-        }
-
-        // Default paragraph with consistent indentation
+        // Handle regular paragraphs
         return {
             type: 'paragraph',
-            children: [{ text: cleanedText }]
+            children: [{ text: trimmedParagraph }]
         };
-    });
+    }).flat(); // Flatten the array to handle the extra spacing elements
 };
 
+// Update the renderElement to add proper spacing
 const renderElement = props => {
     switch (props.element.type) {
         case 'heading':
             return <div {...props.attributes} style={{
                 fontWeight: 'bold',
-                marginTop: '10px',
-                marginBottom: '5px'
+                marginTop: '16px',  // Increased top margin
+                marginBottom: '8px'  // Consistent with PDF spacing
             }}>{props.children}</div>;
         default:
             return <div {...props.attributes} style={{
-                marginBottom: '3px'
+                marginBottom: '4px',  // Consistent line spacing
+                minHeight: '1.2em'    // Ensure empty lines have height
             }}>{props.children}</div>;
     }
 };
