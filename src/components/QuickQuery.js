@@ -207,7 +207,9 @@ const QuickQuery = () => {
         const saved = localStorage.getItem('quickQueryMessages');
         return saved ? JSON.parse(saved) : [];
     });
-    const [inputMessage, setInputMessage] = useState('');
+    const [inputMessage, setInputMessage] = useState(() => {
+        return localStorage.getItem('quickQueryInput') || '';
+    });
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
@@ -236,6 +238,10 @@ const QuickQuery = () => {
     useEffect(() => {
         localStorage.setItem('quickQueryMessages', JSON.stringify(messages));
     }, [messages]);
+
+    useEffect(() => {
+        localStorage.setItem('quickQueryInput', inputMessage);
+    }, [inputMessage]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -267,9 +273,10 @@ const QuickQuery = () => {
         e.preventDefault();
         if (!inputMessage.trim() || isLoading) return;
 
-        const userMessage = inputMessage.trim();
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        const newMessage = { role: 'user', content: inputMessage.trim() };
+        setMessages(prev => [...prev, newMessage]);
         setInputMessage('');
+        localStorage.removeItem('quickQueryInput');
         setIsLoading(true);
 
         try {
@@ -356,6 +363,8 @@ For less common cases, provide:
 
 ### FINAL TOUCHES:
 - Always end responses with a clear **Recommendation** section summarizing the next steps.
+- Always allow any language translations.
+- always allow client handouts or client comminications.
 
 - ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}
 - Provide **specific and concise information** for maximum clarity and usability.
@@ -387,10 +396,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 `
                 },
                 ...messages.slice(-5),
-                {
-                    role: 'user',
-                    content: userMessage
-                }
+                newMessage
             ];
 
             const response = await axios.post(
@@ -398,7 +404,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 {
                     model: 'gpt-4o-mini',
                     messages: conversationHistory,
-                    max_tokens: 500,
+                    max_tokens: 1000,
                     temperature: 0.7,
                     top_p: 0.9,
                     frequency_penalty: 0.5,
@@ -443,17 +449,21 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     };
 
     const handleCopy = async (text, index) => {
-        // Trim each line for the plain text version
-        const trimmedText = text.split('\n')
+        // Format the text by removing markdown
+        const formattedText = text
+            .replace(/###\s*(.*?)(?:\n|$)/g, '$1')  // Remove ### markers
+            .replace(/\*\*(.*?)\*\*/g, '$1')  // Remove ** markers
+            .split('\n')
             .map(line => line.trim())
             .join('\n');
 
         try {
+            // Create HTML content with proper formatting
             const formattedHtml = formatMessage(text);
 
             const clipboardItem = new ClipboardItem({
                 'text/html': new Blob([`<div style="font-family: Arial, sans-serif; line-height: 1.5; color: black; white-space: pre-wrap; padding: 0; margin: 0;">${formattedHtml}</div>`], { type: 'text/html' }),
-                'text/plain': new Blob([trimmedText], { type: 'text/plain' })
+                'text/plain': new Blob([formattedText], { type: 'text/plain' })
             });
 
             await navigator.clipboard.write([clipboardItem]);
@@ -461,7 +471,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             setTimeout(() => setCopiedIndex(null), 2000);
         } catch (err) {
             try {
-                await navigator.clipboard.writeText(trimmedText);
+                await navigator.clipboard.writeText(formattedText);
             } catch {
                 await navigator.clipboard.writeText(text);
             }
@@ -739,14 +749,56 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSubmit} className="qq-input-form">
-                    <input
-                        type="text"
-                        value={inputMessage}
-                        onChange={(e) => setInputMessage(e.target.value)}
-                        placeholder="What would you like to know?"
-                        className="qq-message-input"
-                        disabled={isLoading}
-                    />
+                    <div className="qq-input-wrapper">
+                        <div className="qq-input-container">
+                            <textarea
+                                value={inputMessage}
+                                onChange={(e) => {
+                                    setInputMessage(e.target.value);
+                                    if (!e.target.value.trim()) {
+                                        e.target.style.height = '56px';
+                                    } else {
+                                        e.target.style.height = '56px';
+                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
+                                    }
+                                }}
+                                onClick={(e) => {
+                                    if (inputMessage.trim()) {
+                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
+                                    }
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (inputMessage.trim() && !isLoading) {
+                                            e.target.style.height = '56px';
+                                            handleSubmit(e);
+                                        }
+                                    }
+                                }}
+                                placeholder="What would you like to know?"
+                                className="qq-message-input"
+                                disabled={isLoading}
+                                rows="1"
+                            />
+                            {inputMessage && (
+                                <button
+                                    type="button"
+                                    className="qq-collapse-button"
+                                    onClick={() => {
+                                        const textarea = document.querySelector('.qq-message-input');
+                                        textarea.style.height = '56px';
+                                    }}
+                                    aria-label="Collapse input"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                            )}
+                        </div>
+                    </div>
                     <button
                         type="submit"
                         className="qq-send-button"
@@ -763,6 +815,15 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
                         </svg>
                     </button>
+                    {messages.length > 0 && (
+                        <button
+                            onClick={handleClear}
+                            type="button"
+                            className="qq-clear-button qq-clear-button-input"
+                        >
+                            Clear Chat
+                        </button>
+                    )}
                 </form>
             </div>
         </div>

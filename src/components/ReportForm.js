@@ -1041,9 +1041,22 @@ const ReportForm = () => {
         setPatientVisitSummary('');
         setNotes('');
 
-        // Clear localStorage except for enabledFields
+        // Clear only ReportForm-related localStorage items
+        const reportFormKeys = [
+            'patientName', 'species', 'sex', 'breed', 'colorMarkings',
+            'weight', 'weightUnit', 'age', 'doctor', 'presentingComplaint',
+            'history', 'physicalExamFindings', 'diagnosticTests', 'assessment',
+            'diagnosis', 'differentialDiagnosis', 'treatment', 'naturopathicMedicine',
+            'clientCommunications', 'planFollowUp', 'reportText', 'previewVisible',
+            'patientVisitSummary', 'notes', 'currentReportId', 'currentReportText',
+            'form_data'
+        ];
+
+        // Save enabled fields before clearing
         const savedEnabledFields = localStorage.getItem('enabledFields');
-        localStorage.clear();
+
+        // Clear only ReportForm items
+        reportFormKeys.forEach(key => localStorage.removeItem(key));
 
         // Restore default templates and current date
         localStorage.setItem('physicalExamFindings', customTemplate || PETWISE_DEFAULT_PHYSICAL_EXAM);
@@ -1055,7 +1068,7 @@ const ReportForm = () => {
             localStorage.setItem('enabledFields', savedEnabledFields);
         }
 
-        // Reset textarea heights to initial size
+        // Reset textarea heights
         document.querySelectorAll('textarea').forEach(textarea => {
             if (!textarea.classList.contains('physical-exam-input')) {
                 textarea.style.height = ''; // Remove inline height to revert to CSS default
