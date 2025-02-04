@@ -724,7 +724,9 @@ const ReportForm = () => {
 
             const inputs = {
                 patientName, species, sex, breed, colorMarkings, weight, weightUnit, age,
-                ownerName, address, telephone, examDate: examDate, doctor, presentingComplaint, history,
+                ownerName, address, telephone, examDate: examDate,
+                doctor: userData?.dvm_name || '',
+                presentingComplaint, history,
                 physicalExamFindings, diagnosticTests, assessment, diagnosis,
                 differentialDiagnosis, treatment, clientCommunications, planFollowUp,
                 naturopathicMedicine, patientVisitSummary, notes
@@ -914,6 +916,17 @@ const ReportForm = () => {
         if (savedEnabledFields) {
             localStorage.setItem('enabledFields', savedEnabledFields);
         }
+
+        // Reset textarea heights to initial size
+        document.querySelectorAll('textarea').forEach(textarea => {
+            if (!textarea.classList.contains('physical-exam-input')) {
+                textarea.style.height = ''; // Remove inline height to revert to CSS default
+                const fieldName = textarea.getAttribute('name');
+                if (fieldName) {
+                    localStorage.removeItem(`${fieldName}_height`);
+                }
+            }
+        });
     };
 
     const handleBreedChange = (e) => {
@@ -976,16 +989,39 @@ const ReportForm = () => {
         });
     };
 
-    // Update the onChange handlers to also update localStorage immediately
+    // Modify handleInputChange to include the grow functionality
     const handleInputChange = (e, fieldName, setter) => {
         const value = e.target.value;
         setter(value);
-        localStorage.setItem(fieldName, value); // Update localStorage immediately
+        localStorage.setItem(fieldName, value);
 
-        // If field is cleared, remove from localStorage
+        if (e.target.tagName.toLowerCase() === 'textarea') {
+            handleTextareaGrow(e, fieldName);
+        }
+
         if (!value.trim()) {
             localStorage.removeItem(fieldName);
+            localStorage.removeItem(`${fieldName}_height`);
         }
+    };
+
+    // Add this function near your other handlers
+    const handleTextareaGrow = (e, fieldName) => {
+        if (fieldName === 'physicalExamFindings') return; // Skip for physical exam
+
+        const textarea = e.target;
+        const lineHeight = 20; // Height per line in pixels
+        const minHeight = 100; // Default minimum height
+
+        // Count number of newlines
+        const lines = textarea.value.split('\n').length;
+        const newHeight = Math.max(minHeight, lines * lineHeight);
+
+        // Store the height in localStorage
+        localStorage.setItem(`${fieldName}_height`, newHeight);
+
+        // Apply the height
+        textarea.style.height = `${newHeight}px`;
     };
 
     // Add new state with the other state declarations
@@ -1169,8 +1205,7 @@ const ReportForm = () => {
 
             if (!error && data) {
                 setUserData(data);
-                setDoctor(data.dvm_name);
-                // Only set custom template, don't update physicalExamFindings
+                setDoctor(`Dr. ${data.dvm_name}`);
                 if (data.custom_physical_exam_template) {
                     setCustomTemplate(data.custom_physical_exam_template);
                 }
@@ -1245,6 +1280,21 @@ const ReportForm = () => {
 
     // Add near your other state declarations at the top of ReportForm component
     const [customTemplate, setCustomTemplate] = useState(null);
+
+    // Update useEffect to restore heights on component mount
+    useEffect(() => {
+        // Restore heights for all textareas except physical exam
+        const textareas = document.querySelectorAll('textarea:not(.physical-exam-input)');
+        textareas.forEach(textarea => {
+            const fieldName = textarea.getAttribute('name');
+            if (fieldName) {
+                const savedHeight = localStorage.getItem(`${fieldName}_height`);
+                if (savedHeight) {
+                    textarea.style.height = `${savedHeight}px`;
+                }
+            }
+        });
+    }, [patientInfoSubmitted]); // Add patientInfoSubmitted as dependency
 
     return (
         <div className="report-container">
@@ -1397,6 +1447,7 @@ const ReportForm = () => {
                         <label className="form-label">Presenting Complaint:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="presentingComplaint"
                                 className={`form-input ${!enabledFields.presentingComplaint ? 'disabled' : ''}`}
                                 value={presentingComplaint}
                                 onChange={(e) => handleInputChange(e, 'presentingComplaint', setPresentingComplaint)}
@@ -1415,6 +1466,7 @@ const ReportForm = () => {
                         <label className="form-label">History:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="history"
                                 className={`form-input ${!enabledFields.history ? 'disabled' : ''}`}
                                 value={history}
                                 onChange={(e) => handleInputChange(e, 'history', setHistory)}
@@ -1466,6 +1518,7 @@ const ReportForm = () => {
                         <label className="form-label">Diagnostic Tests:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="diagnosticTests"
                                 className={`form-input diagnostic-tests-input ${!enabledFields.diagnosticTests ? 'disabled' : ''}`}
                                 value={diagnosticTests}
                                 onChange={(e) => handleInputChange(e, 'diagnosticTests', setDiagnosticTests)}
@@ -1484,6 +1537,7 @@ const ReportForm = () => {
                         <label className="form-label">Assessment:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="assessment"
                                 className={`form-input ${!enabledFields.assessment ? 'disabled' : ''}`}
                                 value={assessment}
                                 onChange={(e) => handleInputChange(e, 'assessment', setAssessment)}
@@ -1502,6 +1556,7 @@ const ReportForm = () => {
                         <label className="form-label">Diagnosis:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="diagnosis"
                                 className={`form-input ${!enabledFields.diagnosis ? 'disabled' : ''}`}
                                 value={diagnosis}
                                 onChange={(e) => handleInputChange(e, 'diagnosis', setDiagnosis)}
@@ -1520,6 +1575,7 @@ const ReportForm = () => {
                         <label className="form-label">Differential Diagnosis:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="differentialDiagnosis"
                                 className={`form-input ${!enabledFields.differentialDiagnosis ? 'disabled' : ''}`}
                                 value={differentialDiagnosis}
                                 onChange={(e) => handleInputChange(e, 'differentialDiagnosis', setDifferentialDiagnosis)}
@@ -1538,6 +1594,7 @@ const ReportForm = () => {
                         <label className="form-label">Treatment:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="treatment"
                                 className={`form-input ${!enabledFields.treatment ? 'disabled' : ''}`}
                                 value={treatment}
                                 onChange={(e) => handleInputChange(e, 'treatment', setTreatment)}
@@ -1556,6 +1613,7 @@ const ReportForm = () => {
                         <label className="form-label">Naturopathic Medicine:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="naturopathicMedicine"
                                 className={`form-input ${!enabledFields.naturopathicMedicine ? 'disabled' : ''}`}
                                 value={naturopathicMedicine}
                                 onChange={(e) => handleInputChange(e, 'naturopathicMedicine', setNaturopathicMedicine)}
@@ -1574,6 +1632,7 @@ const ReportForm = () => {
                         <label className="form-label">Client Communications:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="clientCommunications"
                                 className={`form-input ${!enabledFields.clientCommunications ? 'disabled' : ''}`}
                                 value={clientCommunications}
                                 onChange={(e) => handleInputChange(e, 'clientCommunications', setClientCommunications)}
@@ -1592,6 +1651,7 @@ const ReportForm = () => {
                         <label className="form-label">Follow-up:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="planFollowUp"
                                 className={`form-input ${!enabledFields.planFollowUp ? 'disabled' : ''}`}
                                 value={planFollowUp}
                                 onChange={(e) => handleInputChange(e, 'planFollowUp', setPlanFollowUp)}
@@ -1610,6 +1670,7 @@ const ReportForm = () => {
                         <label className="form-label">Patient Visit Summary:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="patientVisitSummary"
                                 className={`form-input ${!enabledFields.patientVisitSummary ? 'disabled' : ''}`}
                                 value={patientVisitSummary}
                                 onChange={(e) => handleInputChange(e, 'patientVisitSummary', setPatientVisitSummary)}
@@ -1628,6 +1689,7 @@ const ReportForm = () => {
                         <label className="form-label">Notes:</label>
                         <div className="input-toggle-wrapper">
                             <textarea
+                                name="notes"
                                 className={`form-input ${!enabledFields.notes ? 'disabled' : ''}`}
                                 value={notes}
                                 onChange={(e) => handleInputChange(e, 'notes', setNotes)}

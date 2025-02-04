@@ -1,0 +1,434 @@
+.templates {
+    padding: 16px 24px;
+    height: calc(100vh - 100px);
+    display: flex;
+    flex-direction: column;
+    background: #f8f9fa;
+}
+
+.templates-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.create-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.create-button:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.search-container {
+    padding: 16px 16px 12px;
+    background: #fff;
+    border-bottom: 1px solid #dadce0;
+    margin-bottom: 12px;
+}
+
+.search-input {
+    width: 100%;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 14px;
+    padding: 10px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    color: #202124;
+    background: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    background: #fff;
+    border-color: #1a73e8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.templates-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    height: calc(100% - 120px);
+    overflow: hidden;
+}
+
+.templates-list {
+    overflow-y: auto;
+    border-right: 1px solid #ddd;
+    padding-right: 20px;
+}
+
+.template-item {
+    background: #fff;
+    border-radius: 0;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.template-item:hover {
+    background: #f1f3f4;
+    border-color: #dadce0;
+}
+
+.template-item.selected {
+    background: #e8f0fe;
+    border-color: #1a73e8;
+}
+
+.template-item .template-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    opacity: 1;
+}
+
+.edit-button,
+.delete-button {
+    background: transparent;
+    color: #5f6368;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    cursor: pointer;
+}
+
+.edit-button:hover {
+    background: rgba(58, 130, 224, 0.1);
+    color: #1a73e8;
+}
+
+.delete-button:hover {
+    background: rgba(234, 67, 53, 0.1);
+    color: #ea4335;
+}
+
+.template-content {
+    overflow-y: auto;
+    height: 100%;
+}
+
+.editing-container {
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.editing-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 80px;
+    /* Space for buttons */
+}
+
+.editing-actions {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: calc(100% - 320px);
+    padding: 16px;
+    background-color: white;
+    /* border-top: 1px solid #dadce0; */
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    z-index: 100;
+    /* box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08); */
+}
+
+.editing-actions button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.editing-actions button:first-child {
+    background: #4485d9;
+    color: white;
+}
+
+.editing-actions button:first-child:hover {
+    background: #4074b8;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.editing-actions button:last-child {
+    background: #5f6368;
+    color: white;
+}
+
+.editing-actions button:last-child:hover {
+    background: #202124;
+    box-shadow: 0 2px 6px rgba(95, 99, 104, 0.3);
+    transform: translateY(-1px);
+}
+
+.template-name-input {
+    padding: 10px 16px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 14px;
+    color: #202124;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+.template-text-input {
+    flex: 1;
+    padding: 16px;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    resize: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #202124;
+    background: #fff;
+    white-space: pre-wrap;
+    min-height: 0;
+    /* Remove fixed height */
+    height: auto;
+    /* Let it flex */
+}
+
+.template-view {
+    height: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.template-text {
+    flex: 1;
+    white-space: pre-wrap;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    padding: 16px;
+    background-color: #fff;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    margin-top: 16px;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #202124;
+}
+
+.template-text h3 {
+    font-weight: bold;
+    font-size: 1.1em;
+    margin: 1em 0 0.2em;
+    color: #2c3e50;
+}
+
+.template-text strong {
+    font-weight: 500;
+    color: #202124;
+}
+
+.template-text p {
+    margin: 8px 0;
+}
+
+.no-selection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #666;
+}
+
+.error-message {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #ff4444;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.action-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.action-button:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.template-name-input:focus,
+.template-text-input:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.template-view-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    background: #4fa6e8;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.template-view-button:hover {
+    background: #4299cf;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Update template actions container */
+.template-view .template-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-top: 16px;
+}
+
+/* Update edit button in view mode */
+.template-view .edit-button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    width: auto;
+    height: auto;
+    min-width: auto;
+    margin-left: 0;
+}
+
+.template-view .edit-button:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Style save and cancel buttons */
+.template-view .template-actions button {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Save button */
+.template-view .template-actions button:first-child {
+    background: #1a73e8;
+    color: white;
+}
+
+.template-view .template-actions button:first-child:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Cancel button */
+.template-view .template-actions button:nth-child(2) {
+    background: #5f6368;
+    color: white;
+}
+
+.template-view .template-actions button:nth-child(2):hover {
+    background: #202124;
+    box-shadow: 0 2px 6px rgba(95, 99, 104, 0.3);
+    transform: translateY(-1px);
+}
+
+.template-content h3 {
+    margin: 1em 0 0.5em;
+    font-size: 1.1em;
+    color: #202124;
+    font-weight: bold;
+}
+
+.template-content strong {
+    font-weight: bold;
+    color: #202124;
+}
+
+/* Style for numbered lists */
+.template-content div[data-type="numbered-list"] {
+    padding-left: 20px;
+    position: relative;
+}
+
+/* Style for bullet points */
+.template-content div[data-type="bulleted-list"] {
+    padding-left: 20px;
+    position: relative;
+}
+
+.template-content div[data-type="bulleted-list"]::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+}

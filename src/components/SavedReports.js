@@ -346,6 +346,10 @@ const SavedReports = () => {
     };
 
     const handleDeleteReport = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+            return;
+        }
+
         try {
             const { error } = await supabase
                 .from('saved_reports')

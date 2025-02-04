@@ -588,6 +588,17 @@ app.post('/delete-account', async (req, res) => {
             throw userError;
         }
 
+        // Delete templates first
+        const { error: templateError } = await supabase
+            .from('templates')
+            .delete()
+            .eq('user_id', userData.id);
+
+        if (templateError) {
+            console.error('Template deletion error:', templateError);
+            throw templateError;
+        }
+
         // Delete user data from Supabase with explicit response checking
         const { data: deleteData, error: deleteError } = await supabase
             .from('users')

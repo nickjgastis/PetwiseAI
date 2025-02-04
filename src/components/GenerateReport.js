@@ -49,7 +49,7 @@ const GenerateReport = async (inputs, enabledFields) => {
   Age: ${inputs.age || "Provide here"}  
 
   Staff:
-  Doctor: Dr. ${inputs.doctor ? inputs.doctor.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ') : "Provide here"}  
+  Doctor: Dr. ${inputs.doctor?.replace(/^Dr\.\s*/, '') || "Provide here"}  
   ${getEnabledContent('examDate', inputs.examDate) !== null ? `Exam Date: ${getEnabledContent('examDate', inputs.examDate) || "Provide here"}` : ''}  
   
   ${getEnabledContent('presentingComplaint', inputs.presentingComplaint) !== null ? `

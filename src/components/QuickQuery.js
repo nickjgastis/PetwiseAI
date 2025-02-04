@@ -10,19 +10,20 @@ const API_URL = process.env.NODE_ENV === 'production'
     : 'http://localhost:3001';
 
 const formatMessage = (content) => {
-    return content
-        // Convert ### headers to bold without the ###
+    // Split into lines and find first non-empty line
+    const lines = content.split('\n');
+    const firstNonEmptyLineIndex = lines.findIndex(line => line.trim().length > 0);
+
+    // Handle title line separately
+    if (firstNonEmptyLineIndex !== -1) {
+        const titleLine = lines[firstNonEmptyLineIndex].trim();
+        lines[firstNonEmptyLineIndex] = titleLine;
+    }
+
+    // Rejoin and apply formatting
+    return lines.join('\n')
         .replace(/###\s*(.*?)(?:\n|$)/g, '<h3><strong>$1</strong></h3>')
-        // Regular bold text
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // Headers with ###
-    // .replace(/###\s*(.*?)\n/g, '<h3>$1</h3>')
-    // Horizontal rules
-    // .replace(/---/g, '<hr/>')
-    // Wrap list items in a div for better styling
-    // .replace(/^\s*(\d+)\.\s+(.*)$/gm, '<li><span class="number">$1.</span><div>$2</div></li>')
-    // Preserve line breaks
-    // .replace(/\n/g, '<br/>');
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 };
 
 const formatMessageForPDF = (content) => {
@@ -442,9 +443,31 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     };
 
     const handleCopy = async (text, index) => {
-        await navigator.clipboard.writeText(text);
-        setCopiedIndex(index);
-        setTimeout(() => setCopiedIndex(null), 2000);
+        // Trim each line for the plain text version
+        const trimmedText = text.split('\n')
+            .map(line => line.trim())
+            .join('\n');
+
+        try {
+            const formattedHtml = formatMessage(text);
+
+            const clipboardItem = new ClipboardItem({
+                'text/html': new Blob([`<div style="font-family: Arial, sans-serif; line-height: 1.5; color: black; white-space: pre-wrap; padding: 0; margin: 0;">${formattedHtml}</div>`], { type: 'text/html' }),
+                'text/plain': new Blob([trimmedText], { type: 'text/plain' })
+            });
+
+            await navigator.clipboard.write([clipboardItem]);
+            setCopiedIndex(index);
+            setTimeout(() => setCopiedIndex(null), 2000);
+        } catch (err) {
+            try {
+                await navigator.clipboard.writeText(trimmedText);
+            } catch {
+                await navigator.clipboard.writeText(text);
+            }
+            setCopiedIndex(index);
+            setTimeout(() => setCopiedIndex(null), 2000);
+        }
     };
 
     const handlePrint = async (content) => {

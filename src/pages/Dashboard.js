@@ -9,9 +9,10 @@ import TermsOfService from '../components/TermsOfService';
 import QuickQuery from '../components/QuickQuery';
 import Help from '../components/Help';
 import Welcome from '../components/Welcome';
+import Templates from '../components/Templates';
 import '../styles/Dashboard.css';
 import { supabase } from '../supabaseClient';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard } from 'react-icons/fa';
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -226,12 +227,20 @@ const Dashboard = () => {
                                 </Link>
                             </li>
                             {userData?.stripe_customer_id && (
-                                <li className="sidebar-item">
-                                    <Link to="/dashboard/saved-reports" data-tooltip="Saved Reports">
-                                        <FaSave className="sidebar-icon" />
-                                        <span className="sidebar-text">Saved Records</span>
-                                    </Link>
-                                </li>
+                                <>
+                                    <li className="sidebar-item">
+                                        <Link to="/dashboard/saved-reports" data-tooltip="Saved Reports">
+                                            <FaSave className="sidebar-icon" />
+                                            <span className="sidebar-text">Saved Records</span>
+                                        </Link>
+                                    </li>
+                                    <li className="sidebar-item">
+                                        <Link to="/dashboard/templates" data-tooltip="My Templates">
+                                            <FaClipboard className="sidebar-icon" />
+                                            <span className="sidebar-text">My Templates</span>
+                                        </Link>
+                                    </li>
+                                </>
                             )}
                         </>
                     )}
@@ -296,6 +305,14 @@ const Dashboard = () => {
                         element={
                             (isSubscribed && userData?.stripe_customer_id) ?
                                 <SavedReports /> :
+                                <Navigate to="/dashboard/profile" replace />
+                        }
+                    />
+                    <Route
+                        path="templates"
+                        element={
+                            (isSubscribed && userData?.stripe_customer_id) ?
+                                <Templates /> :
                                 <Navigate to="/dashboard/profile" replace />
                         }
                     />
