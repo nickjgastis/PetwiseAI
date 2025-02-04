@@ -72,7 +72,6 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    opacity: 1;
 }
 
 .report-item:hover .button-group {
@@ -96,8 +95,9 @@
     background: #fff;
     padding: 16px 24px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
     border-bottom: 1px solid #dadce0;
     z-index: 1;
 }
@@ -154,6 +154,7 @@
     font-weight: 500;
     margin: 0;
     color: #202124;
+    width: 100%;
 }
 
 button {
@@ -168,10 +169,30 @@ button {
 .edit-button {
     background: #1a73e8;
     color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
 }
 
 .edit-button:hover {
     background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.edit-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .delete-button {
@@ -356,4 +377,212 @@ button {
     100% {
         transform: rotate(360deg);
     }
+}
+
+.load-button {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    display: inline-flex;
+    align-items: center;
+    margin-right: 8px;
+}
+
+.load-button:hover {
+    background-color: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.load-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Update button group spacing */
+.button-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Ensure consistent button heights */
+.button-group button {
+    height: 36px;
+}
+
+/* Style the FaEdit icon */
+.edit-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Update the report item edit button */
+.report-item .edit-button {
+    background: transparent;
+    color: #5f6368;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    transition: all 0.2s ease;
+    margin-left: 8px;
+    box-shadow: none;
+}
+
+.report-item .edit-button:hover {
+    background: rgba(95, 99, 104, 0.1);
+    color: #202124;
+    transform: none;
+    box-shadow: none;
+}
+
+.report-item .edit-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Update the report card edit button */
+.report-card .edit-button {
+    background: #1a73e8;
+    color: white;
+    padding: 8px 16px;
+    /* standard padding */
+    min-width: 80px;
+    /* half the previous width */
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+}
+
+.report-card .edit-button:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+.report-card .edit-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Common styles for main action buttons in report card */
+.report-card .load-button,
+.report-card .edit-button,
+.report-card .print-button,
+.report-card .pdf-button {
+    background: #1a73e8;
+    color: white;
+    padding: 8px 16px;
+    height: 36px;
+    min-width: 80px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+/* Hover state for report card buttons */
+.report-card .load-button:hover,
+.report-card .edit-button:hover,
+.report-card .print-button:hover,
+.report-card .pdf-button:hover {
+    background: #1557b0;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.3);
+    transform: translateY(-1px);
+}
+
+/* Active state for report card buttons */
+.report-card .load-button:active,
+.report-card .edit-button:active,
+.report-card .print-button:active,
+.report-card .pdf-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Keep existing styles for report list buttons */
+.report-item .edit-button,
+.report-item .delete-button,
+.report-item .close-button {
+    background: transparent;
+    color: #5f6368;
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    border-radius: 4px;
+}
+
+/* Update report card header layout for opened reports */
+.report-card .report-card-header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 1px solid #dadce0;
+    z-index: 1;
+}
+
+.report-card .report-card-header h3 {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    color: #202124;
+    width: 100%;
+}
+
+/* Keep report list items horizontal */
+.report-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+}
+
+.report-item .button-group {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Common styles for main action buttons in report card */
+.report-card .button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
 }

@@ -403,10 +403,19 @@ const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
 
+    const formDataString = localStorage.getItem('form_data');
+    const formData = formDataString ? JSON.parse(formDataString) : null;
+
     // Patient Info State
-    const [patientName, setPatientName] = useState(() => localStorage.getItem('patientName') || '');
-    const [species, setSpecies] = useState(() => localStorage.getItem('species') || '');
-    const [sex, setSex] = useState(() => localStorage.getItem('sex') || '');
+    const [patientName, setPatientName] = useState(() =>
+        formData?.patientName || localStorage.getItem('patientName') || ''
+    );
+    const [species, setSpecies] = useState(() =>
+        formData?.species || localStorage.getItem('species') || ''
+    );
+    const [sex, setSex] = useState(() =>
+        formData?.sex || localStorage.getItem('sex') || ''
+    );
     const [breed, setBreed] = useState(() => localStorage.getItem('breed') || '');
     const [colorMarkings, setColorMarkings] = useState(() => localStorage.getItem('colorMarkings') || '');
     const [weight, setWeight] = useState(() => localStorage.getItem('weight') || '');
@@ -418,14 +427,10 @@ const ReportForm = () => {
 
     // Exam Info State
     const [examDate, setExamDate] = useState(() => {
-        // First try to get from localStorage
+        if (formData?.examDate) return formData.examDate;
         const savedDate = localStorage.getItem('examDate');
         if (savedDate) return savedDate;
-
-        // If no saved date, use current date formatted as YYYY-MM-DD
-        const today = new Date();
-        const formattedDate = today.toISOString().split('T')[0];
-        return formattedDate;
+        return new Date().toISOString().split('T')[0];
     });
     const [doctor, setDoctor] = useState(() => localStorage.getItem('doctor') || '');
     const [presentingComplaint, setPresentingComplaint] = useState(() => localStorage.getItem('presentingComplaint') || '');
@@ -548,6 +553,7 @@ const ReportForm = () => {
 
     // Add near other state declarations
     const [enabledFields, setEnabledFields] = useState(() => {
+        if (formData?.enabledFields) return formData.enabledFields;
         const savedFields = localStorage.getItem('enabledFields');
         // Always default to all fields enabled
         const defaultFields = {
@@ -654,26 +660,104 @@ const ReportForm = () => {
     }, [user]);
 
     useEffect(() => {
-        // Load all saved form fields from localStorage
-        const savedReportText = localStorage.getItem('currentReportText');
-        const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
+        // First check if we have form_data
+        const formDataString = localStorage.getItem('form_data');
+        if (formDataString) {
+            const formData = JSON.parse(formDataString);
 
-        // Only set the report text if it exists in localStorage
-        if (savedReportText) {
-            setReportText(savedReportText);
+            // Load all fields from form_data
+            setPatientName(formData.patientName || '');
+            setSpecies(formData.species || '');
+            setSex(formData.sex || '');
+            setBreed(formData.breed || '');
+            setColorMarkings(formData.colorMarkings || '');
+            setWeight(formData.weight || '');
+            setWeightUnit(formData.weightUnit || 'lbs');
+            setAge(formData.age || '');
+            setOwnerName(formData.ownerName || '');
+            setAddress(formData.address || '');
+            setTelephone(formData.telephone || '');
+            setExamDate(formData.examDate || new Date().toISOString().split('T')[0]);
+            setDoctor(formData.doctor || '');
+            setPresentingComplaint(formData.presentingComplaint || '');
+            setHistory(formData.history || '');
+            setPhysicalExamFindings(formData.physicalExamFindings || PETWISE_DEFAULT_PHYSICAL_EXAM);
+            setDiagnosticTests(formData.diagnosticTests || DEFAULT_DIAGNOSTIC_TESTS);
+            setAssessment(formData.assessment || '');
+            setDiagnosis(formData.diagnosis || '');
+            setDifferentialDiagnosis(formData.differentialDiagnosis || '');
+            setTreatment(formData.treatment || '');
+            setNaturopathicMedicine(formData.naturopathicMedicine || '');
+            setClientCommunications(formData.clientCommunications || '');
+            setPlanFollowUp(formData.planFollowUp || '');
+            setPatientVisitSummary(formData.patientVisitSummary || '');
+            setNotes(formData.notes || '');
+
+            // Also set individual localStorage items for compatibility
+            Object.entries(formData).forEach(([key, value]) => {
+                if (value) localStorage.setItem(key, value);
+            });
+
+            if (formData.enabledFields) {
+                setEnabledFields(formData.enabledFields);
+                localStorage.setItem('enabledFields', JSON.stringify(formData.enabledFields));
+            }
+
+            if (formData.patientName) {
+                setPatientInfoSubmitted(true);
+            }
+
+            // Trigger textarea growth for each field with content
+            setTimeout(() => {
+                const textareas = document.querySelectorAll('textarea:not(.physical-exam-input)');
+                textareas.forEach(textarea => {
+                    const fieldName = textarea.getAttribute('name');
+                    if (fieldName && formData[fieldName]) {
+                        const event = { target: textarea };
+                        handleTextareaGrow(event, fieldName);
+                    }
+                });
+            }, 0);
+        } else {
+            // Fall back to individual localStorage items
+            // ... your existing localStorage loading code ...
+            const savedReportText = localStorage.getItem('currentReportText');
+            const savedPreviewVisible = localStorage.getItem('previewVisible') === 'true';
+
+            if (savedReportText) {
+                setReportText(savedReportText);
+                setSlateValue(deserializeSlateValue(savedReportText));
+            }
+
+            setPreviewVisible(savedPreviewVisible);
+
+            setPatientName(localStorage.getItem('patientName') || '');
+            setSpecies(localStorage.getItem('species') || '');
+            setSex(localStorage.getItem('sex') || '');
+            setBreed(localStorage.getItem('breed') || '');
+            setColorMarkings(localStorage.getItem('colorMarkings') || '');
+            setWeight(localStorage.getItem('weight') || '');
+            setWeightUnit(localStorage.getItem('weightUnit') || 'lbs');
+            setAge(localStorage.getItem('age') || '');
+            setOwnerName(localStorage.getItem('ownerName') || '');
+            setAddress(localStorage.getItem('address') || '');
+            setTelephone(localStorage.getItem('telephone') || '');
+            setExamDate(localStorage.getItem('examDate') || new Date().toISOString().split('T')[0]);
+            setDoctor(localStorage.getItem('doctor') || '');
+            setPresentingComplaint(localStorage.getItem('presentingComplaint') || '');
+            setHistory(localStorage.getItem('history') || '');
+            setPhysicalExamFindings(localStorage.getItem('physicalExamFindings') || PETWISE_DEFAULT_PHYSICAL_EXAM);
+            setDiagnosticTests(localStorage.getItem('diagnosticTests') || DEFAULT_DIAGNOSTIC_TESTS);
+            setAssessment(localStorage.getItem('assessment') || '');
+            setDiagnosis(localStorage.getItem('diagnosis') || '');
+            setDifferentialDiagnosis(localStorage.getItem('differentialDiagnosis') || '');
+            setTreatment(localStorage.getItem('treatment') || '');
+            setNaturopathicMedicine(localStorage.getItem('naturopathicMedicine') || '');
+            setClientCommunications(localStorage.getItem('clientCommunications') || '');
+            setPlanFollowUp(localStorage.getItem('planFollowUp') || '');
+            setPatientVisitSummary(localStorage.getItem('patientVisitSummary') || '');
+            setNotes(localStorage.getItem('notes') || '');
         }
-
-        setPreviewVisible(savedPreviewVisible);
-
-        // Load other form fields...
-        const savedPatientName = localStorage.getItem('patientName');
-        const savedAge = localStorage.getItem('age');
-        const savedDoctor = localStorage.getItem('doctor');
-        // ... etc
-
-        if (savedPatientName) setPatientName(savedPatientName);
-        if (savedAge) setAge(savedAge);
-        if (savedDoctor) setDoctor(savedDoctor);
     }, []); // Empty dependency array means this runs once on mount
 
     useEffect(() => {
@@ -769,39 +853,81 @@ const ReportForm = () => {
         saveBtn.textContent = 'Saving...';
 
         try {
-            // Get user's UUID from users table using auth0_user_id directly
             const { data: userData, error: userError } = await supabase
                 .from('users')
                 .select('id')
                 .eq('auth0_user_id', user.sub)
                 .single();
 
-            if (userError || !userData) {
-                // console.error("Error fetching user:", userError);
-                throw new Error("User not found in Supabase.");
-            }
+            if (userError || !userData) throw new Error("User not found in Supabase.");
 
-            const userId = userData.id; // This is the user's internal ID
-            // console.log("User ID fetched:", userId); // Log user ID
+            const formData = {
+                patientName,
+                species,
+                sex,
+                breed,
+                colorMarkings,
+                weight,
+                weightUnit,
+                age,
+                ownerName,
+                address,
+                telephone,
+                examDate,
+                doctor,
+                presentingComplaint,
+                history,
+                physicalExamFindings,
+                diagnosticTests,
+                assessment,
+                diagnosis,
+                differentialDiagnosis,
+                treatment,
+                naturopathicMedicine,
+                clientCommunications,
+                planFollowUp,
+                patientVisitSummary,
+                notes,
+                enabledFields
+            };
 
-            // console.log(userId)
-            // Save report with user's UUID
-            const { data, error: insertError } = await supabase
-                .from('saved_reports')
-                .insert([{
-                    user_id: userId, // Ensure this matches the policy check
-                    report_name: `${patientName} - ${new Date().toLocaleString()}` || `Report ${new Date().toLocaleString()}`,
-                    report_text: reportText
-                }]);
+            // Check if we're working on a loaded report
+            const loadedReportId = localStorage.getItem('currentReportId');
 
-            if (insertError) {
-                console.error("Insert error:", insertError); // Log error details
-                throw insertError;
+            if (loadedReportId) {
+                // Update existing report
+                const { error: updateError } = await supabase
+                    .from('saved_reports')
+                    .update({
+                        report_name: `${patientName} - ${new Date().toLocaleString()}`,
+                        report_text: reportText,
+                        form_data: formData
+                    })
+                    .eq('id', loadedReportId)
+                    .eq('user_id', userData.id);
+
+                if (updateError) throw updateError;
+            } else {
+                // Create new report
+                const { data: newReport, error: insertError } = await supabase
+                    .from('saved_reports')
+                    .insert([{
+                        user_id: userData.id,
+                        report_name: `${patientName} - ${new Date().toLocaleString()}`,
+                        report_text: reportText,
+                        form_data: formData
+                    }])
+                    .select()
+                    .single();
+
+                if (insertError) throw insertError;
+
+                // Store the new report ID
+                localStorage.setItem('currentReportId', newReport.id);
             }
 
             setSavedMessageVisible(true);
             setTimeout(() => setSavedMessageVisible(false), 2000);
-            console.log("Report saved successfully to Supabase:", data);
 
             saveBtn.textContent = 'Saved!';
             setTimeout(() => {

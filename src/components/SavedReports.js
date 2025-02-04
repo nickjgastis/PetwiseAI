@@ -9,6 +9,7 @@ import { createEditor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Node } from 'slate';
+import { useNavigate } from 'react-router-dom';
 
 const mainHeaders = [
     'Veterinary Medical Record:',
@@ -293,6 +294,7 @@ const SavedReports = () => {
     const [isLoadingReports, setIsLoadingReports] = useState(true);
     const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
     const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -317,7 +319,7 @@ const SavedReports = () => {
 
                 const { data: reportsData, error: reportsError } = await supabase
                     .from('saved_reports')
-                    .select('id, report_name, report_text')
+                    .select('id, report_name, report_text, form_data')
                     .eq('user_id', userId)
                     .order('created_at', { ascending: false });
 
@@ -466,6 +468,21 @@ const SavedReports = () => {
         });
     };
 
+    const handleLoadReport = (report) => {
+        // Store form data in localStorage as a single object
+        if (report.form_data) {
+            localStorage.setItem('form_data', JSON.stringify(report.form_data));
+        }
+
+        // Store the report text and ID
+        localStorage.setItem('currentReportText', report.report_text);
+        localStorage.setItem('currentReportId', report.id);
+        localStorage.setItem('previewVisible', 'true');
+
+        // Navigate to the report form
+        navigate('/report');
+    };
+
     if (isLoading) return <div>Loading...</div>; // Handle loading state
 
     if (!isAuthenticated) {
@@ -540,6 +557,12 @@ const SavedReports = () => {
                     <div className="report-card-header">
                         <h3>{selectedReport.report_name}</h3>
                         <div className="button-group">
+                            <button
+                                className="load-button"
+                                onClick={() => handleLoadReport(selectedReport)}
+                            >
+                                Load in Generator
+                            </button>
                             {editingReport?.id === selectedReport.id ? (
                                 <>
                                     <button
