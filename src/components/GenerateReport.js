@@ -174,17 +174,39 @@ ${getEnabledContent('assessment', inputs.assessment)
 ${getEnabledContent('diagnosis', inputs.diagnosis) !== null ? `
 **Diagnosis:**  
 ${getEnabledContent('diagnosis', inputs.diagnosis)
-                        ? `Correct and format the input below with proper medical terminology, spelling, and capitalization. Number each diagnosis and list on its own line with differentials underneath.
-  Input: "${getEnabledContent('diagnosis', inputs.diagnosis)}"
-  Input Differentials: "${getEnabledContent('differentialDiagnosis', inputs.differentialDiagnosis)}"  
-  Formatted Output:
-  Number each diagnosis (1., 2., etc.)
-  Under each diagnosis add "DDx:" followed by differentials
-  Correct any misspelled medical terms
-  Ensure proper capitalization of medical terms
-  Maintain medical accuracy
-  Keep the same meaning but use proper medical terminology`
-                        : `Generate a numbered diagnosis based on the assessment and diagnostic tests, with relevant differential diagnoses listed underneath each diagnosis.`}` : ''}
+                        ? `Correct and format the input below with proper medical terminology, spelling, and capitalization. Number each diagnosis and list on its own line with differentials underneath. IMPORTANT: Use EXACTLY the diagnoses provided - do not change or add new diagnoses.
+Input: "${getEnabledContent('diagnosis', inputs.diagnosis)}"
+Input Differentials: "${getEnabledContent('differentialDiagnosis', inputs.differentialDiagnosis)}"  
+Formatted Output:
+Number each diagnosis (1., 2., etc.)
+Under each diagnosis add "DDx:" followed by differentials
+Correct any misspelled medical terms
+Ensure proper capitalization of medical terms
+Maintain medical accuracy
+Keep the exact same diagnoses but use proper medical terminology
+
+Example:
+Input: "kidney failure stage 2, diabeties, heart murmer" 
+Input Differentials: "thyroid disease, cushings, valve disease, kidney stones, pancreatitis, cardiomyopathy"
+
+1. Stage II Chronic Kidney Disease (CKD)
+   DDx: Hyperthyroidism, Nephrolithiasis, Acute Kidney Injury
+
+2. Diabetes Mellitus
+   DDx: Hyperadrenocorticism (Cushing's Disease), Acute Pancreatitis, Chronic Pancreatitis
+
+3. Heart Murmur
+   DDx: Valvular Heart Disease, Dilated Cardiomyopathy, Hypertrophic Cardiomyopathy`
+                        : `Based on the presenting complaints, physical exam findings, and diagnostic test results, provide a numbered list of diagnoses with relevant differential diagnoses:
+
+1. [Primary Diagnosis]
+   DDx: [3-4 relevant differential diagnoses]
+
+2. [Secondary Diagnosis] 
+   DDx: [3-4 relevant differential diagnoses]
+
+3. [Additional Diagnosis if applicable]
+   DDx: [3-4 relevant differential diagnoses]`}` : ''}
                         
 PLAN
 
