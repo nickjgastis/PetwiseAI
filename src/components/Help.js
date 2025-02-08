@@ -92,6 +92,20 @@ const Help = () => {
             ]
         },
         {
+            id: 'templates',
+            title: 'Templates',
+            content: [
+                {
+                    question: 'What can I save as templates?',
+                    answer: 'Templates help streamline your workflow. You can save:\n- Common drug protocols and dosages\n- Frequently used QuickMed Query responses\n- Treatment plans for common conditions\n- Client communication templates\n- Any other content you frequently reference or reuse'
+                },
+                {
+                    question: 'How do I use templates?',
+                    answer: 'Access your templates by:\n1. Click "My Templates" in the sidebar\n2. Click "Create New Template" in the top right to make a new one\n3. Select an existing template to view or edit it\n\nTo save a new template:\n1. Create your content\n2. Click "Save as Template"\n3. Name your template for easy reference'
+                }
+            ]
+        },
+        {
             id: 'sourced-material',
             title: 'Sourced Literature',
             content: [

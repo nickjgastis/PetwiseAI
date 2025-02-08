@@ -11,30 +11,8 @@ import { withHistory } from 'slate-history';
 import { Node } from 'slate';
 import { Link, useNavigate } from 'react-router-dom';
 
-
-
 // Add this before PDFDocument component
-const mainHeaders = [
-    'Veterinary Medical Record:',
-    'Patient Information:',
-    'Staff:',
-    'Presenting Complaint:',
-    'History:',
-    'Physical Exam Findings:',
-    'Diagnostic Tests:',
-    'Assessment:',
-    'Diagnosis:',
-    'Differential Diagnoses:',
-    'PLAN',
-    'Treatment:',
-    'Monitoring:',
-    'Drug Interactions/Side Effects:',
-    'Naturopathic Medicine:',
-    'Client Communications:',
-    'Follow-Up:',
-    'Patient Visit Summary:',
-    'Notes:'
-];
+// const mainHeaders = [ ... ];
 
 const PDFDocument = ({ reportText }) => {
     const styles = StyleSheet.create({
@@ -42,96 +20,73 @@ const PDFDocument = ({ reportText }) => {
             padding: 40,
             fontSize: 12,
             fontFamily: 'Helvetica',
-            lineHeight: 1.1
+            lineHeight: 1.2
         },
         text: {
-            marginBottom: 2,
+            marginBottom: 0,
             whiteSpace: 'pre-wrap',
             fontFamily: 'Helvetica'
         },
         strongText: {
             fontFamily: 'Helvetica-Bold',
-            marginBottom: 8,
-            marginTop: 16,
+            marginBottom: 0,
             fontSize: 12
         },
-        indentedText: {
-            marginLeft: 20,
-            marginBottom: 2,
-            fontFamily: 'Helvetica'
+        lineBreak: {
+            height: 8
         }
     });
 
-    const formatText = (text) => {
-        const paragraphs = text.split('\n');
-        let isInPatientInfo = false;
-        let mainContent = [];
-        let summaryAndNotes = [];
-        let isInSummaryOrNotes = false;
+    // Split content into main content and summary sections
+    const splitContent = (text) => {
+        const lines = text.split('\n');
+        const summaryIndex = lines.findIndex(line =>
+            line.includes('**Patient Visit Summary:**') ||
+            line.includes('**Notes:**')
+        );
 
-        paragraphs.forEach((paragraph, index) => {
-            let trimmedParagraph = paragraph.trim();
-            if (!trimmedParagraph) return;
+        if (summaryIndex === -1) return { mainContent: text, summaryContent: '' };
 
-            // Enhanced header detection for pasted content
-            const isHeader = trimmedParagraph.startsWith('Physical Exam Findings: -') ||
-                trimmedParagraph.endsWith(':') ||
-                mainHeaders.some(header => trimmedParagraph.startsWith(header)) ||
-                trimmedParagraph.match(/^\d+\.\s+.*:/); // Numbered headers
-
-            // Check if we're entering summary or notes section
-            if (trimmedParagraph === 'Patient Visit Summary:' || trimmedParagraph === 'Notes:') {
-                isInSummaryOrNotes = true;
-            }
-
-            // Clean the text only if it's not a header
-            if (!isInPatientInfo && !isHeader) {
-                trimmedParagraph = trimmedParagraph
-                    .replace(/^[•\-]\s*/, '')
-                    .replace(/\*\*(\w[^*]*\w)\*\*/g, '$1')
-                    .trim();
-            }
-
-            // Update patient info tracking
-            if (trimmedParagraph === 'Patient Information:') {
-                isInPatientInfo = true;
-            } else if (mainHeaders.some(header => trimmedParagraph.endsWith(':'))) {
-                isInPatientInfo = false;
-            }
-
-            // Create text element with appropriate styling
-            let textElement;
-            if (isHeader) {
-                textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
-            } else if (isInPatientInfo) {
-                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
-            } else if (paragraph.startsWith('    ')) {
-                textElement = <Text key={index} style={styles.indentedText}>{trimmedParagraph}</Text>;
-            } else {
-                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
-            }
-
-            // Add to appropriate array
-            if (isInSummaryOrNotes) {
-                summaryAndNotes.push(textElement);
-            } else {
-                mainContent.push(textElement);
-            }
-        });
-
-        return { mainContent, summaryAndNotes };
+        const mainContent = lines.slice(0, summaryIndex).join('\n');
+        const summaryContent = lines.slice(summaryIndex).join('\n');
+        return { mainContent, summaryContent };
     };
 
-    const { mainContent, summaryAndNotes } = formatText(reportText);
+    const renderContent = (content) => {
+        if (!content) return null;
+        const lines = content.split('\n');
+        return lines.map((line, index) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) {
+                return <Text key={`break-${index}`} style={styles.lineBreak}>{'\n'}</Text>;
+            }
+            if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                return (
+                    <Text key={index} style={styles.strongText}>
+                        {trimmedLine.slice(2, -2)}
+                        {'\n'}
+                    </Text>
+                );
+            }
+            return (
+                <Text key={index} style={styles.text}>
+                    {line}
+                    {'\n'}
+                </Text>
+            );
+        });
+    };
+
+    const { mainContent, summaryContent } = splitContent(reportText);
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {mainContent}
+                {renderContent(mainContent)}
             </Page>
-            {summaryAndNotes.length > 0 && (
+            {summaryContent && (
                 <Page size="A4" style={styles.page}>
-                    {summaryAndNotes}
+                    {renderContent(summaryContent)}
                 </Page>
             )}
         </Document>
@@ -141,42 +96,33 @@ const PDFDocument = ({ reportText }) => {
 // Update processSlateForPDF to handle pasted content
 const processSlateForPDF = (nodes) => {
     let formattedText = '';
-    let previousWasHeader = false;
-    let previousWasNumbered = false;
+    let previousWasEmpty = false;
 
-    nodes.forEach((node, index) => {
+    nodes.forEach((node) => {
         const text = Node.string(node);
-        const isHeader = node.type === 'heading' ||
-            (node.children[0]?.bold && text.endsWith(':'));
-        const isNumberedItem = text.match(/^\d+\.\s+/);
-        const isSubItem = text.match(/^(Drug Name|Dose|Route|Frequency|Duration):/);
+        const trimmedText = text.trim();
 
-        // Add extra line before headers (except first)
-        if (isHeader && index > 0) {
-            formattedText += '\n';
+        if (!trimmedText) {
+            if (!previousWasEmpty) {
+                formattedText += '\n';
+            }
+            previousWasEmpty = true;
+            return;
         }
+        previousWasEmpty = false;
 
-        // Add spacing after numbered items
-        if (previousWasNumbered && !isSubItem) {
-            formattedText += '\n';
+        // Check if node is already bold or has ** markers
+        const isBold = node.type === 'heading' ||
+            node.children[0]?.bold ||
+            trimmedText.startsWith('**') && trimmedText.endsWith('**');
+
+        if (isBold) {
+            // Ensure we don't double-wrap in **
+            const cleanText = trimmedText.replace(/^\*\*|\*\*$/g, '');
+            formattedText += `**${cleanText}**\n`;
+        } else {
+            formattedText += `${text}\n`;
         }
-
-        // Add the text
-        formattedText += text;
-
-        // Add appropriate line breaks
-        if (isHeader) {
-            formattedText += '\n\n';
-        } else if (isNumberedItem) {
-            formattedText += '\n';
-        } else if (isSubItem) {
-            formattedText += '\n';
-        } else if (text.trim()) {
-            formattedText += '\n';
-        }
-
-        previousWasHeader = isHeader;
-        previousWasNumbered = isNumberedItem;
     });
 
     return formattedText;
@@ -297,63 +243,55 @@ Urogenital:   No abnormal findings`;
 
 const DEFAULT_DIAGNOSTIC_TESTS = '';
 
-const createSlateValue = (text) => {
-    const paragraphs = text.split('\n');
-    let isInPatientInfo = false;
-    let previousWasHeader = false;
+const deserializeSlateValue = (text) => {
+    if (!text) {
+        return [{
+            type: 'paragraph',
+            children: [{ text: '' }]
+        }];
+    }
 
-    return paragraphs.map((paragraph, index) => {
-        const trimmedParagraph = paragraph.trim();
+    return text.split('\n').map((line) => {
+        const trimmedLine = line.trim();
 
-        // Skip empty lines but preserve spacing after headers
-        if (!trimmedParagraph) {
+        if (!trimmedLine) {
             return {
                 type: 'paragraph',
                 children: [{ text: '' }]
             };
         }
 
-        // Header detection logic
-        const isHeader = mainHeaders.some(header =>
-            trimmedParagraph === header ||
-            trimmedParagraph === header.replace(':', '') ||
-            trimmedParagraph === 'Veterinary Medical Record' ||
-            trimmedParagraph === 'PLAN'
-        ) ||
-            trimmedParagraph.match(/^Physical Exam Findings: - \d+ \w+ \d{4}$/) ||
-            (trimmedParagraph.endsWith(':') && !trimmedParagraph.includes(' '));
-
-        // Add extra spacing before headers (except the first one)
-        if (isHeader && index > 0 && !previousWasHeader) {
-            previousWasHeader = true;
-            return [
-                {
-                    type: 'paragraph',
-                    children: [{ text: '' }]
-                },
-                {
-                    type: 'heading',
-                    children: [{ text: trimmedParagraph, bold: true }]
-                }
-            ];
-        }
-
-        previousWasHeader = isHeader;
-
-        // Rest of your existing createSlateValue logic...
-        if (isHeader) {
+        // Check for ** bold formatting
+        if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
             return {
                 type: 'heading',
-                children: [{ text: trimmedParagraph, bold: true }]
+                children: [{
+                    text: trimmedLine.slice(2, -2),
+                    bold: true
+                }]
             };
         }
 
-        // Handle regular paragraphs
+        // Check for other patterns that should be bold
+        if (trimmedLine.endsWith(':') ||
+            trimmedLine.match(/^\d+\.\s+[^:]+$/) ||
+            trimmedLine.match(/^[A-Za-z\s]+:$/)) {
+            return {
+                type: 'heading',
+                children: [{
+                    text: trimmedLine,
+                    bold: true
+                }]
+            };
+        }
+
         return {
             type: 'paragraph',
-            children: [{ text: trimmedParagraph }]
+            children: [{
+                text: line
+            }]
         };
-    }).flat(); // Flatten the array to handle the extra spacing elements
+    });
 };
 
 // Update the renderElement to add proper spacing
@@ -362,13 +300,15 @@ const renderElement = props => {
         case 'heading':
             return <div {...props.attributes} style={{
                 fontWeight: 'bold',
-                marginTop: '16px',  // Increased top margin
-                marginBottom: '8px'  // Consistent with PDF spacing
+                marginBottom: '4px',    // Consistent margin for all headers
+                marginTop: '4px',       // Consistent margin for all headers
+                lineHeight: '1.2'
             }}>{props.children}</div>;
         default:
             return <div {...props.attributes} style={{
-                marginBottom: '4px',  // Consistent line spacing
-                minHeight: '1.2em'    // Ensure empty lines have height
+                marginBottom: '4px',
+                minHeight: '1em',
+                lineHeight: '1.2'
             }}>{props.children}</div>;
     }
 };
@@ -385,12 +325,6 @@ const renderLeaf = props => {
 };
 
 // Add this helper function at the top of your file
-const deserializeSlateValue = (text) => {
-    if (!text) return [{ type: 'paragraph', children: [{ text: '' }] }];
-    return createSlateValue(text);
-};
-
-// Add these helper functions at the top of the file
 const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     // If it's already in YYYY-MM-DD format, return as is
@@ -577,12 +511,9 @@ const ReportForm = () => {
 
     // Add near other state declarations
     const [enabledFields, setEnabledFields] = useState(() => {
-        if (formData?.enabledFields) return formData.enabledFields;
         const savedFields = localStorage.getItem('enabledFields');
-        // Always default to all fields enabled
-        const defaultFields = {
+        return savedFields ? JSON.parse(savedFields) : {
             examDate: true,
-            doctor: true,
             presentingComplaint: true,
             history: true,
             physicalExamFindings: true,
@@ -598,7 +529,6 @@ const ReportForm = () => {
             patientVisitSummary: true,
             notes: true
         };
-        return savedFields ? JSON.parse(savedFields) : defaultFields;
     });
 
     const [reportsUsed, setReportsUsed] = useState(0);
@@ -736,17 +666,18 @@ const ReportForm = () => {
                 setPatientInfoSubmitted(true);
             }
 
-            // Trigger textarea growth for each field with content
+            // After setting all the form values, trigger textarea growth
             setTimeout(() => {
                 const textareas = document.querySelectorAll('textarea:not(.physical-exam-input)');
                 textareas.forEach(textarea => {
                     const fieldName = textarea.getAttribute('name');
-                    if (fieldName && formData[fieldName]) {
+                    if (fieldName && textarea.value) {
+                        // Create a synthetic event object
                         const event = { target: textarea };
                         handleTextareaGrow(event, fieldName);
                     }
                 });
-            }, 0);
+            }, 100); // Small delay to ensure state updates have completed
 
             // Set preview visible and clear warning banner
             setPreviewVisible(true);
@@ -794,7 +725,7 @@ const ReportForm = () => {
             setPatientVisitSummary(localStorage.getItem('patientVisitSummary') || '');
             setNotes(localStorage.getItem('notes') || '');
         }
-    }, []); // Empty dependency array means this runs once on mount
+    }, []); // Empty dependency array for mount only
 
     useEffect(() => {
         localStorage.setItem('currentReportText', reportText);
@@ -853,6 +784,7 @@ const ReportForm = () => {
             };
 
             const generatedReport = await GenerateReport(inputs, enabledFields);
+            // console.log("Raw GPT Response:", generatedReport);
             setReportText(generatedReport);
             setPreviewVisible(true);
 
@@ -976,67 +908,16 @@ const ReportForm = () => {
         }
     };
 
-
-
-
-    const clearPatientInfo = () => {
-        setPatientName('');
-        setSpecies('');
-        setSex('');
-        setBreed('');
-        setColorMarkings('');
-        setWeight('');
-        setWeightUnit('lbs');
-        setAge('');
-        setDoctor('');
-
-        // Clear localStorage for each field
-        localStorage.removeItem('patientName');
-        localStorage.removeItem('species');
-        localStorage.removeItem('sex');
-        localStorage.removeItem('breed');
-        localStorage.removeItem('colorMarkings');
-        localStorage.removeItem('weight');
-        localStorage.removeItem('weightUnit');
-        localStorage.removeItem('age');
-        localStorage.removeItem('doctor');
-    };
-
-    const copyToClipboard = () => {
-        // Create HTML content with explicit styling
-        const htmlContent = slateValue.map(node => {
-            if (node.type === 'heading' || (node.children[0] && node.children[0].bold)) {
-                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
-            }
-            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
-        }).join('<br>');
-
-        // Wrap in a div with explicit styling
-        const wrappedHtml = `
-            <div style="color: black; background: none; background-color: transparent;">
-                ${htmlContent}
-            </div>
-        `;
-
-        // Use the Clipboard API instead of execCommand
-        const clipboardData = new ClipboardItem({
-            'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
-            'text/plain': new Blob([slateValue.map(node => Node.string(node)).join('\n')], { type: 'text/plain' })
-        });
-
-        navigator.clipboard.write([clipboardData]).then(() => {
-            setCopyButtonText('Copied!');
-            setCopiedMessageVisible(true);
-            setTimeout(() => {
-                setCopyButtonText('Copy to Clipboard');
-                setCopiedMessageVisible(false);
-            }, 2000);
-        });
-    };
-
     const resetEntireForm = () => {
-        // Get current date in YYYY-MM-DD format
-        const today = new Date().toISOString().split('T')[0];
+        // Reset all textarea heights by removing inline styles
+        const textareas = document.querySelectorAll('textarea:not(.physical-exam-input)');
+        textareas.forEach(textarea => {
+            textarea.style.removeProperty('height');
+            const fieldName = textarea.getAttribute('name');
+            if (fieldName) {
+                localStorage.removeItem(`${fieldName}_height`);
+            }
+        });
 
         // Clear all form states
         setPatientName('');
@@ -1047,61 +928,75 @@ const ReportForm = () => {
         setWeight('');
         setWeightUnit('lbs');
         setAge('');
-        setDoctor('');
+        setOwnerName('');
+        setAddress('');
+        setTelephone('');
+        setExamDate(new Date().toISOString().split('T')[0]);
         setPresentingComplaint('');
         setHistory('');
-        // Use custom template if it exists, otherwise use default
+        // Use custom template if available, otherwise use default
         setPhysicalExamFindings(customTemplate || PETWISE_DEFAULT_PHYSICAL_EXAM);
         setDiagnosticTests(DEFAULT_DIAGNOSTIC_TESTS);
         setAssessment('');
         setDiagnosis('');
         setDifferentialDiagnosis('');
         setTreatment('');
+        setMonitoring('');
         setNaturopathicMedicine('');
         setClientCommunications('');
         setPlanFollowUp('');
-        setReportText('');
-        setPreviewVisible(false);
         setPatientVisitSummary('');
         setNotes('');
 
-        // Clear only ReportForm-related localStorage items
-        const reportFormKeys = [
-            'patientName', 'species', 'sex', 'breed', 'colorMarkings',
-            'weight', 'weightUnit', 'age', 'doctor', 'presentingComplaint',
-            'history', 'physicalExamFindings', 'diagnosticTests', 'assessment',
-            'diagnosis', 'differentialDiagnosis', 'treatment', 'naturopathicMedicine',
-            'clientCommunications', 'planFollowUp', 'reportText', 'previewVisible',
-            'patientVisitSummary', 'notes', 'currentReportId', 'currentReportText',
-            'form_data'
-        ];
+        // Reset report states
+        setReportText('');
+        setSlateValue([{ type: 'paragraph', children: [{ text: '' }] }]);
+        setPreviewVisible(false);
 
-        // Save enabled fields before clearing
-        const savedEnabledFields = localStorage.getItem('enabledFields');
-
-        // Clear only ReportForm items
-        reportFormKeys.forEach(key => localStorage.removeItem(key));
-
-        // Restore default templates and current date
-        localStorage.setItem('physicalExamFindings', customTemplate || PETWISE_DEFAULT_PHYSICAL_EXAM);
-        localStorage.setItem('diagnosticTests', DEFAULT_DIAGNOSTIC_TESTS);
-        localStorage.setItem('examDate', today);
-
-        // Restore enabled fields
-        if (savedEnabledFields) {
-            localStorage.setItem('enabledFields', savedEnabledFields);
-        }
-
-        // Reset textarea heights
-        document.querySelectorAll('textarea').forEach(textarea => {
-            if (!textarea.classList.contains('physical-exam-input')) {
-                textarea.style.height = ''; // Remove inline height to revert to CSS default
-                const fieldName = textarea.getAttribute('name');
-                if (fieldName) {
-                    localStorage.removeItem(`${fieldName}_height`);
-                }
+        // Clear all localStorage items except enabledFields
+        Object.keys(localStorage).forEach(key => {
+            if (key !== 'enabledFields') {
+                localStorage.removeItem(key);
             }
         });
+
+        // Reset form to patient info step
+        setShowExamInfo(false);
+    };
+
+    const copyToClipboard = () => {
+        const htmlContent = slateValue.map(node => {
+            if (node.children[0]?.bold) {
+                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
+            }
+            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
+        }).join('<br>');
+
+        const plainText = slateValue.map(node => {
+            const text = Node.string(node);
+            return node.children[0]?.bold ? `**${text}**` : text;
+        }).join('\n');
+
+        const wrappedHtml = `
+            <div style="color: black; background: none; background-color: transparent;">
+                ${htmlContent}
+            </div>
+        `;
+
+        const clipboardData = new ClipboardItem({
+            'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
+            'text/plain': new Blob([plainText], { type: 'text/plain' })
+        });
+
+        navigator.clipboard.write([clipboardData])
+            .then(() => {
+                setCopyButtonText('Copied!');
+                setCopiedMessageVisible(true);
+                setTimeout(() => {
+                    setCopyButtonText('Copy to Clipboard');
+                    setCopiedMessageVisible(false);
+                }, 2000);
+            });
     };
 
     const handleBreedChange = (e) => {
@@ -1154,13 +1049,14 @@ const ReportForm = () => {
     }, [enabledFields]);
 
     const handleToggleField = (fieldName) => {
-        setEnabledFields((prevFields) => {
-            const updatedFields = {
-                ...prevFields,
-                [fieldName]: !prevFields[fieldName]
+        // console.log('Before toggle:', enabledFields[fieldName]);
+        setEnabledFields(prev => {
+            const newFields = {
+                ...prev,
+                [fieldName]: !prev[fieldName]
             };
-            localStorage.setItem('enabledFields', JSON.stringify(updatedFields));
-            return updatedFields;
+            // console.log('After toggle:', newFields[fieldName]);
+            return newFields;
         });
     };
 
@@ -1203,26 +1099,6 @@ const ReportForm = () => {
     const [patientVisitSummary, setPatientVisitSummary] = useState(() => localStorage.getItem('patientVisitSummary') || '');
     const [notes, setNotes] = useState(() => localStorage.getItem('notes') || '');
 
-    // Add mainHeaders at the top of the component
-    const mainHeaders = [
-        'Veterinary Medical Record:',
-        'Assessment:',
-        'Diagnosis:',
-        'Differential Diagnosis:',
-        'Plan:',
-        'Treatment:',
-        'Monitoring:',
-        'Drug Interactions/Side Effects:',
-        'Naturopathic Medicine:',
-        'Client Communications:',
-        'Client Education:',
-        'Follow-Up:',
-        'Physical Exam Findings:',
-        'History:',
-        'Presenting Complaint:',
-        'Diagnostic Tests:'
-    ];
-
     // Add this effect to save reportText changes
     useEffect(() => {
         if (reportText) {
@@ -1251,7 +1127,7 @@ const ReportForm = () => {
 
     useEffect(() => {
         if (reportText) {
-            const initialValue = createSlateValue(reportText);
+            const initialValue = deserializeSlateValue(reportText);
             // Ensure we always have at least one paragraph node
             setSlateValue(initialValue.length > 0 ? initialValue : [{
                 type: 'paragraph',
@@ -1475,6 +1351,31 @@ const ReportForm = () => {
             }
         });
     }, [patientInfoSubmitted]); // Add patientInfoSubmitted as dependency
+
+    const [monitoring, setMonitoring] = useState('');
+    const [showExamInfo, setShowExamInfo] = useState(false);
+
+    useEffect(() => {
+        // Check if we're loading a saved report
+        const isLoadingSavedReport = localStorage.getItem('currentReportId');
+        const patientInfoSubmitted = localStorage.getItem('patientInfoSubmitted') === 'true';
+
+        if (isLoadingSavedReport && patientInfoSubmitted) {
+            setPatientInfoSubmitted(true);
+
+            // Wait for DOM to update
+            setTimeout(() => {
+                const textareas = document.querySelectorAll('textarea:not(.physical-exam-input)');
+                textareas.forEach(textarea => {
+                    const fieldName = textarea.getAttribute('name');
+                    if (fieldName && textarea.value) {
+                        const event = { target: textarea };
+                        handleTextareaGrow(event, fieldName);
+                    }
+                });
+            }, 100);
+        }
+    }, []); // Run once on mount
 
     return (
         <div className="report-container">
@@ -1924,7 +1825,7 @@ const ReportForm = () => {
                             height: '100%',
                             overflowY: 'auto',
                             backgroundColor: 'white',
-                            padding: '20px',
+                            padding: '8px',          // Reduced from 10px
                             borderRadius: '4px'
                         }}>
                             <Slate
@@ -1933,9 +1834,7 @@ const ReportForm = () => {
                                 value={slateValue}
                                 onChange={value => {
                                     setSlateValue(value);
-                                    const newText = value
-                                        .map(n => Node.string(n))
-                                        .join('\n');
+                                    const newText = processSlateForPDF(value);
                                     setReportText(newText);
                                     localStorage.setItem('currentReportText', newText);
                                 }}
@@ -1945,26 +1844,28 @@ const ReportForm = () => {
                                     renderLeaf={renderLeaf}
                                     style={{
                                         minHeight: '100%',
-                                        padding: '10px',
+                                        padding: '8px',          // Reduced from 10px
                                         whiteSpace: 'pre-wrap',
-                                        lineHeight: '1.5',
-                                        fontSize: '14px'
+                                        lineHeight: '1.2',       // Reduced from 1.5
+                                        fontSize: '14px'         // Reduced from 14px
                                     }}
                                     onCopy={(event) => {
                                         event.preventDefault();
                                         const selection = window.getSelection();
 
-                                        // Create HTML content for rich text copying with explicit styling
                                         const selectedNodes = slateValue.filter(node => {
                                             const nodeText = Node.string(node);
                                             return selection.toString().includes(nodeText);
                                         });
 
-                                        const htmlContent = selectedNodes.map(node => {
-                                            if (node.type === 'heading' || (node.children[0] && node.children[0].bold)) {
-                                                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
+                                        const formattedText = processSlateForPDF(selectedNodes);
+                                        const plainText = formattedText.replace(/\*\*/g, '');
+
+                                        const htmlContent = formattedText.split('\n').map(line => {
+                                            if (line.startsWith('**') && line.endsWith('**')) {
+                                                return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
                                             }
-                                            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
+                                            return `<span style="background: none; background-color: transparent;">${line}</span>`;
                                         }).join('<br>');
 
                                         const wrappedHtml = `
@@ -1974,7 +1875,7 @@ const ReportForm = () => {
                                         `;
 
                                         event.clipboardData.setData('text/html', wrappedHtml);
-                                        event.clipboardData.setData('text/plain', selection.toString());
+                                        event.clipboardData.setData('text/plain', plainText);
                                     }}
                                 />
                             </Slate>
@@ -1985,7 +1886,6 @@ const ReportForm = () => {
                             <p>Fill out the form and click "Generate Record" to see the preview</p>
                             <div className="ai-warning">
                                 <p>Disclaimer: This record is generated using AI and is for educational purposes only. All content must be reviewed and verified by a licensed veterinarian before use. PetWise is not liable for any errors, omissions, or outcomes based on this record.</p>
-
                             </div>
                         </div>
                     )}

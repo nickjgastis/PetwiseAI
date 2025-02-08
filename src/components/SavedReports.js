@@ -39,85 +39,73 @@ const PDFDocument = ({ reportText }) => {
             padding: 40,
             fontSize: 12,
             fontFamily: 'Helvetica',
-            lineHeight: 1.1
+            lineHeight: 1.2
         },
         text: {
-            marginBottom: 2,
+            marginBottom: 0,
             whiteSpace: 'pre-wrap',
             fontFamily: 'Helvetica'
         },
         strongText: {
             fontFamily: 'Helvetica-Bold',
-            marginBottom: 8,
-            marginTop: 16,
+            marginBottom: 0,
             fontSize: 12
         },
-        indentedText: {
-            marginLeft: 20,
-            marginBottom: 2,
-            fontFamily: 'Helvetica'
+        lineBreak: {
+            height: 8
         }
     });
 
-    const formatText = (text) => {
-        const paragraphs = text.split('\n');
-        let isInPatientInfo = false;
-        let mainContent = [];
-        let summaryAndNotes = [];
-        let isInSummaryOrNotes = false;
+    // Split content into main content and summary sections
+    const splitContent = (text) => {
+        const lines = text.split('\n');
+        const summaryIndex = lines.findIndex(line =>
+            line.includes('**Patient Visit Summary:**') ||
+            line.includes('**Notes:**')
+        );
 
-        paragraphs.forEach((paragraph, index) => {
-            let trimmedParagraph = paragraph.trim();
-            if (!trimmedParagraph) return;
+        if (summaryIndex === -1) return { mainContent: text, summaryContent: '' };
 
-            if (trimmedParagraph === 'Patient Visit Summary:' || trimmedParagraph === 'Notes:') {
-                isInSummaryOrNotes = true;
-            }
-
-            if (!isInPatientInfo) {
-                trimmedParagraph = trimmedParagraph
-                    .replace(/^[•\-]\s*/, '')
-                    .replace(/\*\*(\w[^*]*\w)\*\*/g, '$1')
-                    .trim();
-            }
-
-            if (trimmedParagraph === 'Patient Information:') {
-                isInPatientInfo = true;
-            } else if (mainHeaders.some(header => trimmedParagraph === header)) {
-                isInPatientInfo = false;
-            }
-
-            let textElement;
-            if (mainHeaders.includes(trimmedParagraph)) {
-                textElement = <Text key={index} style={styles.strongText}>{trimmedParagraph}</Text>;
-            } else if (isInPatientInfo) {
-                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
-            } else if (paragraph.startsWith('    ')) {
-                textElement = <Text key={index} style={styles.indentedText}>{trimmedParagraph}</Text>;
-            } else {
-                textElement = <Text key={index} style={styles.text}>{trimmedParagraph}</Text>;
-            }
-
-            if (isInSummaryOrNotes) {
-                summaryAndNotes.push(textElement);
-            } else {
-                mainContent.push(textElement);
-            }
-        });
-
-        return { mainContent, summaryAndNotes };
+        const mainContent = lines.slice(0, summaryIndex).join('\n');
+        const summaryContent = lines.slice(summaryIndex).join('\n');
+        return { mainContent, summaryContent };
     };
 
-    const { mainContent, summaryAndNotes } = formatText(reportText);
+    const renderContent = (content) => {
+        if (!content) return null;
+        const lines = content.split('\n');
+        return lines.map((line, index) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) {
+                return <Text key={`break-${index}`} style={styles.lineBreak}>{'\n'}</Text>;
+            }
+            if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                return (
+                    <Text key={index} style={styles.strongText}>
+                        {trimmedLine.slice(2, -2)}
+                        {'\n'}
+                    </Text>
+                );
+            }
+            return (
+                <Text key={index} style={styles.text}>
+                    {line}
+                    {'\n'}
+                </Text>
+            );
+        });
+    };
+
+    const { mainContent, summaryContent } = splitContent(reportText);
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {mainContent}
+                {renderContent(mainContent)}
             </Page>
-            {summaryAndNotes.length > 0 && (
+            {summaryContent && (
                 <Page size="A4" style={styles.page}>
-                    {summaryAndNotes}
+                    {renderContent(summaryContent)}
                 </Page>
             )}
         </Document>
@@ -125,48 +113,46 @@ const PDFDocument = ({ reportText }) => {
 };
 
 const PDFButton = ({ reportText, reportName }) => {
-    const [isPreparing, setIsPreparing] = useState(false);
-
-    const generatePDF = async () => {
-        setIsPreparing(true);
-        const doc = <PDFDocument reportText={reportText} />;
-        const blob = await pdf(doc).toBlob();
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${reportName || 'Report'}-${new Date().toLocaleDateString()}.pdf`;
-        link.click();
-
-        URL.revokeObjectURL(url);
-        setIsPreparing(false);
+    const handlePDFDownload = async () => {
+        try {
+            const doc = <PDFDocument reportText={reportText} />;
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${reportName || 'report'}.pdf`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('PDF error:', error);
+        }
     };
 
     return (
-        <button
-            className="copy-button"
-            onClick={generatePDF}
-            disabled={isPreparing}
-        >
-            {isPreparing ? 'Preparing PDF...' : 'Download PDF'}
+        <button className="copy-button" onClick={handlePDFDownload}>
+            Download PDF
         </button>
     );
 };
 
 const PrintButton = ({ reportText }) => {
     const handlePrint = async () => {
-        const doc = <PDFDocument reportText={reportText} />;
-        const blob = await pdf(doc).toBlob();
-        const url = URL.createObjectURL(blob);
+        try {
+            const doc = <PDFDocument reportText={reportText} />;
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
 
-        const printWindow = window.open(url, '_blank');
-        printWindow.onload = () => {
-            printWindow.print();
-            printWindow.onafterprint = () => {
-                printWindow.close();
-                URL.revokeObjectURL(url);
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = () => {
+                printWindow.print();
+                printWindow.onafterprint = () => {
+                    printWindow.close();
+                    URL.revokeObjectURL(url);
+                };
             };
-        };
+        } catch (error) {
+            console.error('Print error:', error);
+        }
     };
 
     return (
@@ -183,30 +169,32 @@ const deserializeSlateValue = (text) => {
     return paragraphs.map(paragraph => {
         let trimmedParagraph = paragraph.trim();
 
-        // Remove leading bullet points or dashes
-        trimmedParagraph = trimmedParagraph.replace(/^[•\-]\s*/, '');
-
-        // Check for headers
-        const isHeader = trimmedParagraph.startsWith('Physical Exam Findings: -') ||
-            trimmedParagraph.endsWith(':') ||
-            mainHeaders.some(header => trimmedParagraph.startsWith(header));
-
-        if (isHeader) {
+        // Handle headers with ** markers
+        if (trimmedParagraph.startsWith('**') && trimmedParagraph.endsWith('**')) {
+            const cleanHeader = trimmedParagraph.replace(/\*\*/g, '');
             return {
                 type: 'heading',
-                children: [{ text: trimmedParagraph, bold: true }]
+                children: [{ text: cleanHeader, bold: true }]
             };
         }
 
-        // Check for indented lines
-        if (paragraph.startsWith('    ')) {
+        // Handle numbered diagnoses
+        if (/^\*\*\d+\..+\*\*$/.test(trimmedParagraph)) {
+            const cleanText = trimmedParagraph.replace(/\*\*/g, '');
             return {
-                type: 'indented',
+                type: 'paragraph',
+                children: [{ text: cleanText, bold: true }]
+            };
+        }
+
+        // Handle DDx lines
+        if (trimmedParagraph.startsWith('DDx:')) {
+            return {
+                type: 'paragraph',
                 children: [{ text: trimmedParagraph }]
             };
         }
 
-        // Default paragraph
         return {
             type: 'paragraph',
             children: [{ text: trimmedParagraph }]
@@ -259,26 +247,85 @@ const serializeSlateValue = (nodes) => {
         .join('\n');
 };
 
+const isHeader = text => {
+    return text.startsWith('**') && text.endsWith(':**');
+};
+
 const renderElement = props => {
-    switch (props.element.type) {
-        case 'heading':
-            return <div {...props.attributes} style={{ fontWeight: 'bold' }}>{props.children}</div>;
-        case 'indented':
-            return <div {...props.attributes} style={{ paddingLeft: '20px' }}>{props.children}</div>;
-        default:
-            return <div {...props.attributes}>{props.children}</div>;
+    const { element, children, attributes } = props;
+
+    if (element.type === 'heading') {
+        return (
+            <div
+                {...attributes}
+                style={{
+                    fontWeight: 'bold',
+                    lineHeight: '1.2',
+                    fontSize: '14px'
+                }}
+            >
+                {children}
+            </div>
+        );
     }
+
+    return (
+        <div
+            {...attributes}
+            style={{
+                lineHeight: '1.2',
+                fontSize: '14px'
+            }}
+        >
+            {children}
+        </div>
+    );
 };
 
 const renderLeaf = props => {
+    const { attributes, children, leaf } = props;
     return (
         <span
-            {...props.attributes}
-            style={{ fontWeight: props.leaf.bold ? 'bold' : 'normal' }}
+            {...attributes}
+            style={{
+                fontWeight: leaf.bold ? 'bold' : 'normal'
+            }}
         >
-            {props.children}
+            {children}
         </span>
     );
+};
+
+const processSlateForPDF = (nodes) => {
+    let formattedText = '';
+    let previousWasEmpty = false;
+
+    nodes.forEach((node) => {
+        const text = Node.string(node);
+        const trimmedText = text.trim();
+
+        if (!trimmedText) {
+            if (!previousWasEmpty) {
+                formattedText += '\n';
+            }
+            previousWasEmpty = true;
+            return;
+        }
+        previousWasEmpty = false;
+
+        const isBold = node.type === 'heading' ||
+            node.children[0]?.bold ||
+            trimmedText.startsWith('**') && trimmedText.endsWith('**');
+
+        if (isBold) {
+            const cleanText = trimmedText.replace(/^\*\*|\*\*$/g, '');
+            formattedText += `**${cleanText}**\n`;
+        } else {
+            formattedText += `${text}\n`;
+        }
+    });
+
+    return formattedText;
 };
 
 const SavedReports = () => {
@@ -437,47 +484,63 @@ const SavedReports = () => {
         // Get current content from editor
         const nodes = deserializeSlateValue(selectedReport.report_text);
 
-        // Create HTML content with explicit styling
         const htmlContent = nodes.map(node => {
-            if (node.type === 'heading' || (node.children[0] && node.children[0].bold)) {
+            if (node.children[0]?.bold) {
                 return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
             }
             return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
         }).join('<br>');
 
-        // Wrap in a div with explicit styling
+        const plainText = nodes.map(node => {
+            const text = Node.string(node);
+            return node.children[0]?.bold ? `**${text}**` : text;
+        }).join('\n');
+
         const wrappedHtml = `
             <div style="color: black; background: none; background-color: transparent;">
                 ${htmlContent}
             </div>
         `;
 
-        // Use the Clipboard API
         const clipboardData = new ClipboardItem({
             'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
-            'text/plain': new Blob([selectedReport.report_text], { type: 'text/plain' })
+            'text/plain': new Blob([plainText], { type: 'text/plain' })
         });
 
-        navigator.clipboard.write([clipboardData]).then(() => {
-            setCopyButtonText('Copied!');
-            setCopiedMessageVisible(true);
-            setTimeout(() => {
-                setCopyButtonText('Copy to Clipboard');
-                setCopiedMessageVisible(false);
-            }, 2000);
-        });
+        navigator.clipboard.write([clipboardData])
+            .then(() => {
+                setCopyButtonText('Copied!');
+                setCopiedMessageVisible(true);
+                setTimeout(() => {
+                    setCopyButtonText('Copy to Clipboard');
+                    setCopiedMessageVisible(false);
+                }, 2000);
+            });
     };
 
     const handleLoadReport = (report) => {
-        // Store form data in localStorage as a single object
+        // Clear any existing form data first
+        localStorage.clear();
+
+        // Store individual form fields in localStorage
         if (report.form_data) {
-            localStorage.setItem('form_data', JSON.stringify(report.form_data));
+            const formData = report.form_data;
+            Object.entries(formData).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    if (typeof value === 'object') {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    } else {
+                        localStorage.setItem(key, value);
+                    }
+                }
+            });
         }
 
         // Store the report text and ID
         localStorage.setItem('currentReportText', report.report_text);
         localStorage.setItem('currentReportId', report.id);
         localStorage.setItem('previewVisible', 'true');
+        localStorage.setItem('patientInfoSubmitted', 'true');
 
         // Navigate to the report form
         navigate('/report');
@@ -606,7 +669,13 @@ const SavedReports = () => {
                         </div>
                     </div>
                     <div className="report-content">
-                        <div className="editor-wrapper">
+                        <div className="editor-wrapper" style={{
+                            height: '100%',
+                            overflowY: 'auto',
+                            backgroundColor: 'white',
+                            padding: '8px',
+                            borderRadius: '4px'
+                        }}>
                             {editingReport?.id === selectedReport.id ? (
                                 <Slate
                                     editor={editor}
@@ -624,8 +693,38 @@ const SavedReports = () => {
                                         renderLeaf={renderLeaf}
                                         style={{
                                             minHeight: '100%',
-                                            padding: '20px',
-                                            whiteSpace: 'pre-wrap'
+                                            padding: '8px',
+                                            whiteSpace: 'pre-wrap',
+                                            lineHeight: '1.2',
+                                            fontSize: '14px'
+                                        }}
+                                        onCopy={(event) => {
+                                            event.preventDefault();
+                                            const selection = window.getSelection();
+
+                                            const selectedNodes = deserializeSlateValue(selectedReport.report_text).filter(node => {
+                                                const nodeText = Node.string(node);
+                                                return selection.toString().includes(nodeText);
+                                            });
+
+                                            const formattedText = processSlateForPDF(selectedNodes);
+                                            const plainText = formattedText.replace(/\*\*/g, '');
+
+                                            const htmlContent = formattedText.split('\n').map(line => {
+                                                if (line.startsWith('**') && line.endsWith('**')) {
+                                                    return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
+                                                }
+                                                return `<span style="background: none; background-color: transparent;">${line}</span>`;
+                                            }).join('<br>');
+
+                                            const wrappedHtml = `
+                                                <div style="color: black; background: none; background-color: transparent;">
+                                                    ${htmlContent}
+                                                </div>
+                                            `;
+
+                                            event.clipboardData.setData('text/html', wrappedHtml);
+                                            event.clipboardData.setData('text/plain', plainText);
                                         }}
                                     />
                                 </Slate>
@@ -642,8 +741,38 @@ const SavedReports = () => {
                                         renderLeaf={renderLeaf}
                                         style={{
                                             minHeight: '100%',
-                                            padding: '20px',
-                                            whiteSpace: 'pre-wrap'
+                                            padding: '8px',
+                                            whiteSpace: 'pre-wrap',
+                                            lineHeight: '1.2',
+                                            fontSize: '14px'
+                                        }}
+                                        onCopy={(event) => {
+                                            event.preventDefault();
+                                            const selection = window.getSelection();
+
+                                            const selectedNodes = deserializeSlateValue(selectedReport.report_text).filter(node => {
+                                                const nodeText = Node.string(node);
+                                                return selection.toString().includes(nodeText);
+                                            });
+
+                                            const formattedText = processSlateForPDF(selectedNodes);
+                                            const plainText = formattedText.replace(/\*\*/g, '');
+
+                                            const htmlContent = formattedText.split('\n').map(line => {
+                                                if (line.startsWith('**') && line.endsWith('**')) {
+                                                    return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
+                                                }
+                                                return `<span style="background: none; background-color: transparent;">${line}</span>`;
+                                            }).join('<br>');
+
+                                            const wrappedHtml = `
+                                                <div style="color: black; background: none; background-color: transparent;">
+                                                    ${htmlContent}
+                                                </div>
+                                            `;
+
+                                            event.clipboardData.setData('text/html', wrappedHtml);
+                                            event.clipboardData.setData('text/plain', plainText);
                                         }}
                                     />
                                 </Slate>

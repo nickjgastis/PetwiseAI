@@ -18,11 +18,11 @@ const AppRoutes = () => {
     const location = useLocation();
 
     useEffect(() => {
-        console.log('Route changed to:', location.pathname);
-        // Check if something is preventing scroll
-        console.log('Current scroll position:', window.pageYOffset);
-        console.log('Body overflow:', document.body.style.overflow);
-        console.log('HTML overflow:', document.documentElement.style.overflow);
+        // console.log('Route changed to:', location.pathname);
+        // // Check if something is preventing scroll
+        // console.log('Current scroll position:', window.pageYOffset);
+        // console.log('Body overflow:', document.body.style.overflow);
+        // console.log('HTML overflow:', document.documentElement.style.overflow);
     }, [location]);
 
     if (isLoading) {

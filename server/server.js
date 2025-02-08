@@ -83,6 +83,21 @@ const REPORT_LIMITS = {
     yearly: Infinity
 };
 
+const ACCESS_CODES = {
+    'NICKSECRETKEY5247': {
+        organization: 'Petwise',
+        validUntil: '2029-01-01',
+        plan: 'yearly',
+        maxUsers: 10  // Optional: limit users per code
+    },
+
+};
+
+const REVOKED_CODES = new Set([
+
+    // Add more revoked codes here
+]);
+
 // ================ CHECKOUT ENDPOINT ================
 // Handles creation of Stripe checkout sessions
 app.post('/create-checkout-session', async (req, res) => {
@@ -426,15 +441,38 @@ app.post('/generate-report', checkReportLimit, async (req, res) => {
 // Debug endpoint to check user's subscription status
 app.get('/check-subscription/:userId', async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { userId } = req.params;
+
+        const { data: user, error } = await supabase
             .from('users')
-            .select('subscription_type, subscription_status, reports_used_today, subscription_interval')
-            .eq('auth0_user_id', req.params.userId)
+            .select('*')
+            .eq('auth0_user_id', userId)
             .single();
 
         if (error) throw error;
-        res.json(data);
+
+        // Add this check for access code revocation
+        if (user.access_code) {
+            if (REVOKED_CODES.has(user.access_code) ||
+                !ACCESS_CODES[user.access_code] ||
+                new Date(ACCESS_CODES[user.access_code]?.validUntil) < new Date()) {
+
+                // Deactivate the subscription
+                await supabase
+                    .from('users')
+                    .update({
+                        subscription_status: 'inactive',
+                        subscription_end_date: new Date().toISOString()
+                    })
+                    .eq('auth0_user_id', userId);
+
+                user.subscription_status = 'inactive';
+            }
+        }
+
+        res.json(user);
     } catch (error) {
+        console.error('Check subscription error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -656,6 +694,157 @@ app.post('/delete-account', async (req, res) => {
     }
 });
 
+// Add new endpoint to handle access code activation
+app.post('/activate-access-code', async (req, res) => {
+    try {
+        const { user_id, accessCode } = req.body;
+        console.log('Access code activation request:', { user_id, accessCode });
+
+        // Check if user already has this code
+        const { data: existingUser, error: userError } = await supabase
+            .from('users')
+            .select('access_code, subscription_status')
+            .eq('auth0_user_id', user_id)
+            .single();
+
+        if (userError) throw userError;
+
+        if (existingUser.access_code === accessCode) {
+            return res.status(400).json({
+                error: 'You have already activated this access code'
+            });
+        }
+
+        // Check if code exists and isn't revoked
+        if (REVOKED_CODES.has(accessCode)) {
+            return res.status(400).json({ error: 'This access code has been revoked' });
+        }
+
+        const codeDetails = ACCESS_CODES[accessCode];
+        if (!codeDetails) {
+            return res.status(400).json({ error: 'Invalid access code' });
+        }
+
+        // Check if code is expired
+        if (new Date(codeDetails.validUntil) < new Date()) {
+            return res.status(400).json({ error: 'Access code has expired' });
+        }
+
+        // Optional: Check if organization has reached user limit
+        if (codeDetails.maxUsers) {
+            const { count, error: countError } = await supabase
+                .from('users')
+                .select('*', { count: 'exact' })
+                .eq('access_code', accessCode);
+
+            if (countError) throw countError;
+
+            if (count >= codeDetails.maxUsers) {
+                return res.status(400).json({
+                    error: 'Organization has reached maximum user limit'
+                });
+            }
+        }
+
+        // Update user subscription in Supabase
+        const { data, error } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'active',
+                subscription_interval: codeDetails.plan,
+                subscription_end_date: codeDetails.validUntil,
+                organization: codeDetails.organization,
+                access_code: accessCode,
+                reports_used_today: 0,
+                last_report_date: new Date().toISOString().split('T')[0],
+                stripe_customer_id: null,  // Clear any existing Stripe connection
+                cancel_at_period_end: false
+            })
+            .eq('auth0_user_id', user_id)
+            .select();
+
+        if (error) throw error;
+
+        console.log('Access code activation successful:', data);
+        res.json({
+            success: true,
+            organization: codeDetails.organization,
+            validUntil: codeDetails.validUntil,
+            plan: codeDetails.plan
+        });
+
+    } catch (error) {
+        console.error('Access code activation error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add endpoint to revoke access code
+app.post('/revoke-access-code', async (req, res) => {
+    try {
+        const { code } = req.body;
+
+        // Add to revoked set
+        REVOKED_CODES.add(code);
+
+        // Update all users with this code
+        const { error } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'inactive',
+                subscription_end_date: new Date().toISOString()
+            })
+            .eq('access_code', code);
+
+        if (error) throw error;
+
+        res.json({ success: true, message: `Access code ${code} has been revoked` });
+    } catch (error) {
+        console.error('Revoke access code error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add to your periodic checks
+async function checkAccessCodeValidity() {
+    try {
+        const now = new Date().toISOString();
+
+        // Get all users with access codes
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('*')
+            .not('access_code', 'is', null)
+            .eq('subscription_status', 'active');
+
+        if (error) throw error;
+
+        for (const user of users) {
+            const codeDetails = ACCESS_CODES[user.access_code];
+
+            // Deactivate if code is revoked, invalid, or expired
+            if (REVOKED_CODES.has(user.access_code) ||
+                !codeDetails ||
+                new Date(codeDetails.validUntil) < new Date()) {
+
+                await supabase
+                    .from('users')
+                    .update({
+                        subscription_status: 'inactive',
+                        subscription_end_date: now
+                    })
+                    .eq('auth0_user_id', user.auth0_user_id);
+
+                console.log(`Deactivated access for user ${user.auth0_user_id} with code ${user.access_code}`);
+            }
+        }
+    } catch (error) {
+        console.error('Error checking access code validity:', error);
+    }
+}
+
+// Add to your server startup
+setInterval(checkAccessCodeValidity, 24 * 60 * 60 * 1000); // Check daily
 
 // ================ SERVER STARTUP ================
 const PORT = process.env.PORT || 3001;

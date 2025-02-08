@@ -56,8 +56,8 @@ const Profile = () => {
 
     useEffect(() => {
         if (user) {
-            console.log('Auth0 user full object:', JSON.stringify(user, null, 2));
-            console.log('Auth0 picture URL:', user.picture);
+            // console.log('Auth0 user full object:', JSON.stringify(user, null, 2));
+            // console.log('Auth0 picture URL:', user.picture);
         }
     }, [user]);
 
@@ -112,8 +112,8 @@ const Profile = () => {
 
     useEffect(() => {
         if (user) {
-            console.log('Full user object:', user);
-            console.log('Picture URL:', user?.picture);
+            // console.log('Full user object:', user);
+            // console.log('Picture URL:', user?.picture);
         }
     }, [user]);
 

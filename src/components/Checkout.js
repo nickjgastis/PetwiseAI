@@ -19,6 +19,9 @@ const API_URL = process.env.NODE_ENV === 'production'
 const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
     const { logout } = useAuth0();
     const [subscriptionInterval, setSubscriptionInterval] = useState(null);
+    const [accessCode, setAccessCode] = useState('');
+    const [accessCodeError, setAccessCodeError] = useState('');
+    const [showAccessCodeInput, setShowAccessCodeInput] = useState(false);
 
     useEffect(() => {
         const fetchSubscriptionInfo = async () => {
@@ -121,6 +124,36 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
             console.error('Trial activation error:', error);
             // You might want to show this error to the user
             alert(`Failed to activate trial: ${error.message}`);
+        }
+    };
+
+    const handleAccessCodeSubmit = async (e) => {
+        e.preventDefault();
+        setAccessCodeError('');
+
+        try {
+            const response = await fetch(`${API_URL}/activate-access-code`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.sub,
+                    accessCode
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error);
+            }
+
+            // Success! Reload the page to update subscription status
+            window.location.reload();
+        } catch (error) {
+            setAccessCodeError(error.message);
         }
     };
 
@@ -228,6 +261,35 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                {/* Access Code Section */}
+                <div className="checkout-access-code-section">
+                    <h3>Is your clinic a partner?</h3>
+                    {!showAccessCodeInput ? (
+                        <button
+                            className="checkout-access-code-button"
+                            onClick={() => setShowAccessCodeInput(true)}
+                        >
+                            Enter Access Code
+                        </button>
+                    ) : (
+                        <form onSubmit={handleAccessCodeSubmit} className="access-code-form">
+                            <input
+                                type="text"
+                                value={accessCode}
+                                onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                                placeholder="Enter your access code"
+                                className="access-code-input"
+                            />
+                            <button type="submit" className="access-code-submit">
+                                Submit
+                            </button>
+                            {accessCodeError && (
+                                <div className="access-code-error">{accessCodeError}</div>
+                            )}
+                        </form>
+                    )}
                 </div>
 
                 <div className="checkout-enterprise-section">
