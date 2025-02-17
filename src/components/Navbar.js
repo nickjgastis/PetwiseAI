@@ -44,7 +44,7 @@ const Navbar = () => {
                     </>
                 )}
                 {isAuthenticated && <li><Link to="/dashboard" onClick={() => setIsOpen(false)}>Dashboard</Link></li>}
-                {!isAuthenticated && <li><LoginButton /></li>}
+                {!isAuthenticated && <li className="login-container"><LoginButton /></li>}
             </ul>
         </nav>
     );

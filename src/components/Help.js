@@ -74,6 +74,30 @@ const Help = () => {
                 {
                     question: 'How accurate is the information?',
                     answer: 'QuickMed Query uses current veterinary medical databases and literature. However, always verify critical information and use professional judgment for clinical decisions.'
+                },
+                {
+                    question: 'Training Modules',
+                    isTrainingSection: true,
+                    trainingSections: [
+                        {
+                            id: 'training-1',
+                            title: 'Example 1: Seizure Treatment Plan',
+                            description: 'Learn how to generate a detailed 24-hour treatment plan for a dog with seizures, including medication schedules and monitoring parameters.',
+                            image: 'QQ Training 1.png'
+                        },
+                        {
+                            id: 'training-2',
+                            title: 'Example 2: Anxiety Management Protocol',
+                            description: 'See how to create comprehensive treatment plans and client handouts for dogs with generalized anxiety, including fluoxetine dosing and behavior modification strategies.',
+                            image: 'QQ Training 2.png'
+                        },
+                        {
+                            id: 'training-3',
+                            title: 'Example 3: Fluid Therapy Calculation',
+                            description: 'Master fluid therapy calculations for dehydrated patients, including how to determine replacement rates and monitoring schedules to achieve target PCV values.',
+                            image: 'QQ Training 3.png'
+                        }
+                    ]
                 }
             ]
         },
@@ -121,6 +145,44 @@ const Help = () => {
         }
     ]
 
+    const formatContent = (item, index) => {
+        if (item.isTrainingSection) {
+            return (
+                <div key={index} className="help-item">
+                    <h3>{item.question}</h3>
+                    <div className="training-sections">
+                        {item.trainingSections.map((training) => (
+                            <div
+                                key={training.id}
+                                className={`training-section ${expandedSections[training.id] ? 'expanded' : ''}`}
+                            >
+                                <h4
+                                    onClick={() => toggleSection(training.id)}
+                                    className="training-header"
+                                >
+                                    {training.title}
+                                    <span className={`arrow ${expandedSections[training.id] ? 'expanded' : ''}`}>
+                                        ▼
+                                    </span>
+                                </h4>
+                                <div className={`training-content ${expandedSections[training.id] ? 'expanded' : ''}`}>
+                                    <p>{training.description}</p>
+                                    <img src={training.image} alt={training.title} className="training-image" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+        return (
+            <div key={index} className="help-item">
+                <h3>{item.question}</h3>
+                <p>{formatText(item.answer)}</p>
+            </div>
+        );
+    };
+
     return (
         <>
             <div className="help-container">
@@ -138,12 +200,7 @@ const Help = () => {
                                 </span>
                             </h2>
                             <div className={`section-content ${expandedSections[section.id] ? 'expanded' : ''}`}>
-                                {section.content.map((item, index) => (
-                                    <div key={index} className="help-item">
-                                        <h3>{item.question}</h3>
-                                        <p>{formatText(item.answer)}</p>
-                                    </div>
-                                ))}
+                                {section.content.map((item, index) => formatContent(item, index))}
                             </div>
                         </section>
                     ))}

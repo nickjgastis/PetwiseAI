@@ -115,3 +115,51 @@
         padding: 1.2rem;
     }
 }
+
+/* Training Sections */
+.training-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.training-section {
+    border: 1px solid #eee;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.training-header {
+    padding: 15px;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    transition: background-color 0.3s ease;
+}
+
+.training-header:hover {
+    background: #e9ecef;
+}
+
+.training-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding: 0 15px;
+}
+
+.training-content.expanded {
+    max-height: 1000px;
+    padding: 15px;
+}
+
+.training-image {
+    max-width: 100%;
+    height: auto;
+    margin-top: 15px;
+    border-radius: 4px;
+}
