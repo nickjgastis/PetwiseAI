@@ -520,3 +520,44 @@
         font-size: 1rem;
     }
 }
+
+/* Add styles for currency toggle */
+.currency-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.currency-button {
+    padding: 8px 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.currency-button.active {
+    background: #1565C0;
+    color: white;
+    border-color: #1565C0;
+}
+
+.currency-button:hover:not(.active) {
+    background: #f8f9fa;
+    border-color: #1565C0;
+    color: #1565C0;
+}
+
+@media (max-width: 768px) {
+    .currency-toggle {
+        margin-bottom: 16px;
+    }
+
+    .currency-button {
+        padding: 6px 12px;
+        font-size: 14px;
+    }
+}

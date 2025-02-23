@@ -66,15 +66,21 @@ app.use(cors({
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
-    monthly: process.env.NODE_ENV === 'production'
-        ? 'price_1QdhwtFpF2XskoMK2RjFj916'  // Live monthly price
-        : 'price_1QcwX5FpF2XskoMKrTsq1kHc',  // Test monthly price
-    yearly: process.env.NODE_ENV === 'production'
-        ? 'price_1Qdhz7FpF2XskoMK7O7GjJTn'   // Live yearly price
-        : 'price_1QcwYWFpF2XskoMKH9MJisoy',   // Test yearly price
+    monthly_usd: process.env.NODE_ENV === 'production'
+        ? 'price_1QdhwtFpF2XskoMK2RjFj916'  // Live monthly USD
+        : 'price_1QcwX5FpF2XskoMKrTsq1kHc',  // Test monthly USD
+    yearly_usd: process.env.NODE_ENV === 'production'
+        ? 'price_1Qdhz7FpF2XskoMK7O7GjJTn'   // Live yearly USD
+        : 'price_1QcwYWFpF2XskoMKH9MJisoy',   // Test yearly USD
+    monthly_cad: process.env.NODE_ENV === 'production'
+        ? 'price_1QvnroFpF2XskoMKrXzdKYw7'    // Live monthly CAD
+        : 'price_1QvoD2FpF2XskoMKsTtPM7mg',   // Test monthly CAD
+    yearly_cad: process.env.NODE_ENV === 'production'
+        ? 'price_1Qvno7FpF2XskoMKbAXkVZzh'    // Live yearly CAD
+        : 'price_1QvoCfFpF2XskoMKfLelrbhT',   // Test yearly CAD
     test: process.env.NODE_ENV === 'production'
         ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
-        : 'price_1QcwYWFpF2XskoMKH9MJisoy'  // Using yearly test price as fallback
+        : 'price_1QcwYWFpF2XskoMKH9MJisoy'
 };
 const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
@@ -102,14 +108,14 @@ const REVOKED_CODES = new Set([
 // Handles creation of Stripe checkout sessions
 app.post('/create-checkout-session', async (req, res) => {
     try {
-        const { user, planType } = req.body;
-        const priceId = PRICE_IDS[planType];
+        const { user, planType, currency = 'usd' } = req.body;
+        const priceId = PRICE_IDS[`${planType}_${currency}`];
 
         if (!priceId) {
-            throw new Error('Invalid plan type');
+            throw new Error('Invalid plan type or currency');
         }
 
-        // Find or create customer
+        // Find or create customer with invoice settings
         let customer;
         const existingCustomers = await stripe.customers.list({
             email: user.email,
@@ -117,20 +123,38 @@ app.post('/create-checkout-session', async (req, res) => {
         });
 
         if (existingCustomers.data.length > 0) {
-            customer = existingCustomers.data[0];
+            // Force update existing customer's email and set invoice settings
+            customer = await stripe.customers.update(existingCustomers.data[0].id, {
+                email: user.email,
+                name: user.name || 'Valued Customer',
+                invoice_settings: {
+                    default_payment_method: null // Ensure invoice uses the email from Customer object
+                }
+            });
         } else {
             customer = await stripe.customers.create({
                 email: user.email,
-                metadata: { auth0_user_id: user.sub }
+                name: user.name || 'Valued Customer',
+                metadata: { auth0_user_id: user.sub },
+                invoice_settings: {
+                    default_payment_method: null
+                }
             });
         }
 
-        // Create checkout session
+        // Create checkout session with updated customer
         const session = await stripe.checkout.sessions.create({
-            customer: customer.id,
+            customer: customer.id,  // Using existing customer object
             payment_method_types: ['card'],
             mode: 'subscription',
             allow_promotion_codes: true,
+            billing_address_collection: 'required',
+            automatic_tax: { enabled: true },
+            tax_id_collection: { enabled: true },
+            customer_update: {
+                address: 'auto',
+                name: 'auto'
+            },
             line_items: [{
                 price: priceId,
                 quantity: 1,
@@ -187,7 +211,7 @@ app.post('/webhook', async (req, res) => {
                 console.log('Price ID:', priceId);
 
                 // Simplified subscription type matching
-                const subscriptionInterval = priceId === PRICE_IDS.monthly ? 'monthly' : 'yearly';
+                const subscriptionInterval = priceId === PRICE_IDS.monthly_usd ? 'monthly' : 'yearly';
                 console.log('Subscription Interval:', subscriptionInterval);
 
                 const updateData = {

@@ -22,6 +22,22 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
     const [accessCode, setAccessCode] = useState('');
     const [accessCodeError, setAccessCodeError] = useState('');
     const [showAccessCodeInput, setShowAccessCodeInput] = useState(false);
+    const [currency, setCurrency] = useState('usd');
+
+    const PRICES = {
+        usd: {
+            monthly: 129,
+            yearly: 89,
+            symbol: '$',
+            code: 'USD'
+        },
+        cad: {
+            monthly: 179,
+            yearly: 126,
+            symbol: '$',
+            code: 'CAD'
+        }
+    };
 
     useEffect(() => {
         const fetchSubscriptionInfo = async () => {
@@ -72,7 +88,8 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                 },
                 body: JSON.stringify({
                     user,
-                    planType // This will be either 'monthly' or 'yearly'
+                    planType,
+                    currency
                 }),
             });
 
@@ -167,6 +184,23 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
         });
     };
 
+    const CurrencyToggle = () => (
+        <div className="currency-toggle">
+            <button
+                className={`currency-button ${currency === 'usd' ? 'active' : ''}`}
+                onClick={() => setCurrency('usd')}
+            >
+                USD
+            </button>
+            <button
+                className={`currency-button ${currency === 'cad' ? 'active' : ''}`}
+                onClick={() => setCurrency('cad')}
+            >
+                CAD
+            </button>
+        </div>
+    );
+
     return (
         <div className={`checkout-container ${embedded ? 'embedded' : ''}`}>
             <div className="checkout-options">
@@ -189,6 +223,8 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         )}
                     </p>
                 </div>
+
+                <CurrencyToggle />
 
                 <div className="checkout-pricing-container">
                     {/* Free Trial Card */}
@@ -217,7 +253,10 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     <div className={`checkout-pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
                         <div className="checkout-pricing-header">
                             <h3>Monthly</h3>
-                            <p className="checkout-price">$129<span> USD/Vet/Month</span></p>
+                            <p className="checkout-price">
+                                {PRICES[currency].symbol}{PRICES[currency].monthly}
+                                <span> {PRICES[currency].code}/Vet/Month</span>
+                            </p>
                         </div>
                         <ul className="checkout-pricing-features">
                             <li>Unlimited SOAP reports</li>
@@ -241,8 +280,11 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     <div className={`checkout-pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
                         <div className="checkout-pricing-header">
                             <h3>Yearly</h3>
-                            <p className="checkout-price">$89<span> USD/Vet/Month</span></p>
-                            <p className="checkout-savings">Save 31%</p>
+                            <p className="checkout-price">
+                                {PRICES[currency].symbol}{PRICES[currency].yearly}
+                                <span> {PRICES[currency].code}/Vet/Month</span>
+                            </p>
+                            <p className="checkout-savings">Save {currency === 'usd' ? '31' : '30'}%</p>
                         </div>
                         <ul className="checkout-pricing-features">
                             <li>Unlimited SOAP reports</li>
