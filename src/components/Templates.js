@@ -494,7 +494,9 @@ const Templates = () => {
                         style={{
                             marginBottom: '8px',
                             marginTop: '16px',
-                            fontWeight: 'bold'
+                            fontWeight: 'bold',
+                            fontSize: '1.1em',
+                            color: '#202124'
                         }}
                     >
                         {props.children}
@@ -504,7 +506,11 @@ const Templates = () => {
                 return (
                     <div
                         {...props.attributes}
-                        style={{ marginBottom: '4px' }}
+                        style={{
+                            marginBottom: '4px',
+                            minHeight: '1.6em',
+                            lineHeight: '1.6'
+                        }}
                     >
                         {props.children}
                     </div>

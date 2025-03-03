@@ -253,6 +253,30 @@
     color: #202124;
 }
 
+/* Style both view and edit modes consistently */
+.template-text div[data-slate-node="element"],
+.template-text div {
+    margin-bottom: 4px;
+    min-height: 1.6em;
+    line-height: 1.6;
+}
+
+/* Style headers consistently */
+.template-text h3,
+.template-text div[data-slate-type="header"] {
+    margin-bottom: 8px;
+    margin-top: 16px;
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #202124;
+}
+
+/* Style empty lines consistently */
+.template-text div:empty,
+.template-text div[data-slate-node="element"]:empty {
+    height: 1em;
+}
+
 .template-text h3 {
     font-weight: bold;
     font-size: 1.1em;
