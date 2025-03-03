@@ -285,6 +285,27 @@ const QuickQuery = () => {
         }
 
         try {
+            // Increment message count directly
+            if (user?.sub) {
+                try {
+                    const { data, error } = await supabase
+                        .from('users')
+                        .select('quick_query_messages_count')
+                        .eq('auth0_user_id', user.sub)
+                        .single();
+
+                    if (!error && data) {
+                        const currentCount = data.quick_query_messages_count || 0;
+                        await supabase
+                            .from('users')
+                            .update({ quick_query_messages_count: currentCount + 1 })
+                            .eq('auth0_user_id', user.sub);
+                    }
+                } catch (err) {
+                    console.error('Error updating message count:', err);
+                }
+            }
+
             const conversationHistory = [
                 {
                     role: 'system',

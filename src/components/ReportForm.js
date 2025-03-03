@@ -793,13 +793,31 @@ const ReportForm = () => {
                 previewContentRef.current.scrollTop = 0;
             }
 
-            // Update reports_used_today in Supabase
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ reports_used_today: reportsUsed + 1 })
-                .eq('auth0_user_id', user.sub);
+            // Update reports_used_today and weekly_reports_count
+            if (user?.sub) {
+                try {
+                    const { data, error } = await supabase
+                        .from('users')
+                        .select('reports_used_today, weekly_reports_count')
+                        .eq('auth0_user_id', user.sub)
+                        .single();
 
-            if (updateError) throw updateError;
+                    if (!error && data) {
+                        const reportsUsed = data.reports_used_today || 0;
+                        const weeklyCount = data.weekly_reports_count || 0;
+
+                        await supabase
+                            .from('users')
+                            .update({
+                                reports_used_today: reportsUsed + 1,
+                                weekly_reports_count: weeklyCount + 1
+                            })
+                            .eq('auth0_user_id', user.sub);
+                    }
+                } catch (err) {
+                    console.error('Error updating report counts:', err);
+                }
+            }
 
             setReportsUsed(prev => prev + 1);
         } catch (error) {
