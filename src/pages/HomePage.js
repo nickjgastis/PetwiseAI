@@ -72,7 +72,7 @@ const HomePage = () => {
                 <section className="homepage-hero">
                     <div className="homepage-hero-content">
                         <div className="homepage-hero-left">
-                            <h1>Veterinary Medical Records Fast</h1>
+                            <h1>Veterinary Medical Records Quick</h1>
                             <p>Let AI do the work</p>
                             <button
                                 onClick={() => loginWithRedirect(signUpOptions)}
@@ -83,30 +83,14 @@ const HomePage = () => {
                             <p className="no-card-text">No credit card required</p>
                         </div>
                         <div className="homepage-hero-right">
-                            <img src="/desktop3.png" alt="Desktop Preview" className="desktop-preview" />
-                        </div>
-                    </div>
-                    <div className="hero-extra-content">
-                        <div className="process-squares">
-                            <div className="process-square">
-                                <img src="/form.png" alt="Input Form" className="process-icon" />
-                                <span>Input</span>
-                            </div>
-                            <div className="process-square">
-                                <img src="/ai.png" alt="Generate" className="process-icon" />
-                                <span>Generate</span>
-                            </div>
-                            <div className="process-square">
-                                <img src="/review.png" alt="Review" className="process-icon" />
-                                <span>Review</span>
-                            </div>
+                            <h2>because you deserve this</h2>
                         </div>
                     </div>
                 </section>
 
                 <section className="workflow-section">
                     <div className="workflow-header">
-                        <h2>Three-Step Workflow</h2>
+                        <h2>Create your first record in seconds</h2>
                         <p>Transform your veterinary practice with our simple three-step process</p>
                     </div>
                     <div className="workflow-steps">
@@ -117,12 +101,12 @@ const HomePage = () => {
                                 image: '/exam.png'
                             },
                             {
-                                title: 'Generate Report',
+                                title: 'Generate Record',
                                 description: 'Our AI processes the information and generates comprehensive medical records in seconds',
                                 image: '/ai.png'
                             },
                             {
-                                title: 'Review & Approve',
+                                title: 'Review & Edit',
                                 description: 'Review, edit if needed, and approve the AI-generated documentation',
                                 image: '/report.png'
                             }
@@ -155,8 +139,8 @@ const HomePage = () => {
 
                 <section className="quickmed-section">
                     <div className="quickmed-header">
-                        <h2>QuickMed Query</h2>
-                        <p>Your 24/7 AI veterinary assistant, providing instant answers to all your medical research questions</p>
+                        <h2>QuickMed Query™</h2>
+                        <p>Research any medical question instantly</p>
                     </div>
 
                     <div className="quickmed-content">
@@ -202,6 +186,30 @@ const HomePage = () => {
                             allowFullScreen
                         ></iframe>
                     </div>
+                </section>
+
+                <section className="events-section">
+                    <div className="events-header">
+                        <h2>Have your team join us live this Tuesday</h2>
+                    </div>
+                    <ul className="events-list">
+                        <li className="event-item">
+                            <span className="event-info">Live Demo 1 - 12:15 PM Eastern</span>
+                            <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
+                        </li>
+                        <li className="event-item">
+                            <span className="event-info">Live Demo 2 - 12:15 PM Central</span>
+                            <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
+                        </li>
+                        <li className="event-item">
+                            <span className="event-info">Live Demo 3 - 12:15 PM Mountain</span>
+                            <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
+                        </li>
+                        <li className="event-item">
+                            <span className="event-info">Live Demo 4 - 12:15 PM Pacific</span>
+                            <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
+                        </li>
+                    </ul>
                 </section>
 
                 <section className="pricing-section">
