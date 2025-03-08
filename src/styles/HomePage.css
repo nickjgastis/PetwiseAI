@@ -1194,16 +1194,21 @@ html {
 
 @media (max-width: 768px) {
     .enterprise-section {
-        margin: 3rem 1rem 0;
+        margin: 3rem 0.5rem;
         padding: 1.5rem;
+        max-width: calc(100% - 1rem);
     }
 
     .enterprise-section h3 {
-        font-size: 1.3rem;
+        font-size: 1.1rem;
+        padding: 0 0.5rem;
+        line-height: 1.4;
     }
 
     .enterprise-section p {
-        font-size: 1rem;
+        font-size: 0.95rem;
+        padding: 0 0.5rem;
+        line-height: 1.4;
     }
 }
 
@@ -1280,5 +1285,31 @@ html {
         align-items: flex-start;
         gap: 0.5rem;
         padding: 1rem;
+    }
+}
+
+.pricing-footer {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.subscribe-button {
+    margin: 0 auto;
+    width: fit-content;
+}
+
+/* Add specificity to override Profile.css styles */
+.homepage-content .enterprise-section h3 {
+    color: #0090d7;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    .homepage-content .enterprise-section h3 {
+        font-size: 1rem;
+        padding: 0 0.5rem;
+        line-height: 1.4;
     }
 }
