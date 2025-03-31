@@ -990,10 +990,8 @@ const ReportForm = () => {
             return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
         }).join('<br>');
 
-        const plainText = slateValue.map(node => {
-            const text = Node.string(node);
-            return node.children[0]?.bold ? `**${text}**` : text;
-        }).join('\n');
+        // Use plain text without asterisks
+        const plainText = slateValue.map(node => Node.string(node)).join('\n');
 
         const wrappedHtml = `
             <div style="color: black; background: none; background-color: transparent;">
@@ -1014,6 +1012,11 @@ const ReportForm = () => {
                     setCopyButtonText('Copy to Clipboard');
                     setCopiedMessageVisible(false);
                 }, 2000);
+            })
+            .catch(err => {
+                console.error('Copy failed:', err);
+                setCopyButtonText('Copy Failed');
+                setTimeout(() => setCopyButtonText('Copy to Clipboard'), 2000);
             });
     };
 
