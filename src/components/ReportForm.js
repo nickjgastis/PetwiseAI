@@ -990,8 +990,13 @@ const ReportForm = () => {
             return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
         }).join('<br>');
 
-        // Use plain text without asterisks
-        const plainText = slateValue.map(node => Node.string(node)).join('\n');
+        // Updated plain text handling to remove ** from bold lines
+        const plainText = slateValue
+            .map(node => {
+                const text = Node.string(node);
+                return text.replace(/^\*\*(.*?)\*\*$/, '$1'); // remove ** from bold lines
+            })
+            .join('\n');
 
         const wrappedHtml = `
             <div style="color: black; background: none; background-color: transparent;">
