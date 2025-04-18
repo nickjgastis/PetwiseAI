@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { BsArrowRight } from 'react-icons/bs';
 import { HiChevronDoubleDown } from 'react-icons/hi';
+import { FaBook, FaPills, FaClipboardList } from 'react-icons/fa';
 import Footer from '../components/Footer';
 import '../styles/HomePage.css';
 
@@ -172,6 +173,37 @@ const HomePage = () => {
                             </ul>
                         </div>
                     </div>
+                </section>
+
+                <section className="literature-section">
+                    <div className="literature-header">
+                        <h2>Trusted Veterinary Sources</h2>
+                        <p>Access the latest research and clinical information from industry-leading references</p>
+                    </div>
+                    <div className="literature-sources">
+                        <div className="source-card">
+                            <div className="source-icon">
+                                <FaBook size={50} color="#0090d7" />
+                            </div>
+                            <h3>The Merck Veterinary Manual</h3>
+                            <p>Comprehensive clinical reference covering diseases, diagnosis and treatment across species</p>
+                        </div>
+                        <div className="source-card">
+                            <div className="source-icon">
+                                <FaPills size={50} color="#0090d7" />
+                            </div>
+                            <h3>Plumb's Veterinary Drug Handbook</h3>
+                            <p>Detailed pharmacological information including dosages, indications, and contraindications</p>
+                        </div>
+                        <div className="source-card">
+                            <div className="source-icon">
+                                <FaClipboardList size={50} color="#0090d7" />
+                            </div>
+                            <h3>Blackwell's Five-Minute Veterinary Consult</h3>
+                            <p>Quick reference for diagnosis and treatment of common conditions in clinical practice</p>
+                        </div>
+                    </div>
+                    <p className="more-sources-note">Visit our help center for a full list of sources</p>
                 </section>
 
                 <section className="video-section">

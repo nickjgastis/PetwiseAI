@@ -1313,3 +1313,137 @@ html {
         line-height: 1.4;
     }
 }
+
+/* Literature Sources Section */
+.literature-section {
+    padding: 6rem 4rem;
+    background: #f8f9fa;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+
+.loaded .literature-section {
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.35s;
+}
+
+.literature-header {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.literature-header h2 {
+    font-size: 2.5rem;
+    color: #0090d7;
+    margin-bottom: 1rem;
+}
+
+.literature-header p {
+    font-size: 1.25rem;
+    color: #666;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.literature-sources {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.source-card {
+    flex: 1;
+    max-width: 350px;
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.source-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.source-icon {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 1.5rem;
+    object-fit: contain;
+    background-color: #e6f4fa;
+    border-radius: 50%;
+    padding: 15px;
+    color: #0090d7;
+}
+
+.source-card h3 {
+    font-size: 1.3rem;
+    color: #0090d7;
+    margin-bottom: 1rem;
+}
+
+.source-card p {
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+.more-sources-note {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 3rem;
+}
+
+/* Update the homepage animation for the new section */
+.homepage-content .literature-section {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out, visibility 0s linear 0.5s;
+}
+
+.homepage-content.loaded .literature-section {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.35s;
+}
+
+@media (max-width: 1024px) {
+    .literature-sources {
+        flex-wrap: wrap;
+        gap: 1.5rem;
+    }
+
+    .source-card {
+        flex: 1 1 calc(50% - 1.5rem);
+        max-width: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .literature-section {
+        padding: 4rem 2rem;
+    }
+
+    .literature-header h2 {
+        font-size: 2rem;
+    }
+
+    .literature-sources {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .source-card {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}
