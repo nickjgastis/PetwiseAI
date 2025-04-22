@@ -51,7 +51,7 @@ const Help = () => {
         },
         {
             id: 'report-generator',
-            title: 'Record Generator',
+            title: 'PetNote',
             content: [
                 {
                     question: 'How does the AI generate records?',
@@ -65,15 +65,15 @@ const Help = () => {
         },
         {
             id: 'quickmed-query',
-            title: 'QuickMed Query',
+            title: 'PetQuery',
             content: [
                 {
-                    question: 'What is QuickMed Query?',
-                    answer: 'QuickMed Query is your AI medical assistant. Use it to:\n- Get drug dosage information\n- Check treatment protocols\n- Find diagnostic criteria\n- Access current medical guidelines'
+                    question: 'What is PetQuery?',
+                    answer: 'PetQuery is your AI medical assistant. Use it to:\n- Get drug dosage information\n- Check treatment protocols\n- Find diagnostic criteria\n- Access current medical guidelines'
                 },
                 {
                     question: 'How accurate is the information?',
-                    answer: 'QuickMed Query uses current veterinary medical databases and literature. However, always verify critical information and use professional judgment for clinical decisions.'
+                    answer: 'PetQuery uses current veterinary medical databases and literature. However, always verify critical information and use professional judgment for clinical decisions.'
                 },
                 {
                     question: 'Training Modules',
@@ -121,7 +121,7 @@ const Help = () => {
             content: [
                 {
                     question: 'What can I save as templates?',
-                    answer: 'Templates help streamline your workflow. You can save:\n- Common drug protocols and dosages\n- Frequently used QuickMed Query responses\n- Treatment plans for common conditions\n- Client communication templates\n- Any other content you frequently reference or reuse'
+                    answer: 'Templates help streamline your workflow. You can save:\n- Common drug protocols and dosages\n- Frequently used PetQuery responses\n- Treatment plans for common conditions\n- Client communication templates\n- Any other content you frequently reference or reuse'
                 },
                 {
                     question: 'How do I use templates?',

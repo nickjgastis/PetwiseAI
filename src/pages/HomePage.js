@@ -91,7 +91,7 @@ const HomePage = () => {
 
                 <section className="workflow-section">
                     <div className="workflow-header">
-                        <h2>Create your first record in seconds</h2>
+                        <h2>PetNote</h2>
                         <p>Transform your veterinary practice with our simple three-step process</p>
                     </div>
                     <div className="workflow-steps">
@@ -140,7 +140,7 @@ const HomePage = () => {
 
                 <section className="quickmed-section">
                     <div className="quickmed-header">
-                        <h2>QuickMed Query™</h2>
+                        <h2>PetQuery™</h2>
                         <p>Research any medical question instantly</p>
                     </div>
 

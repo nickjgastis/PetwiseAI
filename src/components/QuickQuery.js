@@ -691,7 +691,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     return (
         <div className="qq-container">
             <div className="qq-header">
-                <h2>QuickMed Query</h2>
+                <h2>PetQuery</h2>
                 {messages.length > 0 && (
                     <button onClick={handleClear} className="qq-clear-button">
                         Clear Chat
@@ -703,7 +703,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     {messages.length === 0 && (
                         <>
                             <div className="qq-disclaimer">
-                                <p>Disclaimer: QuickMed Query provides AI-generated responses for educational purposes only.
+                                <p>Disclaimer: PetQuery provides AI-generated responses for educational purposes only.
                                     These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
                                     Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
                             </div>

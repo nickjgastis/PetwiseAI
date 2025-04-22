@@ -921,7 +921,7 @@ const ReportForm = () => {
             }, 2000);
         } catch (error) {
             console.error("Error saving report:", error);
-            setError("Failed to save report. Please try again.");
+            setError("Failed to save Record. Please try again.");
             saveBtn.textContent = originalText;
         }
     };
@@ -1919,7 +1919,7 @@ const ReportForm = () => {
 
                 <div className="report-preview-footer">
                     <div className="button-container">
-                        <button className="submit-button" onClick={saveReport} disabled={loading}>Save Report</button>
+                        <button className="submit-button" onClick={saveReport} disabled={loading}>Save Record</button>
                         <div className="copy-button-container">
                             <button className="copy-button" onClick={copyToClipboard} disabled={loading}>
                                 {copyButtonText}
