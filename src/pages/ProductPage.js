@@ -64,7 +64,7 @@ const ProductPage = () => {
                             onClick={() => loginWithRedirect(signUpOptions)}
                             className="hero-cta-button"
                         >
-                            Start Your Free 14 Day Trial
+                            Start Your Free 30 Day Trial
                         </button>
                         <p className="no-card-text" style={{ color: '#666', marginTop: '0.5rem' }}>
                             No credit card required
@@ -80,7 +80,7 @@ const ProductPage = () => {
                     <div className="pricing-container">
                         <div className="pricing-card free">
                             <div className="pricing-header">
-                                <h3>14 Day Free Trial</h3>
+                                <h3>30 Day Free Trial</h3>
                                 <p className="price">$0<span>/mo</span></p>
                             </div>
                             <ul className="pricing-features">
