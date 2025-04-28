@@ -82,7 +82,7 @@ const PRICE_IDS = {
         ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
         : 'price_1QcwYWFpF2XskoMKH9MJisoy'
 };
-const TRIAL_DAYS = 14;  // Changed from TRIAL_MINUTES
+const TRIAL_DAYS = 30;  // Changed from TRIAL_MINUTES
 const REPORT_LIMITS = {
     trial: 50,
     monthly: Infinity,

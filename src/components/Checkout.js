@@ -230,7 +230,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     {/* Free Trial Card */}
                     <div className={`checkout-pricing-card free ${user.has_used_trial ? 'disabled' : ''}`}>
                         <div className="checkout-pricing-header">
-                            <h3>14 Day Free Trial</h3>
+                            <h3>30 Day Free Trial</h3>
                             <p className="checkout-price">$0<span>/mo</span></p>
                         </div>
                         <ul className="checkout-pricing-features">
