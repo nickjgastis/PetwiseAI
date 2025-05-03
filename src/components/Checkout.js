@@ -227,8 +227,34 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                 <CurrencyToggle />
 
                 <div className="checkout-pricing-container">
+                    {/* Monthly Plan Card */}
+                    <div className={`checkout-pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
+                        <div className="checkout-pricing-header">
+                            <h3>Monthly</h3>
+                            <p className="checkout-price">
+                                {PRICES[currency].symbol}{PRICES[currency].monthly}
+                                <span> {PRICES[currency].code}/Vet/Month</span>
+                            </p>
+                        </div>
+                        <ul className="checkout-pricing-features">
+                            <li>Unlimited SOAP reports</li>
+                            <li>Unlimited Quick Query</li>
+                            <li>Saved reports</li>
+                            <li>Priority support</li>
+                        </ul>
+                        <div className="checkout-footer">
+                            <button
+                                onClick={() => handleCheckout('monthly')}
+                                className="checkout-subscribe-button"
+                                disabled={subscriptionInterval === 'monthly' && !user.cancel_at_period_end}
+                            >
+                                {subscriptionInterval === 'monthly' ? 'Current Plan' : 'Sign Up Now'}
+                            </button>
+                        </div>
+                    </div>
+
                     {/* Free Trial Card */}
-                    <div className={`checkout-pricing-card free ${user.has_used_trial ? 'disabled' : ''}`}>
+                    <div className={`checkout-pricing-card free highlight-card ${user.has_used_trial ? 'disabled' : ''}`}>
                         <div className="checkout-pricing-header">
                             <h3>30 Day Free Trial</h3>
                             <p className="checkout-price">$0<span>/mo</span></p>
@@ -249,33 +275,6 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         </div>
                     </div>
 
-                    {/* Monthly Plan Card */}
-                    <div className={`checkout-pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
-                        <div className="checkout-pricing-header">
-                            <h3>Monthly</h3>
-                            <p className="checkout-price">
-                                {PRICES[currency].symbol}{PRICES[currency].monthly}
-                                <span> {PRICES[currency].code}/Vet/Month</span>
-                            </p>
-                        </div>
-                        <ul className="checkout-pricing-features">
-                            <li>Unlimited SOAP reports</li>
-                            <li>Unlimited Quick Query</li>
-                            <li>Saved reports</li>
-                            <li>Priority support</li>
-
-                        </ul>
-                        <div className="checkout-footer">
-                            <button
-                                onClick={() => handleCheckout('monthly')}
-                                className="checkout-subscribe-button"
-                                disabled={subscriptionInterval === 'monthly' && !user.cancel_at_period_end}
-                            >
-                                {subscriptionInterval === 'monthly' ? 'Current Plan' : 'Sign Up Now'}
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Yearly Plan Card */}
                     <div className={`checkout-pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
                         <div className="checkout-pricing-header">
@@ -291,7 +290,6 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                             <li>Unlimited Quick Query</li>
                             <li>Saved reports</li>
                             <li>Priority support</li>
-
                         </ul>
                         <div className="checkout-footer">
                             <button
@@ -305,38 +303,46 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     </div>
                 </div>
 
-                {/* Access Code Section */}
-                <div className="checkout-access-code-section">
-                    <h3>Is your clinic a partner?</h3>
-                    {!showAccessCodeInput ? (
-                        <button
-                            className="checkout-access-code-button"
-                            onClick={() => setShowAccessCodeInput(true)}
-                        >
-                            Enter Access Code
-                        </button>
-                    ) : (
-                        <form onSubmit={handleAccessCodeSubmit} className="access-code-form">
-                            <input
-                                type="text"
-                                value={accessCode}
-                                onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
-                                placeholder="Enter your access code"
-                                className="access-code-input"
-                            />
-                            <button type="submit" className="access-code-submit">
-                                Submit
+                {/* Create a wrapper for the access code and enterprise sections */}
+                <div className="checkout-info-sections">
+                    <div className="checkout-access-code-section">
+                        <h3>Is your clinic a partner?</h3>
+                        {!showAccessCodeInput ? (
+                            <button
+                                className="checkout-access-code-button"
+                                onClick={() => setShowAccessCodeInput(true)}
+                            >
+                                Enter Access Code
                             </button>
-                            {accessCodeError && (
-                                <div className="access-code-error">{accessCodeError}</div>
-                            )}
-                        </form>
-                    )}
-                </div>
+                        ) : (
+                            <form onSubmit={handleAccessCodeSubmit} className="access-code-form">
+                                <input
+                                    type="text"
+                                    value={accessCode}
+                                    onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
+                                    placeholder="Enter your access code"
+                                    className="access-code-input"
+                                />
+                                <button type="submit" className="access-code-submit">
+                                    Submit
+                                </button>
+                                {accessCodeError && (
+                                    <div className="access-code-error">{accessCodeError}</div>
+                                )}
+                            </form>
+                        )}
+                    </div>
 
-                <div className="checkout-enterprise-section">
-                    <h3>Looking to sign up your whole clinic staff, or multiple clinics?</h3>
-                    <p>We've got you covered! Contact <a href="mailto:support@petwise.vet">support@petwise.vet</a></p>
+                    <div className="checkout-enterprise-section">
+                        <h3>Looking to sign up your whole clinic staff, or multiple clinics?</h3>
+                        <p>We've got you covered! Contact support@petwise.vet for enterprise plans.</p>
+                        <a href="mailto:support@petwise.vet" className="enterprise-contact-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z" />
+                            </svg>
+                            Contact Us!
+                        </a>
+                    </div>
                 </div>
 
                 {!embedded && (

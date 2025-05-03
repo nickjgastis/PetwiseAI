@@ -25,9 +25,33 @@ const Dashboard = () => {
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [needsWelcome, setNeedsWelcome] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
+
+    // ================ EVENT HANDLERS ================
+    const handleLogout = () => {
+        logout({
+            logoutParams: {
+                returnTo: `${window.location.origin}/`
+            }
+        });
+    };
+
+    // ================ MOBILE DETECTION ================
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+
+        checkMobile(); // Check on initial load
+        window.addEventListener('resize', checkMobile);
+
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+        };
+    }, []);
 
     // ================ SUBSCRIPTION CHECK ================
     useEffect(() => {
@@ -153,17 +177,22 @@ const Dashboard = () => {
         }} />;
     }
 
+    // After onboarding, check if on mobile
+    if (isMobile && !isLoading) {
+        return (
+            <div className="mobile-notification">
+                <img src="/PW.png" alt="Petwise Logo" className="mobile-notification-logo" />
+                <h1>Welcome to Petwise!</h1>
+                <p>Thanks for signing up! PetWise is designed as a desktop application to provide the best experience for veterinary professionals.</p>
+                <p>Please log in on your desktop computer to access all features and functionality.</p>
+                <button className="button" onClick={handleLogout}>Log Out</button>
+            </div>
+        );
+    }
+
     // ================ EVENT HANDLERS ================
     const toggleSidebar = () => {
         setIsSidebarCollapsed(!isSidebarCollapsed);
-    };
-
-    const handleLogout = () => {
-        logout({
-            logoutParams: {
-                returnTo: `${window.location.origin}/`
-            }
-        });
     };
 
     const closeMobileMenu = () => {

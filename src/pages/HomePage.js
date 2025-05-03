@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { BsArrowRight } from 'react-icons/bs';
 import { HiChevronDoubleDown } from 'react-icons/hi';
@@ -10,6 +10,9 @@ const HomePage = () => {
     const { loginWithRedirect } = useAuth0();
     const [isLoading, setIsLoading] = useState(true);
     const [contentVisible, setContentVisible] = useState(false);
+
+    // Add new ref for the protocol section
+    const protocolSectionRef = useRef(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -50,6 +53,28 @@ const HomePage = () => {
         };
     }, []);
 
+    // Add a new useEffect for scroll animation
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.1 }); // Trigger when 10% of element is visible
+
+        // Apply to protocol section
+        if (protocolSectionRef.current) {
+            observer.observe(protocolSectionRef.current);
+        }
+
+        return () => {
+            if (protocolSectionRef.current) {
+                observer.unobserve(protocolSectionRef.current);
+            }
+        };
+    }, [contentVisible]); // Run after content is loaded and visible
+
     // Update the className based on both loading states
     const contentClassName = `homepage-content${contentVisible ? ' loaded' : ''}`;
 
@@ -71,114 +96,71 @@ const HomePage = () => {
         <>
             <div className={contentClassName} style={{ visibility: isLoading ? 'hidden' : 'visible' }}>
                 <section className="homepage-hero">
-                    <div className="homepage-hero-content">
-                        <div className="homepage-hero-left">
-                            <h1>Veterinary Medical Records Quick</h1>
-                            <p>Let AI do the work</p>
-                            <button
-                                onClick={() => loginWithRedirect(signUpOptions)}
-                                className="hero-cta-button"
-                            >
-                                Start Your Free 30 Day Trial
-                            </button>
-                            <p className="no-card-text">No credit card required</p>
-                        </div>
-                        <div className="homepage-hero-right">
-                            <h2>because you deserve this</h2>
+                    <div className="hero-image-container">
+                        <img src="/landingpage_dog.png" alt="Veterinarian with tablet" className="hero-image" />
+                    </div>
+                    <div className="hero-content-container">
+                        <div className="blue-blob-background"></div>
+                        <div className="hero-content">
+                            <h1>Patient records slowing down your day?</h1>
+                            <h2>Try PetWise – faster, accurate records. Zero dictation!</h2>
+                            <div className="cta-container">
+                                <button
+                                    onClick={() => loginWithRedirect(signUpOptions)}
+                                    className="hero-cta-button"
+                                >
+                                    Start 30 Day Free Trial
+                                </button>
+                                <p className="no-card-text">No credit card required</p>
+                            </div>
+                            <div className="hero-logo">
+                                <img src="/PW.png" alt="PetWise Logo" className="logo-image" />
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <section className="workflow-section">
-                    <div className="workflow-header">
-                        <h2>PetNote</h2>
-                        <p>Transform your veterinary practice with our simple three-step process</p>
-                    </div>
-                    <div className="workflow-steps">
-                        {[
-                            {
-                                title: 'Input Exam Findings',
-                                description: 'Enter patient symptoms and clinical findings into our intuitive interface',
-                                image: '/exam.png'
-                            },
-                            {
-                                title: 'Generate Record',
-                                description: 'Our AI processes the information and generates comprehensive medical records in seconds',
-                                image: '/ai.png'
-                            },
-                            {
-                                title: 'Review & Edit',
-                                description: 'Review, edit if needed, and approve the AI-generated documentation',
-                                image: '/report.png'
-                            }
-                        ].map((step, index, array) => (
-                            <React.Fragment key={index}>
-                                <div className="workflow-step">
-                                    <img
-                                        src={step.image}
-                                        alt={step.title}
-                                        className="workflow-image"
-                                    />
-                                    <h3>{step.title}</h3>
-                                    <p>{step.description}</p>
-                                </div>
-                                {index < array.length - 1 && (
-                                    <div className="workflow-arrow">
-                                        <BsArrowRight size={30} />
-                                    </div>
-                                )}
-                            </React.Fragment>
-                        ))}
-                    </div>
-                    <button
-                        onClick={() => loginWithRedirect(signUpOptions)}
-                        className="workflow-cta-button"
-                    >
-                        Start Your Free Trial - No Credit Card Required
-                    </button>
-                </section>
 
-                <section className="quickmed-section">
-                    <div className="quickmed-header">
-                        <h2>PetQuery™</h2>
-                        <p>Research any medical question instantly</p>
-                    </div>
+                <section className="petnote-protocol-section" ref={protocolSectionRef}>
+                    <div className="petnote-protocol-header">
 
-                    <div className="quickmed-content">
-                        <div className="quickmed-image">
-                            <img
-                                src="/quickmed.png"
-                                alt="QuickMed Query Interface"
-                                className="quickmed-preview"
-                            />
+                    </div>
+                    <div className="petnote-protocol-images">
+                        <div className="protocol-image-container">
+                            <picture>
+                                <source media="(max-width: 768px)" srcSet="/petnoteinfomobile.png" />
+                                <img src="/petnoteprotocol.png" alt="PetNote Protocol step 1" className="protocol-image" />
+                            </picture>
                         </div>
-                        <div className="quickmed-features">
-                            <ul>
-                                <li>
-                                    <span className="feature-title">Instant Research</span>
-                                    <p>Get immediate answers about treatments, medications, and protocols</p>
-                                </li>
-                                <li>
-                                    <span className="feature-title">Drug Information</span>
-                                    <p>Access detailed drug dosages, interactions, and contraindications</p>
-                                </li>
-                                <li>
-                                    <span className="feature-title">Treatment Guidelines</span>
-                                    <p>Evidence-based treatment recommendations for various conditions</p>
-                                </li>
-                                <li>
-                                    <span className="feature-title">Clinical Updates</span>
-                                    <p>Stay current with the latest veterinary medical research and practices</p>
-                                </li>
-                            </ul>
+                        <div className="protocol-image-container">
+                            <picture>
+                                <source media="(max-width: 768px)" srcSet="/petqueryinfomobile.png" />
+                                <img src="/petqueryprotocol.png" alt="PetNote Protocol step 2" className="protocol-image" />
+                            </picture>
                         </div>
                     </div>
                 </section>
+
+                <section className="cta-banner-section">
+                    <div className="cta-banner-container">
+                        <h2>Less paperwork. More pets!</h2>
+                        <p className="cta-banner-text">Get 30 days free with unlimited PetQuery and 50 SOAP's per day!</p>
+                        <p className="cta-banner-subtext">No credit card required</p>
+                        <button
+                            onClick={() => loginWithRedirect(signUpOptions)}
+                            className="hero-cta-button"
+                        >
+                            Sign me up!
+                        </button>
+                    </div>
+                </section>
+
 
                 <section className="literature-section">
                     <div className="literature-header">
                         <h2>Trusted Veterinary Sources</h2>
-                        <p>Access the latest research and clinical information from industry-leading references</p>
+                        <p>"It's like ChatGBT, but for vets! Provides info only from
+                            trusted veterinary references."</p>
                     </div>
                     <div className="literature-sources">
                         <div className="source-card">
@@ -250,7 +232,28 @@ const HomePage = () => {
                         <p>Get full access to all premium features</p>
                     </div>
                     <div className="pricing-container">
-                        <div className="pricing-card free">
+                        <div className="pricing-card">
+                            <div className="pricing-header">
+                                <h3>Monthly</h3>
+                                <p className="price">$129<span> USD/Vet/Month</span></p>
+                            </div>
+                            <ul className="pricing-features">
+                                <li>Unlimited SOAP reports</li>
+                                <li>Unlimited Quick Query</li>
+                                <li>Saved reports</li>
+                                <li>Priority support</li>
+                            </ul>
+                            <div className="pricing-footer">
+                                <button
+                                    onClick={() => loginWithRedirect(signUpOptions)}
+                                    className="subscribe-button"
+                                >
+                                    Sign Up Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="pricing-card free highlight-card">
                             <div className="pricing-header">
                                 <h3>30 Day Free Trial</h3>
                                 <p className="price">$0<span>/mo</span></p>
@@ -272,28 +275,6 @@ const HomePage = () => {
 
                         <div className="pricing-card">
                             <div className="pricing-header">
-                                <h3>Monthly</h3>
-                                <p className="price">$129<span> USD/Vet/Month</span></p>
-                            </div>
-                            <ul className="pricing-features">
-                                <li>Unlimited SOAP reports</li>
-                                <li>Unlimited Quick Query</li>
-                                <li>Saved reports</li>
-                                <li>Priority support</li>
-
-                            </ul>
-                            <div className="pricing-footer">
-                                <button
-                                    onClick={() => loginWithRedirect(signUpOptions)}
-                                    className="subscribe-button"
-                                >
-                                    Sign Up Now
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="pricing-card">
-                            <div className="pricing-header">
                                 <h3>Yearly</h3>
                                 <p className="price">$89<span> USD/Vet/Month</span></p>
                                 <p className="savings">Save 31%</p>
@@ -303,7 +284,6 @@ const HomePage = () => {
                                 <li>Unlimited Quick Query</li>
                                 <li>Saved reports</li>
                                 <li>Priority support</li>
-
                             </ul>
                             <div className="pricing-footer">
                                 <button
@@ -317,7 +297,13 @@ const HomePage = () => {
                     </div>
                     <div className="enterprise-section">
                         <h3>Looking to sign up your whole clinic staff, or multiple clinics?</h3>
-                        <p>We've got you covered! Contact <a href="mailto:support@petwise.vet">support@petwise.vet</a></p>
+                        <p>We've got you covered! Contact support@petwise.vet for enterprise plans.</p>
+                        <a href="mailto:support@petwise.vet" className="enterprise-contact-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z" />
+                            </svg>
+                            Contact Us!
+                        </a>
                     </div>
                 </section>
             </div>

@@ -94,3 +94,29 @@
         padding: 40px 0 20px;
     }
 }
+
+.footer-social {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.footer-social h3 {
+    color: #fff;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+}
+
+.social-link {
+    color: #5ccdf0;
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.social-link:hover {
+    color: #ffffff;
+    transform: translateY(-3px);
+}

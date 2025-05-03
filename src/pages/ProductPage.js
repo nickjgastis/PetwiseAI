@@ -78,7 +78,28 @@ const ProductPage = () => {
                         <p>Get full access to all premium features</p>
                     </div>
                     <div className="pricing-container">
-                        <div className="pricing-card free">
+                        <div className="pricing-card">
+                            <div className="pricing-header">
+                                <h3>Monthly</h3>
+                                <p className="price">$129<span> USD/Vet/Month</span></p>
+                            </div>
+                            <ul className="pricing-features">
+                                <li>Unlimited SOAP reports</li>
+                                <li>Unlimited Quick Query</li>
+                                <li>Saved reports</li>
+                                <li>Priority support</li>
+                            </ul>
+                            <div className="pricing-footer">
+                                <button
+                                    onClick={() => loginWithRedirect(signUpOptions)}
+                                    className="subscribe-button"
+                                >
+                                    Sign Up Now
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="pricing-card free highlight-card">
                             <div className="pricing-header">
                                 <h3>30 Day Free Trial</h3>
                                 <p className="price">$0<span>/mo</span></p>
@@ -94,28 +115,6 @@ const ProductPage = () => {
                                     className="trial-button"
                                 >
                                     Start Free Trial
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="pricing-card">
-                            <div className="pricing-header">
-                                <h3>Monthly</h3>
-                                <p className="price">$129<span> USD/Vet/Month</span></p>
-                            </div>
-                            <ul className="pricing-features">
-                                <li>Unlimited SOAP reports</li>
-                                <li>Unlimited Quick Query</li>
-                                <li>Saved reports</li>
-                                <li>Priority support</li>
-
-                            </ul>
-                            <div className="pricing-footer">
-                                <button
-                                    onClick={() => loginWithRedirect(signUpOptions)}
-                                    className="subscribe-button"
-                                >
-                                    Sign Up Now
                                 </button>
                             </div>
                         </div>

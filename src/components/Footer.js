@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/Footer.css';
+import { FaFacebook, FaInstagram } from 'react-icons/fa';
 
 const Footer = () => {
     const currentYear = new Date().getFullYear();
@@ -35,6 +36,18 @@ const Footer = () => {
                         <li><Link to="/privacy">Privacy Policy</Link></li>
                         <li><Link to="/terms">Terms of Service</Link></li>
                     </ul>
+                </div>
+            </div>
+
+            <div className="footer-social">
+                <h3>Connect with us!</h3>
+                <div className="social-links">
+                    <a href="https://www.facebook.com/petwise.vet" target="_blank" rel="noopener noreferrer" className="social-link">
+                        <FaFacebook size={24} />
+                    </a>
+                    <a href="https://www.instagram.com/petwise.vet/" target="_blank" rel="noopener noreferrer" className="social-link">
+                        <FaInstagram size={24} />
+                    </a>
                 </div>
             </div>
 
