@@ -92,8 +92,7 @@ Patient: John Doe
 Doctor: Dr. Smith  
 
 Where placeholders like "Provide here" are used, do not generate or fill in data. Use input data as provided for medical content. For missing or incomplete sections, use best practices and standard veterinary protocols to fill in gaps with relevant details. If evidence for specific sections such as Differential Diagnoses, Treatment, Assessment, Drug Interactions, or Naturopathic Treatment is not explicitly provided, infer based on the diagnosis and other input details.
-
-**Veterinary Medical Record:**  
+ 
 
 **Patient Information:**  
 Patient: ${inputs.patientName ? inputs.patientName.split(' ').map(word => {
@@ -114,7 +113,7 @@ ${getEnabledContent('examDate', inputs.examDate) ? `Exam Date: ${getEnabledConte
 ${getEnabledContent('presentingComplaint', inputs.presentingComplaint) !== null ? `
 **Presenting Complaint:**  
 ${getEnabledContent('presentingComplaint', inputs.presentingComplaint)
-                        ? `Correct and format the input below with proper medical terminology and capitalization. Each complaint should be on its own line WITHOUT dashes or bullet points.
+                        ? `Correct and format the input below with proper medical terminology and capitalization. Each complaint should be on its own line WITHOUT dashes or bullet points.  If the user types "None" or "No Findings" or anything similare, say "No presenting complaints found"
   Input: "${getEnabledContent('presentingComplaint', inputs.presentingComplaint)}"  
   Formatted Output:
   Correct any misspelled medical terms
