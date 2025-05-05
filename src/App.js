@@ -11,6 +11,69 @@ import "./styles/global.css";
 const AppContent = () => {
   const { user, isAuthenticated, isLoading } = useAuth0();
 
+  // Add Meta Pixel tracking
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return;
+
+    // Use void to satisfy no-unused-expressions
+    void function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+
+    // Add window to satisfy no-undef
+    window.fbq('init', '691293719968426');
+    window.fbq('track', 'PageView');
+  }, []);
+
+  // Track page changes when routes change
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return;
+
+    const handleRouteChange = () => {
+      if (window.fbq) {
+        window.fbq('track', 'PageView');
+      }
+    };
+
+    window.addEventListener('popstate', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
+
+  // Add this alongside your Meta Pixel tracking
+  useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') return;
+
+    const handleRouteChange = () => {
+      if (window.gtag) {
+        window.gtag('event', 'page_view', {
+          page_location: window.location.href,
+          page_path: window.location.pathname,
+          page_title: document.title
+        });
+      }
+    };
+
+    // Track route changes
+    window.addEventListener('popstate', handleRouteChange);
+
+    // Also track on first load
+    handleRouteChange();
+
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, []);
+
   useEffect(() => {
     const checkOrCreateUser = async () => {
       if (isLoading || !isAuthenticated || !user) return;
