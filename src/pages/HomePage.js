@@ -128,13 +128,13 @@ const HomePage = () => {
                     <div className="petnote-protocol-images">
                         <div className="protocol-image-container">
                             <picture>
-                                <source media="(max-width: 768px)" srcSet="/petnoteinfomobile.png" />
+                                <source media="(max-width: 768px)" srcSet="/petnotemobile.png" />
                                 <img src="/petnoteprotocol.png" alt="PetNote Protocol step 1" className="protocol-image" />
                             </picture>
                         </div>
                         <div className="protocol-image-container">
                             <picture>
-                                <source media="(max-width: 768px)" srcSet="/petqueryinfomobile.png" />
+                                <source media="(max-width: 768px)" srcSet="/petquerymobile.png" />
                                 <img src="/petqueryprotocol.png" alt="PetNote Protocol step 2" className="protocol-image" />
                             </picture>
                         </div>
