@@ -181,9 +181,3 @@
         margin: 0;
     }
 }
-
-@media screen and (max-width: 768px) {
-    .navbar-links .login-container {
-        display: none !important;
-    }
-}

@@ -556,3 +556,40 @@ h3 {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px rgba(63, 141, 219, 0.3);
 }
+
+/* Mobile Signup Container */
+.mobile-signup-container {
+    min-height: 100vh;
+    background-color: #f4f7fa;
+}
+
+.mobile-profile-container {
+    padding: 20px;
+    background-color: white;
+    min-height: 100vh;
+}
+
+.mobile-profile-container .profile-container {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* Hide navigation elements in mobile profile */
+.mobile-profile-container .sidebar,
+.mobile-profile-container .mobile-header {
+    display: none;
+}
+
+/* Mobile profile only container */
+.mobile-profile-only {
+    min-height: 100vh;
+    background-color: #f4f7fa;
+    padding: 0;
+}
+
+.mobile-profile-only .profile-container {
+    margin: 0;
+    border-radius: 0;
+    height: 100vh;
+}

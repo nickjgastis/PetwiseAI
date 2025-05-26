@@ -26,6 +26,7 @@ const Dashboard = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [needsWelcome, setNeedsWelcome] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [showMobileProfile, setShowMobileProfile] = useState(false);
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
@@ -179,15 +180,42 @@ const Dashboard = () => {
 
     // After onboarding, check if on mobile
     if (isMobile && !isLoading) {
-        return (
-            <div className="mobile-notification">
-                <img src="/PW.png" alt="Petwise Logo" className="mobile-notification-logo" />
-                <h1>Welcome to Petwise!</h1>
-                <p>Thanks for signing up! PetWise is designed as a desktop application to provide the best experience for veterinary professionals.</p>
-                <p>Please log in on your desktop computer to access all features and functionality.</p>
-                <button className="button" onClick={handleLogout}>Log Out</button>
-            </div>
-        );
+        // Only show mobile notification if NOT on profile route
+        if (!window.location.pathname.includes('/profile')) {
+            return (
+                <div className="mobile-signup-container">
+                    <div className="mobile-notification">
+                        <img src="/PW.png" alt="Petwise Logo" className="mobile-notification-logo" />
+                        <h1>Welcome to Petwise!</h1>
+                        {isSubscribed ? (
+                            <p>PetWise is designed as a desktop application. You can manage your subscription here, but please use your desktop computer to access all features.</p>
+                        ) : (
+                            <p>PetWise is designed as a desktop application, but you can sign up for a subscription here.</p>
+                        )}
+                        <p>After subscribing, please use your desktop computer to access all features.</p>
+                        <button
+                            className="button"
+                            onClick={() => navigate('/dashboard/profile')}
+                        >
+                            {isSubscribed ? 'Continue to Profile' : 'Continue to Sign Up'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // If on profile route, allow it but hide sidebar and only show profile
+        if (window.location.pathname.includes('/profile')) {
+            return (
+                <div className="mobile-profile-only">
+                    <Profile isMobileSignup={true} />
+                </div>
+            );
+        }
+
+        // Redirect any other mobile routes to profile
+        navigate('/dashboard/profile', { replace: true });
+        return null;
     }
 
     // ================ EVENT HANDLERS ================

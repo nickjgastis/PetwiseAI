@@ -502,3 +502,260 @@
 .pricing-features li:first-child {
     padding-top: 0;
 }
+
+/* Mobile Signup Mode */
+.profile-container.mobile-signup-mode {
+    padding: 16px;
+    margin: 0;
+    height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    background: #f4f7fa;
+}
+
+.mobile-signup-header {
+    text-align: center;
+    padding: 20px 0;
+    background: white;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-signup-header h2 {
+    color: #3f8ddb;
+    margin-bottom: 8px;
+    font-size: 1.5rem;
+}
+
+.mobile-signup-header p {
+    color: #666;
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Adjust pricing section for mobile signup */
+.mobile-signup-mode .pricing-section {
+    margin-top: 0;
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-signup-mode .pricing-container {
+    padding: 0;
+    gap: 16px;
+}
+
+.mobile-signup-mode .pricing-card {
+    min-width: 100%;
+    max-width: 100%;
+    flex: 1 1 100%;
+}
+
+/* Mobile subscription management for subscribed users */
+.mobile-subscription-management {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.mobile-subscription-management h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #3f8ddb;
+}
+
+.subscription-info {
+    margin-bottom: 20px;
+}
+
+.subscription-info p {
+    margin: 8px 0;
+    font-size: 1rem;
+}
+
+.mobile-subscription-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.mobile-subscription-actions .profile-button {
+    flex: 1;
+    min-width: 200px;
+}
+
+/* Mobile desktop reminder - modern blue */
+.mobile-desktop-reminder {
+    background: linear-gradient(135deg, #3f8ddb 0%, #1976d2 100%);
+    border: none;
+    border-radius: 16px;
+    padding: 20px;
+    margin: 16px 16px 24px 16px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(63, 141, 219, 0.15);
+}
+
+.mobile-desktop-reminder h3 {
+    margin: 0 0 12px 0;
+    font-size: 1.8rem;
+    color: white;
+}
+
+.mobile-desktop-reminder p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 500;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+/* Mobile signup header - modern styling */
+.mobile-signup-header {
+    text-align: center;
+    padding: 0 20px 24px 20px;
+    background: white;
+    margin: 0 16px 20px 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.mobile-signup-header h2 {
+    color: #2d3748;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.025em;
+}
+
+.mobile-signup-header p {
+    color: #718096;
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Mobile subscription management - modernized */
+.mobile-subscription-management {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.mobile-subscription-management h3 {
+    margin: 0 0 20px 0;
+    color: #2d3748;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.subscription-info {
+    margin-bottom: 24px;
+    background: #f7fafc;
+    padding: 16px;
+    border-radius: 12px;
+    border-left: 4px solid #3f8ddb;
+}
+
+.subscription-info p {
+    margin: 8px 0;
+    font-size: 0.95rem;
+    color: #4a5568;
+}
+
+.subscription-info strong {
+    color: #2d3748;
+    font-weight: 600;
+}
+
+/* Mobile account management - modernized */
+.mobile-account-management {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.mobile-account-management h3 {
+    margin: 0 0 12px 0;
+    color: #2d3748;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.mobile-account-management p {
+    margin: 0 0 20px 0;
+    color: #718096;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+/* Modern button styling for mobile - blue theme */
+.mobile-subscription-actions .profile-button,
+.mobile-account-actions .profile-button {
+    background: linear-gradient(135deg, #3f8ddb 0%, #1976d2 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 14px 20px;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(63, 141, 219, 0.2);
+    min-width: 0;
+    flex: 1;
+}
+
+.mobile-subscription-actions .profile-button:hover,
+.mobile-account-actions .profile-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(63, 141, 219, 0.3);
+}
+
+.mobile-subscription-actions,
+.mobile-account-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* Mobile signup mode adjustments */
+.mobile-signup-mode {
+    background: #f8fafc;
+    margin: 0;
+    border-radius: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.mobile-signup-mode .pricing-section {
+    margin: 0 16px 20px 16px;
+    width: auto;
+}
+
+.mobile-signup-mode .pricing-container {
+    padding: 0;
+    gap: 16px;
+    margin: 0;
+}
+
+.mobile-signup-mode .pricing-card {
+    min-width: 100%;
+    max-width: 100%;
+    flex: 1 1 100%;
+    margin-bottom: 16px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}

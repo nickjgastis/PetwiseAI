@@ -18,7 +18,7 @@ const stripePromise = loadStripe(
         : process.env.REACT_APP_STRIPE_PUBLIC_KEY
 );
 
-const Profile = () => {
+const Profile = ({ isMobileSignup = false }) => {
     const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
     const navigate = useNavigate();
     const location = useLocation();
@@ -185,7 +185,22 @@ const Profile = () => {
 
     return (
         isAuthenticated && (
-            <div className="profile-container">
+            <div className={`profile-container ${isMobileSignup ? 'mobile-signup-mode' : ''}`}>
+                {isMobileSignup && (
+                    <>
+                        <div className="mobile-desktop-reminder">
+                            <h3>📱 ➡️ 💻</h3>
+                            <p>For full access to all PetWise features, please switch to your desktop computer.</p>
+                        </div>
+                        {!isSubscribed && (
+                            <div className="mobile-signup-header">
+                                <h2>Complete Your Subscription</h2>
+                                <p>Choose a plan to get started with PetWise</p>
+                            </div>
+                        )}
+                    </>
+                )}
+
                 {showCheckout ? (
                     <Checkout
                         user={{
@@ -195,6 +210,7 @@ const Profile = () => {
                         }}
                         onBack={() => setShowCheckout(false)}
                         subscriptionStatus={subscriptionStatus}
+                        isMobileSignup={isMobileSignup}
                     />
                 ) : showManageAccount ? (
                     <ManageAccount
@@ -206,7 +222,6 @@ const Profile = () => {
                         {!isSubscriptionLoading &&
                             (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
                                 <div className="pricing-section">
-
                                     <Checkout
                                         user={{
                                             ...user,
@@ -216,75 +231,109 @@ const Profile = () => {
                                         subscriptionStatus={subscriptionStatus}
                                         onBack={null}
                                         embedded={true}
+                                        isMobileSignup={isMobileSignup}
                                     />
                                 </div>
                             )}
 
-                        <div className="profile-header">
-                            <div className="profile-picture-container">
-                                <img
-                                    src={getOptimizedImageUrl(user?.picture)}
-                                    alt={userData?.dvm_name || user?.name || 'User'}
-                                    className="profile-picture"
-                                    crossOrigin="anonymous"
-                                    referrerPolicy="no-referrer"
-                                    onError={(e) => {
-                                        console.log('Profile image error, falling back to SVG');
-                                        e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
-                                    }}
-                                    style={{
-                                        width: '100px',
-                                        height: '100px',
-                                        borderRadius: '50%',
-                                        objectFit: 'cover',
-                                        border: '2px solid #eee',
-                                        backgroundColor: '#f5f5f5'
-                                    }}
-                                />
-                            </div>
-                            <h2>{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
-                            <p className="profile-email">{user.email}</p>
-                        </div>
-                        <div className="profile-details">
-                            <h3>Profile Information</h3>
-                            <div className="profile-info">
-                                <div className="info-item">
-                                    <span className="info-label">DVM Name:</span>
-                                    <span className="info-value">
-                                        {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set'}
-                                    </span>
+                        {!isMobileSignup && (
+                            <>
+                                <div className="profile-header">
+                                    <div className="profile-picture-container">
+                                        <img
+                                            src={getOptimizedImageUrl(user?.picture)}
+                                            alt={userData?.dvm_name || user?.name || 'User'}
+                                            className="profile-picture"
+                                            crossOrigin="anonymous"
+                                            referrerPolicy="no-referrer"
+                                            onError={(e) => {
+                                                console.log('Profile image error, falling back to SVG');
+                                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+                                            }}
+                                            style={{
+                                                width: '100px',
+                                                height: '100px',
+                                                borderRadius: '50%',
+                                                objectFit: 'cover',
+                                                border: '2px solid #eee',
+                                                backgroundColor: '#f5f5f5'
+                                            }}
+                                        />
+                                    </div>
+                                    <h2>{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
+                                    <p className="profile-email">{user.email}</p>
                                 </div>
-                                <div className="info-item">
-                                    <span className="info-label">Nickname:</span>
-                                    <span className="info-value">{user.nickname || 'Not set'}</span>
-                                </div>
+                                <div className="profile-details">
+                                    <h3>Profile Information</h3>
+                                    <div className="profile-info">
+                                        <div className="info-item">
+                                            <span className="info-label">DVM Name:</span>
+                                            <span className="info-value">
+                                                {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set'}
+                                            </span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Nickname:</span>
+                                            <span className="info-value">{user.nickname || 'Not set'}</span>
+                                        </div>
 
-                                <div className="info-item">
-                                    <span className="info-label">Last Updated:</span>
-                                    <span className="info-value">{new Date(user.updated_at).toLocaleDateString()}</span>
+                                        <div className="info-item">
+                                            <span className="info-label">Last Updated:</span>
+                                            <span className="info-value">{new Date(user.updated_at).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Subscription Status:</span>
+                                            <span className="info-value">
+                                                {getSubscriptionStatus()}
+                                            </span>
+                                        </div>
+                                        <div className="info-item">
+                                            <span className="info-label">Subscription Type:</span>
+                                            <span className="info-value">
+                                                {getSubscriptionDisplay()}
+                                            </span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="info-item">
-                                    <span className="info-label">Subscription Status:</span>
-                                    <span className="info-value">
-                                        {getSubscriptionStatus()}
-                                    </span>
+                                <div className="profile-actions">
+                                    <button className="profile-button" onClick={handleBillingClick}>
+                                        Manage Subscription
+                                    </button>
+                                    <button className="profile-button" onClick={() => setShowManageAccount(true)}>
+                                        Manage Account
+                                    </button>
                                 </div>
-                                <div className="info-item">
-                                    <span className="info-label">Subscription Type:</span>
-                                    <span className="info-value">
-                                        {getSubscriptionDisplay()}
-                                    </span>
+                            </>
+                        )}
+
+                        {/* Add mobile subscription management for subscribed users */}
+                        {isMobileSignup && isSubscribed && (
+                            <div className="mobile-subscription-management">
+                                <h3>Your Subscription</h3>
+                                <div className="subscription-info">
+                                    <p><strong>Status:</strong> {getSubscriptionStatus()}</p>
+                                    <p><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
+                                </div>
+                                <div className="mobile-subscription-actions">
+                                    <button className="profile-button" onClick={handleBillingClick}>
+                                        Manage Subscription
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-                        <div className="profile-actions">
-                            <button className="profile-button" onClick={handleBillingClick}>
-                                Manage Subscription
-                            </button>
-                            <button className="profile-button" onClick={() => setShowManageAccount(true)}>
-                                Manage Account
-                            </button>
-                        </div>
+                        )}
+
+                        {/* Add mobile account management for all mobile users */}
+                        {isMobileSignup && (
+                            <div className="mobile-account-management">
+                                <h3>Account Management</h3>
+                                <p>View and manage your account settings, or delete your account.</p>
+                                <div className="mobile-account-actions">
+                                    <button className="profile-button" onClick={() => setShowManageAccount(true)}>
+                                        Manage Account
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
