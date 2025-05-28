@@ -900,3 +900,125 @@ app.post('/manual-reset', async (req, res) => {
     }
 });
 
+// Add this new admin metrics endpoint
+app.get('/admin-metrics', async (req, res) => {
+    try {
+        // Verify admin access - should match process.env.REACT_APP_ADMIN_USER_ID
+        const { user_id } = req.query;
+
+        if (!user_id || user_id !== process.env.REACT_APP_ADMIN_USER_ID) {
+            return res.status(403).json({ error: 'Unauthorized access' });
+        }
+
+        // Get users
+        const { data: users, error: userError } = await supabase
+            .from('users')
+            .select('*');
+
+        if (userError) throw userError;
+
+        // Get reports
+        const { data: reports, error: reportError } = await supabase
+            .from('reports')
+            .select('*');
+
+        if (reportError) throw reportError;
+
+        // Calculate metrics
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        // User metrics
+        const totalUsers = users.length;
+        const activeUsers = users.filter(u => u.subscription_status === 'active').length;
+        const trialUsers = users.filter(u => u.subscription_interval === 'trial').length;
+
+        // Time-based metrics
+        const newUsersThisMonth = users.filter(
+            u => new Date(u.created_at) >= firstDayOfMonth
+        ).length;
+
+        const newUsersLastMonth = users.filter(
+            u => new Date(u.created_at) >= firstDayOfLastMonth &&
+                new Date(u.created_at) < firstDayOfMonth
+        ).length;
+
+        // Subscription metrics
+        const subscriptionsByType = {
+            monthly: users.filter(u =>
+                u.subscription_status === 'active' &&
+                u.subscription_interval === 'monthly'
+            ).length,
+            yearly: users.filter(u =>
+                u.subscription_status === 'active' &&
+                u.subscription_interval === 'yearly'
+            ).length,
+            trial: trialUsers,
+            inactive: users.filter(u => u.subscription_status === 'inactive').length,
+            canceling: users.filter(u => u.cancel_at_period_end === true).length
+        };
+
+        // Report metrics
+        const totalReports = reports.length;
+        const reportsThisMonth = reports.filter(
+            r => new Date(r.created_at) >= firstDayOfMonth
+        ).length;
+
+        // Quick query metrics (sum from user counts)
+        const totalQuickQueries = users.reduce(
+            (sum, user) => sum + (user.quick_query_count || 0),
+            0
+        );
+
+        // Metrics by month
+        const last6Months = Array.from({ length: 6 }, (_, i) => {
+            const date = new Date();
+            date.setMonth(date.getMonth() - i);
+            return {
+                month: date.toLocaleString('default', { month: 'short' }),
+                year: date.getFullYear()
+            };
+        });
+
+        const monthlyMetrics = last6Months.map(({ month, year }) => {
+            const startOfMonth = new Date(year, new Date().getMonth() - last6Months.findIndex(m => m.month === month), 1);
+            const endOfMonth = new Date(year, new Date().getMonth() - last6Months.findIndex(m => m.month === month) + 1, 0);
+
+            return {
+                month,
+                year,
+                newUsers: users.filter(u =>
+                    new Date(u.created_at) >= startOfMonth &&
+                    new Date(u.created_at) <= endOfMonth
+                ).length,
+                newReports: reports.filter(r =>
+                    new Date(r.created_at) >= startOfMonth &&
+                    new Date(r.created_at) <= endOfMonth
+                ).length
+            };
+        });
+
+        res.json({
+            totalUsers,
+            activeUsers,
+            trialUsers,
+            newUsersThisMonth,
+            newUsersLastMonth,
+            growthRate: newUsersLastMonth > 0
+                ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
+                : 0,
+            subscriptionsByType,
+            totalReports,
+            reportsThisMonth,
+            totalQuickQueries,
+            monthlyMetrics,
+            lastUpdated: new Date().toISOString()
+        });
+
+    } catch (error) {
+        console.error('Admin metrics error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+

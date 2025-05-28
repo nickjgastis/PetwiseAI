@@ -12,10 +12,25 @@ import Profile from './components/Profile';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import Terms from './components/Terms';
 import Help from './components/Help';
+import AdminDashboard from './components/AdminDashboard';
 
 const AppRoutes = () => {
-    const { isLoading, isAuthenticated } = useAuth0();
+    const { isLoading, isAuthenticated, user } = useAuth0();
     const location = useLocation();
+
+    // Check if the current user is an admin (you)
+    const isAdmin = user?.sub === process.env.REACT_APP_ADMIN_USER_ID;
+
+    // Add debugging console logs
+    useEffect(() => {
+        if (location.pathname === '/admin') {
+            console.log('Admin route accessed');
+            console.log('User sub:', user?.sub);
+            console.log('Admin ID from env:', process.env.REACT_APP_ADMIN_USER_ID);
+            console.log('Is admin?', isAdmin);
+            console.log('User authenticated?', isAuthenticated);
+        }
+    }, [location, user, isAdmin, isAuthenticated]);
 
     useEffect(() => {
         // console.log('Route changed to:', location.pathname);
@@ -56,6 +71,16 @@ const AppRoutes = () => {
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/help" element={<Help />} />
+            <Route
+                path="/admin"
+                element={
+                    isAdmin ? (
+                        <AdminDashboard />
+                    ) : (
+                        <Navigate to="/dashboard" replace />
+                    )
+                }
+            />
             <Route
                 path="*"
                 element={<Navigate to={isAuthenticated ? "/dashboard" : "/"} replace />}

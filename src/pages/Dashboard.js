@@ -180,6 +180,13 @@ const Dashboard = () => {
 
     // After onboarding, check if on mobile
     if (isMobile && !isLoading) {
+        // Check if this is the admin route - allow access on mobile for admins
+        const isAdminRoute = window.location.pathname.includes('/admin');
+        if (isAdminRoute && user?.sub === process.env.REACT_APP_ADMIN_USER_ID) {
+            // Allow admin access on mobile - return null so the admin route renders
+            return null;
+        }
+
         // Only show mobile notification if NOT on profile route
         if (!window.location.pathname.includes('/profile')) {
             return (
