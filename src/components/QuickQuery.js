@@ -14,16 +14,99 @@ const formatMessage = (content) => {
     const lines = content.split('\n');
     const firstNonEmptyLineIndex = lines.findIndex(line => line.trim().length > 0);
 
-    // Handle title line separately
+    // Handle title line separately (it's our main header)
     if (firstNonEmptyLineIndex !== -1) {
         const titleLine = lines[firstNonEmptyLineIndex].trim();
-        lines[firstNonEmptyLineIndex] = titleLine;
+        lines[firstNonEmptyLineIndex] = `<h3>${titleLine}</h3>`;
     }
 
-    // Rejoin and apply formatting
-    return lines.join('\n')
-        .replace(/###\s*(.*?)(?:\n|$)/g, '<h3><strong>$1</strong></h3>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Remove any lines containing only "---"
+    const filteredLines = lines.filter(line => line.trim() !== '---');
+
+    // Remove consecutive empty lines (collapse multiple blank lines into one)
+    const condensedLines = [];
+    let lastLineEmpty = false;
+
+    for (const line of filteredLines) {
+        const isLineEmpty = line.trim() === '';
+
+        // Only add empty line if previous line wasn't empty
+        if (!(isLineEmpty && lastLineEmpty)) {
+            condensedLines.push(line);
+        }
+
+        lastLineEmpty = isLineEmpty;
+    }
+
+    // Join lines with newlines, but use a string method to avoid extra whitespace
+    let htmlContent = '';
+
+    // Process line by line to have more control over the output
+    for (let i = 0; i < condensedLines.length; i++) {
+        const line = condensedLines[i].trim();
+
+        // Skip empty lines
+        if (line === '') continue;
+
+        // First, process any bold text in the line to avoid regex conflicts
+        let processedLine = line;
+
+        // Only process the bold text if it's not a header line (to avoid conflicts)
+        if (
+            !(/^(\d+)\.\s+(.*?):$/.test(line)) &&
+            !(/^###\s+(.*)$/.test(line)) &&
+            !(/^\*\*(.*?):\*\*$/.test(line))
+        ) {
+            // Process bold text
+            processedLine = processedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        }
+
+        // Process different line types
+        if (i === firstNonEmptyLineIndex) {
+            // Title (already handled)
+            htmlContent += `<h3>${processedLine.replace(/^<h3>(.*)<\/h3>$/, '$1')}</h3>`;
+        }
+        else if (/^(\d+)\.\s+(.*?):$/.test(processedLine)) {
+            // Numbered section headers
+            htmlContent += processedLine.replace(/^(\d+)\.\s+(.*?):$/, '<div class="section-header"><span class="section-number">$1.</span><h3>$2</h3></div>');
+        }
+        else if (/^###\s+(.*)$/.test(processedLine)) {
+            // ### Headers
+            htmlContent += processedLine.replace(/^###\s+(.*)$/, '<h3>$1</h3>');
+        }
+        else if (/^\*\*(.*?):\*\*$/.test(processedLine)) {
+            // **Header:** format
+            htmlContent += processedLine.replace(/^\*\*(.*?):\*\*$/, '<h3>$1</h3>');
+        }
+        else if (/^\s*-\s+(.*?):\s*$/.test(processedLine)) {
+            // Bullet points with nested info (medication headers) - no bullets
+            htmlContent += processedLine.replace(/^\s*-\s+(.*?):\s*$/, '<div class="medication-item"><strong>$1:</strong></div>');
+        }
+        else if (/^\s*-\s+(.*)$/.test(processedLine)) {
+            // Regular bullet points - convert to plain text without bullets
+            const contentWithoutBullet = processedLine.replace(/^\s*-\s+/, '');
+            htmlContent += `<div class="line-item">${contentWithoutBullet}</div>`;
+        }
+        else if (/^(\d+)\.\s+(.*)$/.test(processedLine)) {
+            // Numbered list items
+            htmlContent += processedLine.replace(/^(\d+)\.\s+(.*)$/, '<div class="list-item"><span class="number">$1.</span><span>$2</span></div>');
+        }
+        else {
+            // Special handling for additional notes and recommendations
+            if (processedLine.includes("Additional Notes:")) {
+                htmlContent += `<div class="additional-notes">${processedLine}</div>`;
+            }
+            else if (processedLine.includes("Recommendation:")) {
+                htmlContent += `<div class="recommendation">${processedLine}</div>`;
+            }
+            // Regular text - preserve as is
+            else {
+                htmlContent += `<div>${processedLine}</div>`;
+            }
+        }
+    }
+
+    return htmlContent;
 };
 
 const formatMessageForPDF = (content) => {
@@ -213,9 +296,11 @@ const QuickQuery = () => {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [fadeOutLoader, setFadeOutLoader] = useState(false);
     const [randomSuggestions, setRandomSuggestions] = useState(
         SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 3)
     );
+    const [isTyping, setIsTyping] = useState(false);
 
     useEffect(() => {
         const lastUser = localStorage.getItem('lastUserId');
@@ -269,14 +354,43 @@ const QuickQuery = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const formatTimestamp = () => {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+    };
+
+    // Helper function to manage loading state transitions
+    const finishLoading = () => {
+        // First fade out the loader
+        setFadeOutLoader(true);
+
+        // Then after animation completes, reset states
+        setTimeout(() => {
+            setIsLoading(false);
+            setIsTyping(false);
+            setFadeOutLoader(false);
+        }, 300); // Match the fadeOut animation duration
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!inputMessage.trim() || isLoading) return;
 
-        const newMessage = { role: 'user', content: inputMessage.trim() };
+        // Get timestamp
+        const timestamp = formatTimestamp();
+
+        const newMessage = {
+            role: 'user',
+            content: inputMessage.trim(),
+            timestamp
+        };
         setMessages(prev => [...prev, newMessage]);
         setInputMessage('');
         setIsLoading(true);
+        setIsTyping(true);
+        setFadeOutLoader(false);
 
         // Collapse textarea
         const textarea = document.querySelector('.qq-message-input');
@@ -314,21 +428,14 @@ const QuickQuery = () => {
 ### FORMATTING GUIDELINES:
 1. **Headers:** Use **bold headers** for clear sectioning.
 2. **Spacing:** Ensure proper spacing with **double line breaks** between sections and headers.
-3. **Lists:** 
-4. Do not use - or * to indicate lists.
-
-   
+3. **Lists:** Use numbers for ordered lists, not bullet points.
 4. **Critical Terms:** Highlight key terms or actions in **bold** for clarity.
-
----
 
 ### RESPONSE GUIDELINES:
 - Responses should focus on actionable, evidence-based information, staying concise and on-topic.
 - For common cases, prioritize practical treatments.
 - For less common or specific cases, provide insightful, clinically relevant advice with brief reasoning.
 - **Avoid lengthy explanations** unless explicitly requested.
-
----
 
 ### WHEN PROVIDING TREATMENTS:
 Treatments should follow this structure:
@@ -348,8 +455,6 @@ Treatments should follow this structure:
         **Duration:** Adjust based on hydration status
         **Additional Notes:** Monitor for fluid overload, particularly in cardiac or renal patients.
 
----
-
 ### WHEN PROVIDING DIAGNOSTIC PLANS:
 Diagnostics should be presented as actionable steps, prioritized based on the case. Use this structure:
 
@@ -367,8 +472,6 @@ Diagnostics should be presented as actionable steps, prioritized based on the ca
      Coombs' test: Evaluate for immune-mediated hemolysis.
      Abdominal ultrasound: Rule out splenic masses or bleeding.
 
----
-
 ### WHEN HANDLING UNCOMMON CASES:
 For less common cases, provide:
 1. A brief overview of the condition.
@@ -385,21 +488,15 @@ For less common cases, provide:
    **Frequency:** Single dose, repeat based on ionized calcium levels
    **Additional Notes:** Monitor ECG for bradycardia or arrhythmias during infusion.
 
----
-
 ### FINAL TOUCHES:
 - Always end responses with a clear **Recommendation** section summarizing the next steps.
 - Always allow any language translations.
-- always allow client handouts or client comminications.
-
+- Always allow client handouts or client comminications.
 - ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}
 - Provide **specific and concise information** for maximum clarity and usability.
 
----
-
 ### Example Output:
 **Case: Acute Canine Pancreatitis**
-
 
 1. **Primary Objective:** Stabilize the patient and reduce pancreatic inflammation.
 2. **Treatment:**
@@ -415,8 +512,6 @@ For less common cases, provide:
      **Frequency:** QID
      **Duration:** 3-5 days
 3. **Recommendation:** Administer fluids immediately and control pain. Monitor electrolytes and hydration. Reassess within 24 hours with follow-up diagnostics (e.g., CPL).
-
----
 
 By adhering to these guidelines, ensure responses are **short, actionable, and formatted for quick reference** while providing high-quality assistance tailored to professional veterinarians.
 `
@@ -450,7 +545,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: response.data.choices[0].message.content
+                content: response.data.choices[0].message.content,
+                timestamp: formatTimestamp()
             }]);
         } catch (error) {
             console.error('Error in QuickQuery:', error);
@@ -462,10 +558,11 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: errorMessage
+                content: errorMessage,
+                timestamp: formatTimestamp()
             }]);
         } finally {
-            setIsLoading(false);
+            finishLoading();
         }
     };
 
@@ -526,8 +623,23 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     };
 
     const handleSuggestionClick = async (question) => {
-        setMessages(prev => [...prev, { role: 'user', content: question }]);
+        if (isTyping) return;
+
+        // Get timestamp
+        const timestamp = formatTimestamp();
+
+        const newMessage = {
+            role: 'user',
+            content: question,
+            timestamp
+        };
+        setMessages(prev => [...prev, newMessage]);
+        setIsTyping(true);
         setIsLoading(true);
+        setFadeOutLoader(false);
+
+        // Auto-scroll to the bottom
+        scrollToBottom();
 
         try {
             const conversationHistory = [
@@ -538,21 +650,14 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 ### FORMATTING GUIDELINES:
 1. **Headers:** Use **bold headers** for clear sectioning.
 2. **Spacing:** Ensure proper spacing with **double line breaks** between sections and headers.
-3. **Lists:** 
-4. Do not use - or * to indicate lists.
-
-   
+3. **Lists:** Use numbers for ordered lists, not bullet points. 
 4. **Critical Terms:** Highlight key terms or actions in **bold** for clarity.
-
----
 
 ### RESPONSE GUIDELINES:
 - Responses should focus on actionable, evidence-based information, staying concise and on-topic.
 - For common cases, prioritize practical treatments.
 - For less common or specific cases, provide insightful, clinically relevant advice with brief reasoning.
 - **Avoid lengthy explanations** unless explicitly requested.
-
----
 
 ### WHEN PROVIDING TREATMENTS:
 Treatments should follow this structure:
@@ -572,8 +677,6 @@ Treatments should follow this structure:
         **Duration:** Adjust based on hydration status
         **Additional Notes:** Monitor for fluid overload, particularly in cardiac or renal patients.
 
----
-
 ### WHEN PROVIDING DIAGNOSTIC PLANS:
 Diagnostics should be presented as actionable steps, prioritized based on the case. Use this structure:
 
@@ -591,8 +694,6 @@ Diagnostics should be presented as actionable steps, prioritized based on the ca
      Coombs' test: Evaluate for immune-mediated hemolysis.
      Abdominal ultrasound: Rule out splenic masses or bleeding.
 
----
-
 ### WHEN HANDLING UNCOMMON CASES:
 For less common cases, provide:
 1. A brief overview of the condition.
@@ -609,19 +710,13 @@ For less common cases, provide:
    **Frequency:** Single dose, repeat based on ionized calcium levels
    **Additional Notes:** Monitor ECG for bradycardia or arrhythmias during infusion.
 
----
-
 ### FINAL TOUCHES:
 - Always end responses with a clear **Recommendation** section summarizing the next steps.
-
 - ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}
 - Provide **specific and concise information** for maximum clarity and usability.
 
----
-
 ### Example Output:
 **Case: Acute Canine Pancreatitis**
-
 
 1. **Primary Objective:** Stabilize the patient and reduce pancreatic inflammation.
 2. **Treatment:**
@@ -637,8 +732,6 @@ For less common cases, provide:
      **Frequency:** QID
      **Duration:** 3-5 days
 3. **Recommendation:** Administer fluids immediately and control pain. Monitor electrolytes and hydration. Reassess within 24 hours with follow-up diagnostics (e.g., CPL).
-
----
 
 By adhering to these guidelines, ensure responses are **short, actionable, and formatted for quick reference** while providing high-quality assistance tailored to professional veterinarians.
 `
@@ -675,16 +768,18 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: response.data.choices[0].message.content
+                content: response.data.choices[0].message.content,
+                timestamp: formatTimestamp()
             }]);
         } catch (error) {
             console.error('Error in QuickQuery:', error);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I'm sorry, I encountered an error. Please try again."
+                content: "I'm sorry, I encountered an error. Please try again.",
+                timestamp: formatTimestamp()
             }]);
         } finally {
-            setIsLoading(false);
+            finishLoading();
         }
     };
 
@@ -703,7 +798,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     {messages.length === 0 && (
                         <>
                             <div className="qq-disclaimer">
-                                <p>Disclaimer: PetQuery provides AI-generated responses for educational purposes only.
+                                <strong>Disclaimer:</strong>
+                                <p>PetQuery provides AI-generated responses for educational purposes only.
                                     These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
                                     Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
                             </div>
@@ -721,19 +817,19 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             </div>
                         </>
                     )}
-                    {messages.map((message, index) => (
-                        <div key={index} className={`qq-message ${message.role}`}>
+                    {messages.map((msg, index) => (
+                        <div key={index} className={`qq-message ${msg.role}`}>
                             <div className="qq-message-content">
-                                {message.role === 'assistant' ? (
-                                    <div dangerouslySetInnerHTML={{ __html: formatMessage(message.content) }} />
+                                {msg.role === 'assistant' ? (
+                                    <div dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
                                 ) : (
-                                    message.content
+                                    msg.content
                                 )}
-                                {message.role === 'assistant' && (
+                                {msg.role === 'assistant' && (
                                     <div className="qq-button-group">
                                         <button
                                             className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
-                                            onClick={() => handleCopy(message.content, index)}
+                                            onClick={() => handleCopy(msg.content, index)}
                                             aria-label="Copy message"
                                         >
                                             {copiedIndex === index ? (
@@ -749,25 +845,25 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         </button>
                                         <button
                                             className="qq-print-button"
-                                            onClick={() => handlePrint(message.content)}
+                                            onClick={() => handlePrint(msg.content)}
                                             aria-label="Print message"
                                         >
                                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
                                                 <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
                                             </svg>
                                         </button>
+                                        {msg.timestamp && <span className="qq-message-timestamp">{msg.timestamp}</span>}
                                     </div>
                                 )}
+                                {msg.role === 'user' && msg.timestamp && <div className="qq-message-timestamp">{msg.timestamp}</div>}
                             </div>
                         </div>
                     ))}
                     {isLoading && (
-                        <div className="qq-message assistant">
-                            <div className="qq-message-content loading">
-                                <div className="typing-indicator">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
+                        <div className={`qq-message assistant ${fadeOutLoader ? 'fade-out' : ''}`}>
+                            <div className="shimmer-loader-container">
+                                <div className="shimmer-loader">
+                                    <span className="loader-text">Thinking...</span>
                                 </div>
                             </div>
                         </div>
