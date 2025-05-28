@@ -10,6 +10,7 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Node } from 'slate';
 import { Link, useNavigate } from 'react-router-dom';
+import SOAPView from './SOAPView';
 
 // Add this before PDFDocument component
 // const mainHeaders = [ ... ];
@@ -1403,6 +1404,57 @@ const ReportForm = () => {
         }
     }, []); // Run once on mount
 
+    // Add view state for SOAP toggle
+    const [currentView, setCurrentView] = useState(() => 
+        localStorage.getItem('currentView') || 'soap'
+    );
+
+    // Copy section functionality for SOAP view
+    const handleCopySection = async (sectionContent, sectionTitle) => {
+        try {
+            // Create both HTML and plain text versions
+            const htmlContent = sectionContent.split('\n').map(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                    return `<b style="background: none; background-color: transparent;">${trimmedLine.slice(2, -2)}</b>`;
+                }
+                return `<span style="background: none; background-color: transparent;">${line}</span>`;
+            }).join('<br>');
+
+            const wrappedHtml = `
+                <div style="color: black; background: none; background-color: transparent;">
+                    ${htmlContent}
+                </div>
+            `;
+
+            const plainText = sectionContent.replace(/\*\*/g, '');
+
+            const clipboardData = new ClipboardItem({
+                'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
+                'text/plain': new Blob([plainText], { type: 'text/plain' })
+            });
+
+            await navigator.clipboard.write([clipboardData]);
+            
+            // Show success message
+            setCopyButtonText(`${sectionTitle} Copied!`);
+            setCopiedMessageVisible(true);
+            setTimeout(() => {
+                setCopyButtonText('Copy to Clipboard');
+                setCopiedMessageVisible(false);
+            }, 2000);
+        } catch (err) {
+            console.error('Copy failed:', err);
+            setCopyButtonText('Copy Failed');
+            setTimeout(() => setCopyButtonText('Copy to Clipboard'), 2000);
+        }
+    };
+
+    // Add this useEffect to save current view to localStorage
+    useEffect(() => {
+        localStorage.setItem('currentView', currentView);
+    }, [currentView]);
+
     return (
         <div className="report-container">
             {!patientInfoSubmitted ? (
@@ -1836,7 +1888,23 @@ const ReportForm = () => {
                 <div className="report-preview-header">
                     <h3>Record Preview</h3>
                     {previewVisible && (
-                        <button className="close-button" onClick={() => setPreviewVisible(false)}>×</button>
+                        <div className="view-controls">
+                            <div className="view-toggle-buttons">
+                                <button 
+                                    className={`view-toggle-btn ${currentView === 'soap' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('soap')}
+                                >
+                                    SOAP
+                                </button>
+                                <button 
+                                    className={`view-toggle-btn ${currentView === 'standard' ? 'active' : ''}`}
+                                    onClick={() => setCurrentView('standard')}
+                                >
+                                    Standard
+                                </button>
+                            </div>
+                            <button className="close-button" onClick={() => setPreviewVisible(false)}>×</button>
+                        </div>
                     )}
                 </div>
 
@@ -1847,65 +1915,72 @@ const ReportForm = () => {
                             <p className="loading-text">{loadingText}</p>
                         </div>
                     ) : previewVisible ? (
-                        <div className="editor-wrapper" style={{
-                            height: '100%',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            padding: '8px',          // Reduced from 10px
-                            borderRadius: '4px'
-                        }}>
-                            <Slate
-                                editor={editor}
-                                initialValue={slateValue}
-                                value={slateValue}
-                                onChange={value => {
-                                    setSlateValue(value);
-                                    const newText = processSlateForPDF(value);
-                                    setReportText(newText);
-                                    localStorage.setItem('currentReportText', newText);
-                                }}
-                            >
-                                <Editable
-                                    renderElement={renderElement}
-                                    renderLeaf={renderLeaf}
-                                    style={{
-                                        minHeight: '100%',
-                                        padding: '8px',          // Reduced from 10px
-                                        whiteSpace: 'pre-wrap',
-                                        lineHeight: '1.2',       // Reduced from 1.5
-                                        fontSize: '14px'         // Reduced from 14px
+                        currentView === 'soap' ? (
+                            <SOAPView 
+                                reportText={reportText} 
+                                onCopySection={handleCopySection}
+                            />
+                        ) : (
+                            <div className="editor-wrapper" style={{
+                                height: '100%',
+                                overflowY: 'auto',
+                                backgroundColor: 'white',
+                                padding: '8px',
+                                borderRadius: '4px'
+                            }}>
+                                <Slate
+                                    editor={editor}
+                                    initialValue={slateValue}
+                                    value={slateValue}
+                                    onChange={value => {
+                                        setSlateValue(value);
+                                        const newText = processSlateForPDF(value);
+                                        setReportText(newText);
+                                        localStorage.setItem('currentReportText', newText);
                                     }}
-                                    onCopy={(event) => {
-                                        event.preventDefault();
-                                        const selection = window.getSelection();
+                                >
+                                    <Editable
+                                        renderElement={renderElement}
+                                        renderLeaf={renderLeaf}
+                                        style={{
+                                            minHeight: '100%',
+                                            padding: '8px',
+                                            whiteSpace: 'pre-wrap',
+                                            lineHeight: '1.2',
+                                            fontSize: '14px'
+                                        }}
+                                        onCopy={(event) => {
+                                            event.preventDefault();
+                                            const selection = window.getSelection();
 
-                                        const selectedNodes = slateValue.filter(node => {
-                                            const nodeText = Node.string(node);
-                                            return selection.toString().includes(nodeText);
-                                        });
+                                            const selectedNodes = slateValue.filter(node => {
+                                                const nodeText = Node.string(node);
+                                                return selection.toString().includes(nodeText);
+                                            });
 
-                                        const formattedText = processSlateForPDF(selectedNodes);
-                                        const plainText = formattedText.replace(/\*\*/g, '');
+                                            const formattedText = processSlateForPDF(selectedNodes);
+                                            const plainText = formattedText.replace(/\*\*/g, '');
 
-                                        const htmlContent = formattedText.split('\n').map(line => {
-                                            if (line.startsWith('**') && line.endsWith('**')) {
-                                                return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
-                                            }
-                                            return `<span style="background: none; background-color: transparent;">${line}</span>`;
-                                        }).join('<br>');
+                                            const htmlContent = formattedText.split('\n').map(line => {
+                                                if (line.startsWith('**') && line.endsWith('**')) {
+                                                    return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
+                                                }
+                                                return `<span style="background: none; background-color: transparent;">${line}</span>`;
+                                            }).join('<br>');
 
-                                        const wrappedHtml = `
-                                            <div style="color: black; background: none; background-color: transparent;">
-                                                ${htmlContent}
-                                            </div>
-                                        `;
+                                            const wrappedHtml = `
+                                                <div style="color: black; background: none; background-color: transparent;">
+                                                    ${htmlContent}
+                                                </div>
+                                            `;
 
-                                        event.clipboardData.setData('text/html', wrappedHtml);
-                                        event.clipboardData.setData('text/plain', plainText);
-                                    }}
-                                />
-                            </Slate>
-                        </div>
+                                            event.clipboardData.setData('text/html', wrappedHtml);
+                                            event.clipboardData.setData('text/plain', plainText);
+                                        }}
+                                    />
+                                </Slate>
+                            </div>
+                        )
                     ) : (
                         <div className="report-placeholder">
                             <h2>Record will appear here</h2>
