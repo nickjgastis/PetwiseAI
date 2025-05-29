@@ -1287,7 +1287,7 @@ input:checked+.slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 16px;
+    padding: 8px 16px;
     margin: 0;
     font-weight: 600;
     color: white;
@@ -1322,19 +1322,19 @@ input:checked+.slider:before {
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     color: white;
-    padding: 6px 10px;
+    padding: 5px 8px;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 5px;
-    min-width: 70px;
+    gap: 4px;
+    min-width: 65px;
     justify-content: center;
     position: relative;
     overflow: hidden;
-    height: 28px;
+    height: 26px;
 }
 
 .soap-copy-button:hover {
@@ -1357,8 +1357,8 @@ input:checked+.slider:before {
 }
 
 .copy-icon {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1557,4 +1557,93 @@ input:checked+.slider:before {
     .soap-bold-line {
         font-size: 0.85rem;
     }
+}
+
+/* Editable SOAP Section Styles */
+.soap-editable-section {
+    padding: 0;
+    background: transparent;
+}
+
+.soap-editable-section [data-slate-editor="true"] {
+    outline: none;
+    background: transparent;
+    border: none;
+    resize: none;
+    font-family: inherit;
+    color: inherit;
+    cursor: text;
+    text-decoration: none;
+    -webkit-text-decoration: none;
+    text-decoration-line: none;
+    text-decoration-color: transparent;
+}
+
+.soap-editable-section [data-slate-editor="true"]:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+.soap-editable-section [data-slate-node="element"] {
+    margin: 0.2em 0;
+    text-decoration: none;
+    -webkit-text-decoration: none;
+    text-decoration-line: none;
+    text-decoration-color: transparent;
+}
+
+.soap-editable-section [data-slate-node="element"][data-slate-type="heading"] {
+    font-weight: bold;
+    font-size: 1em;
+    margin: 0.6em 0 0.1em;
+    color: inherit;
+    text-decoration: none;
+    -webkit-text-decoration: none;
+    text-decoration-line: none;
+    text-decoration-color: transparent;
+}
+
+.soap-editable-section [data-slate-node="element"][data-slate-type="paragraph"] {
+    margin: 0.2em 0;
+    min-height: 1.2em;
+    text-decoration: none;
+    -webkit-text-decoration: none;
+    text-decoration-line: none;
+    text-decoration-color: transparent;
+}
+
+/* Ensure editable sections maintain visual consistency */
+.soap-subjective .soap-editable-section [data-slate-node="element"][data-slate-type="heading"] {
+    color: #1e40af;
+}
+
+.soap-objective .soap-editable-section [data-slate-node="element"][data-slate-type="heading"] {
+    color: #065f46;
+}
+
+.soap-assessment .soap-editable-section [data-slate-node="element"][data-slate-type="heading"] {
+    color: #92400e;
+}
+
+.soap-plan .soap-editable-section [data-slate-node="element"][data-slate-type="heading"] {
+    color: #991b1b;
+}
+
+/* Text selection in editable SOAP sections */
+.soap-editable-section ::selection {
+    background-color: rgba(59, 130, 246, 0.2);
+    text-shadow: none;
+}
+
+.soap-objective .soap-editable-section ::selection {
+    background-color: rgba(16, 185, 129, 0.2);
+}
+
+.soap-assessment .soap-editable-section ::selection {
+    background-color: rgba(245, 158, 11, 0.2);
+}
+
+.soap-plan .soap-editable-section ::selection {
+    background-color: rgba(239, 68, 68, 0.2);
 }

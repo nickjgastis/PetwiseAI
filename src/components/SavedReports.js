@@ -785,14 +785,12 @@ const SavedReports = () => {
                                     <button
                                         className={`view-toggle-btn ${currentView === 'standard' ? 'active' : ''}`}
                                         onClick={() => setCurrentView('standard')}
-                                        disabled={editingReport?.id === selectedReport.id}
                                     >
                                         Standard
                                     </button>
                                     <button
                                         className={`view-toggle-btn ${currentView === 'soap' ? 'active' : ''}`}
                                         onClick={() => setCurrentView('soap')}
-                                        disabled={editingReport?.id === selectedReport.id}
                                     >
                                         SOAP
                                     </button>
@@ -860,6 +858,14 @@ const SavedReports = () => {
                             <SOAPView
                                 reportText={editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text}
                                 onCopySection={handleCopySection}
+                                isEditable={editingReport?.id === selectedReport.id}
+                                onContentChange={editingReport?.id === selectedReport.id ? (newText) => {
+                                    setEditingReport({
+                                        ...editingReport,
+                                        report_text: newText
+                                    });
+                                } : undefined}
+                                forceTextView={true}
                             />
                         ) : (
                             <div className="editor-wrapper">

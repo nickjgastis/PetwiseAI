@@ -2029,6 +2029,12 @@ const ReportForm = () => {
                             <SOAPView
                                 reportText={reportText}
                                 onCopySection={handleCopySection}
+                                isEditable={true}
+                                onContentChange={(newText) => {
+                                    setReportText(newText);
+                                    setSlateValue(deserializeSlateValue(newText));
+                                    localStorage.setItem('currentReportText', newText);
+                                }}
                             />
                         ) : (
                             <div className="editor-wrapper" style={{
