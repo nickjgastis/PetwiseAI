@@ -19,9 +19,9 @@ const parseReportForSOAP = (reportText) => {
     let currentSection = null;
     let currentSubsection = null;
 
-    for (let line of lines) {
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
 
         // Check for main headers and map to SOAP sections
         if (trimmedLine.includes('**Patient Information:**') ||
@@ -54,9 +54,30 @@ const parseReportForSOAP = (reportText) => {
             currentSubsection = trimmedLine;
             sections.plan.push({ header: trimmedLine, content: [] });
         } else if (currentSection && sections[currentSection].length > 0) {
-            // Add content to current subsection
-            const lastSubsection = sections[currentSection][sections[currentSection].length - 1];
-            lastSubsection.content.push(line);
+            // Only include empty lines if they're within content (not at section boundaries)
+            if (!trimmedLine) {
+                // Check if this empty line is followed by actual content (not another header)
+                let hasContentAfter = false;
+                for (let j = i + 1; j < lines.length; j++) {
+                    const nextLine = lines[j].trim();
+                    if (nextLine && !nextLine.includes('**')) {
+                        hasContentAfter = true;
+                        break;
+                    } else if (nextLine.includes('**')) {
+                        break; // Hit a header, so this empty line is structural
+                    }
+                }
+
+                // Only add empty line if there's content after it
+                if (hasContentAfter) {
+                    const lastSubsection = sections[currentSection][sections[currentSection].length - 1];
+                    lastSubsection.content.push(line);
+                }
+            } else {
+                // Add non-empty content
+                const lastSubsection = sections[currentSection][sections[currentSection].length - 1];
+                lastSubsection.content.push(line);
+            }
         }
     }
 
@@ -68,14 +89,19 @@ const convertSOAPToText = (soapData) => {
     if (!soapData) return '';
 
     let text = '';
-    
+
     // Process each section
     ['subjective', 'objective', 'assessment', 'plan'].forEach(sectionKey => {
         const section = soapData[sectionKey];
         if (section && section.length > 0) {
             section.forEach(subsection => {
                 text += subsection.header + '\n';
-                text += subsection.content.join('\n') + '\n\n';
+
+                // Join content and trim trailing empty lines to prevent double spacing
+                const contentText = subsection.content.join('\n');
+                const trimmedContent = contentText.replace(/\n+$/, ''); // Remove trailing newlines
+
+                text += trimmedContent + '\n\n';
             });
         }
     });
@@ -133,20 +159,16 @@ const deserializeSlateValue = (text) => {
 // Process Slate nodes for output
 const processSlateForPDF = (nodes) => {
     let formattedText = '';
-    let previousWasEmpty = false;
 
     nodes.forEach((node) => {
         const text = Node.string(node);
         const trimmedText = text.trim();
 
+        // Handle empty lines - preserve them
         if (!trimmedText) {
-            if (!previousWasEmpty) {
-                formattedText += '\n';
-            }
-            previousWasEmpty = true;
+            formattedText += '\n';
             return;
         }
-        previousWasEmpty = false;
 
         const isBold = node.type === 'heading' ||
             node.children[0]?.bold ||
@@ -205,40 +227,69 @@ const SOAPView = ({ reportText, onCopySection, isEditable = false, onContentChan
         plan: withHistory(withReact(createEditor()))
     }));
 
-    // Update SOAP data when reportText changes
+    // State to track if we're in editing mode and which sections are being edited
+    const [editingContent, setEditingContent] = useState({});
+
+    // Update SOAP data when reportText changes (only when not editing)
     useEffect(() => {
         setSoapData(parseReportForSOAP(reportText));
     }, [reportText]);
+
+    // Initialize editing content when entering editable mode
+    useEffect(() => {
+        if (isEditable && soapData && Object.keys(editingContent).length === 0) {
+            const initialEditingContent = {};
+            ['subjective', 'objective', 'assessment', 'plan'].forEach(sectionKey => {
+                const section = soapData[sectionKey];
+                if (section && section.length > 0) {
+                    const sectionContent = section.map(subsection => {
+                        const header = subsection.header.replace(/\*\*/g, '');
+                        const content = subsection.content.join('\n');
+                        return `${header}\n${content}`;
+                    }).join('\n\n');
+                    initialEditingContent[sectionKey] = deserializeSlateValue(sectionContent);
+                }
+            });
+            setEditingContent(initialEditingContent);
+        }
+    }, [isEditable, soapData, editingContent]);
 
     // Handle content changes in editable mode
     const handleSectionChange = (sectionKey, newValue) => {
         if (!isEditable || !onContentChange) return;
 
-        const newText = processSlateForPDF(newValue);
-        
-        // Update the section content
+        // Store the current editor content
+        setEditingContent(prev => ({
+            ...prev,
+            [sectionKey]: newValue
+        }));
+
+        // Convert all sections (both edited and original) back to full text
         const updatedSoapData = { ...soapData };
+
+        // Update this specific section with the new content
+        const newText = processSlateForPDF(newValue);
         const lines = newText.split('\n');
-        
-        // Rebuild the section from the edited content
         updatedSoapData[sectionKey] = [];
         let currentSubsection = null;
-        
+
         for (let line of lines) {
             const trimmedLine = line.trim();
-            if (!trimmedLine) continue;
-            
+
             // Check if it's a header
             if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
                 currentSubsection = { header: trimmedLine, content: [] };
                 updatedSoapData[sectionKey].push(currentSubsection);
             } else if (currentSubsection) {
+                // Include all lines, even empty ones, to preserve formatting
                 currentSubsection.content.push(line);
+            } else if (!trimmedLine) {
+                // If we encounter an empty line before any header, we still need to handle it
+                // This can happen if user adds empty lines at the beginning
+                continue;
             }
         }
-        
-        setSoapData(updatedSoapData);
-        
+
         // Convert back to full text and notify parent
         const fullText = convertSOAPToText(updatedSoapData);
         onContentChange(fullText);
@@ -277,8 +328,8 @@ const SOAPView = ({ reportText, onCopySection, isEditable = false, onContentChan
 
         const isCopied = copiedSections[sectionKey];
 
-        // Create Slate value for this section
-        const slateValue = deserializeSlateValue(sectionContent);
+        // Use editing content if available, otherwise deserialize from current content
+        const slateValue = editingContent[sectionKey] || deserializeSlateValue(sectionContent);
 
         return (
             <div key={sectionKey} className={`soap-section ${colorClass}`}>
@@ -297,7 +348,7 @@ const SOAPView = ({ reportText, onCopySection, isEditable = false, onContentChan
                             ) : (
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"></path>
                                 </svg>
                             )}
                         </span>
