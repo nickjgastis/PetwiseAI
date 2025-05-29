@@ -358,6 +358,65 @@ const formatDateForReport = (dateString) => {
     });
 };
 
+// Add this helper function at the top level
+const parseReportForSOAP = (reportText) => {
+    if (!reportText) return null;
+
+    const lines = reportText.split('\n');
+    const sections = {
+        subjective: [],
+        objective: [],
+        assessment: [],
+        plan: []
+    };
+
+    let currentSection = null;
+    let currentSubsection = null;
+
+    for (let line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        // Check for main headers and map to SOAP sections
+        if (trimmedLine.includes('**Patient Information:**') ||
+            trimmedLine.includes('**Staff:**') ||
+            trimmedLine.includes('**Presenting Complaint:**') ||
+            trimmedLine.includes('**History:**')) {
+            currentSection = 'subjective';
+            currentSubsection = trimmedLine;
+            sections.subjective.push({ header: trimmedLine, content: [] });
+        } else if (trimmedLine.includes('**Physical Exam Findings:**') ||
+            trimmedLine.includes('**Diagnostic Tests:**')) {
+            currentSection = 'objective';
+            currentSubsection = trimmedLine;
+            sections.objective.push({ header: trimmedLine, content: [] });
+        } else if (trimmedLine.includes('**Assessment:**') ||
+            trimmedLine.includes('**Diagnosis:**') ||
+            trimmedLine.includes('**Differential Diagnosis:**')) {
+            currentSection = 'assessment';
+            currentSubsection = trimmedLine;
+            sections.assessment.push({ header: trimmedLine, content: [] });
+        } else if (trimmedLine.includes('**Treatment:**') ||
+            trimmedLine.includes('**Monitoring:**') ||
+            trimmedLine.includes('**Naturopathic Medicine:**') ||
+            trimmedLine.includes('**Client Communications:**') ||
+            trimmedLine.includes('**Follow-Up:**') ||
+            trimmedLine.includes('**Plan:**') ||
+            trimmedLine.includes('**Patient Visit Summary:**') ||
+            trimmedLine.includes('**Notes:**')) {
+            currentSection = 'plan';
+            currentSubsection = trimmedLine;
+            sections.plan.push({ header: trimmedLine, content: [] });
+        } else if (currentSection && sections[currentSection].length > 0) {
+            // Add content to current subsection
+            const lastSubsection = sections[currentSection][sections[currentSection].length - 1];
+            lastSubsection.content.push(line);
+        }
+    }
+
+    return sections;
+};
+
 const ReportForm = () => {
     const { user, isAuthenticated } = useAuth0();
     const [patientInfoSubmitted, setPatientInfoSubmitted] = useState(false);
@@ -984,20 +1043,68 @@ const ReportForm = () => {
     };
 
     const copyToClipboard = () => {
-        const htmlContent = slateValue.map(node => {
-            if (node.children[0]?.bold) {
-                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
-            }
-            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
-        }).join('<br>');
+        // First try to organize content by SOAP sections
+        const reportTextToUse = slateValue.map(node => {
+            const text = Node.string(node);
+            return node.children[0]?.bold ? `**${text}**` : text;
+        }).join('\n');
 
-        // Updated plain text handling to remove ** from bold lines
-        const plainText = slateValue
-            .map(node => {
-                const text = Node.string(node);
-                return text.replace(/^\*\*(.*?)\*\*$/, '$1'); // remove ** from bold lines
-            })
-            .join('\n');
+        // Parse into SOAP sections
+        const soapData = parseReportForSOAP(reportTextToUse);
+
+        let organizedContent = '';
+        if (soapData && (soapData.subjective.length > 0 || soapData.objective.length > 0 || soapData.assessment.length > 0 || soapData.plan.length > 0)) {
+            // Organize by SOAP sections
+            if (soapData.subjective.length > 0) {
+                organizedContent += 'SUBJECTIVE\n\n';
+                organizedContent += soapData.subjective.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n') + '\n\n';
+            }
+
+            if (soapData.objective.length > 0) {
+                organizedContent += 'OBJECTIVE\n\n';
+                organizedContent += soapData.objective.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n') + '\n\n';
+            }
+
+            if (soapData.assessment.length > 0) {
+                organizedContent += 'ASSESSMENT\n\n';
+                organizedContent += soapData.assessment.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n') + '\n\n';
+            }
+
+            if (soapData.plan.length > 0) {
+                organizedContent += 'PLAN\n\n';
+                organizedContent += soapData.plan.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n');
+            }
+        } else {
+            // Fallback to original content if SOAP parsing fails
+            organizedContent = reportTextToUse;
+        }
+
+        const htmlContent = organizedContent.split('\n').map(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine === 'SUBJECTIVE' || trimmedLine === 'OBJECTIVE' || trimmedLine === 'ASSESSMENT' || trimmedLine === 'PLAN') {
+                return `<b style="background: none; background-color: transparent; font-size: 1.2em;">${line}</b>`;
+            }
+            if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                return `<b style="background: none; background-color: transparent;">${trimmedLine.slice(2, -2)}</b>`;
+            }
+            return `<span style="background: none; background-color: transparent;">${line}</span>`;
+        }).join('<br>');
 
         const wrappedHtml = `
             <div style="color: black; background: none; background-color: transparent;">
@@ -1007,7 +1114,7 @@ const ReportForm = () => {
 
         const clipboardData = new ClipboardItem({
             'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
-            'text/plain': new Blob([plainText], { type: 'text/plain' })
+            'text/plain': new Blob([organizedContent], { type: 'text/plain' })
         });
 
         navigator.clipboard.write([clipboardData])
@@ -1405,15 +1512,18 @@ const ReportForm = () => {
     }, []); // Run once on mount
 
     // Add view state for SOAP toggle
-    const [currentView, setCurrentView] = useState(() => 
+    const [currentView, setCurrentView] = useState(() =>
         localStorage.getItem('currentView') || 'soap'
     );
 
     // Copy section functionality for SOAP view
     const handleCopySection = async (sectionContent, sectionTitle) => {
         try {
+            // Include the section title at the top
+            const contentWithTitle = `${sectionTitle.toUpperCase()}\n\n${sectionContent}`;
+
             // Create both HTML and plain text versions
-            const htmlContent = sectionContent.split('\n').map(line => {
+            const htmlContent = contentWithTitle.split('\n').map(line => {
                 const trimmedLine = line.trim();
                 if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
                     return `<b style="background: none; background-color: transparent;">${trimmedLine.slice(2, -2)}</b>`;
@@ -1427,7 +1537,7 @@ const ReportForm = () => {
                 </div>
             `;
 
-            const plainText = sectionContent.replace(/\*\*/g, '');
+            const plainText = contentWithTitle.replace(/\*\*/g, '');
 
             const clipboardData = new ClipboardItem({
                 'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
@@ -1435,7 +1545,7 @@ const ReportForm = () => {
             });
 
             await navigator.clipboard.write([clipboardData]);
-            
+
             // Show success message
             setCopyButtonText(`${sectionTitle} Copied!`);
             setCopiedMessageVisible(true);
@@ -1890,13 +2000,13 @@ const ReportForm = () => {
                     {previewVisible && (
                         <div className="view-controls">
                             <div className="view-toggle-buttons">
-                                <button 
+                                <button
                                     className={`view-toggle-btn ${currentView === 'soap' ? 'active' : ''}`}
                                     onClick={() => setCurrentView('soap')}
                                 >
                                     SOAP
                                 </button>
-                                <button 
+                                <button
                                     className={`view-toggle-btn ${currentView === 'standard' ? 'active' : ''}`}
                                     onClick={() => setCurrentView('standard')}
                                 >
@@ -1916,8 +2026,8 @@ const ReportForm = () => {
                         </div>
                     ) : previewVisible ? (
                         currentView === 'soap' ? (
-                            <SOAPView 
-                                reportText={reportText} 
+                            <SOAPView
+                                reportText={reportText}
                                 onCopySection={handleCopySection}
                             />
                         ) : (

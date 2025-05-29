@@ -10,6 +10,7 @@ import { Slate, Editable, withReact } from 'slate-react';
 import { withHistory } from 'slate-history';
 import { Node } from 'slate';
 import { useNavigate } from 'react-router-dom';
+import SOAPView from './SOAPView';
 
 const mainHeaders = [
     'Veterinary Medical Record:',
@@ -328,6 +329,64 @@ const processSlateForPDF = (nodes) => {
     return formattedText;
 };
 
+const parseReportForSOAP = (reportText) => {
+    if (!reportText) return null;
+
+    const lines = reportText.split('\n');
+    const sections = {
+        subjective: [],
+        objective: [],
+        assessment: [],
+        plan: []
+    };
+
+    let currentSection = null;
+    let currentSubsection = null;
+
+    for (let line of lines) {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) continue;
+
+        // Check for main headers and map to SOAP sections
+        if (trimmedLine.includes('**Patient Information:**') ||
+            trimmedLine.includes('**Staff:**') ||
+            trimmedLine.includes('**Presenting Complaint:**') ||
+            trimmedLine.includes('**History:**')) {
+            currentSection = 'subjective';
+            currentSubsection = trimmedLine;
+            sections.subjective.push({ header: trimmedLine, content: [] });
+        } else if (trimmedLine.includes('**Physical Exam Findings:**') ||
+            trimmedLine.includes('**Diagnostic Tests:**')) {
+            currentSection = 'objective';
+            currentSubsection = trimmedLine;
+            sections.objective.push({ header: trimmedLine, content: [] });
+        } else if (trimmedLine.includes('**Assessment:**') ||
+            trimmedLine.includes('**Diagnosis:**') ||
+            trimmedLine.includes('**Differential Diagnosis:**')) {
+            currentSection = 'assessment';
+            currentSubsection = trimmedLine;
+            sections.assessment.push({ header: trimmedLine, content: [] });
+        } else if (trimmedLine.includes('**Treatment:**') ||
+            trimmedLine.includes('**Monitoring:**') ||
+            trimmedLine.includes('**Naturopathic Medicine:**') ||
+            trimmedLine.includes('**Client Communications:**') ||
+            trimmedLine.includes('**Follow-Up:**') ||
+            trimmedLine.includes('**Plan:**') ||
+            trimmedLine.includes('**Patient Visit Summary:**') ||
+            trimmedLine.includes('**Notes:**')) {
+            currentSection = 'plan';
+            currentSubsection = trimmedLine;
+            sections.plan.push({ header: trimmedLine, content: [] });
+        } else if (currentSection && sections[currentSection].length > 0) {
+            // Add content to current subsection
+            const lastSubsection = sections[currentSection][sections[currentSection].length - 1];
+            lastSubsection.content.push(line);
+        }
+    }
+
+    return sections;
+};
+
 const SavedReports = () => {
     const { user, isAuthenticated, isLoading } = useAuth0();
     const [reports, setReports] = useState([]);
@@ -340,7 +399,7 @@ const SavedReports = () => {
     const [editingReport, setEditingReport] = useState(null);
     const [isLoadingReports, setIsLoadingReports] = useState(true);
     const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
-    const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
+    const [currentView, setCurrentView] = useState('standard');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -459,10 +518,17 @@ const SavedReports = () => {
 
             if (error) throw error;
 
-            // Update local state
+            // Update local state - both reports list and selected report
             setReports(reports.map(r =>
-                r.id === report.id ? report : r
+                r.id === report.id ? { ...r, report_text: report.report_text } : r
             ));
+
+            // Update selected report to reflect the changes
+            setSelectedReport(prev => ({
+                ...prev,
+                report_text: report.report_text
+            }));
+
             setEditingReport(null);
 
         } catch (error) {
@@ -481,20 +547,66 @@ const SavedReports = () => {
     };
 
     const copyToClipboard = () => {
-        // Get current content from editor
-        const nodes = deserializeSlateValue(selectedReport.report_text);
+        // Use the current text (editing if in edit mode, otherwise selected)
+        const currentText = editingReport?.id === selectedReport.id ?
+            editingReport.report_text : selectedReport.report_text;
 
-        const htmlContent = nodes.map(node => {
-            if (node.children[0]?.bold) {
-                return `<b style="background: none; background-color: transparent;">${Node.string(node)}</b>`;
+        // Parse into SOAP sections
+        const soapData = parseReportForSOAP(currentText);
+
+        let organizedContent = '';
+        if (soapData && (soapData.subjective.length > 0 || soapData.objective.length > 0 || soapData.assessment.length > 0 || soapData.plan.length > 0)) {
+            // Organize by SOAP sections
+            if (soapData.subjective.length > 0) {
+                organizedContent += 'SUBJECTIVE\n\n';
+                organizedContent += soapData.subjective.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n') + '\n\n';
             }
-            return `<span style="background: none; background-color: transparent;">${Node.string(node)}</span>`;
-        }).join('<br>');
 
-        const plainText = nodes.map(node => {
-            const text = Node.string(node);
-            return node.children[0]?.bold ? `**${text}**` : text;
-        }).join('\n');
+            if (soapData.objective.length > 0) {
+                organizedContent += 'OBJECTIVE\n\n';
+                organizedContent += soapData.objective.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n') + '\n\n';
+            }
+
+            if (soapData.assessment.length > 0) {
+                organizedContent += 'ASSESSMENT\n\n';
+                organizedContent += soapData.assessment.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n') + '\n\n';
+            }
+
+            if (soapData.plan.length > 0) {
+                organizedContent += 'PLAN\n\n';
+                organizedContent += soapData.plan.map(sub => {
+                    const header = sub.header.replace(/\*\*/g, '');
+                    const content = sub.content.join('\n');
+                    return `${header}\n${content}`;
+                }).join('\n\n');
+            }
+        } else {
+            // Fallback to original content if SOAP parsing fails
+            organizedContent = currentText;
+        }
+
+        const htmlContent = organizedContent.split('\n').map(line => {
+            const trimmedLine = line.trim();
+            if (trimmedLine === 'SUBJECTIVE' || trimmedLine === 'OBJECTIVE' || trimmedLine === 'ASSESSMENT' || trimmedLine === 'PLAN') {
+                return `<b style="background: none; background-color: transparent; font-size: 1.2em;">${line}</b>`;
+            }
+            if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                return `<b style="background: none; background-color: transparent;">${trimmedLine.slice(2, -2)}</b>`;
+            }
+            return `<span style="background: none; background-color: transparent;">${line}</span>`;
+        }).join('<br>');
 
         const wrappedHtml = `
             <div style="color: black; background: none; background-color: transparent;">
@@ -504,16 +616,14 @@ const SavedReports = () => {
 
         const clipboardData = new ClipboardItem({
             'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
-            'text/plain': new Blob([plainText], { type: 'text/plain' })
+            'text/plain': new Blob([organizedContent], { type: 'text/plain' })
         });
 
         navigator.clipboard.write([clipboardData])
             .then(() => {
                 setCopyButtonText('Copied!');
-                setCopiedMessageVisible(true);
                 setTimeout(() => {
                     setCopyButtonText('Copy to Clipboard');
-                    setCopiedMessageVisible(false);
                 }, 2000);
             });
     };
@@ -546,6 +656,48 @@ const SavedReports = () => {
         navigate('/report');
     };
 
+    // Handle SOAP section copy functionality
+    const handleCopySection = async (sectionContent, sectionTitle) => {
+        try {
+            // Include the section title at the top
+            const contentWithTitle = `${sectionTitle.toUpperCase()}\n\n${sectionContent}`;
+
+            // Create both HTML and plain text versions
+            const htmlContent = contentWithTitle.split('\n').map(line => {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
+                    return `<b style="background: none; background-color: transparent;">${trimmedLine.slice(2, -2)}</b>`;
+                }
+                return `<span style="background: none; background-color: transparent;">${line}</span>`;
+            }).join('<br>');
+
+            const wrappedHtml = `
+                <div style="color: black; background: none; background-color: transparent;">
+                    ${htmlContent}
+                </div>
+            `;
+
+            const plainText = contentWithTitle.replace(/\*\*/g, '');
+
+            const clipboardData = new ClipboardItem({
+                'text/html': new Blob([wrappedHtml], { type: 'text/html' }),
+                'text/plain': new Blob([plainText], { type: 'text/plain' })
+            });
+
+            await navigator.clipboard.write([clipboardData]);
+
+            // Show success message
+            setCopyButtonText(`${sectionTitle} Copied!`);
+            setTimeout(() => {
+                setCopyButtonText('Copy to Clipboard');
+            }, 2000);
+        } catch (err) {
+            console.error('Copy failed:', err);
+            setCopyButtonText('Copy Failed');
+            setTimeout(() => setCopyButtonText('Copy to Clipboard'), 2000);
+        }
+    };
+
     if (isLoading) return <div>Loading...</div>; // Handle loading state
 
     if (!isAuthenticated) {
@@ -557,15 +709,19 @@ const SavedReports = () => {
             <h2>Saved Records</h2>
             {error && <div className="error-message">{error}</div>}
 
-            <div className="search-container">
-                <input
-                    type="text"
-                    placeholder="Search records..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                />
-            </div>
+            {!selectedReport && (
+                <div className="search-container">
+                    <div className="search-input-wrapper">
+                        <input
+                            type="text"
+                            placeholder="Search records..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
+                    </div>
+                </div>
+            )}
 
             <div className={`report-list ${selectedReport ? 'hidden' : ''}`}>
                 {isLoadingReports ? (
@@ -590,11 +746,12 @@ const SavedReports = () => {
                             )}
                             <div className="button-group">
                                 <button
-                                    className="edit-button"
+                                    className="edit-name-button"
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleEditClick(index);
                                     }}
+                                    title="Edit name"
                                 >
                                     <FaEdit />
                                 </button>
@@ -604,6 +761,7 @@ const SavedReports = () => {
                                         e.stopPropagation();
                                         handleDeleteReport(report.id);
                                     }}
+                                    title="Delete report"
                                 >
                                     <FaTimes />
                                 </button>
@@ -611,173 +769,203 @@ const SavedReports = () => {
                         </div>
                     ))
                 ) : (
-                    <p>No saved reports available.</p>
+                    <div className="no-reports">
+                        <p>No saved reports available.</p>
+                    </div>
                 )}
             </div>
 
             {selectedReport && (
                 <div className="report-card">
                     <div className="report-card-header">
-                        <h3>{selectedReport.report_name}</h3>
-                        <div className="button-group">
-                            <button
-                                className="load-button"
-                                onClick={() => handleLoadReport(selectedReport)}
-                            >
-                                Load in Generator
-                            </button>
-                            {editingReport?.id === selectedReport.id ? (
-                                <>
+                        <div className="header-top">
+                            <h3>{selectedReport.report_name}</h3>
+                            <div className="view-controls">
+                                <div className="view-toggle-buttons">
                                     <button
-                                        className="save-button"
-                                        onClick={() => handleSaveEdit(editingReport)}
+                                        className={`view-toggle-btn ${currentView === 'standard' ? 'active' : ''}`}
+                                        onClick={() => setCurrentView('standard')}
+                                        disabled={editingReport?.id === selectedReport.id}
                                     >
-                                        Save
+                                        Standard
                                     </button>
                                     <button
-                                        className="cancel-button"
-                                        onClick={handleCancelEdit}
+                                        className={`view-toggle-btn ${currentView === 'soap' ? 'active' : ''}`}
+                                        onClick={() => setCurrentView('soap')}
+                                        disabled={editingReport?.id === selectedReport.id}
                                     >
-                                        Cancel
+                                        SOAP
                                     </button>
-                                </>
-                            ) : (
+                                </div>
                                 <button
-                                    className="edit-button"
-                                    onClick={() => setEditingReport({ ...selectedReport })}
+                                    className="close-button"
+                                    onClick={handleCloseReport}
+                                    title="Close report"
                                 >
-                                    Edit
+                                    <FaTimes />
                                 </button>
-                            )}
-                            <div className="copy-button-container">
-                                <button className="copy-button" onClick={copyToClipboard}>
-                                    {copyButtonText}
-                                </button>
-                                {copiedMessageVisible && <span className="copied-message">Copied</span>}
                             </div>
-                            <PDFButton
-                                reportText={selectedReport.report_text}
-                                reportName={selectedReport.report_name}
-                            />
-                            <PrintButton reportText={selectedReport.report_text} />
-                            <button
-                                className="close-button"
-                                onClick={handleCloseReport}
-                            >
-                                <FaTimes />
-                            </button>
+                        </div>
+                        <div className="action-buttons">
+                            <div className="primary-actions">
+                                <button
+                                    className="load-button"
+                                    onClick={() => handleLoadReport(selectedReport)}
+                                    title="Load report in generator"
+                                >
+                                    Load in Generator
+                                </button>
+                                {editingReport?.id === selectedReport.id ? (
+                                    <>
+                                        <button
+                                            className="save-button"
+                                            onClick={() => handleSaveEdit(editingReport)}
+                                        >
+                                            Save
+                                        </button>
+                                        <button
+                                            className="cancel-button"
+                                            onClick={handleCancelEdit}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        className="edit-button"
+                                        onClick={() => setEditingReport({ ...selectedReport })}
+                                    >
+                                        Edit
+                                    </button>
+                                )}
+                            </div>
+                            <div className="secondary-actions">
+                                <div className="copy-button-container">
+                                    <button className="copy-button" onClick={copyToClipboard}>
+                                        {copyButtonText}
+                                    </button>
+                                </div>
+                                <PDFButton
+                                    reportText={editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text}
+                                    reportName={selectedReport.report_name}
+                                />
+                                <PrintButton
+                                    reportText={editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text}
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="report-content">
-                        <div className="editor-wrapper" style={{
-                            height: '100%',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            padding: '8px',
-                            borderRadius: '4px'
-                        }}>
-                            {editingReport?.id === selectedReport.id ? (
-                                <Slate
-                                    editor={editor}
-                                    value={deserializeSlateValue(editingReport.report_text)}
-                                    onChange={value => {
-                                        const newText = serializeSlateValue(value);
-                                        setEditingReport({
-                                            ...editingReport,
-                                            report_text: newText
-                                        });
-                                    }}
-                                >
-                                    <Editable
-                                        renderElement={renderElement}
-                                        renderLeaf={renderLeaf}
-                                        style={{
-                                            minHeight: '100%',
-                                            padding: '8px',
-                                            whiteSpace: 'pre-wrap',
-                                            lineHeight: '1.2',
-                                            fontSize: '14px'
-                                        }}
-                                        onCopy={(event) => {
-                                            event.preventDefault();
-                                            const selection = window.getSelection();
-
-                                            const selectedNodes = deserializeSlateValue(selectedReport.report_text).filter(node => {
-                                                const nodeText = Node.string(node);
-                                                return selection.toString().includes(nodeText);
+                        {currentView === 'soap' ? (
+                            <SOAPView
+                                reportText={editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text}
+                                onCopySection={handleCopySection}
+                            />
+                        ) : (
+                            <div className="editor-wrapper">
+                                {editingReport?.id === selectedReport.id ? (
+                                    <Slate
+                                        editor={editor}
+                                        value={deserializeSlateValue(editingReport.report_text)}
+                                        onChange={value => {
+                                            const newText = processSlateForPDF(value);
+                                            setEditingReport({
+                                                ...editingReport,
+                                                report_text: newText
                                             });
-
-                                            const formattedText = processSlateForPDF(selectedNodes);
-                                            const plainText = formattedText.replace(/\*\*/g, '');
-
-                                            const htmlContent = formattedText.split('\n').map(line => {
-                                                if (line.startsWith('**') && line.endsWith('**')) {
-                                                    return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
-                                                }
-                                                return `<span style="background: none; background-color: transparent;">${line}</span>`;
-                                            }).join('<br>');
-
-                                            const wrappedHtml = `
-                                                <div style="color: black; background: none; background-color: transparent;">
-                                                    ${htmlContent}
-                                                </div>
-                                            `;
-
-                                            event.clipboardData.setData('text/html', wrappedHtml);
-                                            event.clipboardData.setData('text/plain', plainText);
                                         }}
-                                    />
-                                </Slate>
-                            ) : (
-                                <Slate
-                                    editor={editor}
-                                    initialValue={deserializeSlateValue(selectedReport.report_text)}
-                                    value={deserializeSlateValue(selectedReport.report_text)}
-                                    onChange={() => { }}
-                                >
-                                    <Editable
-                                        readOnly
-                                        renderElement={renderElement}
-                                        renderLeaf={renderLeaf}
-                                        style={{
-                                            minHeight: '100%',
-                                            padding: '8px',
-                                            whiteSpace: 'pre-wrap',
-                                            lineHeight: '1.2',
-                                            fontSize: '14px'
-                                        }}
-                                        onCopy={(event) => {
-                                            event.preventDefault();
-                                            const selection = window.getSelection();
+                                    >
+                                        <Editable
+                                            renderElement={renderElement}
+                                            renderLeaf={renderLeaf}
+                                            style={{
+                                                minHeight: '100%',
+                                                padding: '16px',
+                                                whiteSpace: 'pre-wrap',
+                                                lineHeight: '1.2',
+                                                fontSize: '14px'
+                                            }}
+                                            onCopy={(event) => {
+                                                event.preventDefault();
+                                                const selection = window.getSelection();
 
-                                            const selectedNodes = deserializeSlateValue(selectedReport.report_text).filter(node => {
-                                                const nodeText = Node.string(node);
-                                                return selection.toString().includes(nodeText);
-                                            });
+                                                const selectedNodes = deserializeSlateValue(editingReport.report_text).filter(node => {
+                                                    const nodeText = Node.string(node);
+                                                    return selection.toString().includes(nodeText);
+                                                });
 
-                                            const formattedText = processSlateForPDF(selectedNodes);
-                                            const plainText = formattedText.replace(/\*\*/g, '');
+                                                const formattedText = processSlateForPDF(selectedNodes);
+                                                const plainText = formattedText.replace(/\*\*/g, '');
 
-                                            const htmlContent = formattedText.split('\n').map(line => {
-                                                if (line.startsWith('**') && line.endsWith('**')) {
-                                                    return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
-                                                }
-                                                return `<span style="background: none; background-color: transparent;">${line}</span>`;
-                                            }).join('<br>');
+                                                const htmlContent = formattedText.split('\n').map(line => {
+                                                    if (line.startsWith('**') && line.endsWith('**')) {
+                                                        return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
+                                                    }
+                                                    return `<span style="background: none; background-color: transparent;">${line}</span>`;
+                                                }).join('<br>');
 
-                                            const wrappedHtml = `
-                                                <div style="color: black; background: none; background-color: transparent;">
-                                                    ${htmlContent}
-                                                </div>
-                                            `;
+                                                const wrappedHtml = `
+                                                    <div style="color: black; background: none; background-color: transparent;">
+                                                        ${htmlContent}
+                                                    </div>
+                                                `;
 
-                                            event.clipboardData.setData('text/html', wrappedHtml);
-                                            event.clipboardData.setData('text/plain', plainText);
-                                        }}
-                                    />
-                                </Slate>
-                            )}
-                        </div>
+                                                event.clipboardData.setData('text/html', wrappedHtml);
+                                                event.clipboardData.setData('text/plain', plainText);
+                                            }}
+                                        />
+                                    </Slate>
+                                ) : (
+                                    <Slate
+                                        editor={editor}
+                                        initialValue={deserializeSlateValue(selectedReport.report_text)}
+                                        value={deserializeSlateValue(selectedReport.report_text)}
+                                        onChange={() => { }}
+                                    >
+                                        <Editable
+                                            readOnly
+                                            renderElement={renderElement}
+                                            renderLeaf={renderLeaf}
+                                            style={{
+                                                minHeight: '100%',
+                                                padding: '16px',
+                                                whiteSpace: 'pre-wrap',
+                                                lineHeight: '1.2',
+                                                fontSize: '14px'
+                                            }}
+                                            onCopy={(event) => {
+                                                event.preventDefault();
+                                                const selection = window.getSelection();
+
+                                                const selectedNodes = deserializeSlateValue(selectedReport.report_text).filter(node => {
+                                                    const nodeText = Node.string(node);
+                                                    return selection.toString().includes(nodeText);
+                                                });
+
+                                                const formattedText = processSlateForPDF(selectedNodes);
+                                                const plainText = formattedText.replace(/\*\*/g, '');
+
+                                                const htmlContent = formattedText.split('\n').map(line => {
+                                                    if (line.startsWith('**') && line.endsWith('**')) {
+                                                        return `<b style="background: none; background-color: transparent;">${line.slice(2, -2)}</b>`;
+                                                    }
+                                                    return `<span style="background: none; background-color: transparent;">${line}</span>`;
+                                                }).join('<br>');
+
+                                                const wrappedHtml = `
+                                                    <div style="color: black; background: none; background-color: transparent;">
+                                                        ${htmlContent}
+                                                    </div>
+                                                `;
+
+                                                event.clipboardData.setData('text/html', wrappedHtml);
+                                                event.clipboardData.setData('text/plain', plainText);
+                                            }}
+                                        />
+                                    </Slate>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

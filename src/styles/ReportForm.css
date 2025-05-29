@@ -905,60 +905,80 @@ input:checked+.slider:before {
 }
 
 @keyframes blobMove1 {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(-40px, -40px);
     }
+
     25% {
         transform: translate(200px, -60px);
     }
+
     50% {
         transform: translate(180px, 150px);
     }
+
     75% {
         transform: translate(-60px, 120px);
     }
 }
 
 @keyframes blobMove2 {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(150px, -30px);
     }
+
     25% {
         transform: translate(-50px, 80px);
     }
+
     50% {
         transform: translate(100px, 180px);
     }
+
     75% {
         transform: translate(220px, 100px);
     }
 }
 
 @keyframes blobMove3 {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(80px, 160px);
     }
+
     25% {
         transform: translate(-80px, -20px);
     }
+
     50% {
         transform: translate(200px, 40px);
     }
+
     75% {
         transform: translate(50px, -80px);
     }
 }
 
 @keyframes blobMove4 {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: translate(-80px, 80px);
     }
+
     25% {
         transform: translate(160px, -100px);
     }
+
     50% {
         transform: translate(-40px, -60px);
     }
+
     75% {
         transform: translate(180px, 140px);
     }
@@ -1267,7 +1287,7 @@ input:checked+.slider:before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
+    padding: 10px 16px;
     margin: 0;
     font-weight: 600;
     color: white;
@@ -1292,7 +1312,7 @@ input:checked+.slider:before {
 
 .soap-section-header h3 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.5px;
 }
@@ -1302,18 +1322,19 @@ input:checked+.slider:before {
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 6px;
     color: white;
-    padding: 8px 12px;
+    padding: 6px 10px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 500;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
-    gap: 6px;
-    min-width: 80px;
+    gap: 5px;
+    min-width: 70px;
     justify-content: center;
     position: relative;
     overflow: hidden;
+    height: 28px;
 }
 
 .soap-copy-button:hover {
@@ -1369,11 +1390,13 @@ input:checked+.slider:before {
         background: rgba(255, 255, 255, 0.2);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }
+
     50% {
         transform: scale(1.05);
         background: rgba(59, 130, 246, 0.7);
         box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
     }
+
     100% {
         transform: scale(1);
         background: rgba(59, 130, 246, 0.9);
@@ -1392,9 +1415,12 @@ input:checked+.slider:before {
 }
 
 @keyframes iconPulse {
-    0%, 100% {
+
+    0%,
+    100% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.1);
     }
@@ -1492,24 +1518,24 @@ input:checked+.slider:before {
         gap: 10px;
         align-items: stretch;
     }
-    
+
     .view-toggle-buttons {
         width: 100%;
         justify-content: center;
     }
-    
+
     .view-toggle-btn {
         flex: 1;
         min-width: unset;
     }
-    
+
     .soap-section-header {
         padding: 12px 16px;
         flex-direction: column;
         gap: 8px;
         text-align: center;
     }
-    
+
     .soap-copy-button {
         width: 100%;
         max-width: 140px;
@@ -1518,15 +1544,15 @@ input:checked+.slider:before {
         min-width: unset;
         gap: 8px;
     }
-    
+
     .soap-subsection {
         padding: 12px 16px;
     }
-    
+
     .soap-subsection h4 {
         font-size: 0.9rem;
     }
-    
+
     .soap-content-line,
     .soap-bold-line {
         font-size: 0.85rem;
