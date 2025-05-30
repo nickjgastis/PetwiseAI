@@ -137,10 +137,8 @@ const PDFButton = ({ reportText, patientName, editor }) => {
         try {
             setIsPreparing(true);
 
-            // Get current content from Slate editor
-            const slateContent = editor.children;
-            // Process Slate content to preserve formatting
-            const formattedText = processSlateForPDF(slateContent);
+            // Use the reportText prop directly instead of trying to get from editor
+            const formattedText = reportText || '';
 
             const doc = <PDFDocument reportText={formattedText} />;
             const blob = await pdf(doc).toBlob();
@@ -175,8 +173,8 @@ const PDFButton = ({ reportText, patientName, editor }) => {
 const PrintButton = ({ reportText, editor }) => {
     const handlePrint = async () => {
         try {
-            const slateContent = editor.children;
-            const formattedText = processSlateForPDF(slateContent);
+            // Use the reportText prop directly instead of trying to get from editor
+            const formattedText = reportText || '';
 
             const doc = <PDFDocument reportText={formattedText} />;
             const blob = await pdf(doc).toBlob();
