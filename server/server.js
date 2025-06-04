@@ -199,6 +199,7 @@ app.post('/webhook', async (req, res) => {
 
         console.log('Event Type:', event.type);
 
+        // Handle initial subscription creation
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
             console.log('Checkout Session:', session);
@@ -210,9 +211,14 @@ app.post('/webhook', async (req, res) => {
                 const priceId = subscription.items.data[0].price.id;
                 console.log('Price ID:', priceId);
 
-                // Simplified subscription type matching
-                const subscriptionInterval = priceId === PRICE_IDS.monthly_usd ? 'monthly' : 'yearly';
-                console.log('Subscription Interval:', subscriptionInterval);
+                // Determine subscription interval from price
+                let subscriptionInterval = 'monthly'; // default
+
+                if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
+                    subscriptionInterval = 'yearly';
+                } else if (priceId === PRICE_IDS.monthly_usd || priceId === PRICE_IDS.monthly_cad) {
+                    subscriptionInterval = 'monthly';
+                }
 
                 const updateData = {
                     subscription_status: 'active',
@@ -244,6 +250,158 @@ app.post('/webhook', async (req, res) => {
                 console.log('Update successful:', data);
             } catch (error) {
                 console.error('Subscription processing error:', error);
+                return res.status(500).json({ error: error.message });
+            }
+        }
+
+        // Handle successful recurring payments
+        if (event.type === 'invoice.payment_succeeded') {
+            const invoice = event.data.object;
+            console.log('Payment succeeded for invoice:', invoice.id);
+
+            // Only process subscription invoices (not one-time payments)
+            if (invoice.subscription) {
+                try {
+                    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
+                    const customer = await stripe.customers.retrieve(invoice.customer);
+
+                    console.log('Updating subscription for customer:', customer.id);
+
+                    // Find user by stripe customer ID
+                    const { data: userData, error: userError } = await supabase
+                        .from('users')
+                        .select('auth0_user_id')
+                        .eq('stripe_customer_id', customer.id)
+                        .single();
+
+                    if (userError || !userData) {
+                        console.error('User not found for customer:', customer.id);
+                        return res.status(200).json({ received: true });
+                    }
+
+                    // Determine subscription interval from price
+                    const priceId = subscription.items.data[0].price.id;
+
+                    let subscriptionInterval = 'monthly'; // default
+
+                    if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
+                        subscriptionInterval = 'yearly';
+                    } else if (priceId === PRICE_IDS.monthly_usd || priceId === PRICE_IDS.monthly_cad) {
+                        subscriptionInterval = 'monthly';
+                    }
+
+                    // Update subscription with new period end
+                    const { error: updateError } = await supabase
+                        .from('users')
+                        .update({
+                            subscription_status: 'active',
+                            subscription_interval: subscriptionInterval,
+                            subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+                            cancel_at_period_end: subscription.cancel_at_period_end || false
+                        })
+                        .eq('auth0_user_id', userData.auth0_user_id);
+
+                    if (updateError) {
+                        console.error('Failed to update user subscription:', updateError);
+                        throw updateError;
+                    }
+
+                    console.log('Successfully renewed subscription for user:', userData.auth0_user_id);
+                } catch (error) {
+                    console.error('Error processing payment success:', error);
+                    return res.status(500).json({ error: error.message });
+                }
+            }
+        }
+
+        // Handle failed recurring payments
+        if (event.type === 'invoice.payment_failed') {
+            const invoice = event.data.object;
+            console.log('Payment failed for invoice:', invoice.id);
+
+            if (invoice.subscription) {
+                try {
+                    const customer = await stripe.customers.retrieve(invoice.customer);
+
+                    // Find user by stripe customer ID
+                    const { data: userData, error: userError } = await supabase
+                        .from('users')
+                        .select('auth0_user_id, subscription_end_date')
+                        .eq('stripe_customer_id', customer.id)
+                        .single();
+
+                    if (userError || !userData) {
+                        console.error('User not found for customer:', customer.id);
+                        return res.status(200).json({ received: true });
+                    }
+
+                    // Set status to past_due when payment fails
+                    // This gives user a grace period while Stripe retries
+                    const { error: updateError } = await supabase
+                        .from('users')
+                        .update({
+                            subscription_status: 'past_due'
+                        })
+                        .eq('auth0_user_id', userData.auth0_user_id);
+
+                    if (updateError) {
+                        console.error('Failed to update user to past_due:', updateError);
+                        throw updateError;
+                    }
+
+                    console.log('Marked subscription as past_due for user:', userData.auth0_user_id);
+                } catch (error) {
+                    console.error('Error processing payment failure:', error);
+                    return res.status(500).json({ error: error.message });
+                }
+            }
+        }
+
+        // Handle subscription updates (cancellations, reactivations, etc.)
+        if (event.type === 'customer.subscription.updated') {
+            const subscription = event.data.object;
+            console.log('Subscription updated:', subscription.id);
+
+            try {
+                // Find user by stripe customer ID
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('auth0_user_id')
+                    .eq('stripe_customer_id', subscription.customer)
+                    .single();
+
+                if (userError || !userData) {
+                    console.error('User not found for customer:', subscription.customer);
+                    return res.status(200).json({ received: true });
+                }
+
+                let updateData = {
+                    subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+                    cancel_at_period_end: subscription.cancel_at_period_end || false
+                };
+
+                // Update status based on subscription status
+                if (subscription.status === 'active') {
+                    updateData.subscription_status = 'active';
+                } else if (subscription.status === 'past_due') {
+                    updateData.subscription_status = 'past_due';
+                } else if (subscription.status === 'canceled') {
+                    updateData.subscription_status = 'inactive';
+                }
+
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update(updateData)
+                    .eq('auth0_user_id', userData.auth0_user_id);
+
+                if (updateError) {
+                    console.error('Failed to update subscription status:', updateError);
+                    throw updateError;
+                }
+
+                console.log('Successfully updated subscription status for user:', userData.auth0_user_id);
+            } catch (error) {
+                console.error('Error processing subscription update:', error);
                 return res.status(500).json({ error: error.message });
             }
         }
@@ -385,25 +543,38 @@ app.post('/cancel-trial', async (req, res) => {
 });
 
 // Add this function before the server startup section
-async function checkTrialExpirations() {
-    const now = new Date().toISOString();
+// NOTE: Commented out since you have a Supabase function handling expiration checks
+// async function checkTrialExpirations() {
+//     const now = new Date().toISOString();
 
-    const { data, error } = await supabase
-        .from('users')
-        .update({ subscription_status: 'inactive' })
-        .lt('subscription_end_date', now)
-        .eq('subscription_status', 'active')
-        .select();
+//     // Handle expired active subscriptions
+//     const { data: expiredActive, error: activeError } = await supabase
+//         .from('users')
+//         .update({ subscription_status: 'inactive' })
+//         .lt('subscription_end_date', now)
+//         .eq('subscription_status', 'active')
+//         .select();
 
-    if (error) {
-        console.error('Error checking trial expirations:', error);
-        return;
-    }
+//     if (activeError) {
+//         console.error('Error checking active subscription expirations:', activeError);
+//     } else if (expiredActive && expiredActive.length > 0) {
+//         console.log(`Deactivated ${expiredActive.length} expired active subscriptions`);
+//     }
 
-    if (data && data.length > 0) {
-        console.log(`Deactivated ${data.length} expired subscriptions`);
-    }
-}
+//     // Handle expired past_due subscriptions
+//     const { data: expiredPastDue, error: pastDueError } = await supabase
+//         .from('users')
+//         .update({ subscription_status: 'inactive' })
+//         .lt('subscription_end_date', now)
+//         .eq('subscription_status', 'past_due')
+//         .select();
+
+//     if (pastDueError) {
+//         console.error('Error checking past_due subscription expirations:', pastDueError);
+//     } else if (expiredPastDue && expiredPastDue.length > 0) {
+//         console.log(`Deactivated ${expiredPastDue.length} expired past_due subscriptions`);
+//     }
+// }
 
 // Add this new middleware function
 async function checkReportLimit(req, res, next) {
@@ -415,11 +586,19 @@ async function checkReportLimit(req, res, next) {
 
         const { data: userData, error } = await supabase
             .from('users')
-            .select('subscription_interval, reports_used_today, last_report_date')
+            .select('subscription_interval, subscription_status, reports_used_today, last_report_date')
             .eq('auth0_user_id', user.sub)
             .single();
 
         if (error) throw error;
+
+        // Check if user has access (active or past_due within grace period)
+        if (userData.subscription_status === 'inactive') {
+            return res.status(403).json({
+                error: 'Subscription inactive',
+                status: userData.subscription_status
+            });
+        }
 
         // Only check limits for trial users
         if (userData.subscription_interval === 'trial') {
@@ -1018,6 +1197,42 @@ app.get('/admin-metrics', async (req, res) => {
 
     } catch (error) {
         console.error('Admin metrics error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ================ CUSTOMER PORTAL ENDPOINT ================
+// Creates a Stripe customer portal session for billing management
+app.post('/create-customer-portal', async (req, res) => {
+    try {
+        const { user_id } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({ error: 'user_id is required' });
+        }
+
+        // Get user's stripe customer id
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('stripe_customer_id')
+            .eq('auth0_user_id', user_id)
+            .single();
+
+        if (userError || !userData?.stripe_customer_id) {
+            return res.status(404).json({ error: 'No billing account found' });
+        }
+
+        // Create customer portal session
+        const session = await stripe.billingPortal.sessions.create({
+            customer: userData.stripe_customer_id,
+            return_url: process.env.NODE_ENV === 'production'
+                ? 'https://petwise.vet/profile'
+                : 'http://localhost:3000/profile',
+        });
+
+        res.json({ url: session.url });
+    } catch (error) {
+        console.error('Customer portal error:', error);
         res.status(500).json({ error: error.message });
     }
 });

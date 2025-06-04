@@ -174,6 +174,33 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
         }
     };
 
+    const handleBillingPortal = async () => {
+        try {
+            const response = await fetch(`${API_URL}/create-customer-portal`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.sub
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to access billing portal');
+            }
+
+            // Redirect to Stripe Customer Portal
+            window.location.href = data.url;
+        } catch (error) {
+            console.error('Billing portal error:', error);
+            alert(`Unable to access billing portal: ${error.message}`);
+        }
+    };
+
     const makeRequest = async (url, options = {}) => {
         return fetch(url, {
             ...options,
@@ -345,17 +372,28 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     </div>
                 </div>
 
+                {/* Billing Management Section for Active Subscribers */}
+                {subscriptionStatus === 'active' && user.stripe_customer_id && (
+                    <div className="checkout-billing-management">
+                        <h3>Billing Management</h3>
+                        <p>Update your payment method, view invoices, and manage billing details.</p>
+                        <button
+                            onClick={handleBillingPortal}
+                            className="checkout-billing-portal-button"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M4 10a1 1 0 0 1 2 0v1a1 1 0 0 1-2 0v-1zm6-6a1 1 0 0 1 2 0v7a1 1 0 0 1-2 0V4zM2 7a1 1 0 0 1 2 0v4a1 1 0 0 1-2 0V7zm8-5a1 1 0 0 1 2 0v9a1 1 0 0 1-2 0V2zm-2-1a1 1 0 0 1 2 0v10a1 1 0 0 1-2 0V1z" />
+                            </svg>
+                            Manage Billing & Invoices
+                        </button>
+                    </div>
+                )}
+
                 {!embedded && (
                     <div className="checkout-footer">
                         <button onClick={onBack} className="checkout-back-button">
                             ← Back
                         </button>
-                        {subscriptionStatus === 'active' && (
-                            <CancelSubscription
-                                user={user}
-                                onCancel={() => window.location.reload()}
-                            />
-                        )}
                     </div>
                 )}
             </div>
