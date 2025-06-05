@@ -265,6 +265,24 @@ const Profile = ({ isMobileSignup = false }) => {
 
                         {!isMobileSignup && (
                             <>
+                                {/* Past Due Warning Banner */}
+                                {subscriptionStatus === 'past_due' && (
+                                    <div className="past-due-banner">
+                                        <div className="past-due-content">
+                                            <div className="past-due-icon">⚠️</div>
+                                            <div className="past-due-text">
+                                                <h3>Subscription Past Due</h3>
+                                                <p>Your subscription payment is past due. To continue with the service, please update your payment method or pay your outstanding invoice using Billing Management.</p>
+                                            </div>
+                                            {userData?.stripe_customer_id && (
+                                                <button className="past-due-action-button" onClick={handleBillingPortal}>
+                                                    Go to Billing Management
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
                                 <div className="profile-header">
                                     <div className="profile-picture-container">
                                         <img
@@ -340,23 +358,43 @@ const Profile = ({ isMobileSignup = false }) => {
 
                         {/* Add mobile subscription management for subscribed users */}
                         {isMobileSignup && isSubscribed && (
-                            <div className="mobile-subscription-management">
-                                <h3>Your Subscription</h3>
-                                <div className="subscription-info">
-                                    <p><strong>Status:</strong> {getSubscriptionStatus()}</p>
-                                    <p><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
-                                </div>
-                                <div className="mobile-subscription-actions">
-                                    <button className="profile-button" onClick={handleBillingClick}>
-                                        Manage Subscription
-                                    </button>
-                                    {userData?.stripe_customer_id && (
-                                        <button className="profile-button" onClick={handleBillingPortal}>
-                                            Billing Management
+                            <>
+                                {/* Mobile Past Due Warning Banner */}
+                                {subscriptionStatus === 'past_due' && (
+                                    <div className="mobile-past-due-banner">
+                                        <div className="mobile-past-due-content">
+                                            <div className="mobile-past-due-icon">⚠️</div>
+                                            <div className="mobile-past-due-text">
+                                                <h3>Payment Past Due</h3>
+                                                <p>Your payment is past due. Please update your payment method to continue service.</p>
+                                            </div>
+                                            {userData?.stripe_customer_id && (
+                                                <button className="mobile-past-due-button" onClick={handleBillingPortal}>
+                                                    Fix Payment Issue
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="mobile-subscription-management">
+                                    <h3>Your Subscription</h3>
+                                    <div className="subscription-info">
+                                        <p><strong>Status:</strong> {getSubscriptionStatus()}</p>
+                                        <p><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
+                                    </div>
+                                    <div className="mobile-subscription-actions">
+                                        <button className="profile-button" onClick={handleBillingClick}>
+                                            Manage Subscription
                                         </button>
-                                    )}
+                                        {userData?.stripe_customer_id && (
+                                            <button className="profile-button" onClick={handleBillingPortal}>
+                                                Billing Management
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
 
                         {/* Add mobile account management for all mobile users */}
