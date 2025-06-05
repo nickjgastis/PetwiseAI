@@ -126,6 +126,33 @@ const Profile = ({ isMobileSignup = false }) => {
         setShowCheckout(true);
     };
 
+    const handleBillingPortal = async () => {
+        try {
+            const response = await fetch(`${API_URL}/create-customer-portal`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.sub
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to access billing portal');
+            }
+
+            // Redirect to Stripe Customer Portal
+            window.location.href = data.url;
+        } catch (error) {
+            console.error('Billing portal error:', error);
+            alert(`Unable to access billing portal: ${error.message}`);
+        }
+    };
+
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -263,6 +290,19 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <h2>{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
                                     <p className="profile-email">{user.email}</p>
                                 </div>
+                                <div className="profile-actions">
+                                    <button className="profile-button" onClick={handleBillingClick}>
+                                        Manage Subscription
+                                    </button>
+                                    {subscriptionStatus === 'active' && userData?.stripe_customer_id && (
+                                        <button className="profile-button" onClick={handleBillingPortal}>
+                                            Billing Management
+                                        </button>
+                                    )}
+                                    <button className="profile-button" onClick={() => setShowManageAccount(true)}>
+                                        Manage Account
+                                    </button>
+                                </div>
                                 <div className="profile-details">
                                     <h3>Profile Information</h3>
                                     <div className="profile-info">
@@ -295,14 +335,6 @@ const Profile = ({ isMobileSignup = false }) => {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="profile-actions">
-                                    <button className="profile-button" onClick={handleBillingClick}>
-                                        Manage Subscription
-                                    </button>
-                                    <button className="profile-button" onClick={() => setShowManageAccount(true)}>
-                                        Manage Account
-                                    </button>
-                                </div>
                             </>
                         )}
 
@@ -318,6 +350,11 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <button className="profile-button" onClick={handleBillingClick}>
                                         Manage Subscription
                                     </button>
+                                    {userData?.stripe_customer_id && (
+                                        <button className="profile-button" onClick={handleBillingPortal}>
+                                            Billing Management
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}

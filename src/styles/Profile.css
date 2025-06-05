@@ -203,9 +203,6 @@
     margin-top: -1rem;
     margin-bottom: 1.5rem;
     text-align: center;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    margin-right: calc(-50vw + 50%);
     background: #f8fafc;
     padding: 2rem 0;
     visibility: visible !important;
@@ -220,197 +217,336 @@
     /* Let Checkout.css handle all responsive pricing styles */
 }
 
+/* ===== MOBILE STYLING - COMPLETE REWRITE ===== */
 @media (max-width: 768px) {
+
+    /* Reset all container styles for mobile */
     .profile-container {
-        width: 100%;
-        margin: 0;
-        padding: 20px;
-        min-height: 100vh;
-        border-radius: 0;
-        margin-top: 60px;
-        box-shadow: none;
-        border: none;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        margin: 0 !important;
+        padding: 0 0 60px 0 !important;
+        min-height: 100vh !important;
+        height: auto !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        background: #f8fafc !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        position: relative !important;
     }
 
+    /* Mobile Profile Actions */
     .profile-actions {
-        flex-direction: column;
-        gap: 12px;
-        margin-bottom: 1.5rem;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 1000 !important;
+        background: white !important;
+        padding: 12px 16px !important;
+        margin: 0 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        display: flex !important;
+        gap: 8px !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        width: 100vw !important;
+        box-sizing: border-box !important;
     }
 
     .profile-button {
-        width: 100%;
-        padding: 16px;
-        font-size: 1.1rem;
+        flex: 1 !important;
+        max-width: 150px !important;
+        min-width: auto !important;
+        padding: 10px 12px !important;
+        font-size: 0.85rem !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        white-space: nowrap !important;
+        text-align: center !important;
     }
 
+    /* Mobile Profile Header */
     .profile-header {
-        margin: 0 0 1.5rem 0;
+        background: white !important;
+        padding: 16px !important;
+        margin: 0 !important;
+        text-align: center !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        width: 100vw !important;
+        box-sizing: border-box !important;
+    }
+
+    .profile-picture-container {
+        margin-bottom: 12px !important;
     }
 
     .profile-picture {
-        width: 70px;
-        height: 70px;
+        width: 56px !important;
+        height: 56px !important;
+        margin-bottom: 8px !important;
     }
 
     .profile-header h2 {
-        font-size: 1.5rem;
+        font-size: 1.2rem !important;
+        margin-bottom: 4px !important;
+        color: #1e293b !important;
+    }
+
+    .profile-email {
+        font-size: 0.85rem !important;
+        color: #64748b !important;
+    }
+
+    /* Mobile Profile Details */
+    .profile-details {
+        background: white !important;
+        padding: 16px !important;
+        margin: 0 !important;
+        border-top: 1px solid #e2e8f0 !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+        width: 100vw !important;
+        box-sizing: border-box !important;
+    }
+
+    .profile-details h3 {
+        font-size: 1rem !important;
+        margin-bottom: 12px !important;
+        padding-bottom: 6px !important;
+    }
+
+    .profile-info {
+        gap: 10px !important;
     }
 
     .info-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-        padding: 16px;
-        background: #ffffff;
-        border-radius: 12px;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 4px !important;
+        padding: 10px 12px !important;
+        background: #f8fafc !important;
+        border-radius: 6px !important;
+        border: 1px solid #e2e8f0 !important;
     }
 
     .info-label {
-        font-size: 0.85rem;
-        color: #64748b;
-        font-weight: 500;
+        font-size: 0.7rem !important;
+        color: #64748b !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
 
     .info-value {
-        font-size: 1rem;
-        width: 100%;
-        color: #1e293b;
+        font-size: 0.85rem !important;
+        color: #1e293b !important;
+        font-weight: 500 !important;
+        width: 100% !important;
     }
 
     .subscription-end {
-        display: block;
-        margin-left: 0;
-        margin-top: 4px;
+        display: block !important;
+        margin-left: 0 !important;
+        margin-top: 4px !important;
+        font-size: 0.75rem !important;
     }
 
-    .profile-details {
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
+    /* Mobile Pricing Section */
+    .pricing-section {
+        margin: 0 0 20px 0 !important;
+        padding: 16px 0 !important;
+        background: #f8fafc !important;
+        width: 100vw !important;
+        border: none !important;
+        box-sizing: border-box !important;
     }
 }
 
-/* Modern Mobile Components */
+/* ===== MOBILE COMPONENTS - COMPLETE REWRITE ===== */
+
+/* Mobile Desktop Reminder */
 .mobile-desktop-reminder {
-    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
-    border: none;
-    border-radius: 20px;
-    padding: 24px;
-    margin: 16px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(21, 101, 192, 0.2);
+    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    text-align: center !important;
+    box-shadow: none !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    display: block !important;
+}
+
+.mobile-desktop-reminder::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -50% !important;
+    right: -50% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%) !important;
+    z-index: 1 !important;
 }
 
 .mobile-desktop-reminder h3 {
-    margin: 0 0 12px 0;
-    font-size: 2rem;
-    color: white;
+    margin: 0 0 8px 0 !important;
+    font-size: 1.4rem !important;
+    color: white !important;
+    position: relative !important;
+    z-index: 2 !important;
 }
 
 .mobile-desktop-reminder p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.95);
-    font-weight: 500;
-    font-size: 1.1rem;
-    line-height: 1.6;
+    margin: 0 !important;
+    color: rgba(255, 255, 255, 0.95) !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+    line-height: 1.3 !important;
+    position: relative !important;
+    z-index: 2 !important;
+    max-width: none !important;
 }
 
+/* Mobile Signup Header */
 .mobile-signup-header {
-    text-align: center;
-    padding: 24px;
-    background: white;
-    margin: 16px;
-    border-radius: 20px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e2e8f0;
+    text-align: center !important;
+    padding: 16px !important;
+    background: white !important;
+    margin: 0 !important;
+    width: 100vw !important;
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
 }
 
 .mobile-signup-header h2 {
-    color: #1e293b;
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin: 0 0 8px 0;
-    letter-spacing: -0.025em;
+    color: #1e293b !important;
+    font-size: 1.3rem !important;
+    font-weight: 700 !important;
+    margin: 0 0 6px 0 !important;
+    letter-spacing: -0.025em !important;
 }
 
 .mobile-signup-header p {
-    color: #64748b;
-    font-size: 1.1rem;
-    margin: 0;
-    line-height: 1.5;
-    font-weight: 500;
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    line-height: 1.3 !important;
+    font-weight: 500 !important;
 }
 
+/* Mobile Subscription/Account Management */
 .mobile-subscription-management,
 .mobile-account-management {
-    background: white;
-    border-radius: 20px;
-    padding: 24px;
-    margin: 16px;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-    border: 1px solid #e2e8f0;
+    background: white !important;
+    border-radius: 0 !important;
+    padding: 16px !important;
+    margin: 0 0 20px 0 !important;
+    width: 100vw !important;
+    box-shadow: none !important;
+    border-top: 1px solid #e2e8f0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
 }
 
 .mobile-subscription-management h3,
 .mobile-account-management h3 {
-    margin: 0 0 20px 0;
-    color: #1e293b;
-    font-size: 1.3rem;
-    font-weight: 600;
+    margin: 0 0 12px 0 !important;
+    color: #1e293b !important;
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
 }
 
 .subscription-info {
-    margin-bottom: 24px;
-    background: #f8fafc;
-    padding: 20px;
-    border-radius: 16px;
-    border-left: 4px solid #1565c0;
+    margin-bottom: 16px !important;
+    background: #f0f9ff !important;
+    padding: 12px !important;
+    border-radius: 6px !important;
+    border-left: 3px solid #1565c0 !important;
 }
 
 .subscription-info p {
-    margin: 8px 0;
-    font-size: 1rem;
-    color: #374151;
-    font-weight: 500;
+    margin: 4px 0 !important;
+    font-size: 0.85rem !important;
+    color: #374151 !important;
+    font-weight: 500 !important;
 }
 
 .subscription-info strong {
-    color: #1e293b;
-    font-weight: 600;
+    color: #1e293b !important;
+    font-weight: 600 !important;
 }
 
 .mobile-subscription-actions .profile-button,
 .mobile-account-actions .profile-button {
-    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%);
-    border: none;
-    border-radius: 16px;
-    padding: 16px 24px;
-    color: white;
-    font-weight: 600;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 16px rgba(21, 101, 192, 0.2);
-    min-width: 0;
-    flex: 1;
+    background: linear-gradient(135deg, #1565c0 0%, #1976d2 100%) !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 12px 16px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 2px 6px rgba(21, 101, 192, 0.2) !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    max-width: none !important;
+    flex: none !important;
 }
 
 .mobile-subscription-actions .profile-button:hover,
 .mobile-account-actions .profile-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(21, 101, 192, 0.3);
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(21, 101, 192, 0.3) !important;
 }
 
 .mobile-subscription-actions,
 .mobile-account-actions {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
+    display: flex !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
 }
 
+/* Mobile Signup Mode Container */
 .mobile-signup-mode {
-    background: #f8fafc;
-    margin: 0;
-    border-radius: 0;
-    padding: 0;
-    min-height: 100vh;
+    background: #f8fafc !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 100vh !important;
+    height: auto !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    position: relative !important;
+    box-sizing: border-box !important;
+}
+
+.mobile-signup-mode .profile-container {
+    min-height: auto !important;
+    height: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    background: #f8fafc !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+}
+
+/* Bottom spacing */
+.mobile-signup-mode .profile-container::after {
+    content: '' !important;
+    height: 80px !important;
+    width: 100% !important;
+    display: block !important;
+    background: #f8fafc !important;
+    flex-shrink: 0 !important;
 }
