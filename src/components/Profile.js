@@ -294,7 +294,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <button className="profile-button" onClick={handleBillingClick}>
                                         Manage Subscription
                                     </button>
-                                    {subscriptionStatus === 'active' && userData?.stripe_customer_id && (
+                                    {userData?.stripe_customer_id && (
                                         <button className="profile-button" onClick={handleBillingPortal}>
                                             Billing Management
                                         </button>
