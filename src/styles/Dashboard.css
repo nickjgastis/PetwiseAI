@@ -593,3 +593,38 @@ h3 {
     border-radius: 0;
     height: 100vh;
 }
+
+/* Past Due Sidebar Warning */
+.past-due-sidebar-warning {
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #fff7ed 0%, #fec0aa 100%);
+    border-left: 3px solid #f59e0b;
+    margin: 5px 0;
+    font-size: 0.9rem;
+    text-align: center;
+    transition: background-color 0.2s ease;
+}
+
+.past-due-sidebar-warning:hover {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+}
+
+.past-due-sidebar-warning a {
+    color: #92400e;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 0;
+}
+
+.past-due-sidebar-warning a:hover {
+    color: #78350f;
+}
+
+/* Hide warning when sidebar is collapsed */
+.sidebar-collapsed .past-due-sidebar-warning {
+    display: none;
+}

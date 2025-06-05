@@ -310,6 +310,11 @@ const Dashboard = () => {
                             <span className="sidebar-text">Profile</span>
                         </Link>
                     </li>
+                    {subscriptionStatus === 'past_due' && (
+                        <li className="past-due-sidebar-warning">
+                            <Link to="/dashboard/profile">💳 Payment needs attention</Link>
+                        </li>
+                    )}
                     <li className="sidebar-item">
                         <Link to="/dashboard/help" onClick={closeMobileMenu} data-tooltip="Help">
                             <FaQuestionCircle className="sidebar-icon" />
