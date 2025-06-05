@@ -322,6 +322,7 @@ app.post('/webhook', async (req, res) => {
             if (invoice.subscription) {
                 try {
                     const customer = await stripe.customers.retrieve(invoice.customer);
+                    const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
 
                     // Find user by stripe customer ID
                     const { data: userData, error: userError } = await supabase
@@ -340,7 +341,8 @@ app.post('/webhook', async (req, res) => {
                     const { error: updateError } = await supabase
                         .from('users')
                         .update({
-                            subscription_status: 'past_due'
+                            subscription_status: 'past_due',
+                            grace_period_end: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null
                         })
                         .eq('auth0_user_id', userData.auth0_user_id);
 
@@ -1233,6 +1235,94 @@ app.post('/create-customer-portal', async (req, res) => {
         res.json({ url: session.url });
     } catch (error) {
         console.error('Customer portal error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add this test endpoint after your other test endpoints
+app.post('/test-payment-failure/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log('Testing payment failure for user:', userId);
+
+        // Find user data
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('stripe_customer_id')
+            .eq('auth0_user_id', userId)
+            .single();
+
+        if (userError || !userData?.stripe_customer_id) {
+            return res.status(404).json({ error: 'No subscription found for user' });
+        }
+
+        // Simulate grace period end (7 days from now - Stripe's typical retry period)
+        const gracePeriodEnd = new Date();
+        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+
+        // Update user to past_due status
+        const { data: updateData, error: updateError } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'past_due',
+                grace_period_end: gracePeriodEnd.toISOString()
+            })
+            .eq('auth0_user_id', userId)
+            .select();
+
+        if (updateError) throw updateError;
+
+        console.log('Payment failure test completed:', updateData[0]);
+        res.json({
+            success: true,
+            message: 'User set to past_due status',
+            gracePeriodEnd: gracePeriodEnd.toISOString(),
+            userData: updateData[0]
+        });
+    } catch (error) {
+        console.error('Test payment failure error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Add test endpoint to reset user back to active
+app.post('/test-payment-success/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        console.log('Testing payment success for user:', userId);
+
+        // Find user data
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('stripe_customer_id, subscription_interval')
+            .eq('auth0_user_id', userId)
+            .single();
+
+        if (userError || !userData?.stripe_customer_id) {
+            return res.status(404).json({ error: 'No subscription found for user' });
+        }
+
+        // Reset to active status and clear grace period
+        const { data: updateData, error: updateError } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'active',
+                grace_period_end: null,
+                cancel_at_period_end: false
+            })
+            .eq('auth0_user_id', userId)
+            .select();
+
+        if (updateError) throw updateError;
+
+        console.log('Payment success test completed:', updateData[0]);
+        res.json({
+            success: true,
+            message: 'User restored to active status',
+            userData: updateData[0]
+        });
+    } catch (error) {
+        console.error('Test payment success error:', error);
         res.status(500).json({ error: error.message });
     }
 });

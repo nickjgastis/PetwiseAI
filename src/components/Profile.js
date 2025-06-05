@@ -54,6 +54,14 @@ const Profile = ({ isMobileSignup = false }) => {
         return url;
     };
 
+    const getGracePeriodDays = () => {
+        if (userData?.grace_period_end && subscriptionStatus === 'past_due') {
+            const daysLeft = Math.ceil((new Date(userData.grace_period_end) - new Date()) / (1000 * 60 * 60 * 24));
+            return daysLeft > 0 ? daysLeft : 0;
+        }
+        return null;
+    };
+
     useEffect(() => {
         if (user) {
             // console.log('Auth0 user full object:', JSON.stringify(user, null, 2));
@@ -76,7 +84,8 @@ const Profile = ({ isMobileSignup = false }) => {
                         has_used_trial,
                         subscription_interval,
                         cancel_at_period_end,
-                        dvm_name
+                        dvm_name,
+                        grace_period_end
                     `)
                     .eq('auth0_user_id', user.sub)
                     .single();
@@ -272,7 +281,18 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <div className="past-due-icon">⚠️</div>
                                             <div className="past-due-text">
                                                 <h3>Subscription Past Due</h3>
-                                                <p>Your subscription payment is past due. To continue with the service, please update your payment method or pay your outstanding invoice using Billing Management.</p>
+                                                <p>
+                                                    Your subscription payment is past due.
+                                                    {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
+                                                        ` Your subscription will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless payment is resolved.`
+                                                    )}
+                                                    {getGracePeriodDays() === 0 && (
+                                                        ` Your grace period has expired. Please update your payment method immediately.`
+                                                    )}
+                                                    {getGracePeriodDays() === null && (
+                                                        ` To continue with the service, please update your payment method or pay your outstanding invoice using Billing Management.`
+                                                    )}
+                                                </p>
                                             </div>
                                             {userData?.stripe_customer_id && (
                                                 <button className="past-due-action-button" onClick={handleBillingPortal}>
@@ -366,7 +386,18 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <div className="mobile-past-due-icon">⚠️</div>
                                             <div className="mobile-past-due-text">
                                                 <h3>Payment Past Due</h3>
-                                                <p>Your payment is past due. Please update your payment method to continue service.</p>
+                                                <p>
+                                                    Your payment is past due.
+                                                    {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
+                                                        ` Service will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless resolved.`
+                                                    )}
+                                                    {getGracePeriodDays() === 0 && (
+                                                        ` Grace period expired. Update payment immediately.`
+                                                    )}
+                                                    {getGracePeriodDays() === null && (
+                                                        ` Please update your payment method to continue service.`
+                                                    )}
+                                                </p>
                                             </div>
                                             {userData?.stripe_customer_id && (
                                                 <button className="mobile-past-due-button" onClick={handleBillingPortal}>

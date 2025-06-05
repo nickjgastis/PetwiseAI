@@ -62,7 +62,7 @@ const Dashboard = () => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name')
+                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end')
                     .eq('auth0_user_id', user.sub)
                     .single();
 
@@ -118,7 +118,7 @@ const Dashboard = () => {
 
                     setHasAcceptedTerms(data.has_accepted_terms);
                     setSubscriptionStatus(data.subscription_status);
-                    setIsSubscribed(data.subscription_status === 'active');
+                    setIsSubscribed(['active', 'past_due'].includes(data.subscription_status));
                     setUserData(data);
 
                     if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
