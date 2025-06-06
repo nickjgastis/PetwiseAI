@@ -336,13 +336,17 @@ app.post('/webhook', async (req, res) => {
                         return res.status(200).json({ received: true });
                     }
 
+                    // Calculate grace period: exactly 7 days from first payment failure
+                    const gracePeriodEnd = new Date();
+                    gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+
                     // Set status to past_due when payment fails
-                    // This gives user a grace period while Stripe retries
+                    // This gives user exactly 7 days grace period
                     const { error: updateError } = await supabase
                         .from('users')
                         .update({
                             subscription_status: 'past_due',
-                            grace_period_end: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null
+                            grace_period_end: gracePeriodEnd.toISOString()
                         })
                         .eq('auth0_user_id', userData.auth0_user_id);
 
@@ -351,7 +355,7 @@ app.post('/webhook', async (req, res) => {
                         throw updateError;
                     }
 
-                    console.log('Marked subscription as past_due for user:', userData.auth0_user_id);
+                    console.log('Marked subscription as past_due for user:', userData.auth0_user_id, 'with 7-day grace period until:', gracePeriodEnd.toISOString());
                 } catch (error) {
                     console.error('Error processing payment failure:', error);
                     return res.status(500).json({ error: error.message });

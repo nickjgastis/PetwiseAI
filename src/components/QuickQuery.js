@@ -301,6 +301,7 @@ const QuickQuery = () => {
         SUGGESTIONS.sort(() => Math.random() - 0.5).slice(0, 3)
     );
     const [isTyping, setIsTyping] = useState(false);
+    const [showSources, setShowSources] = useState({});
 
     useEffect(() => {
         const lastUser = localStorage.getItem('lastUserId');
@@ -488,10 +489,28 @@ For less common cases, provide:
    **Frequency:** Single dose, repeat based on ionized calcium levels
    **Additional Notes:** Monitor ECG for bradycardia or arrhythmias during infusion.
 
+### SOURCES REQUIREMENT:
+Always include a comprehensive **Sources** section at the end of your response with detailed, properly formatted citations including:
+- Full author names and publication years
+- Complete journal names with volume/issue numbers when available
+- Publisher information for textbooks
+- Specific page ranges or DOI numbers when applicable
+- Professional organization guideline titles and availability
+- Manufacturer prescribing information with proper attribution
+- Include 4-6 high-quality, relevant sources minimum
+- Format as numbered list with proper academic citation style
+- Include brief explanatory text about the sources' relevance when helpful
+
+Example format:
+**Sources:**
+1. Ettinger, S. J., & Feldman, E. C. (2017). *Textbook of Veterinary Internal Medicine*. Elsevier.
+2. Greene, S.A., et al. (2008). "Management of snake envenomation in dogs," *Journal of Veterinary Emergency and Critical Care*, 18(5), 526-532.
+3. American College of Veterinary Emergency and Critical Care (ACVECC) guidelines on emergency toxicology management.
+
 ### FINAL TOUCHES:
 - Always end responses with a clear **Recommendation** section summarizing the next steps.
 - Always allow any language translations.
-- Always allow client handouts or client comminications.
+- Always allow client handouts or client communications.
 - ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}
 - Provide **specific and concise information** for maximum clarity and usability.
 
@@ -512,6 +531,14 @@ For less common cases, provide:
      **Frequency:** QID
      **Duration:** 3-5 days
 3. **Recommendation:** Administer fluids immediately and control pain. Monitor electrolytes and hydration. Reassess within 24 hours with follow-up diagnostics (e.g., CPL).
+
+**Sources:**
+1. Veterinary Textbooks:
+   - "Textbook of Veterinary Internal Medicine" by Ettinger and Feldman
+2. Peer-Reviewed Journals:
+   - "Management of acute pancreatitis in dogs," Journal of Veterinary Emergency and Critical Care
+3. Professional Organizations:
+   - ACVECC consensus guidelines on acute pancreatitis management
 
 By adhering to these guidelines, ensure responses are **short, actionable, and formatted for quick reference** while providing high-quality assistance tailored to professional veterinarians.
 `
@@ -710,8 +737,28 @@ For less common cases, provide:
    **Frequency:** Single dose, repeat based on ionized calcium levels
    **Additional Notes:** Monitor ECG for bradycardia or arrhythmias during infusion.
 
+### SOURCES REQUIREMENT:
+Always include a comprehensive **Sources** section at the end of your response with detailed, properly formatted citations including:
+- Full author names and publication years
+- Complete journal names with volume/issue numbers when available
+- Publisher information for textbooks
+- Specific page ranges or DOI numbers when applicable
+- Professional organization guideline titles and availability
+- Manufacturer prescribing information with proper attribution
+- Include 4-6 high-quality, relevant sources minimum
+- Format as numbered list with proper academic citation style
+- Include brief explanatory text about the sources' relevance when helpful
+
+Example format:
+**Sources:**
+1. Ettinger, S. J., & Feldman, E. C. (2017). *Textbook of Veterinary Internal Medicine*. Elsevier.
+2. Greene, S.A., et al. (2008). "Management of snake envenomation in dogs," *Journal of Veterinary Emergency and Critical Care*, 18(5), 526-532.
+3. American College of Veterinary Emergency and Critical Care (ACVECC) guidelines on emergency toxicology management.
+
 ### FINAL TOUCHES:
 - Always end responses with a clear **Recommendation** section summarizing the next steps.
+- Always allow any language translations.
+- Always allow client handouts or client communications.
 - ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}
 - Provide **specific and concise information** for maximum clarity and usability.
 
@@ -732,6 +779,14 @@ For less common cases, provide:
      **Frequency:** QID
      **Duration:** 3-5 days
 3. **Recommendation:** Administer fluids immediately and control pain. Monitor electrolytes and hydration. Reassess within 24 hours with follow-up diagnostics (e.g., CPL).
+
+**Sources:**
+1. Veterinary Textbooks:
+   - "Textbook of Veterinary Internal Medicine" by Ettinger and Feldman
+2. Peer-Reviewed Journals:
+   - "Management of acute pancreatitis in dogs," Journal of Veterinary Emergency and Critical Care
+3. Professional Organizations:
+   - ACVECC consensus guidelines on acute pancreatitis management
 
 By adhering to these guidelines, ensure responses are **short, actionable, and formatted for quick reference** while providing high-quality assistance tailored to professional veterinarians.
 `
@@ -783,6 +838,74 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         }
     };
 
+    // Helper function to detect if user is explicitly asking for sources
+    const isSourcesQuery = (userMessage) => {
+        if (!userMessage) return false;
+        const lowerMessage = userMessage.toLowerCase();
+        const sourceKeywords = [
+            'sources', 'source', 'references', 'citations', 'cite',
+            'where did you get', 'what are your sources', 'give me the sources',
+            'show me sources', 'provide sources', 'list sources',
+            'reference', 'bibliography', 'documentation'
+        ];
+        return sourceKeywords.some(keyword => lowerMessage.includes(keyword));
+    };
+
+    // Helper function to extract sources from message content
+    const extractSources = (content, userMessage = '') => {
+        // If user explicitly asked for sources, don't extract them - show as main content
+        if (isSourcesQuery(userMessage)) {
+            return null;
+        }
+
+        // Try multiple patterns to match sources section
+        const patterns = [
+            /\*\*Sources:\*\*([\s\S]*?)(?=\n\n\*\*|$)/i,
+            /\*\*Sources\*\*([\s\S]*?)(?=\n\n\*\*|$)/i,
+            /Sources:([\s\S]*?)(?=\n\n\*\*|$)/i,
+            /\*\*References:\*\*([\s\S]*?)(?=\n\n\*\*|$)/i,
+        ];
+
+        for (const pattern of patterns) {
+            const match = content.match(pattern);
+            if (match) {
+                return match[1].trim();
+            }
+        }
+
+        return null;
+    };
+
+    // Helper function to get content without sources
+    const getContentWithoutSources = (content, userMessage = '') => {
+        // If user explicitly asked for sources, don't remove them
+        if (isSourcesQuery(userMessage)) {
+            return content;
+        }
+
+        const patterns = [
+            /\*\*Sources:\*\*([\s\S]*?)(?=\n\n\*\*|$)/i,
+            /\*\*Sources\*\*([\s\S]*?)(?=\n\n\*\*|$)/i,
+            /Sources:([\s\S]*?)(?=\n\n\*\*|$)/i,
+            /\*\*References:\*\*([\s\S]*?)(?=\n\n\*\*|$)/i,
+        ];
+
+        let cleanContent = content;
+        for (const pattern of patterns) {
+            cleanContent = cleanContent.replace(pattern, '').trim();
+        }
+
+        return cleanContent;
+    };
+
+    // Helper function to toggle sources display
+    const toggleSources = (index) => {
+        setShowSources(prev => ({
+            ...prev,
+            [index]: !prev[index]
+        }));
+    };
+
     return (
         <div className="qq-container">
             <div className="qq-header">
@@ -817,48 +940,81 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             </div>
                         </>
                     )}
-                    {messages.map((msg, index) => (
-                        <div key={index} className={`qq-message ${msg.role}`}>
-                            <div className="qq-message-content">
-                                {msg.role === 'assistant' ? (
-                                    <div dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }} />
-                                ) : (
-                                    msg.content
-                                )}
-                                {msg.role === 'assistant' && (
-                                    <div className="qq-button-group">
-                                        <button
-                                            className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
-                                            onClick={() => handleCopy(msg.content, index)}
-                                            aria-label="Copy message"
-                                        >
-                                            {copiedIndex === index ? (
+                    {messages.map((msg, index) => {
+                        // Find the user message that prompted this assistant response
+                        const getUserMessage = (assistantIndex) => {
+                            // Look backwards from the assistant message to find the most recent user message
+                            for (let i = assistantIndex - 1; i >= 0; i--) {
+                                if (messages[i].role === 'user') {
+                                    return messages[i].content;
+                                }
+                            }
+                            return '';
+                        };
+
+                        const userMessage = msg.role === 'assistant' ? getUserMessage(index) : '';
+
+                        return (
+                            <div key={index} className={`qq-message ${msg.role}`}>
+                                <div className="qq-message-content">
+                                    {msg.role === 'assistant' ? (
+                                        <div dangerouslySetInnerHTML={{ __html: formatMessage(getContentWithoutSources(msg.content, userMessage)) }} />
+                                    ) : (
+                                        msg.content
+                                    )}
+                                    {msg.role === 'assistant' && (
+                                        <div className="qq-button-group">
+                                            <button
+                                                className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
+                                                onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
+                                                aria-label="Copy message"
+                                            >
+                                                {copiedIndex === index ? (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
+                                                        <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
+                                                    </svg>
+                                                )}
+                                            </button>
+                                            <button
+                                                className="qq-print-button"
+                                                onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
+                                                aria-label="Print message"
+                                            >
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                    <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                                                    <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
                                                 </svg>
-                                            ) : (
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                    <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
-                                                    <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
-                                                </svg>
+                                            </button>
+                                            {extractSources(msg.content, userMessage) && (
+                                                <button
+                                                    className={`qq-sources-button ${showSources[index] ? 'active' : ''}`}
+                                                    onClick={() => toggleSources(index)}
+                                                    aria-label="Show sources"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+                                                    </svg>
+                                                </button>
                                             )}
-                                        </button>
-                                        <button
-                                            className="qq-print-button"
-                                            onClick={() => handlePrint(msg.content)}
-                                            aria-label="Print message"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
-                                            </svg>
-                                        </button>
-                                        {msg.timestamp && <span className="qq-message-timestamp">{msg.timestamp}</span>}
-                                    </div>
-                                )}
-                                {msg.role === 'user' && msg.timestamp && <div className="qq-message-timestamp">{msg.timestamp}</div>}
+                                            <span className="qq-message-timestamp">{formatTimestamp()}</span>
+                                        </div>
+                                    )}
+                                    {msg.role === 'assistant' && showSources[index] && extractSources(msg.content, userMessage) && (
+                                        <div className="qq-sources-content">
+                                            <div dangerouslySetInnerHTML={{ __html: formatMessage(extractSources(msg.content, userMessage)) }} />
+                                        </div>
+                                    )}
+                                    {msg.role === 'user' && (
+                                        <div className="qq-message-timestamp">{formatTimestamp()}</div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                     {isLoading && (
                         <div className={`qq-message assistant ${fadeOutLoader ? 'fade-out' : ''}`}>
                             <div className="shimmer-loader-container">

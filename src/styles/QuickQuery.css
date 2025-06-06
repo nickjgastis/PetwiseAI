@@ -174,75 +174,77 @@
     & .section-header {
         display: flex;
         align-items: baseline;
-        margin: 40px 0 16px;
-        padding-top: 8px;
-        border-top: 1px solid rgba(0, 0, 0, 0.05);
+        margin: 16px 0 8px 0;
+        padding: 0;
+        border: none;
+        background: none;
     }
 
     & .section-header:first-child {
         margin-top: 0;
-        border-top: none;
-        padding-top: 0;
     }
 
     & .section-header .section-number {
+        color: #000;
+        font-weight: 700;
         margin-right: 8px;
         min-width: 24px;
-        text-align: right;
-        font-weight: 700;
-        color: #000;
-        font-size: 15px;
+        text-align: left;
+        font-size: 14px;
     }
 
     & .section-header h3 {
-        font-weight: 700;
         color: #000;
-        font-size: 15px;
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
     }
 
     /* List items */
     & .list-item {
-        display: flex;
-        gap: 0px;
-        align-items: flex-start;
-        margin-top: 20px;
+        margin: 4px 0;
+        padding-left: 0px;
     }
 
     & .list-item .number {
-        min-width: 20px;
+        color: #000;
         font-weight: 600;
+        margin-right: 6px;
     }
 
     /* Bullet points - completely removed */
     & .bullet-item {
-        margin: 6px 0;
-        padding-left: 0;
+        margin: 4px 0;
+        padding-left: 16px;
         position: relative;
     }
 
     /* No bullet points at all */
     & .bullet-item::before {
-        content: "";
-        display: none;
+        content: "•";
+        color: #000;
+        position: absolute;
+        left: 0;
     }
 
     /* Compact lines within sections */
     & .line-item {
-        padding-left: 0px;
-        margin-top: 10px;
+        margin: 2px 0;
+        line-height: 1.5;
     }
 
     /* Keep consecutive line items compact */
     & .line-item+.line-item {
-        margin-top: 0;
+        margin-top: 2px;
     }
 
     /* Medication sections with more space */
     & .medication-item {
-        margin: 20px 0 6px;
-        font-weight: 700;
+        border-left: none;
+        padding-left: 0px;
+        margin-left: 0px;
+        font-weight: 600;
         color: #000;
-        padding-bottom: 2px;
     }
 
     /* First medication item after a section header */
@@ -270,9 +272,10 @@
 
     /* Add subtle decoration to medication items */
     & .medication-item {
-        border-left: 2px solid var(--accent-color);
-        padding-left: 6px;
-        margin-left: -8px;
+        border-left: none;
+        padding-left: 0px;
+        margin-left: 0px;
+        font-weight: 600;
     }
 
     /* Last line item before a new section or medication item needs bottom margin */
@@ -807,4 +810,233 @@
     background: var(--primary-hover) !important;
     border-color: var(--primary-hover) !important;
     box-shadow: 0 4px 12px rgba(63, 141, 219, 0.3) !important;
+}
+
+/* Sources Button */
+.qq-sources-button {
+    position: relative;
+    margin-top: 8px;
+    padding: 6px 8px;
+    background: rgba(59, 130, 246, 0.08);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #3b82f6;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.qq-sources-button:hover {
+    background: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.3);
+    transform: translateY(-1px);
+}
+
+.qq-sources-button.active {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.4);
+    color: #2563eb;
+}
+
+.qq-sources-button::after {
+    content: 'Sources';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    margin-bottom: 5px;
+    z-index: 1000;
+}
+
+.qq-sources-button:hover::after {
+    opacity: 1;
+}
+
+.qq-sources-button svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Sources Content */
+.qq-sources-content {
+    margin-top: 12px;
+    padding: 8px 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #64748b;
+    border-top: 1px solid #e2e8f0;
+    animation: sourcesSlideIn 0.3s ease-out;
+}
+
+/* Override all section styling within sources */
+.qq-sources-content .section-header {
+    display: block !important;
+    margin: 8px 0 4px 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    align-items: normal !important;
+}
+
+.qq-sources-content .section-header .section-number {
+    display: inline !important;
+    margin-right: 4px !important;
+    min-width: auto !important;
+    text-align: left !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+}
+
+.qq-sources-content .section-header h3 {
+    display: inline !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+.qq-sources-content .medication-item {
+    margin: 4px 0 !important;
+    font-weight: 500 !important;
+    color: #64748b !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+
+.qq-sources-content .line-item {
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    font-size: 0.9rem !important;
+    color: #64748b !important;
+}
+
+.qq-sources-content .list-item {
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    gap: 0 !important;
+}
+
+.qq-sources-content .list-item .number {
+    font-weight: 500 !important;
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+    min-width: auto !important;
+}
+
+.qq-sources-content h3 {
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    margin: 4px 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    display: block !important;
+}
+
+.qq-sources-content h1,
+.qq-sources-content h2,
+.qq-sources-content h4,
+.qq-sources-content h5,
+.qq-sources-content h6 {
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    margin: 4px 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+
+.qq-sources-content ol,
+.qq-sources-content ul {
+    margin: 4px 0 !important;
+    padding-left: 16px !important;
+}
+
+.qq-sources-content li {
+    margin: 2px 0 !important;
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+
+.qq-sources-content strong,
+.qq-sources-content b {
+    color: #64748b !important;
+    font-weight: 500 !important;
+    font-size: 0.9rem !important;
+}
+
+.qq-sources-content p {
+    margin: 4px 0 !important;
+    font-size: 0.9rem !important;
+    color: #64748b !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+}
+
+.qq-sources-content div {
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: none !important;
+    color: #64748b !important;
+    font-size: 0.9rem !important;
+}
+
+@keyframes sourcesSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 768px) {
+    .qq-sources-content {
+        margin-top: 8px;
+        padding: 6px 0;
+        font-size: 0.85rem;
+    }
+
+    .qq-sources-content h1,
+    .qq-sources-content h2,
+    .qq-sources-content h3,
+    .qq-sources-content h4,
+    .qq-sources-content h5,
+    .qq-sources-content h6,
+    .qq-sources-content li,
+    .qq-sources-content p,
+    .qq-sources-content div,
+    .qq-sources-content strong,
+    .qq-sources-content .section-header,
+    .qq-sources-content .medication-item,
+    .qq-sources-content .line-item {
+        font-size: 0.85rem !important;
+    }
 }
