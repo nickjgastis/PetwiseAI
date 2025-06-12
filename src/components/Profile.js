@@ -439,16 +439,11 @@ const Profile = ({ isMobileSignup = false }) => {
                                     </button>
                                     <button
                                         className="profile-button logout-button"
-                                        onClick={() => {
-                                            console.log('Mobile logout clicked');
-                                            console.log('Current location:', window.location.href);
-                                            console.log('Logout returnTo will be:', 'https://petwise.vet');
-                                            logout({
-                                                logoutParams: {
-                                                    returnTo: 'https://petwise.vet'
-                                                }
-                                            });
-                                        }}
+                                        onClick={() => logout({
+                                            logoutParams: {
+                                                returnTo: 'https://petwise.vet'
+                                            }
+                                        })}
                                     >
                                         Log Out
                                     </button>
