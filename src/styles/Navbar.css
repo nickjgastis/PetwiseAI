@@ -26,12 +26,30 @@
     color: white;
     font-size: 1.5rem;
     text-decoration: none;
-    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-family: 'Inter', 'Helvetica', sans-serif;
     transition: transform 0.3s ease, color 0.3s ease;
+    letter-spacing: 0.035em;
 
     @media (max-width: 768px) {
         margin-bottom: 10px;
     }
+}
+
+.navbar-logo a {
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: baseline;
+}
+
+.logo-text-bold {
+    font-weight: 700;
+    color: white;
+}
+
+.logo-text-regular {
+    font-weight: 400;
+    color: white;
 }
 
 .navbar-logo-image {
@@ -67,25 +85,60 @@
 .navbar-links button {
     color: white;
     text-decoration: none;
-    font-size: 1.1rem;
-    font-weight: 300;
-    letter-spacing: 0.05em;
-    transition: color 0.3s ease-in-out;
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.025em;
+    transition: all 0.3s ease;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
 
     @media (max-width: 768px) {
-        font-size: 1rem;
+        font-size: 0.95rem;
+        padding: 0.875rem 1.5rem;
+        border-radius: 10px;
     }
 }
 
 .navbar-links a:hover,
 .navbar-links button:hover {
-    color: #f8fcffbe;
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
+.navbar-links a:active,
+.navbar-links button:active {
+    transform: translateY(0);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Add subtle border effect */
+.navbar-links a::before,
+.navbar-links button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.navbar-links a:hover::before,
+.navbar-links button:hover::before {
+    opacity: 1;
+}
 
 .loading-text {
     font-size: 1.2rem;

@@ -28,7 +28,10 @@ const Navbar = () => {
         <nav className="navbar">
             <div className="navbar-logo">
                 <img src="/PW.png" alt="Petwise Logo" className="navbar-logo-image" />
-                <Link to="/">petwise.vet</Link>
+                <Link to="/">
+                    <span className="logo-text-bold">Petwise</span>
+                    <span className="logo-text-regular">.vet</span>
+                </Link>
             </div>
             <button className="hamburger" onClick={() => setIsOpen(!isOpen)}>
                 <span></span>
@@ -40,6 +43,7 @@ const Navbar = () => {
                     <>
                         <li><Link to="/" onClick={() => setIsOpen(false)}>Home</Link></li>
                         <li><Link to="/about" onClick={() => setIsOpen(false)}>About</Link></li>
+                        <li><Link to="/blog" onClick={() => setIsOpen(false)}>Blog</Link></li>
                         <li><Link to="/product" onClick={() => setIsOpen(false)}>Product</Link></li>
                     </>
                 )}

@@ -5,6 +5,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import HomePage from './pages/HomePage';  // Make sure this import matches your file name
 import Dashboard from './pages/Dashboard';
+import Blog from './pages/Blog';
 import PrivateRoute from './components/PrivateRoute';
 import AboutPage from './pages/AboutPage';
 import ProductPage from './pages/ProductPage';
@@ -51,6 +52,7 @@ const AppRoutes = () => {
                 element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <HomePage />}
             />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />
             <Route
                 path="/dashboard/*"

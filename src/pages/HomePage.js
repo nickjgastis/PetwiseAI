@@ -125,7 +125,7 @@ const HomePage = () => {
                     <div className="petnote-protocol-content">
                         <div className="protocol-content-half">
                             <div className="petnote-protocol-header">
-                                <h2>The <span className="brand-name">PetSOAP</span> Protocol - Easy as 1,2,3!</h2>
+                                <h2><span className="brand-name">PetSOAP</span> - Easy as 1,2,3!</h2>
                                 <p>Create complete SOAP notes in just seconds!</p>
                             </div>
                             <div className="protocol-steps">
@@ -166,8 +166,21 @@ const HomePage = () => {
                         </div>
                         <div className="petquery-content-half">
                             <div className="petquery-header">
-                                <h2>PLUS... Get Instant Answers with <span className="brand-name">PetQuery</span>; Your Trusted AI Vet Assistant</h2>
-                                <p>PetQuery is your trusted veterinary AI assistant with instant answers on everything you need to know - treatments, medications, protocols, and more.</p>
+                                <h2><span className="brand-name">PetQuery</span> Your Trusted AI Vet Assistant</h2>
+                                <div className="petquery-features">
+                                    <div className="petquery-feature">
+                                        <span className="feature-number">1</span>
+                                        <p>Ask any veterinary question</p>
+                                    </div>
+                                    <div className="petquery-feature">
+                                        <span className="feature-number">2</span>
+                                        <p>Get instant evidence-based answers</p>
+                                    </div>
+                                    <div className="petquery-feature">
+                                        <span className="feature-number">3</span>
+                                        <p>Access treatments, medications & protocols</p>
+                                    </div>
+                                </div>
                                 <p className="petquery-subtext">PetWise uses ONLY vet-sourced and approved references as sources, for accurate information every time.</p>
                             </div>
                         </div>

@@ -251,7 +251,10 @@ const Dashboard = () => {
                         </button>
                         <div className="mobile-logo">
                             <img src="/PW.png" alt="PW" className="logo-img" />
-                            petwise.vet
+                            <span>
+                                <span className="logo-text-bold">Petwise</span>
+                                <span className="logo-text-regular">.vet</span>
+                            </span>
                         </div>
                     </div>
                     <div
@@ -266,7 +269,10 @@ const Dashboard = () => {
                 <div className="sidebar-logo">
                     <Link to="/dashboard">
                         <img src="/PW.png" alt="PW" className="logo-img" />
-                        <span className="logo-text">petwise.vet</span>
+                        <span className="logo-text">
+                            <span className="logo-text-bold">Petwise</span>
+                            <span className="logo-text-regular">.vet</span>
+                        </span>
                     </Link>
                 </div>
                 {userData?.dvm_name && (
