@@ -19,7 +19,7 @@ const stripePromise = loadStripe(
 );
 
 const Profile = ({ isMobileSignup = false }) => {
-    const { user, isAuthenticated, isLoading: auth0Loading } = useAuth0();
+    const { user, isAuthenticated, isLoading: auth0Loading, logout } = useAuth0();
     const navigate = useNavigate();
     const location = useLocation();
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
@@ -436,6 +436,12 @@ const Profile = ({ isMobileSignup = false }) => {
                                 <div className="mobile-account-actions">
                                     <button className="profile-button" onClick={() => setShowManageAccount(true)}>
                                         Manage Account
+                                    </button>
+                                    <button
+                                        className="profile-button logout-button"
+                                        onClick={() => logout({ returnTo: window.location.origin })}
+                                    >
+                                        Log Out
                                     </button>
                                 </div>
                             </div>

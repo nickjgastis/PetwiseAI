@@ -360,6 +360,31 @@
         border: none !important;
         box-sizing: border-box !important;
     }
+
+    /* Mobile-specific logout button styling */
+    .logout-button {
+        background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2) !important;
+    }
+
+    .logout-button:hover {
+        background: linear-gradient(135deg, #b91c1c, #991b1b) !important;
+        box-shadow: 0 4px 10px rgba(220, 38, 38, 0.3) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .mobile-subscription-actions,
+    .mobile-account-actions {
+        display: flex !important;
+        gap: 10px !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .mobile-account-actions .profile-button:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 10px rgba(21, 101, 192, 0.3) !important;
+    }
 }
 
 /* ===== MOBILE COMPONENTS - COMPLETE REWRITE ===== */
@@ -503,14 +528,6 @@
 .mobile-account-actions .profile-button:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 10px rgba(21, 101, 192, 0.3) !important;
-}
-
-.mobile-subscription-actions,
-.mobile-account-actions {
-    display: flex !important;
-    gap: 10px !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
 }
 
 /* Mobile Signup Mode Container */
@@ -671,4 +688,12 @@
     background: linear-gradient(135deg, #b91c1c, #991b1b);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.mobile-subscription-actions,
+.mobile-account-actions {
+    display: flex !important;
+    gap: 10px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
 }
