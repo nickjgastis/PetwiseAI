@@ -440,7 +440,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <button
                                         className="profile-button logout-button"
                                         onClick={() => logout({
-                                            returnTo: process.env.NODE_ENV === 'production'
+                                            returnTo: window.location.hostname.includes('petwise.vet')
                                                 ? 'https://petwise.vet'
                                                 : window.location.origin
                                         })}
