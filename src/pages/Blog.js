@@ -1,94 +1,87 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import '../styles/Blog.css';
 
-const HASHNODE_API = 'https://gql.hashnode.com';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+const RSS_URL = 'https://blog.petwise.vet/rss.xml';
+
+const styles = `
+    .refresh-button {
+        background: #3cb6fd;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 10px;
+        transition: background 0.3s ease;
+    }
+
+    .refresh-button:hover {
+        background: #2a9ee0;
+    }
+`;
+
+const styleSheet = document.createElement("style");
+styleSheet.innerText = styles;
+document.head.appendChild(styleSheet);
 
 const Blog = () => {
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
-        let isMounted = true;
+    const fetchAllPosts = async () => {
+        try {
+            let page = 1;
+            const allItems = [];
+            let hasNextPage = true;
 
-        const fetchPosts = async () => {
-            try {
-                const query = `
-                query GetPosts {
-                    publication(host: "blog.petwise.vet") {
-                        posts(first: 50) {
-                            edges {
-                                node {
-                                    title
-                                    slug
-                                    brief
-                                    publishedAt
-                                    coverImage {
-                                        url
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                `;
+            while (hasNextPage) {
+                const url = `${CORS_PROXY}${encodeURIComponent(`https://blog.petwise.vet/rss.xml?page=${page}`)}`;
+                const response = await fetch(url);
+                const xmlText = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
-                const res = await axios.post(
-                    'https://gql.hashnode.com',
-                    {
-                        query,
-                        variables: {
-                            _t: new Date().getTime()
-                        }
-                    },
-                    {
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache'
-                        },
-                    }
-                );
+                const items = xmlDoc.getElementsByTagName("item");
+                if (items.length === 0) break;
 
-                if (!isMounted) return;
+                const pageItems = Array.from(items).map(item => {
+                    const title = item.getElementsByTagName("title")[0]?.textContent?.trim() || '';
+                    const link = item.getElementsByTagName("link")[0]?.textContent?.trim() || '';
+                    const description = item.getElementsByTagName("description")[0]?.textContent?.trim() || '';
+                    const pubDate = item.getElementsByTagName("pubDate")[0]?.textContent?.trim() || '';
+                    const hashnodeCoverImage = item.getElementsByTagName("hashnode:coverImage")[0];
+                    const imageUrl = hashnodeCoverImage?.textContent?.trim() || '';
 
-                console.log('Raw API Response:', JSON.stringify(res.data, null, 2));
+                    return {
+                        title,
+                        slug: link.split('/').pop(),
+                        brief: description,
+                        publishedAt: pubDate,
+                        coverImage: { url: imageUrl }
+                    };
+                });
 
-                if (res.data?.data?.publication?.posts?.edges) {
-                    const posts = res.data.data.publication.posts.edges.map(edge => ({
-                        title: edge.node.title,
-                        slug: edge.node.slug,
-                        brief: edge.node.brief,
-                        publishedAt: edge.node.publishedAt,
-                        coverImage: {
-                            url: edge.node.coverImage?.url || ''
-                        }
-                    }));
-                    console.log('Number of posts fetched:', posts.length);
-                    console.log('Post titles:', posts.map(p => p.title));
-                    console.log('Post dates:', posts.map(p => p.publishedAt));
-                    setPosts(posts);
-                } else {
-                    console.log('Invalid response format:', res.data);
-                    throw new Error('Invalid response format');
-                }
-                setLoading(false);
-            } catch (err) {
-                if (!isMounted) return;
-                console.error('Error fetching blog posts:', err);
-                console.error('Error details:', err.response?.data);
-                setError('Failed to load blog posts. Please try again later.');
-                setLoading(false);
+                allItems.push(...pageItems);
+
+                const nextLink = xmlDoc.querySelector('link[rel="next"]');
+                hasNextPage = !!nextLink || items.length > 0;
+                page++;
             }
-        };
 
-        fetchPosts();
+            setPosts(allItems);
+            setLoading(false);
+        } catch (err) {
+            setError("Failed to load blog posts.");
+            setLoading(false);
+        }
+    };
 
-        return () => {
-            isMounted = false;
-        };
+    useEffect(() => {
+        fetchAllPosts();
     }, []);
-
 
     if (loading) {
         return (
