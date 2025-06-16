@@ -151,7 +151,15 @@ const HomePage = () => {
                         </div>
                         <div className="protocol-image-half">
                             <div className="protocol-ipad-container">
-                                <img src="/petsoap_ipad2.png" alt="PetSOAP Protocol Interface" className="protocol-ipad-image" />
+                                <video
+                                    src="/petsoapdemo.mp4"
+                                    className="protocol-ipad-image"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    aria-label="PetSOAP Protocol Interface Demo"
+                                />
                             </div>
                         </div>
                     </div>
@@ -161,7 +169,15 @@ const HomePage = () => {
                     <div className="petquery-content">
                         <div className="petquery-image-half">
                             <div className="petquery-image-container">
-                                <img src="/petquerynew.png" alt="PetQuery AI Assistant Interface" className="petquery-image" />
+                                <video
+                                    src="/petquerydemo.mp4"
+                                    className="petquery-image"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    aria-label="PetQuery AI Assistant Interface Demo"
+                                />
                             </div>
                         </div>
                         <div className="petquery-content-half">
