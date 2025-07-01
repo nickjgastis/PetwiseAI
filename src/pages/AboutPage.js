@@ -1,12 +1,34 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import Footer from '../components/Footer';
 import '../styles/AboutPage.css';
 
 const AboutPage = () => {
+    const { loginWithRedirect } = useAuth0();
+    const [currentTestimonial, setCurrentTestimonial] = useState(0);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    const testimonials = [
+        {
+            text: "I am absolutely obsessed with the program. It is the only AI program I have enjoyed using. It is super user friendly and provides me with fast and accurate information. I have been reluctant to use AI for records because I like things written a certain way, and it can be hard to trust information from outside sources. I am impressed and comfortable distributing the information I get from PetWise to my clients.",
+            author: "Dr. Amanda W., DVM"
+        },
+        {
+            text: "PetWise saves me hours every day. What used to take 20–30 minutes per patient report now takes just minutes. The AI assistant helps me make faster, more informed decisions, and I can spend that extra time where it matters most – with my patients.",
+            author: "Dr. Stacey Gastis, DVM"
+        }
+    ];
+
+    const signUpOptions = {
+        authorizationParams: {
+            screen_hint: "signup"
+        }
+    };
+
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.body.scrollTop = 0;    // For Safari
-        document.documentElement.scrollTop = 0;  // For Chrome, Firefox, IE and Opera
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
     }, []);
 
     useEffect(() => {
@@ -17,77 +39,170 @@ const AboutPage = () => {
                     entry.target.classList.add('show');
                 }
             });
-        }, { threshold: 0.5 });
+        }, { threshold: 0.3 });
 
         sections.forEach((section) => {
             observer.observe(section);
         });
+
+        return () => observer.disconnect();
     }, []);
+
+    const changeTestimonial = (newIndex) => {
+        if (isTransitioning) return;
+
+        setIsTransitioning(true);
+        setTimeout(() => {
+            setCurrentTestimonial(newIndex);
+            setTimeout(() => {
+                setIsTransitioning(false);
+            }, 50);
+        }, 250);
+    };
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const nextIndex = (currentTestimonial + 1) % testimonials.length;
+            changeTestimonial(nextIndex);
+        }, 7000);
+
+        return () => clearInterval(interval);
+    }, [currentTestimonial, testimonials.length]);
+
+    const nextTestimonial = () => {
+        const nextIndex = (currentTestimonial + 1) % testimonials.length;
+        changeTestimonial(nextIndex);
+    };
+
+    const prevTestimonial = () => {
+        const prevIndex = (currentTestimonial - 1 + testimonials.length) % testimonials.length;
+        changeTestimonial(prevIndex);
+    };
+
+    const goToTestimonial = (index) => {
+        changeTestimonial(index);
+    };
+
+    const handleStartTrial = () => {
+        loginWithRedirect(signUpOptions);
+    };
 
     return (
         <>
             <div className="about-page">
-                <header className="about-hero fade-in-section">
-                    <h1>Revolutionizing Veterinary Care with AI</h1>
-                    <p>Petwise: Your intelligent partner in animal health</p>
-                </header>
-
-                <section className="about-mission fade-in-section">
-                    <h2>PetWise</h2>
-                    <p>Our mission is simple: save veterinarians valuable time by automating the report writing process, allowing you to focus on what matters most - caring for animals.</p>
-                </section>
-
-                <section className="about-features fade-in-section">
-                    <h2>Key Features</h2>
-                    <div className="feature-grid">
-                        <div className="feature-item">
-                            <h3>AI-Powered Report Generation</h3>
-                            <p>Generate complete veterinary reports in seconds, including patient information, diagnostics, treatment plans, physical exams, and follow-ups - all structured and clinic-ready.</p>
-                        </div>
-                        <div className="feature-item">
-                            <h3>QuickMed Query AI</h3>
-                            <p>Your 24/7 veterinary knowledge assistant. Get instant, accurate answers about treatments, drug dosages, protocols, and medical information without the need for research.</p>
-                        </div>
-                        <div className="feature-item">
-                            <h3>Clinical Decision Support</h3>
-                            <p>Receive evidence-based treatment recommendations, drug interaction warnings, and diagnostic suggestions to support your clinical decisions in real-time.</p>
+                {/* Hero Section */}
+                <section className="hero-section fade-in-section">
+                    <div className="container">
+                        <div className="hero-content">
+                            <h1>What is PetWise?</h1>
+                            <p>An AI assistant built specifically for veterinarians, streamlining SOAP note generation and providing instant answers to clinical questions.</p>
+                            <button className="trial-button" onClick={handleStartTrial}>
+                                Start Free Trial
+                            </button>
                         </div>
                     </div>
                 </section>
 
-                <section className="about-stats fade-in-section">
-                    <h2>Petwise AI by the Numbers</h2>
-                    <div className="stats-container">
-                        <div className="stat-item">
-                            <h3>75%</h3>
-                            <p>Reduction in report writing time</p>
-                        </div>
-                        <div className="stat-item">
-                            <h3>30%</h3>
-                            <p>Increase in patient throughput</p>
-                        </div>
-                        <div className="stat-item">
-                            <h3>95%</h3>
-                            <p>User satisfaction rate</p>
-                        </div>
-                        <div className="stat-item">
-                            <h3>24/7</h3>
-                            <p>AI-assisted support</p>
+                {/* Founding Story Section */}
+                <section className="story-section fade-in-section">
+                    <div className="container">
+                        <h2>How PetWise Began</h2>
+                        <div className="story-content">
+                            <div className="story-text">
+                                <p>Dr. Stacey Gastis, a practicing veterinarian, wanted to use AI to generate his medical records. After experimenting with ChatGPT, he asked his son, Nick Gastis, a software developer, to build something better—something tailored for real clinics.</p>
+                                <p>Together, they created PetWise, and it's now helping veterinarians save hundreds of hours across North America.</p>
+                            </div>
+                            <div className="story-visual">
+                                <img
+                                    src="/nickanddad.jpeg"
+                                    alt="Nick and Dr. Stacey Gastis - Father and son collaboration"
+                                    className="collaboration-image"
+                                />
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                <section className="about-testimonial fade-in-section">
-                    <blockquote>
-                        "PetWise saves me hours every day. What used to take 20-30 minutes per patient report now takes just minutes. The AI assistant helps me make faster, more informed decisions, and I can spend that extra time where it matters most - with my patients."
-                    </blockquote>
-                    <p>- Dr. Stacey Gastis, DVM</p>
+                {/* Team Section */}
+                <section className="team-section fade-in-section">
+                    <div className="container">
+                        <h2>Meet the Creators</h2>
+                        <div className="team-grid">
+                            <div className="team-member">
+                                <div className="member-photo">
+                                    <img
+                                        src="/nickheadshot.PNG"
+                                        alt="Nick Gastis - CEO, Chief Developer"
+                                        className="member-headshot"
+                                    />
+                                </div>
+                                <div className="member-info">
+                                    <h3>Nick Gastis</h3>
+                                    <p className="member-title">CEO, Chief Developer</p>
+                                    <p className="member-bio">Full-stack developer and startup founder, Nick built PetWise from the ground up to help his dad, and now hundreds of vets, save time and simplify documentation.</p>
+                                </div>
+                            </div>
+                            <div className="team-member">
+                                <div className="member-photo">
+                                    <img
+                                        src="/drgastisheadshot.jpg"
+                                        alt="Dr. Stacey Gastis, DVM - Veterinary Co-Founder"
+                                        className="member-headshot"
+                                    />
+                                </div>
+                                <div className="member-info">
+                                    <h3>Dr. Stacey Gastis, DVM</h3>
+                                    <p className="member-title">Veterinary Co-Founder</p>
+                                    <p className="member-bio">A practicing veterinarian with decades of experience, Dr. Gastis helped design PetWise to reflect real clinic needs—SOAP formatting, treatment planning, and record trustworthiness.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
-                <section className="about-cta fade-in-section">
-                    <h2>Experience the Future of Veterinary Care</h2>
-                    <p>Join us and revolutionize your veterinary practice with Petwise AI.</p>
-                    <button className="cta-button">Start Your Free Trial Today</button>
+                {/* Testimonials Section */}
+                <section className="testimonials-section fade-in-section">
+                    <div className="container">
+                        <h2>What Vets Are Saying</h2>
+                        <div className="testimonial-carousel">
+                            <button className="carousel-btn prev-btn" onClick={prevTestimonial}>
+                                &#8249;
+                            </button>
+                            <div className={`testimonial-content${isTransitioning ? ' transitioning' : ''}`}>
+                                <blockquote>
+                                    "{testimonials[currentTestimonial].text}"
+                                </blockquote>
+                                <p className="testimonial-author">— {testimonials[currentTestimonial].author}</p>
+                            </div>
+                            <button className="carousel-btn next-btn" onClick={nextTestimonial}>
+                                &#8250;
+                            </button>
+                        </div>
+                        <div className="carousel-indicators">
+                            {testimonials.map((_, index) => (
+                                <button
+                                    key={index}
+                                    className={`indicator ${index === currentTestimonial ? 'active' : ''}`}
+                                    onClick={() => goToTestimonial(index)}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* CTA Section */}
+                <section className="final-cta-section fade-in-section">
+                    <div className="container">
+                        <h2>Ready to Save Hours?</h2>
+                        <p>Join hundreds of veterinarians using PetWise to work faster and smarter.</p>
+                        <p>Start your 30-day free trial today.</p>
+                        <div className="cta-container">
+                            <button className="cta-button" onClick={handleStartTrial}>
+                                Start Free Trial
+                            </button>
+                            <p className="no-card-text">No credit card required</p>
+                        </div>
+                    </div>
                 </section>
             </div>
             <Footer />

@@ -59,17 +59,7 @@ const ProductPage = () => {
                             allowFullScreen
                         ></iframe>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '3rem' }}>
-                        <button
-                            onClick={() => loginWithRedirect(signUpOptions)}
-                            className="hero-cta-button"
-                        >
-                            Start Your Free 30 Day Trial
-                        </button>
-                        <p className="no-card-text" style={{ color: '#666', marginTop: '0.5rem' }}>
-                            No credit card required
-                        </p>
-                    </div>
+
                 </section>
 
                 <section className="pricing-section fade-in-section">

@@ -1,272 +1,628 @@
+/* About Page Specific Styles - Isolated from Homepage */
 .about-page {
     font-family: 'Arial', sans-serif;
     color: #4a4a4a;
     line-height: 1.6;
+    background-color: #ffffff;
 }
 
-.about-hero {
-    background: linear-gradient(135deg, #61b6e7, #1e88e5);
-    text-align: center;
-    color: white;
-    padding: 100px 20px;
-    margin-bottom: 60px;
-}
-
-.about-hero h1 {
-    font-size: 3rem;
-    margin-bottom: 20px;
-    color: white;
-}
-
-.about-hero p {
-    font-size: 1.5rem;
-    color: white;
-}
-
-.about-mission,
-.about-features,
-.about-stats,
-.about-testimonial,
-.about-cta {
+.about-page .container {
     max-width: 1200px;
-    margin: 0 auto 80px;
+    margin: 0 auto;
     padding: 0 20px;
 }
 
-.about-mission {
-    max-width: 1200px;
-    margin: 0 auto 100px;
-    padding: 60px 20px;
-    text-align: center;
-    background-color: #f8f9fa;
-    border-radius: 15px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.about-mission h2 {
-    font-size: 4rem;
-    margin-bottom: 30px;
-    color: #1565c0;
-    font-weight: bold;
-    letter-spacing: -0.5px;
-}
-
-.about-mission p {
-    font-size: 2rem;
-    line-height: 1.5;
-    color: #2c3e50;
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 20px;
-    font-weight: 500;
-}
-
-.about-features h2,
-.about-stats h2,
-.about-cta h2 {
-    font-size: 2.5rem;
-    text-align: center;
-    margin-bottom: 40px;
-    color: #2c3e50;
-    font-weight: bold;
-}
-
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 40px;
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.feature-item {
-    background: white;
-    padding: 35px;
-    border-radius: 15px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    border: 1px solid rgba(21, 101, 192, 0.1);
-}
-
-.feature-item:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-    border-color: rgba(21, 101, 192, 0.3);
-}
-
-.feature-item h3 {
-    font-size: 1.8rem;
-    margin-bottom: 20px;
-    color: #1565c0;
-    font-weight: bold;
-}
-
-.feature-item p {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #4a4a4a;
-}
-
-.stats-container {
+/* Hero Section */
+.about-page .hero-section {
+    background: linear-gradient(135deg, #3468bd, #3db6fd);
+    padding: 100px 0;
+    min-height: 70vh;
     display: flex;
-    justify-content: space-around;
-    flex-wrap: wrap;
-    gap: 30px;
-}
-
-.stat-item {
-    text-align: center;
-    flex: 1;
-    min-width: 200px;
-}
-
-.stat-item h3 {
-    font-size: 3rem;
-    color: #1565c0;
-    margin-bottom: 10px;
-}
-
-.about-testimonial {
-    background-color: #f4f7f9;
-    padding: 60px 40px;
-    border-radius: 10px;
+    align-items: center;
     text-align: center;
 }
 
-.about-testimonial blockquote {
-    font-size: 1.5rem;
-    font-style: italic;
-    margin-bottom: 20px;
+.about-page .hero-section .container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: none;
+    width: 100%;
+    padding: 0;
 }
 
-.about-cta {
-    text-align: center;
-    background: linear-gradient(135deg, #61b6e7, #1e88e5);
-    padding: 80px 20px;
-    border-radius: 15px;
-    color: white;
-    margin-bottom: 80px;
+.about-page .hero-content {
+    max-width: 90%;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 40px;
 }
 
-.about-cta h2 {
-    font-size: 2.8rem;
-    margin-bottom: 20px;
-    color: white;
+.about-page .hero-content h1 {
+    font-size: 3.5rem;
     font-weight: bold;
+    color: white;
+    margin-bottom: 25px;
+    line-height: 1.2;
 }
 
-.about-cta p {
+.about-page .hero-content p {
     font-size: 1.4rem;
+    color: rgba(255, 255, 255, 0.95);
     margin-bottom: 40px;
-    color: rgba(255, 255, 255, 0.9);
-    max-width: 800px;
-    margin-left: auto;
-    margin-right: auto;
+    line-height: 1.6;
 }
 
-.cta-button {
-    background: rgba(18, 193, 251, 0.907);
-    color: #ffffff;
+.about-page .trial-button {
+    background: rgba(255, 255, 255, 0.95);
+    color: #3468bd;
     border: none;
-    padding: 1rem 2.5rem;
-    border-radius: 10px;
-    font-size: 1.4rem;
-    font-weight: 600;
+    padding: 18px 35px;
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.cta-button:hover {
+.about-page .trial-button:hover {
+    background: white;
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    background: #04a7e7;
 }
 
-.cta-button:active {
+/* Story Section */
+.about-page .story-section {
+    background-color: #eaf6fd;
+    padding: 100px 0;
+}
+
+.about-page .story-section h2 {
+    font-size: 3rem;
+    color: #3468bd;
+    text-align: center;
+    margin-bottom: 60px;
+    font-weight: bold;
+}
+
+.about-page .story-content {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 50px;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.about-page .story-text p {
+    font-size: 1.3rem;
+    color: #2c3e50;
+    margin-bottom: 25px;
+    line-height: 1.7;
+}
+
+.about-page .story-visual .placeholder-image {
+    max-width: 350px;
+    height: 250px;
+}
+
+.about-page .collaboration-image {
+    max-width: 500px;
+    height: 400px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    border: 3px solid rgba(52, 104, 189, 0.4);
+}
+
+.about-page .collaboration-image:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    border: none;
+}
+
+/* Team Section */
+.about-page .team-section {
+    background-color: #f8f9fa;
+    padding: 100px 0;
+}
+
+.about-page .team-section h2 {
+    font-size: 3rem;
+    color: #3468bd;
+    text-align: center;
+    margin-bottom: 70px;
+    font-weight: bold;
+}
+
+.about-page .team-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 50px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.about-page .team-member {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.about-page .team-member:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.about-page .member-photo {
+    margin-bottom: 30px;
+}
+
+.about-page .placeholder-photo {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3db6fd, #3468bd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    margin: 0 auto;
+    border: 4px solid white;
+    box-shadow: 0 4px 20px rgba(61, 182, 253, 0.3);
+}
+
+.about-page .member-info h3 {
+    font-size: 1.8rem;
+    color: #3468bd;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.about-page .member-title {
+    font-size: 1.2rem;
+    color: #3db6fd;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.about-page .member-bio {
+    font-size: 1.1rem;
+    color: #666;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.about-page .member-headshot {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto;
+    border: 4px solid white;
+    box-shadow: 0 4px 20px rgba(61, 182, 253, 0.3);
+    transition: all 0.3s ease;
+}
+
+.about-page .member-headshot:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 25px rgba(61, 182, 253, 0.4);
+}
+
+/* Testimonials Section */
+.about-page .testimonials-section {
+    background-color: #d8efff;
+    padding: 100px 0;
+}
+
+.about-page .testimonials-section h2 {
+    font-size: 3rem;
+    color: #3468bd;
+    text-align: center;
+    margin-bottom: 60px;
+    font-weight: bold;
+}
+
+.about-page .testimonial-carousel {
+    position: relative;
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 20px;
+    padding: 50px 80px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.about-page .testimonial-content {
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.about-page .testimonial-content.transitioning {
+    opacity: 0;
+}
+
+.about-page .testimonial-content blockquote {
+    font-size: 1.3rem;
+    line-height: 1.7;
+    font-style: italic;
+    color: #2c3e50;
+    margin: 0 0 30px 0;
+    text-align: center;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.about-page .testimonial-author {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #3468bd;
+    text-align: center;
+    margin: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.about-page .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #3db6fd;
+    color: white;
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 15px rgba(61, 182, 253, 0.3);
+}
+
+.about-page .carousel-btn:hover {
+    background: #3468bd;
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: 0 6px 20px rgba(61, 182, 253, 0.5);
+}
+
+.about-page .carousel-btn:active {
+    transform: translateY(-50%) scale(0.95);
+}
+
+.about-page .prev-btn {
+    left: 15px;
+}
+
+.about-page .next-btn {
+    right: 15px;
+}
+
+.about-page .carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+.about-page .indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none;
+    background: #ddd;
+    cursor: pointer;
+    transition: all 0.4s ease;
+}
+
+.about-page .indicator.active {
+    background: #3db6fd;
+    transform: scale(1.2);
+    box-shadow: 0 2px 8px rgba(61, 182, 253, 0.4);
+}
+
+/* Final CTA Section */
+.about-page .final-cta-section {
+    background: #3db6fd;
+    color: white;
+    padding: 100px 0;
+    text-align: center;
+}
+
+.about-page .final-cta-section h2 {
+    font-size: 3.2rem;
+    font-weight: bold;
+    margin-bottom: 25px;
+    color: white;
+}
+
+.about-page .final-cta-section p {
+    font-size: 1.4rem;
+    margin-bottom: 15px;
+    color: rgba(255, 255, 255, 0.95);
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.about-page .final-cta-section p:last-of-type {
+    margin-bottom: 40px;
+}
+
+.about-page .cta-button {
+    background: white;
+    color: #3468bd;
+    border: none;
+    padding: 20px 45px;
+    border-radius: 12px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.about-page .cta-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    background: #f8f9fa;
+}
+
+.about-page .cta-button:active {
+    transform: translateY(-1px);
+}
+
+/* Fade-in Animation */
+.about-page .fade-in-section {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(30px);
+    transition: all 0.6s ease-out;
+}
+
+.about-page .fade-in-section.show {
+    opacity: 1;
+    visibility: visible;
     transform: translateY(0);
 }
 
-.fade-in-section {
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 400ms ease-out, visibility 1200ms ease-out;
-    will-change: opacity, visibility;
-
-}
-
-.fade-in-section.show {
-    opacity: 1;
-    visibility: visible;
-
-}
-
+/* Mobile Responsiveness */
 @media (max-width: 768px) {
-    .about-hero {
-        padding: 40px 15px;
+    .about-page .hero-section {
+        padding: 60px 0;
+        min-height: auto;
     }
 
-    .about-hero h1 {
-        font-size: 1.8rem;
+    .about-page .hero-section .container {
+        text-align: center;
     }
 
-    .about-hero p {
-        font-size: 1rem;
+    .about-page .hero-content {
+        max-width: 100%;
+        padding: 0 30px;
     }
 
-    .about-mission h2,
-    .about-features h2,
-    .about-stats h2,
-    .about-cta h2 {
-        font-size: 1.6rem;
+    .about-page .hero-content h1 {
+        font-size: 2.5rem;
         margin-bottom: 20px;
     }
 
-    .about-mission p {
-        font-size: 1.1rem;
-        padding: 0;
+    .about-page .hero-content p {
+        font-size: 1.2rem;
+        margin-bottom: 30px;
     }
 
-    .feature-grid {
+    .about-page .story-section,
+    .about-page .team-section,
+    .about-page .testimonials-section,
+    .about-page .final-cta-section {
+        padding: 60px 0;
+    }
+
+    .about-page .story-section h2,
+    .about-page .team-section h2,
+    .about-page .testimonials-section h2 {
+        font-size: 2.2rem;
+        margin-bottom: 40px;
+    }
+
+    .about-page .story-content {
         grid-template-columns: 1fr;
-        gap: 20px;
-        padding: 10px;
+        gap: 30px;
+        text-align: center;
     }
 
-    .feature-item {
-        padding: 20px;
+    .about-page .story-text p {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
     }
 
-    .stat-item h3 {
+    .about-page .story-visual .placeholder-image {
+        max-width: 280px;
+        height: 180px;
+    }
+
+    .about-page .collaboration-image {
+        max-width: 350px;
+        height: 280px;
+        border-radius: 16px;
+        border: 2px solid rgba(52, 104, 189, 0.4);
+    }
+
+    .about-page .team-grid {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    .about-page .team-member {
+        padding: 30px 25px;
+    }
+
+    .about-page .member-headshot {
+        width: 80px;
+        height: 80px;
+        border-width: 3px;
+    }
+
+    .about-page .testimonial-carousel {
+        padding: 40px 30px;
+        margin: 0 10px;
+    }
+
+    .about-page .carousel-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+
+    .about-page .prev-btn {
+        left: 10px;
+    }
+
+    .about-page .next-btn {
+        right: 10px;
+    }
+
+    .about-page .testimonial-content blockquote {
+        font-size: 1.1rem;
+        margin-bottom: 20px;
+    }
+
+    .about-page .final-cta-section h2 {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+
+    .about-page .final-cta-section p {
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    .about-page .cta-button {
+        padding: 16px 35px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .about-page .container {
+        padding: 0 15px;
+    }
+
+    .about-page .hero-content h1 {
         font-size: 2rem;
     }
 
-    .about-cta {
-        padding: 40px 15px;
-        margin-bottom: 40px;
+    .about-page .hero-content p {
+        font-size: 1rem;
+    }
+
+    .about-page .trial-button {
+        padding: 15px 25px;
+        font-size: 1.1rem;
+    }
+
+    .about-page .story-text p {
+        font-size: 1rem;
+    }
+
+    .about-page .story-visual .placeholder-image {
+        max-width: 240px;
+        height: 150px;
+    }
+
+    .about-page .team-member {
+        padding: 25px 20px;
+    }
+
+    .about-page .member-headshot {
+        width: 80px;
+        height: 80px;
+        border-width: 3px;
+    }
+
+    .about-page .testimonial-carousel {
+        padding: 30px 20px;
+    }
+
+    .about-page .carousel-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+
+    .about-page .prev-btn {
+        left: 5px;
+    }
+
+    .about-page .next-btn {
+        right: 5px;
+    }
+
+    .about-page .testimonial-content blockquote {
+        font-size: 1rem;
+    }
+
+    .about-page .final-cta-section h2 {
+        font-size: 2rem;
+    }
+
+    .about-page .final-cta-section p {
+        font-size: 1.1rem;
+    }
+
+    .about-page .cta-button {
+        padding: 14px 30px;
+        font-size: 1.1rem;
+    }
+
+    .about-page .collaboration-image {
+        max-width: 280px;
+        height: 220px;
+        border-radius: 12px;
+        border: 2px solid rgba(52, 104, 189, 0.4);
     }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
-    .about-hero {
-        padding: 60px 20px;
+    .about-page .hero-content {
+        max-width: 85%;
+        padding: 0 30px;
     }
 
-    .feature-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 25px;
+    .about-page .hero-content h1 {
+        font-size: 3rem;
     }
 
-    .about-mission h2 {
-        font-size: 2.5rem;
+    .about-page .story-content {
+        gap: 40px;
     }
 
-    .about-mission p {
-        font-size: 1.4rem;
+    .about-page .team-grid {
+        gap: 40px;
     }
 
-    .stat-item h3 {
-        font-size: 2.5rem;
+    .about-page .testimonial-carousel {
+        padding: 45px 60px;
     }
+}
+
+.about-page .final-cta-section .cta-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.about-page .final-cta-section .cta-container .no-card-text {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+    text-align: center;
+    align-self: center;
+    margin-left: 0;
 }
