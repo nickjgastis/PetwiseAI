@@ -287,7 +287,7 @@ const Dashboard = () => {
                             <li className="sidebar-item">
                                 <Link to="/dashboard/report-form" onClick={closeMobileMenu} data-tooltip="Report Generator">
                                     <FaFileAlt className="sidebar-icon" />
-                                    <span className="sidebar-text">PetNote</span>
+                                    <span className="sidebar-text">PetSOAP</span>
                                 </Link>
                             </li>
                             <li className="sidebar-item">
