@@ -266,23 +266,22 @@ const HomePage = () => {
 
                 <section className="events-section">
                     <div className="events-header">
-                        <h2>Have your team join us live this Tuesday</h2>
+                        <h2>Join a Live Demo with Dr. Stacey Gastis</h2>
+                        <p>Tuesday, July 22</p>
                     </div>
                     <ul className="events-list">
                         <li className="event-item">
-                            <span className="event-info">Live Demo 1 - 12:15 PM Eastern</span>
+                            <div className="event-info">
+                                <div className="event-title">Live Demo</div>
+                                <div className="event-time">Tuesday, July 22 • 12:15 - 12:45 EST</div>
+                            </div>
                             <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
                         </li>
                         <li className="event-item">
-                            <span className="event-info">Live Demo 2 - 12:15 PM Central</span>
-                            <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
-                        </li>
-                        <li className="event-item">
-                            <span className="event-info">Live Demo 3 - 12:15 PM Mountain</span>
-                            <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
-                        </li>
-                        <li className="event-item">
-                            <span className="event-info">Live Demo 4 - 12:15 PM Pacific</span>
+                            <div className="event-info">
+                                <div className="event-title">Live Demo</div>
+                                <div className="event-time">Tuesday, July 22 • 7:00pm EST</div>
+                            </div>
                             <a href="https://meet.google.com/rvc-ordw-uwa" className="event-link">Join Demo</a>
                         </li>
                     </ul>

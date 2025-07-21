@@ -2462,8 +2462,10 @@ html {
 /* Enterprise section and Events section */
 .events-section {
     padding: 4rem;
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #f8f9fa, #f0f7ff);
     margin-bottom: 2rem;
+    border-radius: 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .events-header {
@@ -2473,67 +2475,134 @@ html {
 
 .events-header h2 {
     font-size: 2.5rem;
-    color: #0090d7;
-    margin-bottom: 1rem;
+    color: #3468bd;
+    margin-bottom: 0.5rem;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+    font-weight: 700;
 }
 
 .events-header p {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     color: #666;
-    margin-bottom: 2rem;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+    font-weight: 500;
 }
 
 .events-list {
-    max-width: 600px;
+    max-width: 700px;
     margin: 0 auto;
     list-style: none;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .event-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    border-left: 4px solid #3468bd;
 }
 
-.event-item:last-child {
-    border-bottom: none;
+.event-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
 }
 
 .event-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.event-title {
     color: #333;
     font-size: 1.1rem;
+    font-weight: 600;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+}
+
+.event-time {
+    color: #666;
+    font-size: 0.95rem;
+    font-family: 'Inter', 'Helvetica', sans-serif;
 }
 
 .event-link {
-    color: #0090d7;
+    color: white;
+    background: #3468bd;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
     transition: all 0.3s ease;
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .event-link:hover {
-    color: #04a7e7;
-    text-decoration: underline;
+    background: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 104, 189, 0.3);
 }
 
 @media (max-width: 768px) {
     .events-section {
-        padding: 2rem;
+        padding: 3rem 1.5rem;
     }
 
     .events-header h2 {
-        font-size: 2rem;
+        font-size: 1.8rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .events-header p {
+        font-size: 1.1rem;
+    }
+
+    .events-list {
+        gap: 1rem;
     }
 
     .event-item {
         flex-direction: column;
         align-items: flex-start;
-        gap: 0.5rem;
-        padding: 1rem;
+        gap: 1rem;
+        padding: 1.2rem 1.5rem;
     }
+
+    .event-info {
+        margin-bottom: 0.5rem;
+        width: 100%;
+    }
+
+    .event-link {
+        width: 100%;
+        text-align: center;
+        padding: 0.8rem;
+    }
+}
+
+/* Update the homepage animation for the events section */
+.homepage-content .events-section {
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out, visibility 0s linear 0.5s;
+}
+
+.homepage-content.loaded .events-section {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0.32s;
 }
 
 /* PetQuery numbered features styling */

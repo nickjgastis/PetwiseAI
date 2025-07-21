@@ -43,7 +43,7 @@ const ProductPage = () => {
         <>
             <div className="product-content">
                 <section className="about-hero fade-in-section">
-                    <h1>Our Product</h1>
+                    {/* <h1>Our Product</h1> */}
                     <p>Discover how our AI-powered solution transforms veterinary practice</p>
                 </section>
 
