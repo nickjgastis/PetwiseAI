@@ -8,7 +8,7 @@ const LogoutButton = () => {
         <button onClick={() => logout({
             clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
             returnTo: window.location.hostname.includes('petwise.vet')
-                ? 'https://www.petwise.vet'
+                ? 'https://petwise.vet'
                 : 'http://localhost:3000',
             federated: true
         })}>

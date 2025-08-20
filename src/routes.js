@@ -14,6 +14,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import Terms from './components/Terms';
 import Help from './components/Help';
 import AdminDashboard from './components/AdminDashboard';
+import AutoLogin from './components/AutoLogin';
 
 const AppRoutes = () => {
     const { isLoading, isAuthenticated, user } = useAuth0();
@@ -49,8 +50,10 @@ const AppRoutes = () => {
         <Routes>
             <Route
                 path="/"
-                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <HomePage />}
+                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
             />
+            <Route path="/login" element={<AutoLogin />} />
+            <Route path="/callback" element={<div>Processing login...</div>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />

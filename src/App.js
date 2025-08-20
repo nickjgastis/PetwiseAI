@@ -138,8 +138,8 @@ const App = () => {
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
         redirect_uri: process.env.NODE_ENV === 'production'
-          ? 'https://www.petwise.vet'
-          : window.location.origin,
+          ? 'https://app.petwise.vet/callback'
+          : window.location.origin + '/callback',
         scope: "openid profile email"
       }}
       onRedirectCallback={(appState) => {
