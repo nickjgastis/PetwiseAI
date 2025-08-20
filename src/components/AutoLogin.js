@@ -8,7 +8,7 @@ const AutoLogin = () => {
         loginWithRedirect();
     }, [loginWithRedirect]);
 
-    return <div>Redirecting to login...</div>;
+    return null;
 };
 
 export default AutoLogin; 

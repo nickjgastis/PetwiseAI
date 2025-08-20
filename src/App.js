@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
 import Navbar from './components/Navbar';
@@ -10,6 +10,11 @@ import "./styles/global.css";
 
 const AppContent = () => {
   const { user, isAuthenticated, isLoading } = useAuth0();
+  const location = useLocation();
+
+  // Hide navbar on login/callback routes
+  const hideNavbar = ['/login', '/callback'].includes(location.pathname) ||
+    (!isAuthenticated && location.pathname === '/');
 
   // Add Meta Pixel tracking
   useEffect(() => {
@@ -123,7 +128,7 @@ const AppContent = () => {
 
   return (
     <div>
-      <Navbar />
+      {!hideNavbar && <Navbar />}
       <AppRoutes />
     </div>
   );

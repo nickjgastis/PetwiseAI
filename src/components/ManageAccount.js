@@ -90,7 +90,7 @@ const ManageAccount = ({ user, onBack }) => {
             });
 
             // Then force redirect to the production URL
-            window.location.href = 'https://www.petwise.vet';
+            window.location.href = 'https://petwise.vet';
 
         } catch (error) {
             console.error('Delete error:', error);

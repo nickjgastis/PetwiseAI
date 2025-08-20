@@ -50,10 +50,16 @@ const AppRoutes = () => {
         <Routes>
             <Route
                 path="/"
-                element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />}
+                element={
+                    isAuthenticated ? (
+                        <Navigate to="/dashboard" replace />
+                    ) : (
+                        <AutoLogin />
+                    )
+                }
             />
             <Route path="/login" element={<AutoLogin />} />
-            <Route path="/callback" element={<div>Processing login...</div>} />
+            <Route path="/callback" element={null} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />

@@ -26,6 +26,7 @@ app.use(express.json());
 app.use((req, res, next) => {
     const allowedOrigins = [
         'https://petwise.vet',
+        'https://app.petwise.vet',
         'https://www.petwise.vet',
         'http://localhost:3000'
     ];
@@ -50,6 +51,7 @@ app.use(cors({
     origin: function (origin, callback) {
         const allowedOrigins = [
             'https://petwise.vet',
+            'https://app.petwise.vet',
             'https://www.petwise.vet',
             'http://localhost:3000'
         ];
@@ -160,10 +162,10 @@ app.post('/create-checkout-session', async (req, res) => {
                 quantity: 1,
             }],
             success_url: process.env.NODE_ENV === 'production'
-                ? 'https://petwise.vet/dashboard'
+                ? 'https://app.petwise.vet/dashboard'
                 : 'http://localhost:3000/dashboard',
             cancel_url: process.env.NODE_ENV === 'production'
-                ? 'https://petwise.vet/dashboard'
+                ? 'https://app.petwise.vet/dashboard'
                 : 'http://localhost:3000/dashboard',
             client_reference_id: user.sub
         });
@@ -1232,7 +1234,7 @@ app.post('/create-customer-portal', async (req, res) => {
         const session = await stripe.billingPortal.sessions.create({
             customer: userData.stripe_customer_id,
             return_url: process.env.NODE_ENV === 'production'
-                ? 'https://petwise.vet/profile'
+                ? 'https://app.petwise.vet/profile'
                 : 'http://localhost:3000/profile',
         });
 
