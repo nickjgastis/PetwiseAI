@@ -35,7 +35,9 @@ const Dashboard = () => {
     const handleLogout = () => {
         logout({
             logoutParams: {
-                returnTo: `${window.location.origin}/`
+                returnTo: process.env.NODE_ENV === 'production'
+                    ? 'https://petwise.vet'
+                    : 'http://localhost:3000'
             }
         });
     };
