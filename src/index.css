@@ -1,11 +1,7 @@
-body {
-  /* font-family: Arial, Helvetica, sans-serif; */
-  background-color: #ffffff;
-  margin: 0;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-}
-
-/* General Styling */
 body {
   font-family: 'Arial', sans-serif;
   margin: 0;
@@ -13,4 +9,261 @@ body {
   color: #333;
   overflow-x: hidden;
   min-height: 100vh;
+  background-color: #ffffff;
+}
+
+/* Custom CSS variables for consistent theming */
+:root {
+  --primary-color: #3f8ddb;
+  --primary-hover: #2980b9;
+  --accent-color: #66b4e8;
+  --accent-hover: #3d7e9c;
+  --danger-color: #fc8181;
+  --danger-hover: #f56565;
+  --text-color: #2c3e50;
+  --text-secondary: #64748b;
+  --bg-light: #f4f7fa;
+  --bg-white: #ffffff;
+  --border: #e2e8f0;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --transition-fast: 0.2s ease;
+  --transition-normal: 0.3s ease;
+}
+
+/* Custom styles for message formatting */
+@layer components {
+
+  /* Remove all list markers/bullets */
+  .message-content ul,
+  .message-content ol,
+  .message-content li {
+    list-style: none !important;
+    list-style-type: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .message-content ::marker {
+    display: none !important;
+    content: none !important;
+  }
+
+  .message-content p,
+  .message-content span,
+  .message-content div,
+  .message-content .list-item span,
+  .message-content .number,
+  .message-content strong,
+  .message-content h3,
+  .message-content .section-header h3,
+  .message-content .section-number,
+  .message-content .medication-item,
+  .message-content .medication-item strong,
+  .message-content .line-item {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Ensure all h3 tags are bold like strong tags */
+  .message-content h3 {
+    font-weight: 700 !important;
+    font-weight: bold !important;
+  }
+
+  /* Bold header class for ## headers */
+  .message-content .bold-header {
+    font-weight: 700 !important;
+    font-weight: bold !important;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 16px 0 8px 0;
+  }
+
+  .message-content h3:first-child {
+    margin: 0 0 24px;
+    font-weight: 700 !important;
+    font-weight: bold !important;
+    padding-bottom: 8px;
+  }
+
+  .message-content .section-header {
+    display: flex;
+    align-items: baseline;
+    margin: 16px 0 8px 0;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+
+  .message-content .section-header:first-child {
+    margin-top: 0;
+  }
+
+  .message-content .section-header .section-number {
+    color: #000;
+    font-weight: 700;
+    margin-right: 0;
+    min-width: 24px;
+    text-align: left;
+    font-size: 14px;
+  }
+
+  .message-content .section-header h3 {
+    color: #000;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    font-weight: bold !important;
+    margin: 0;
+  }
+
+  .message-content .list-item {
+    margin: 4px 0;
+    padding-left: 0px;
+  }
+
+  .message-content .list-item .number {
+    color: #000;
+    font-weight: 600;
+    margin-right: 6px;
+  }
+
+
+
+  .message-content .line-item {
+    margin: 2px 0;
+    line-height: 1.5;
+  }
+
+  .message-content .line-item+.line-item {
+    margin-top: 2px;
+  }
+
+  .message-content .medication-item {
+    border-left: none;
+    padding-left: 0px;
+    margin-left: 0px;
+    font-weight: 600;
+    color: #000;
+  }
+
+  .message-content .section-header+.medication-item {
+    margin-top: 12px;
+  }
+
+  .message-content .medication-item+.line-item {
+    margin-top: 4px;
+    margin-left: 24px;
+  }
+
+  .message-content .medication-item~.line-item {
+    margin-left: 24px;
+    margin-bottom: 1px;
+    margin-top: 1px;
+  }
+
+  .message-content .medication-item strong {
+    color: #000;
+  }
+
+  .message-content .line-item:has(+ .medication-item),
+  .message-content .line-item:has(+ .section-header) {
+    margin-bottom: 12px;
+  }
+
+  .message-content .line-item+.medication-item {
+    margin-top: 24px;
+  }
+
+  .message-content .medication-item~.line-item {
+    margin-left: 0px;
+    margin-bottom: 1px;
+    margin-top: 1px;
+  }
+
+  .message-content .line-item:last-of-type {
+    margin-bottom: 12px;
+  }
+
+  .message-content .section-header:last-of-type {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .message-content>div:not(.section-header):not(.medication-item):not(.line-item):not(.list-item):not(.additional-notes):not(.recommendation) {
+    margin-top: 20px;
+  }
+
+  .message-content .section-header+div:not(.section-header):not(.medication-item):not(.line-item):not(.list-item):not(.additional-notes):not(.recommendation) {
+    margin-top: 10px;
+  }
+
+  .message-content .additional-notes {
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+
+  .message-content .recommendation {
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+
+  /* Shimmer loading animation */
+  .shimmer-loader {
+    width: 200px;
+    height: 40px;
+    position: relative;
+    background: linear-gradient(90deg, #f0f9ff 25%, #e6f4ff 50%, #f0f9ff 75%);
+    background-size: 200% 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    animation: shimmer 1.5s infinite;
+    box-shadow: 0 3px 10px rgba(63, 141, 219, 0.15);
+    border: 1px solid rgba(63, 141, 219, 0.15);
+    border-left: 3px solid var(--accent-color);
+    transform-origin: left top;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loader-text {
+    color: var(--primary-color);
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 2;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+    position: relative;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+
+    50% {
+      opacity: 0.9;
+    }
+  }
 }

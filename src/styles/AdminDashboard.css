@@ -64,19 +64,7 @@
     overflow: hidden;
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    background-color: #f5f5f5;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.section-header:hover {
-    background-color: #eeeeee;
-}
+    
 
 .section-header h2 {
     margin: 0;

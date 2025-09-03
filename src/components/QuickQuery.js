@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
-import '../styles/QuickQuery.css';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
@@ -54,7 +53,9 @@ const formatMessage = (content) => {
         // Only process the bold text if it's not a header line (to avoid conflicts)
         if (
             !(/^(\d+)\.\s+(.*?):$/.test(line)) &&
+            !(/^####\s+(.*)$/.test(line)) &&
             !(/^###\s+(.*)$/.test(line)) &&
+            !(/^##\s+(.*)$/.test(line)) &&
             !(/^\*\*(.*?):\*\*$/.test(line))
         ) {
             // Process bold text
@@ -68,11 +69,35 @@ const formatMessage = (content) => {
         }
         else if (/^(\d+)\.\s+(.*?):$/.test(processedLine)) {
             // Numbered section headers
-            htmlContent += processedLine.replace(/^(\d+)\.\s+(.*?):$/, '<div class="section-header"><span class="section-number">$1.</span><h3>$2</h3></div>');
+            htmlContent += processedLine.replace(/^(\d+)\.\s+(.*?):$/, (match, num, text) => {
+                // Remove any ** markers from section header text
+                const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
+                return `<div class="section-header"><span class="section-number">${num}.</span><h3>${cleanText}</h3></div>`;
+            });
+        }
+        else if (/^####\s+(.*)$/.test(processedLine)) {
+            // #### Headers
+            htmlContent += processedLine.replace(/^####\s+(.*)$/, (match, text) => {
+                // Remove any ** markers from header text
+                const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
+                return `<h3>${cleanText}</h3>`;
+            });
         }
         else if (/^###\s+(.*)$/.test(processedLine)) {
             // ### Headers
-            htmlContent += processedLine.replace(/^###\s+(.*)$/, '<h3>$1</h3>');
+            htmlContent += processedLine.replace(/^###\s+(.*)$/, (match, text) => {
+                // Remove any ** markers from header text
+                const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
+                return `<h3>${cleanText}</h3>`;
+            });
+        }
+        else if (/^##\s+(.*)$/.test(processedLine)) {
+            // ## Headers - convert to div with bold-header class
+            htmlContent += processedLine.replace(/^##\s+(.*)$/, (match, text) => {
+                // Remove any ** markers from text
+                const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
+                return `<div class="bold-header">${cleanText}</div>`;
+            });
         }
         else if (/^\*\*(.*?):\*\*$/.test(processedLine)) {
             // **Header:** format
@@ -295,6 +320,7 @@ const QuickQuery = () => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const textareaRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [fadeOutLoader, setFadeOutLoader] = useState(false);
     const [randomSuggestions, setRandomSuggestions] = useState(
@@ -302,6 +328,7 @@ const QuickQuery = () => {
     );
     const [isTyping, setIsTyping] = useState(false);
     const [showSources, setShowSources] = useState({});
+    const [isLongAnswerMode, setIsLongAnswerMode] = useState(false);
 
     useEffect(() => {
         const lastUser = localStorage.getItem('lastUserId');
@@ -328,6 +355,13 @@ const QuickQuery = () => {
     useEffect(() => {
         localStorage.setItem('quickQueryInput', inputMessage);
     }, [inputMessage]);
+
+    useEffect(() => {
+        // Auto-focus textarea when component mounts or when loading finishes
+        if (textareaRef.current && !isLoading) {
+            textareaRef.current.focus();
+        }
+    }, [isLoading]);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -421,10 +455,9 @@ const QuickQuery = () => {
                 }
             }
 
-            const conversationHistory = [
-                {
-                    role: 'system',
-                    content: ` You are a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
+            const systemPrompt = isLongAnswerMode
+                ? `You are a **Veterinary Assistant AI** providing comprehensive, in-depth responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Give detailed, thorough answers that cover all relevant aspects of the question. Provide extensive clinical information, background context, differential diagnoses, treatment options, prognosis, and detailed explanations. Include comprehensive sources and references. ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}`
+                : ` You are a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
 
 ### FORMATTING GUIDELINES:
 1. **Headers:** Use **bold headers** for clear sectioning.
@@ -541,7 +574,12 @@ Example format:
    - ACVECC consensus guidelines on acute pancreatitis management
 
 By adhering to these guidelines, ensure responses are **short, actionable, and formatted for quick reference** while providing high-quality assistance tailored to professional veterinarians.
-`
+`;
+
+            const conversationHistory = [
+                {
+                    role: 'system',
+                    content: systemPrompt
                 },
                 ...messages.slice(-5),
                 newMessage
@@ -669,10 +707,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         scrollToBottom();
 
         try {
-            const conversationHistory = [
-                {
-                    role: 'system',
-                    content: ` You are a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
+            const systemPrompt = isLongAnswerMode
+                ? `You are a **Veterinary Assistant AI** providing comprehensive, in-depth responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Give detailed, thorough answers that cover all relevant aspects of the question. Provide extensive clinical information, background context, differential diagnoses, treatment options, prognosis, and detailed explanations. Include comprehensive sources and references. ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}`
+                : ` You are a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
 
 ### FORMATTING GUIDELINES:
 1. **Headers:** Use **bold headers** for clear sectioning.
@@ -685,6 +722,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 - For common cases, prioritize practical treatments.
 - For less common or specific cases, provide insightful, clinically relevant advice with brief reasoning.
 - **Avoid lengthy explanations** unless explicitly requested.
+- When giving dosages use Plumbs as the primary source first.
 
 ### WHEN PROVIDING TREATMENTS:
 Treatments should follow this structure:
@@ -789,7 +827,12 @@ Example format:
    - ACVECC consensus guidelines on acute pancreatitis management
 
 By adhering to these guidelines, ensure responses are **short, actionable, and formatted for quick reference** while providing high-quality assistance tailored to professional veterinarians.
-`
+`;
+
+            const conversationHistory = [
+                {
+                    role: 'system',
+                    content: systemPrompt
                 },
                 ...messages.slice(-5),
                 {
@@ -907,34 +950,29 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     };
 
     return (
-        <div className="qq-container">
-            <div className="qq-header">
-                <h2>PetQuery</h2>
-                {messages.length > 0 && (
-                    <button onClick={handleClear} className="qq-clear-button">
-                        Clear Chat
-                    </button>
-                )}
+        <div className="min-h-screen bg-white flex flex-col">
+            <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white">
+                <h2 className="text-3xl font-bold text-blue-400">PetQuery</h2>
             </div>
-            <div className="qq-chat-container">
-                <div className="qq-messages-container">
+            <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto px-4 py-6 pb-32 space-y-6">
                     {messages.length === 0 && (
                         <>
-                            <div className="qq-disclaimer">
-                                <strong>Disclaimer:</strong>
-                                <p>PetQuery provides AI-generated responses for educational purposes only.
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
+                                <strong className="block mb-2 text-sm font-semibold text-gray-700">Disclaimer:</strong>
+                                <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only.
                                     These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
                                     Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
                             </div>
-                            <div className="qq-suggestions">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
                                 {randomSuggestions.map((suggestion, index) => (
                                     <div
                                         key={index}
-                                        className="suggestion-box"
+                                        className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 hover:-translate-y-1"
                                         onClick={() => handleSuggestionClick(suggestion.question)}
                                     >
-                                        <h4>{suggestion.category}</h4>
-                                        <p>{suggestion.question}</p>
+                                        <h4 className="text-blue-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
+                                        <p className="text-gray-700 text-sm leading-relaxed">{suggestion.question}</p>
                                     </div>
                                 ))}
                             </div>
@@ -955,17 +993,23 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         const userMessage = msg.role === 'assistant' ? getUserMessage(index) : '';
 
                         return (
-                            <div key={index} className={`qq-message ${msg.role}`}>
-                                <div className="qq-message-content">
+                            <div key={index} className={`flex mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none`}>
+                                <div className={`max-w-4xl w-full ${msg.role === 'user'
+                                    ? 'bg-blue-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
+                                    : 'bg-blue-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-blue-400 message-content'
+                                    }`}>
                                     {msg.role === 'assistant' ? (
                                         <div dangerouslySetInnerHTML={{ __html: formatMessage(getContentWithoutSources(msg.content, userMessage)) }} />
                                     ) : (
-                                        msg.content
+                                        <div className="whitespace-pre-wrap">{msg.content}</div>
                                     )}
                                     {msg.role === 'assistant' && (
-                                        <div className="qq-button-group">
+                                        <div className="flex items-center gap-2 mt-3">
                                             <button
-                                                className={`qq-copy-button ${copiedIndex === index ? 'copied' : ''}`}
+                                                className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${copiedIndex === index
+                                                    ? 'bg-blue-500 text-white border-blue-500'
+                                                    : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-blue-600 hover:-translate-y-0.5'
+                                                    }`}
                                                 onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
                                                 aria-label="Copy message"
                                             >
@@ -981,7 +1025,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 )}
                                             </button>
                                             <button
-                                                className="qq-print-button"
+                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-all duration-200 hover:-translate-y-0.5"
                                                 onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
                                                 aria-label="Print message"
                                             >
@@ -991,7 +1035,10 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                             </button>
                                             {extractSources(msg.content, userMessage) && (
                                                 <button
-                                                    className={`qq-sources-button ${showSources[index] ? 'active' : ''}`}
+                                                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${showSources[index]
+                                                        ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-blue-600 hover:-translate-y-0.5'
+                                                        }`}
                                                     onClick={() => toggleSources(index)}
                                                     aria-label="Show sources"
                                                 >
@@ -1000,109 +1047,142 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                     </svg>
                                                 </button>
                                             )}
-                                            <span className="qq-message-timestamp">{formatTimestamp()}</span>
+                                            <span className="text-xs text-gray-500 ml-auto">{formatTimestamp()}</span>
                                         </div>
                                     )}
                                     {msg.role === 'assistant' && showSources[index] && extractSources(msg.content, userMessage) && (
-                                        <div className="qq-sources-content">
+                                        <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600 animate-fade-in-up">
                                             <div dangerouslySetInnerHTML={{ __html: formatMessage(extractSources(msg.content, userMessage)) }} />
                                         </div>
                                     )}
                                     {msg.role === 'user' && (
-                                        <div className="qq-message-timestamp">{formatTimestamp()}</div>
+                                        <div className="text-xs text-white/70 mt-2 text-right">{formatTimestamp()}</div>
                                     )}
                                 </div>
                             </div>
                         );
                     })}
                     {isLoading && (
-                        <div className={`qq-message assistant ${fadeOutLoader ? 'fade-out' : ''}`}>
-                            <div className="shimmer-loader-container">
-                                <div className="shimmer-loader">
-                                    <span className="loader-text">Thinking...</span>
-                                </div>
+                        <div className={`flex justify-start mb-6 max-w-none ${fadeOutLoader ? 'animate-fade-out' : 'animate-fade-in'}`}>
+                            <div className="shimmer-loader">
+                                <span className="loader-text">Thinking...</span>
                             </div>
                         </div>
                     )}
                     <div ref={messagesEndRef} />
                 </div>
-                <form onSubmit={handleSubmit} className="qq-input-form">
-                    <div className="qq-input-wrapper">
-                        <div className="qq-input-container">
-                            <textarea
-                                value={inputMessage}
-                                onChange={(e) => {
-                                    setInputMessage(e.target.value);
-                                    if (!e.target.value.trim()) {
-                                        e.target.style.height = '56px';
-                                    } else {
-                                        e.target.style.height = '56px';
-                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
-                                    }
-                                }}
-                                onClick={(e) => {
-                                    if (inputMessage.trim()) {
-                                        e.target.style.height = `${Math.min(e.target.scrollHeight, 400)}px`;
-                                    }
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        if (inputMessage.trim() && !isLoading) {
-                                            e.target.style.height = '56px';
-                                            handleSubmit(e);
-                                        }
-                                    }
-                                }}
-                                placeholder="What would you like to know?"
-                                className="qq-message-input"
-                                disabled={isLoading}
-                                rows="1"
-                            />
-                            {inputMessage && (
+                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
+                    <div className="max-w-4xl mx-auto p-4">
+                        <div className="flex justify-center mb-3">
+                            <div className="inline-flex bg-gray-100 rounded-lg p-1">
                                 <button
-                                    type="button"
-                                    className="qq-collapse-button"
-                                    onClick={() => {
-                                        const textarea = document.querySelector('.qq-message-input');
-                                        textarea.style.height = '56px';
+                                    onClick={() => setIsLongAnswerMode(false)}
+                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${!isLongAnswerMode
+                                        ? 'bg-blue-400 text-white shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                >
+                                    Standard
+                                </button>
+                                <button
+                                    onClick={() => setIsLongAnswerMode(true)}
+                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isLongAnswerMode
+                                        ? 'bg-blue-400 text-white shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                        }`}
+                                >
+                                    Long
+                                </button>
+                            </div>
+                        </div>
+                        <form onSubmit={handleSubmit} className="flex gap-3 items-center">
+                            <div className="relative flex-1">
+                                <textarea
+                                    ref={textareaRef}
+                                    value={inputMessage}
+                                    onChange={(e) => {
+                                        setInputMessage(e.target.value);
+                                        if (!e.target.value.trim()) {
+                                            e.target.style.height = '52px';
+                                        } else {
+                                            e.target.style.height = '52px';
+                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                        }
                                     }}
-                                    aria-label="Collapse input"
+                                    onClick={(e) => {
+                                        if (inputMessage.trim()) {
+                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                        }
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            if (inputMessage.trim() && !isLoading) {
+                                                e.target.style.height = '52px';
+                                                handleSubmit(e);
+                                            }
+                                        }
+                                    }}
+                                    placeholder="Ask me anything about veterinary medicine..."
+                                    className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                                    disabled={isLoading}
+                                    rows="1"
+                                />
+                                {inputMessage && (
+                                    <button
+                                        type="button"
+                                        className="absolute top-3 right-3 p-1 text-gray-400 hover:text-blue-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
+                                        onClick={() => {
+                                            const textarea = document.querySelector('textarea');
+                                            textarea.style.height = '52px';
+                                        }}
+                                        aria-label="Collapse input"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m18 15-6-6-6 6" />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+                            <button
+                                type="submit"
+                                className="w-12 h-12 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center flex-shrink-0 group"
+                                disabled={isLoading || !inputMessage.trim()}
+                                aria-label="Send message"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    width="18"
+                                    height="18"
+                                    className="transform group-hover:translate-x-0.5 transition-transform duration-200"
+                                >
+                                    <path d="m3 3 3 9-3 9 19-9Z" />
+                                    <path d="m6 12 13 0" />
+                                </svg>
+                            </button>
+                            {messages.length > 0 && (
+                                <button
+                                    onClick={handleClear}
+                                    type="button"
+                                    className="px-4 py-2 h-12 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 font-medium flex-shrink-0 flex items-center gap-2"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        <path d="M3 6h18" />
+                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                                     </svg>
+                                    Clear
                                 </button>
                             )}
-                        </div>
+                        </form>
                     </div>
-                    <button
-                        type="submit"
-                        className="qq-send-button"
-                        disabled={isLoading || !inputMessage.trim()}
-                        aria-label="Send message"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            width="24"
-                            height="24"
-                        >
-                            <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                        </svg>
-                    </button>
-                    {messages.length > 0 && (
-                        <button
-                            onClick={handleClear}
-                            type="button"
-                            className="qq-clear-button qq-clear-button-input"
-                        >
-                            Clear Chat
-                        </button>
-                    )}
-                </form>
+                </div>
             </div>
         </div>
     );

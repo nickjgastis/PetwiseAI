@@ -27,20 +27,7 @@
     overflow: hidden;
 }
 
-.section-header {
-    padding: 20px;
-    margin: 0;
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f8f9fa;
-    transition: background-color 0.3s ease;
-}
 
-.section-header:hover {
-    background: #e9ecef;
-}
 
 .arrow {
     font-size: 12px;
