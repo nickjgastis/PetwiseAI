@@ -329,6 +329,7 @@ const QuickQuery = () => {
     const [isTyping, setIsTyping] = useState(false);
     const [showSources, setShowSources] = useState({});
     const [isLongAnswerMode, setIsLongAnswerMode] = useState(false);
+    const [animateNewMessage, setAnimateNewMessage] = useState(null);
 
     useEffect(() => {
         const lastUser = localStorage.getItem('lastUserId');
@@ -345,7 +346,19 @@ const QuickQuery = () => {
     }, [user]);
 
     useEffect(() => {
-        scrollToBottom();
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.role === 'assistant') {
+                // For assistant messages, scroll first, then animate
+                scrollToBottom();
+                setTimeout(() => {
+                    setAnimateNewMessage(messages.length - 1);
+                }, 300); // Delay animation until scroll completes
+            } else {
+                // For user messages, just scroll
+                scrollToBottom();
+            }
+        }
     }, [messages]);
 
     useEffect(() => {
@@ -398,15 +411,10 @@ const QuickQuery = () => {
 
     // Helper function to manage loading state transitions
     const finishLoading = () => {
-        // First fade out the loader
-        setFadeOutLoader(true);
-
-        // Then after animation completes, reset states
-        setTimeout(() => {
-            setIsLoading(false);
-            setIsTyping(false);
-            setFadeOutLoader(false);
-        }, 300); // Match the fadeOut animation duration
+        // Immediately hide the loader
+        setIsLoading(false);
+        setIsTyping(false);
+        setFadeOutLoader(false);
     };
 
     const handleSubmit = async (e) => {
@@ -456,8 +464,8 @@ const QuickQuery = () => {
             }
 
             const systemPrompt = isLongAnswerMode
-                ? `You are a **Veterinary Assistant AI** providing comprehensive, in-depth responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Give detailed, thorough answers that cover all relevant aspects of the question. Provide extensive clinical information, background context, differential diagnoses, treatment options, prognosis, and detailed explanations. Include comprehensive sources and references. ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}`
-                : ` You are a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
+                ? `You are PetQuery, a **Veterinary Assistant AI** providing comprehensive, in-depth responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Give detailed, thorough answers that cover all relevant aspects of the question. Provide extensive clinical information, background context, differential diagnoses, treatment options, prognosis, and detailed explanations. Include comprehensive sources and references. ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}`
+                : ` You are PetQuery, a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
 
 ### FORMATTING GUIDELINES:
 1. **Headers:** Use **bold headers** for clear sectioning.
@@ -586,7 +594,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             ];
 
             const response = await axios.post(
-                'https://api.openai.com/v1/chat/completions',
+                `${API_URL}/api/quickquery`,
                 {
                     model: 'gpt-4o-mini',
                     messages: conversationHistory,
@@ -595,12 +603,6 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     top_p: 0.9,
                     frequency_penalty: 0.5,
                     presence_penalty: 0.5
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    }
                 }
             );
 
@@ -842,7 +844,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             ];
 
             const response = await axios.post(
-                'https://api.openai.com/v1/chat/completions',
+                `${API_URL}/api/quickquery`,
                 {
                     model: 'gpt-4o-mini',
                     messages: conversationHistory,
@@ -851,12 +853,6 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     top_p: 0.9,
                     frequency_penalty: 0.5,
                     presence_penalty: 0.5
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
-                        'Content-Type': 'application/json'
-                    }
                 }
             );
 
@@ -993,7 +989,14 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         const userMessage = msg.role === 'assistant' ? getUserMessage(index) : '';
 
                         return (
-                            <div key={index} className={`flex mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none`}>
+                            <div key={index} className={`flex mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none ${msg.role === 'assistant'
+                                ? animateNewMessage === index
+                                    ? 'animate-fade-in-up'
+                                    : index === messages.length - 1
+                                        ? 'opacity-0'
+                                        : ''
+                                : ''
+                                }`}>
                                 <div className={`max-w-4xl w-full ${msg.role === 'user'
                                     ? 'bg-blue-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
                                     : 'bg-blue-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-blue-400 message-content'

@@ -106,6 +106,47 @@ const REVOKED_CODES = new Set([
     // Add more revoked codes here
 ]);
 
+// ================ QUICKQUERY ENDPOINT ================
+// Handles OpenAI API calls securely from backend
+app.post('/api/quickquery', async (req, res) => {
+    try {
+        const { messages, model = 'gpt-4o-mini', max_tokens = 1000, temperature = 0.7, top_p = 0.9, frequency_penalty = 0.5, presence_penalty = 0.5 } = req.body;
+
+        if (!messages || !Array.isArray(messages)) {
+            return res.status(400).json({ error: 'Messages array is required' });
+        }
+
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model,
+                messages,
+                max_tokens,
+                temperature,
+                top_p,
+                frequency_penalty,
+                presence_penalty
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('OpenAI API Error:', errorText);
+            return res.status(response.status).json({ error: 'OpenAI API request failed' });
+        }
+
+        const data = await response.json();
+        res.json(data);
+    } catch (error) {
+        console.error('QuickQuery endpoint error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // ================ CHECKOUT ENDPOINT ================
 // Handles creation of Stripe checkout sessions
 app.post('/create-checkout-session', async (req, res) => {

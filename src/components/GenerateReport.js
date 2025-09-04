@@ -1,6 +1,10 @@
 import React from 'react';
 import axios from 'axios';
 
+const API_URL = process.env.NODE_ENV === 'production'
+      ? 'https://api.petwise.vet'
+      : 'http://localhost:3001';
+
 const GenerateReport = async (inputs, enabledFields) => {
       // console.log('enabledFields received:', enabledFields);
 
@@ -295,9 +299,9 @@ Never use - in front of a sentence.
 
       try {
             const response = await axios.post(
-                  'https://api.openai.com/v1/chat/completions',
+                  `${API_URL}/api/quickquery`,
                   {
-                        model: 'gpt-4o-mini', // Updated model name
+                        model: 'gpt-4o-mini',
                         messages: [
                               {
                                     role: 'system',
@@ -306,12 +310,6 @@ Never use - in front of a sentence.
                         ],
                         temperature: 0.7,
                         max_tokens: 2500
-                  },
-                  {
-                        headers: {
-                              'Authorization': `Bearer ${process.env.REACT_APP_OPENAI_API_KEY}`,
-                              'Content-Type': 'application/json'
-                        }
                   }
             );
 
