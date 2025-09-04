@@ -116,7 +116,7 @@ app.post('/api/quickquery', async (req, res) => {
         const {
             messages,
             model = 'gpt-4o-mini',
-            max_tokens = 1200,              // lower -> faster/cheaper; bump if needed
+            max_tokens = 1800,              // lower -> faster/cheaper; bump if needed
             temperature = 0.7,
             top_p = 0.9,
             frequency_penalty = 0.5,

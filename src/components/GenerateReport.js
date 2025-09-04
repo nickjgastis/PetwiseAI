@@ -210,8 +210,6 @@ Input Differentials: "thyroid disease, cushings, valve disease, kidney stones, p
 
 3. [Additional Diagnosis if applicable]
    DDx: [3-4 relevant differential diagnoses]`}` : ''}
-                        
-PLAN
 
 
 ${getEnabledContent('treatment', inputs.treatment) !== null ? `
