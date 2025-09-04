@@ -109,41 +109,73 @@ const REVOKED_CODES = new Set([
 // ================ QUICKQUERY ENDPOINT ================
 // Handles OpenAI API calls securely from backend
 app.post('/api/quickquery', async (req, res) => {
-    try {
-        const { messages, model = 'gpt-4o-mini', max_tokens = 1000, temperature = 0.7, top_p = 0.9, frequency_penalty = 0.5, presence_penalty = 0.5 } = req.body;
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Connection', 'keep-alive');
 
-        if (!messages || !Array.isArray(messages)) {
+    try {
+        const {
+            messages,
+            model = 'gpt-4o-mini',
+            max_tokens = 1200,              // lower -> faster/cheaper; bump if needed
+            temperature = 0.7,
+            top_p = 0.9,
+            frequency_penalty = 0.5,
+            presence_penalty = 0.5
+        } = req.body || {};
+
+        if (!Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({ error: 'Messages array is required' });
         }
 
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model,
-                messages,
-                max_tokens,
-                temperature,
-                top_p,
-                frequency_penalty,
-                presence_penalty
-            })
-        });
+        // Own the timeout (Vercel will kill at maxDuration if we don't finish)
+        const controller = new AbortController();
+        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
+        const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('OpenAI API Error:', errorText);
-            return res.status(response.status).json({ error: 'OpenAI API request failed' });
+        let oiResp;
+        try {
+            oiResp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model,
+                    messages,
+                    max_tokens,
+                    temperature,
+                    top_p,
+                    frequency_penalty,
+                    presence_penalty,
+                    stream: false
+                })
+            });
+        } finally {
+            clearTimeout(timer);
         }
 
-        const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        console.error('QuickQuery endpoint error:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        if (!oiResp.ok) {
+            const text = await oiResp.text().catch(() => '');
+            console.error('OpenAI API Error:', oiResp.status, text);
+            // Surface upstream info to help debugging from the UI
+            return res.status(oiResp.status === 429 ? 429 : 502).json({
+                error: 'OpenAI request failed',
+                status: oiResp.status,
+                detail: text.slice(0, 2000)
+            });
+        }
+
+        const data = await oiResp.json();
+        return res.status(200).json(data);
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            console.error('OpenAI request aborted (timeout)');
+            return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
+        }
+        console.error('QuickQuery endpoint error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 });
 
