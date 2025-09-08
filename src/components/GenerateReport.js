@@ -11,6 +11,7 @@ const GenerateReport = async (inputs, enabledFields) => {
       const getEnabledContent = (fieldName, content) => {
             // console.log('Checking field:', fieldName, 'enabled:', enabledFields[fieldName]);
             const toggleableFields = [
+                  'patientInformation',
                   'examDate',
                   'presentingComplaint',
                   'history',
@@ -72,7 +73,7 @@ CRITICAL FORMATTING RULES (MUST FOLLOW EXACTLY):
 10. Maintain exact spacing and formatting as shown in the template
 
 INCLUDE ONLY THE FOLLOWING SECTIONS:
-${getEnabledContent('patientInformation', true) ? '**Patient Information:**' : ''}
+${getEnabledContent('patientInformation', enabledFields.patientInformation) ? '**Patient Information:**' : ''}
 ${getEnabledContent('staff', true) ? '**Staff:**' : ''}
 ${getEnabledContent('presentingComplaint', enabledFields.presentingComplaint) ? '**Presenting Complaint:**' : ''}
 ${getEnabledContent('history', enabledFields.history) ? '**History:**' : ''}
@@ -98,7 +99,7 @@ Doctor: Dr. Smith
 Where placeholders like "Provide here" are used, do not generate or fill in data. Use input data as provided for medical content. For missing or incomplete sections, use best practices and standard veterinary protocols to fill in gaps with relevant details. If evidence for specific sections such as Differential Diagnoses, Treatment, Assessment, Drug Interactions, or Naturopathic Treatment is not explicitly provided, infer based on the diagnosis and other input details.
  
 
-**Patient Information:**  
+${getEnabledContent('patientInformation', enabledFields.patientInformation) !== null ? `**Patient Information:**  
 Patient: ${inputs.patientName ? inputs.patientName.split(' ').map(word => {
             if (word.toLowerCase() === 'ned') return 'Ned';
             return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
@@ -109,6 +110,7 @@ Sex: ${inputs.sex || "Provide here"}
 Color/Markings: ${inputs.colorMarkings || "Provide here"}  
 Weight: ${inputs.weight || "Provide here"} ${inputs.weightUnit || "lbs"}  
 Age: ${inputs.age || "Provide here"}  
+` : ''}
 
 **Staff:**  
 Doctor: Dr. ${inputs.doctor?.replace(/^Dr\.\s*/, '') || "Provide here"}  

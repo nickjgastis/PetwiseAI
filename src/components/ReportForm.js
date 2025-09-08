@@ -571,6 +571,7 @@ const ReportForm = () => {
     const [enabledFields, setEnabledFields] = useState(() => {
         const savedFields = localStorage.getItem('enabledFields');
         return savedFields ? JSON.parse(savedFields) : {
+            patientInformation: true,
             examDate: true,
             presentingComplaint: true,
             history: true,
@@ -1517,8 +1518,10 @@ const ReportForm = () => {
     // Copy section functionality for SOAP view
     const handleCopySection = async (sectionContent, sectionTitle) => {
         try {
-            // Include the section title at the top
-            const contentWithTitle = `${sectionTitle.toUpperCase()}\n\n${sectionContent}`;
+            // For assessment section, don't include the title since it duplicates with "Assessment:" headers
+            const contentWithTitle = sectionTitle === 'Assessment'
+                ? sectionContent
+                : `${sectionTitle.toUpperCase()}\n\n${sectionContent}`;
 
             // Create both HTML and plain text versions
             const htmlContent = contentWithTitle.split('\n').map(line => {
@@ -1567,7 +1570,7 @@ const ReportForm = () => {
         <div className="report-container">
             {!patientInfoSubmitted ? (
                 <form className="report-form" onSubmit={handlePatientInfoSubmit}>
-                    <h2>Patient Info</h2>
+                    <h2 className="report-form-section-title">Patient Info</h2>
 
                     <div className="button-container">
                         <button type="button" className="clear-button" onClick={resetEntireForm}>
@@ -1670,7 +1673,7 @@ const ReportForm = () => {
                 </form>
             ) : (
                 <form className="report-form" onSubmit={handleExamSubmit}>
-                    <h2>Exam Info</h2>
+                    <h2 className="report-form-section-title">Exam Info</h2>
 
                     <div className="button-container">
                         <button type="button" className="clear-button" onClick={resetEntireForm}>
@@ -1686,6 +1689,17 @@ const ReportForm = () => {
                             value={`Dr. ${userData?.dvm_name || ''}`}
                             disabled
                         />
+                    </div>
+
+                    <div className="form-field-container">
+                        <div className="field-header">
+                            <label className="form-label">Include Patient Information:</label>
+                            <ToggleSwitch
+                                fieldName="patientInformation"
+                                enabled={enabledFields.patientInformation}
+                                onChange={() => handleToggleField('patientInformation')}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-field-container">

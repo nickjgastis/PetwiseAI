@@ -10,6 +10,16 @@
     --text-secondary: #64748b;
 }
 
+/* Report Form Section Titles */
+.report-form-section-title {
+    font-weight: bold;
+    color: var(--text-color);
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 8px;
+}
+
 body {
     /* background-color: #f0f4f8; */
     color: #333;
