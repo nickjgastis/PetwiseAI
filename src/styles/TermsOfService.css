@@ -1,137 +1,19 @@
-.terms-container {
-    max-width: 900px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
+/* TermsOfService.css - Minimal styles for components that still need CSS */
 
-.terms-content {
-    height: 600px;
-    overflow-y: auto;
-    padding: 2rem;
-    margin: 1rem 0;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background: #fafafa;
-    line-height: 1.7;
-}
+/* This file is now mostly empty as styling has been moved to Tailwind CSS */
+/* Only keeping essential styles that can't be easily replicated with Tailwind */
 
-.terms-content h2 {
-    margin: 2rem 0 1rem;
-    color: #2c3e50;
-    font-size: 1.8rem;
-}
-
-.terms-content h3 {
-    margin: 1.5rem 0 1rem;
-    color: #34495e;
-    font-size: 1.4rem;
-}
-
-.terms-content h4 {
-    margin: 1.2rem 0 0.8rem;
-    color: #455a64;
-    font-size: 1.2rem;
-}
-
-.terms-content p {
-    margin-bottom: 1rem;
-}
-
-.terms-content ul {
-    margin-left: 2rem;
-    margin-bottom: 1rem;
-}
-
-.terms-content li {
-    margin-bottom: 0.5rem;
-}
-
-.terms-actions {
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-}
-
-.accept-checkbox,
-.marketing-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 0.5rem;
-    border-radius: 6px;
-    transition: background-color 0.2s;
-}
-
-.accept-checkbox:hover,
-.marketing-checkbox:hover {
-    background-color: #f8f9fa;
-}
-
-.accept-checkbox input[type="checkbox"],
-.marketing-checkbox input[type="checkbox"] {
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    border: 2px solid #3498db;
-    border-radius: 4px;
-    appearance: none;
-    -webkit-appearance: none;
-    background-color: white;
-    margin: 0;
-    position: relative;
-    flex-shrink: 0;
-}
-
-.accept-checkbox input[type="checkbox"]:checked,
-.marketing-checkbox input[type="checkbox"]:checked {
-    background-color: #3498db;
-    border-color: #3498db;
-}
-
-.accept-checkbox input[type="checkbox"]:checked::after,
-.marketing-checkbox input[type="checkbox"]:checked::after {
-    content: '✓';
-    position: absolute;
-    color: white;
-    font-size: 14px;
-    left: 3px;
-    top: 0px;
-}
-
-.accept-button {
-    padding: 0.9rem 2rem;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    transition: background-color 0.2s;
-    margin-top: 0.5rem;
-}
-
-.accept-button:hover:not(:disabled) {
-    background-color: #2980b9;
-}
-
-.accept-button:disabled {
-    background-color: #bdc3c7;
-    cursor: not-allowed;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .terms-container {
-        margin: 1rem;
-        padding: 1.5rem;
+/* Custom animations if needed */
+@keyframes terms-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
     }
 
-    .terms-content {
-        padding: 1.5rem;
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }
+
+/* Any custom styles that can't be achieved with Tailwind can be added here */

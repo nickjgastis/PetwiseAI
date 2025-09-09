@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from './Footer';
-import '../styles/Help.css';
 import { Link } from 'react-router-dom';
 
 const Help = () => {
@@ -148,26 +147,26 @@ const Help = () => {
     const formatContent = (item, index) => {
         if (item.isTrainingSection) {
             return (
-                <div key={index} className="help-item">
-                    <h3>{item.question}</h3>
-                    <div className="training-sections">
+                <div key={index} className="p-5 border-t border-gray-200">
+                    <h3 className="text-blue-600 mb-3 text-lg font-semibold">{item.question}</h3>
+                    <div className="flex flex-col gap-4 mt-4">
                         {item.trainingSections.map((training) => (
                             <div
                                 key={training.id}
-                                className={`training-section ${expandedSections[training.id] ? 'expanded' : ''}`}
+                                className="border border-gray-200 rounded-md overflow-hidden"
                             >
                                 <h4
                                     onClick={() => toggleSection(training.id)}
-                                    className="training-header"
+                                    className="cursor-pointer p-4 m-0 bg-gray-50 flex justify-between items-center text-base font-medium text-gray-800 hover:bg-gray-100 transition-colors duration-200"
                                 >
                                     {training.title}
-                                    <span className={`arrow ${expandedSections[training.id] ? 'expanded' : ''}`}>
+                                    <span className={`text-xs transition-transform duration-300 ${expandedSections[training.id] ? 'rotate-180' : ''}`}>
                                         ▼
                                     </span>
                                 </h4>
-                                <div className={`training-content ${expandedSections[training.id] ? 'expanded' : ''}`}>
-                                    <p>{training.description}</p>
-                                    <img src={training.image} alt={training.title} className="training-image" />
+                                <div className={`overflow-hidden transition-all duration-300 ${expandedSections[training.id] ? 'max-h-screen opacity-100 p-4' : 'max-h-0 opacity-0 p-0'}`}>
+                                    <p className="text-gray-600 mb-4 leading-relaxed">{training.description}</p>
+                                    <img src={training.image} alt={training.title} className="w-full h-auto mt-4 rounded" />
                                 </div>
                             </div>
                         ))}
@@ -176,39 +175,39 @@ const Help = () => {
             );
         }
         return (
-            <div key={index} className="help-item">
-                <h3>{item.question}</h3>
-                <p>{formatText(item.answer)}</p>
+            <div key={index} className="p-5 border-t border-gray-200">
+                <h3 className="text-blue-600 mb-3 text-lg font-semibold">{item.question}</h3>
+                <p className="text-gray-600 leading-relaxed m-0">{formatText(item.answer)}</p>
             </div>
         );
     };
 
     return (
         <>
-            <div className="help-container">
-                <h1>Help Center</h1>
-                <div className="help-sections">
+            <div className="max-w-4xl mx-auto px-5 py-10 min-h-screen">
+                <h1 className="text-3xl font-bold text-gray-800 mb-10 text-center">Help Center</h1>
+                <div className="flex flex-col gap-5">
                     {helpSections.map(section => (
-                        <section key={section.id} className="help-section">
+                        <section key={section.id} className="bg-white rounded-lg shadow-md overflow-hidden">
                             <h2
                                 onClick={() => toggleSection(section.id)}
-                                className="section-header"
+                                className="cursor-pointer p-5 m-0 bg-gray-50 border-b border-gray-200 flex justify-between items-center text-lg font-semibold text-gray-800 hover:bg-gray-100 transition-colors duration-200"
                             >
                                 {section.title}
-                                <span className={`arrow ${expandedSections[section.id] ? 'expanded' : ''}`}>
+                                <span className={`text-xs transition-transform duration-300 ${expandedSections[section.id] ? 'rotate-180' : ''}`}>
                                     ▼
                                 </span>
                             </h2>
-                            <div className={`section-content ${expandedSections[section.id] ? 'expanded' : ''}`}>
+                            <div className={`overflow-hidden transition-all duration-300 ${expandedSections[section.id] ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}>
                                 {section.content.map((item, index) => formatContent(item, index))}
                             </div>
                         </section>
                     ))}
 
-                    <section className="help-section">
-                        <h2>Contact Support</h2>
-                        <p>Need additional help? Email us at <a href="mailto:support@petwise.vet">support@petwise.vet</a></p>
-                        <p>View our <Link to="/privacy">Privacy Policy</Link> and <Link to="/terms">Terms of Service</Link></p>
+                    <section className="bg-white rounded-lg shadow-md p-5 text-center">
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4">Contact Support</h2>
+                        <p className="text-gray-600 mb-2">Need additional help? Email us at <a href="mailto:support@petwise.vet" className="text-blue-600 hover:underline no-underline">support@petwise.vet</a></p>
+                        <p className="text-gray-600">View our <Link to="/privacy" className="text-blue-600 hover:underline no-underline">Privacy Policy</Link> and <Link to="/terms" className="text-blue-600 hover:underline no-underline">Terms of Service</Link></p>
                     </section>
                 </div>
             </div>

@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
-import "../styles/Profile.css";
 import Checkout from './Checkout';
 import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
@@ -128,7 +127,11 @@ const Profile = ({ isMobileSignup = false }) => {
 
     // Show loading state only when auth0 is loading or subscription is loading
     if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
-        return <div className="profile-loading">Loading ...</div>;
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-xl text-gray-600 font-medium">Loading ...</div>
+            </div>
+        );
     }
 
     const handleBillingClick = () => {
@@ -187,7 +190,7 @@ const Profile = ({ isMobileSignup = false }) => {
         return (
             <>
                 {planType}
-                <span className="subscription-plan">{planInterval}</span>
+                <span className="text-blue-600 text-sm ml-1 font-medium">{planInterval}</span>
             </>
         );
     };
@@ -198,14 +201,14 @@ const Profile = ({ isMobileSignup = false }) => {
         }
 
         if (subscriptionStatus !== 'active') {
-            return <span className="status-inactive">Inactive - Subscribe to access all features</span>;
+            return <span className="text-red-600 font-medium">Inactive - Subscribe to access all features</span>;
         }
 
         return (
             <>
-                <span className="status-active">Active</span>
+                <span className="text-green-600 font-medium">Active</span>
                 {subscriptionEndDate && (
-                    <span className="subscription-end">
+                    <span className="text-gray-500 text-sm ml-2">
                         {' '}(Expires: {formatDate(subscriptionEndDate)}
                         {userData?.subscription_interval !== 'trial' && userData?.stripe_customer_id ? (
                             userData.cancel_at_period_end ?
@@ -221,237 +224,262 @@ const Profile = ({ isMobileSignup = false }) => {
 
     return (
         isAuthenticated && (
-            <div className={`profile-container ${isMobileSignup ? 'mobile-signup-mode' : ''}`}>
-                {isMobileSignup && (
-                    <>
-                        <div className="mobile-desktop-reminder">
-                            <h3>📱 ➡️ 💻</h3>
-                            <p>For full access to all PetWise features, please switch to your desktop computer.</p>
-                        </div>
-                        {!isSubscribed && (
-                            <div className="mobile-signup-header">
-                                <h2>Complete Your Subscription</h2>
-                                <p>Choose a plan to get started with PetWise</p>
+            <div className={`min-h-screen ${isMobileSignup ? 'bg-gray-50' : 'bg-white'}`}>
+                <div className={`${isMobileSignup ? 'w-full' : 'max-w-6xl mx-auto px-6 py-6'}`}>
+                    {isMobileSignup && (
+                        <>
+                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 text-center">
+                                <h3 className="text-2xl mb-2">📱 ➡️ 💻</h3>
+                                <p className="text-blue-100 font-medium">For full access to all PetWise features, please switch to your desktop computer.</p>
                             </div>
-                        )}
-                    </>
-                )}
-
-                {showCheckout ? (
-                    <Checkout
-                        user={{
-                            ...user,
-                            ...userData,
-                            cancel_at_period_end: cancelAtPeriodEnd
-                        }}
-                        onBack={() => setShowCheckout(false)}
-                        subscriptionStatus={subscriptionStatus}
-                        isMobileSignup={isMobileSignup}
-                    />
-                ) : showManageAccount ? (
-                    <ManageAccount
-                        user={user}
-                        onBack={() => setShowManageAccount(false)}
-                    />
-                ) : (
-                    <>
-                        {!isSubscriptionLoading &&
-                            (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
-                                <div className="pricing-section">
-                                    <Checkout
-                                        user={{
-                                            ...user,
-                                            ...userData,
-                                            cancel_at_period_end: cancelAtPeriodEnd
-                                        }}
-                                        subscriptionStatus={subscriptionStatus}
-                                        onBack={null}
-                                        embedded={true}
-                                        isMobileSignup={isMobileSignup}
-                                    />
+                            {!isSubscribed && (
+                                <div className="bg-white p-4 text-center border-b border-gray-200">
+                                    <h2 className="text-xl font-bold text-gray-800 mb-1">Complete Your Subscription</h2>
+                                    <p className="text-gray-600">Choose a plan to get started with PetWise</p>
                                 </div>
                             )}
+                        </>
+                    )}
 
-                        {!isMobileSignup && (
-                            <>
-                                {/* Past Due Warning Banner */}
-                                {subscriptionStatus === 'past_due' && (
-                                    <div className="past-due-banner">
-                                        <div className="past-due-content">
-                                            <div className="past-due-icon">⚠️</div>
-                                            <div className="past-due-text">
-                                                <h3>Subscription Past Due</h3>
-                                                <p>
-                                                    Your subscription payment is past due.
-                                                    {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
-                                                        ` Your subscription will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless payment is resolved.`
-                                                    )}
-                                                    {getGracePeriodDays() === 0 && (
-                                                        ` Your grace period has expired. Please update your payment method immediately.`
-                                                    )}
-                                                    {getGracePeriodDays() === null && (
-                                                        ` To continue with the service, please update your payment method or pay your outstanding invoice using Billing Management.`
-                                                    )}
+                    {showCheckout ? (
+                        <Checkout
+                            user={{
+                                ...user,
+                                ...userData,
+                                cancel_at_period_end: cancelAtPeriodEnd
+                            }}
+                            onBack={() => setShowCheckout(false)}
+                            subscriptionStatus={subscriptionStatus}
+                            isMobileSignup={isMobileSignup}
+                        />
+                    ) : showManageAccount ? (
+                        <ManageAccount
+                            user={user}
+                            onBack={() => setShowManageAccount(false)}
+                        />
+                    ) : (
+                        <>
+                            {!isSubscriptionLoading &&
+                                (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
+                                    <div className="py-12 bg-white">
+                                        <div className="max-w-4xl mx-auto px-6">
+                                            <div className="text-center mb-8">
+                                                <h2 className="text-3xl font-bold text-blue-400 mb-3">Get Started with PetWise</h2>
+                                                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                                                    Choose the perfect plan for your veterinary practice. Start with a free trial or select a subscription that fits your needs.
                                                 </p>
                                             </div>
-                                            {userData?.stripe_customer_id && (
-                                                <button className="past-due-action-button" onClick={handleBillingPortal}>
-                                                    Go to Billing Management
-                                                </button>
-                                            )}
+                                            <Checkout
+                                                user={{
+                                                    ...user,
+                                                    ...userData,
+                                                    cancel_at_period_end: cancelAtPeriodEnd
+                                                }}
+                                                subscriptionStatus={subscriptionStatus}
+                                                onBack={null}
+                                                embedded={true}
+                                                isMobileSignup={isMobileSignup}
+                                            />
                                         </div>
                                     </div>
                                 )}
 
-                                <div className="profile-header">
-                                    <div className="profile-picture-container">
-                                        <img
-                                            src={getOptimizedImageUrl(user?.picture)}
-                                            alt={userData?.dvm_name || user?.name || 'User'}
-                                            className="profile-picture"
-                                            crossOrigin="anonymous"
-                                            referrerPolicy="no-referrer"
-                                            onError={(e) => {
-                                                console.log('Profile image error, falling back to SVG');
-                                                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
-                                            }}
-                                            style={{
-                                                width: '100px',
-                                                height: '100px',
-                                                borderRadius: '50%',
-                                                objectFit: 'cover',
-                                                border: '2px solid #eee',
-                                                backgroundColor: '#f5f5f5'
-                                            }}
-                                        />
-                                    </div>
-                                    <h2>{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
-                                    <p className="profile-email">{user.email}</p>
-                                </div>
-                                <div className="profile-actions">
-                                    <button className="profile-button" onClick={handleBillingClick}>
-                                        Manage Subscription
-                                    </button>
-                                    {userData?.stripe_customer_id && (
-                                        <button className="profile-button" onClick={handleBillingPortal}>
-                                            Billing Management
-                                        </button>
+                            {!isMobileSignup && (
+                                <>
+                                    {/* Past Due Warning Banner */}
+                                    {subscriptionStatus === 'past_due' && (
+                                        <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-5 mb-6 shadow-lg">
+                                            <div className="flex items-center gap-4">
+                                                <div className="text-3xl flex-shrink-0">⚠️</div>
+                                                <div className="flex-1">
+                                                    <h3 className="text-red-800 text-lg font-bold mb-2">Subscription Past Due</h3>
+                                                    <p className="text-red-700 font-medium leading-relaxed">
+                                                        Your subscription payment is past due.
+                                                        {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
+                                                            ` Your subscription will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless payment is resolved.`
+                                                        )}
+                                                        {getGracePeriodDays() === 0 && (
+                                                            ` Your grace period has expired. Please update your payment method immediately.`
+                                                        )}
+                                                        {getGracePeriodDays() === null && (
+                                                            ` To continue with the service, please update your payment method or pay your outstanding invoice using Billing Management.`
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                {userData?.stripe_customer_id && (
+                                                    <button
+                                                        className="bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg whitespace-nowrap"
+                                                        onClick={handleBillingPortal}
+                                                    >
+                                                        Go to Billing Management
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
-                                    <button className="profile-button" onClick={() => setShowManageAccount(true)}>
-                                        Manage Account
-                                    </button>
-                                </div>
-                                <div className="profile-details">
-                                    <h3>Profile Information</h3>
-                                    <div className="profile-info">
-                                        <div className="info-item">
-                                            <span className="info-label">DVM Name:</span>
-                                            <span className="info-value">
-                                                {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set'}
-                                            </span>
-                                        </div>
-                                        <div className="info-item">
-                                            <span className="info-label">Nickname:</span>
-                                            <span className="info-value">{user.nickname || 'Not set'}</span>
-                                        </div>
 
-                                        <div className="info-item">
-                                            <span className="info-label">Last Updated:</span>
-                                            <span className="info-value">{new Date(user.updated_at).toLocaleDateString()}</span>
+                                    <div className="text-center mb-6">
+                                        <div className="inline-block mb-4">
+                                            <img
+                                                src={getOptimizedImageUrl(user?.picture)}
+                                                alt={userData?.dvm_name || user?.name || 'User'}
+                                                className="w-20 h-20 rounded-full object-cover border-3 border-blue-100 shadow-lg hover:scale-105 transition-all duration-300 bg-gray-100"
+                                                crossOrigin="anonymous"
+                                                referrerPolicy="no-referrer"
+                                                onError={(e) => {
+                                                    console.log('Profile image error, falling back to SVG');
+                                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
+                                                }}
+                                            />
                                         </div>
-                                        <div className="info-item">
-                                            <span className="info-label">Subscription Status:</span>
-                                            <span className="info-value">
-                                                {getSubscriptionStatus()}
-                                            </span>
-                                        </div>
-                                        <div className="info-item">
-                                            <span className="info-label">Subscription Type:</span>
-                                            <span className="info-value">
-                                                {getSubscriptionDisplay()}
-                                            </span>
-                                        </div>
+                                        <h2 className="text-2xl font-bold text-gray-800 mb-1">{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
+                                        <p className="text-gray-600 font-medium">{user.email}</p>
                                     </div>
-                                </div>
-                            </>
-                        )}
-
-                        {/* Add mobile subscription management for subscribed users */}
-                        {isMobileSignup && isSubscribed && (
-                            <>
-                                {/* Mobile Past Due Warning Banner */}
-                                {subscriptionStatus === 'past_due' && (
-                                    <div className="mobile-past-due-banner">
-                                        <div className="mobile-past-due-content">
-                                            <div className="mobile-past-due-icon">⚠️</div>
-                                            <div className="mobile-past-due-text">
-                                                <h3>Payment Past Due</h3>
-                                                <p>
-                                                    Your payment is past due.
-                                                    {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
-                                                        ` Service will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless resolved.`
-                                                    )}
-                                                    {getGracePeriodDays() === 0 && (
-                                                        ` Grace period expired. Update payment immediately.`
-                                                    )}
-                                                    {getGracePeriodDays() === null && (
-                                                        ` Please update your payment method to continue service.`
-                                                    )}
-                                                </p>
-                                            </div>
-                                            {userData?.stripe_customer_id && (
-                                                <button className="mobile-past-due-button" onClick={handleBillingPortal}>
-                                                    Fix Payment Issue
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="mobile-subscription-management">
-                                    <h3>Your Subscription</h3>
-                                    <div className="subscription-info">
-                                        <p><strong>Status:</strong> {getSubscriptionStatus()}</p>
-                                        <p><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
-                                    </div>
-                                    <div className="mobile-subscription-actions">
-                                        <button className="profile-button" onClick={handleBillingClick}>
+                                    <div className="flex justify-center gap-4 mb-6">
+                                        <button
+                                            className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                            onClick={handleBillingClick}
+                                        >
                                             Manage Subscription
                                         </button>
                                         {userData?.stripe_customer_id && (
-                                            <button className="profile-button" onClick={handleBillingPortal}>
+                                            <button
+                                                className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                                onClick={handleBillingPortal}
+                                            >
                                                 Billing Management
                                             </button>
                                         )}
+                                        <button
+                                            className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                            onClick={() => setShowManageAccount(true)}
+                                        >
+                                            Manage Account
+                                        </button>
+                                    </div>
+                                    <div className="bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm">
+                                        <h3 className="text-blue-600 text-xl font-semibold border-b-2 border-blue-100 pb-2 mb-4">Profile Information</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                <span className="font-semibold text-gray-700">DVM Name:</span>
+                                                <span className="text-gray-800 font-medium">
+                                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set'}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                <span className="font-semibold text-gray-700">Nickname:</span>
+                                                <span className="text-gray-800 font-medium">{user.nickname || 'Not set'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                <span className="font-semibold text-gray-700">Last Updated:</span>
+                                                <span className="text-gray-800 font-medium">{new Date(user.updated_at).toLocaleDateString()}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                <span className="font-semibold text-gray-700">Subscription Status:</span>
+                                                <span className="text-gray-800 font-medium">
+                                                    {getSubscriptionStatus()}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                <span className="font-semibold text-gray-700">Subscription Type:</span>
+                                                <span className="text-gray-800 font-medium">
+                                                    {getSubscriptionDisplay()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Add mobile subscription management for subscribed users */}
+                            {isMobileSignup && isSubscribed && (
+                                <>
+                                    {/* Mobile Past Due Warning Banner */}
+                                    {subscriptionStatus === 'past_due' && (
+                                        <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 p-4 w-full">
+                                            <div className="flex flex-col items-center gap-3 text-center">
+                                                <div className="text-2xl">⚠️</div>
+                                                <div>
+                                                    <h3 className="text-red-800 text-lg font-bold mb-1">Payment Past Due</h3>
+                                                    <p className="text-red-700 font-medium text-sm leading-relaxed">
+                                                        Your payment is past due.
+                                                        {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
+                                                            ` Service will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless resolved.`
+                                                        )}
+                                                        {getGracePeriodDays() === 0 && (
+                                                            ` Grace period expired. Update payment immediately.`
+                                                        )}
+                                                        {getGracePeriodDays() === null && (
+                                                            ` Please update your payment method to continue service.`
+                                                        )}
+                                                    </p>
+                                                </div>
+                                                {userData?.stripe_customer_id && (
+                                                    <button
+                                                        className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full max-w-xs min-h-[44px]"
+                                                        onClick={handleBillingPortal}
+                                                    >
+                                                        Fix Payment Issue
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="bg-white p-4 border-t border-b border-gray-200 mb-5">
+                                        <h3 className="text-gray-800 text-lg font-semibold mb-3 text-center">Your Subscription</h3>
+                                        <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-600 mb-4">
+                                            <p className="text-sm text-gray-700 font-medium mb-1"><strong>Status:</strong> {getSubscriptionStatus()}</p>
+                                            <p className="text-sm text-gray-700 font-medium"><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                                onClick={handleBillingClick}
+                                            >
+                                                Manage Subscription
+                                            </button>
+                                            {userData?.stripe_customer_id && (
+                                                <button
+                                                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                                    onClick={handleBillingPortal}
+                                                >
+                                                    Billing Management
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Add mobile account management for all mobile users */}
+                            {isMobileSignup && (
+                                <div className="bg-white p-4 border-t border-b border-gray-200 mb-5">
+                                    <h3 className="text-gray-800 text-lg font-semibold mb-3 text-center">Account Management</h3>
+                                    <p className="text-gray-600 text-sm text-center mb-4">View and manage your account settings, or delete your account.</p>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                            onClick={() => setShowManageAccount(true)}
+                                        >
+                                            Manage Account
+                                        </button>
+                                        <button
+                                            className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                            onClick={() => logout({
+                                                logoutParams: {
+                                                    returnTo: 'https://petwise.vet'
+                                                }
+                                            })}
+                                        >
+                                            Log Out
+                                        </button>
                                     </div>
                                 </div>
-                            </>
-                        )}
-
-                        {/* Add mobile account management for all mobile users */}
-                        {isMobileSignup && (
-                            <div className="mobile-account-management">
-                                <h3>Account Management</h3>
-                                <p>View and manage your account settings, or delete your account.</p>
-                                <div className="mobile-account-actions">
-                                    <button className="profile-button" onClick={() => setShowManageAccount(true)}>
-                                        Manage Account
-                                    </button>
-                                    <button
-                                        className="profile-button logout-button"
-                                        onClick={() => logout({
-                                            logoutParams: {
-                                                returnTo: 'https://petwise.vet'
-                                            }
-                                        })}
-                                    >
-                                        Log Out
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </>
-                )}
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
         )
     );

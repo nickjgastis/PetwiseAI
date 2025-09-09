@@ -10,7 +10,7 @@
 .dashboard-container {
     display: flex;
     height: 100vh;
-    background-color: #f4f7fa;
+    background-color: #ffffff;
 }
 
 /* Sidebar Styling */
@@ -520,8 +520,8 @@ h3 {
     text-align: center;
     min-height: 100vh;
     padding: 20px;
-    background-color: #f4f7fa;
-    background-image: linear-gradient(135deg, #f4f7fa 0%, #e1ecf9 100%);
+    background-color: #ffffff;
+    background-image: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
 }
 
 .mobile-notification-logo {
@@ -562,7 +562,7 @@ h3 {
 /* Mobile Signup Container */
 .mobile-signup-container {
     min-height: 100vh;
-    background-color: #f4f7fa;
+    background-color: #ffffff;
 }
 
 .mobile-profile-container {
@@ -586,7 +586,7 @@ h3 {
 /* Mobile profile only container */
 .mobile-profile-only {
     min-height: 100vh;
-    background-color: #f4f7fa;
+    background-color: #ffffff;
     padding: 0;
 }
 

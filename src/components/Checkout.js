@@ -3,8 +3,6 @@ import { loadStripe } from '@stripe/stripe-js';
 import CancelSubscription from './CancelSubscription';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../supabaseClient';
-import '../styles/Checkout.css';
-import '../styles/Profile.css';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -212,15 +210,21 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
     };
 
     const CurrencyToggle = () => (
-        <div className="currency-toggle">
+        <div className={`flex justify-center gap-1 ${embedded ? 'mb-4' : 'mb-6'} bg-gray-100 p-1 rounded-lg w-fit mx-auto`}>
             <button
-                className={`currency-button ${currency === 'usd' ? 'active' : ''}`}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${currency === 'usd'
+                    ? 'bg-white text-blue-600 shadow-sm font-semibold'
+                    : 'text-gray-600 hover:text-blue-600'
+                    }`}
                 onClick={() => setCurrency('usd')}
             >
                 USD
             </button>
             <button
-                className={`currency-button ${currency === 'cad' ? 'active' : ''}`}
+                className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${currency === 'cad'
+                    ? 'bg-white text-blue-600 shadow-sm font-semibold'
+                    : 'text-gray-600 hover:text-blue-600'
+                    }`}
                 onClick={() => setCurrency('cad')}
             >
                 CAD
@@ -229,50 +233,72 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
     );
 
     return (
-        <div className={`checkout-container ${embedded ? 'embedded' : ''}`}>
-            <div className="checkout-options">
-                <div className="checkout-header">
-                    <h3>{subscriptionStatus === 'active' ? 'Manage Subscription' : 'Choose Your Plan'}</h3>
-                    <p className="checkout-subtitle">
-                        {subscriptionStatus === 'active' ? (
-                            <>
-                                Current Plan: {(() => {
-                                    const planTypes = {
-                                        trial: 'Free Trial (50 reports/day)',
-                                        monthly: 'Monthly Plan',
-                                        yearly: 'Yearly Plan'
-                                    };
-                                    return `${planTypes[subscriptionInterval] || 'Unknown Plan'} - Features Active`;
-                                })()}
-                            </>
-                        ) : (
-                            'Experience the full power of PetwiseAI! Start with a free trial - no credit card required.'
-                        )}
-                    </p>
-                </div>
+        <div className={`${embedded ? 'w-full' : 'max-w-6xl mx-auto px-6 py-6'}`}>
+            <div className="w-full">
+                {!embedded && (
+                    <div className="text-center mb-8">
+                        <h3 className="text-3xl font-bold text-blue-400 mb-2">{subscriptionStatus === 'active' ? 'Manage Subscription' : 'Choose Your Plan'}</h3>
+                        <p className="text-gray-600 text-lg font-medium leading-relaxed">
+                            {subscriptionStatus === 'active' ? (
+                                <>
+                                    Current Plan: {(() => {
+                                        const planTypes = {
+                                            trial: 'Free Trial (50 reports/day)',
+                                            monthly: 'Monthly Plan',
+                                            yearly: 'Yearly Plan'
+                                        };
+                                        return `${planTypes[subscriptionInterval] || 'Unknown Plan'} - Features Active`;
+                                    })()}
+                                </>
+                            ) : (
+                                'Experience the full power of PetwiseAI! Start with a free trial - no credit card required.'
+                            )}
+                        </p>
+                    </div>
+                )}
 
                 <CurrencyToggle />
 
-                <div className="checkout-pricing-container">
+                <div className={`flex flex-col md:flex-row gap-4 md:gap-5 justify-center items-center ${embedded ? 'mb-6' : 'mb-8'} px-4 md:px-0`}>
                     {/* Monthly Plan Card */}
-                    <div className={`checkout-pricing-card ${subscriptionInterval === 'monthly' ? 'current' : ''}`}>
-                        <div className="checkout-pricing-header">
-                            <h3>Monthly</h3>
-                            <p className="checkout-price">
+                    <div className={`w-full md:flex-1 min-w-[280px] max-w-[400px] md:max-w-[300px] min-h-[340px] md:min-h-[380px] p-4 md:p-5 flex flex-col bg-white rounded-xl md:rounded-2xl shadow-lg border transition-all duration-400 ${subscriptionInterval === 'monthly'
+                        ? 'border-blue-600 shadow-blue-100'
+                        : 'border-gray-200 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200'
+                        } relative`}>
+                        {subscriptionInterval === 'monthly' && (
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                CURRENT PLAN
+                            </div>
+                        )}
+                        <div className="min-h-[120px] pb-4 border-b border-gray-200 text-center flex flex-col justify-start mb-0">
+                            <h3 className="text-xl font-bold text-blue-600 mb-3">Monthly</h3>
+                            <p className="text-3xl font-bold text-gray-800 flex items-baseline justify-center gap-1">
                                 {PRICES[currency].symbol}{PRICES[currency].monthly}
-                                <span> {PRICES[currency].code}/Vet/Month</span>
+                                <span className="text-sm text-gray-500 font-medium"> {PRICES[currency].code}/Vet/Month</span>
                             </p>
                         </div>
-                        <ul className="checkout-pricing-features">
-                            <li>Unlimited SOAP reports</li>
-                            <li>Unlimited Quick Query</li>
-                            <li>Saved reports</li>
-                            <li>Priority support</li>
+                        <ul className="my-4 flex-1 flex flex-col">
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Unlimited SOAP reports
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Unlimited Quick Query
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Saved reports
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 px-1 font-medium pb-4">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Priority support
+                            </li>
                         </ul>
-                        <div className="checkout-footer">
+                        <div className="mt-auto">
                             <button
                                 onClick={() => handleCheckout('monthly')}
-                                className="checkout-subscribe-button"
+                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                                 disabled={subscriptionInterval === 'monthly' && !user.cancel_at_period_end}
                             >
                                 {subscriptionInterval === 'monthly' ? 'Current Plan' : 'Sign Up Now'}
@@ -281,20 +307,35 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     </div>
 
                     {/* Free Trial Card */}
-                    <div className={`checkout-pricing-card free highlight-card ${user.has_used_trial ? 'disabled' : ''}`}>
-                        <div className="checkout-pricing-header">
-                            <h3>30 Day Free Trial</h3>
-                            <p className="checkout-price">$0<span>/mo</span></p>
+                    <div className={`w-full md:flex-1 min-w-[280px] max-w-[400px] md:max-w-[300px] min-h-[340px] md:min-h-[380px] p-4 md:p-5 flex flex-col bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl md:rounded-2xl shadow-lg border-2 border-yellow-400 md:transform md:-translate-y-2 md:scale-105 z-10 relative transition-all duration-400 md:hover:-translate-y-3 md:hover:scale-110 hover:shadow-2xl ${user.has_used_trial ? 'opacity-60 cursor-not-allowed' : ''
+                        }`}>
+                        <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-4 py-1 rounded-full text-xs font-bold">
+                            POPULAR
                         </div>
-                        <ul className="checkout-pricing-features">
-                            <li>No credit card required</li>
-                            <li>50 records per day</li>
-                            <li>Quick Query</li>
+                        <div className="min-h-[120px] pb-4 border-b border-yellow-200 text-center flex flex-col justify-start mb-0">
+                            <h3 className="text-xl font-bold text-gray-700 mb-3">30 Day Free Trial</h3>
+                            <p className="text-3xl font-bold text-gray-800 flex items-baseline justify-center gap-1">
+                                $0<span className="text-sm text-gray-500 font-medium">/mo</span>
+                            </p>
+                        </div>
+                        <ul className="my-4 flex-1 flex flex-col">
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-yellow-200 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                No credit card required
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-yellow-200 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                50 records per day
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 px-1 font-medium pb-4">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Quick Query
+                            </li>
                         </ul>
-                        <div className="checkout-footer">
+                        <div className="mt-auto">
                             <button
                                 onClick={handleTrialActivation}
-                                className="checkout-trial-button"
+                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-gray-600 to-gray-700 shadow-lg hover:from-gray-700 hover:to-gray-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                                 disabled={user.has_used_trial || subscriptionStatus === 'active'}
                             >
                                 {user.has_used_trial ? 'Trial Used' : 'Start Free Trial'}
@@ -303,25 +344,47 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     </div>
 
                     {/* Yearly Plan Card */}
-                    <div className={`checkout-pricing-card ${subscriptionInterval === 'yearly' ? 'current' : ''}`}>
-                        <div className="checkout-pricing-header">
-                            <h3>Yearly</h3>
-                            <p className="checkout-price">
+                    <div className={`w-full md:flex-1 min-w-[280px] max-w-[400px] md:max-w-[300px] min-h-[340px] md:min-h-[380px] p-4 md:p-5 flex flex-col bg-white rounded-xl md:rounded-2xl shadow-lg border transition-all duration-400 ${subscriptionInterval === 'yearly'
+                        ? 'border-blue-600 shadow-blue-100'
+                        : 'border-gray-200 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200'
+                        } relative`}>
+                        {subscriptionInterval === 'yearly' && (
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                CURRENT PLAN
+                            </div>
+                        )}
+                        <div className="min-h-[120px] pb-4 border-b border-gray-200 text-center flex flex-col justify-start mb-0">
+                            <h3 className="text-xl font-bold text-blue-600 mb-3">Yearly</h3>
+                            <p className="text-3xl font-bold text-gray-800 flex items-baseline justify-center gap-1">
                                 {PRICES[currency].symbol}{PRICES[currency].yearly}
-                                <span> {PRICES[currency].code}/Vet/Month</span>
+                                <span className="text-sm text-gray-500 font-medium"> {PRICES[currency].code}/Vet/Month</span>
                             </p>
-                            <p className="checkout-savings">Save {currency === 'usd' ? '31' : '30'}%</p>
+                            <p className="mt-1 px-2 py-1 bg-gradient-to-r from-green-50 to-green-100 text-green-700 rounded-xl text-xs font-semibold inline-block">
+                                Save {currency === 'usd' ? '31' : '30'}%
+                            </p>
                         </div>
-                        <ul className="checkout-pricing-features">
-                            <li>Unlimited SOAP reports</li>
-                            <li>Unlimited Quick Query</li>
-                            <li>Saved reports</li>
-                            <li>Priority support</li>
+                        <ul className="my-4 flex-1 flex flex-col">
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Unlimited SOAP reports
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Unlimited Quick Query
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Saved reports
+                            </li>
+                            <li className="py-2 text-gray-700 text-sm flex items-center gap-2 px-1 font-medium pb-4">
+                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                Priority support
+                            </li>
                         </ul>
-                        <div className="checkout-footer">
+                        <div className="mt-auto">
                             <button
                                 onClick={() => handleCheckout('yearly')}
-                                className="checkout-subscribe-button"
+                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                                 disabled={subscriptionInterval === 'yearly' && !user.cancel_at_period_end}
                             >
                                 {subscriptionInterval === 'yearly' ? 'Current Plan' : 'Sign Up Now'}
@@ -331,40 +394,42 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                 </div>
 
                 {/* Create a wrapper for the access code and enterprise sections */}
-                <div className="checkout-info-sections">
-                    <div className="checkout-access-code-section">
-                        <h3>Is your clinic a partner?</h3>
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 max-w-4xl mx-auto ${embedded ? 'mb-6' : 'mb-8'} px-4 md:px-0`}>
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl md:rounded-2xl p-3 md:p-4 text-center shadow-lg border border-gray-200 min-h-[120px] md:min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
+                        <div className="absolute top-3 right-3 text-xl opacity-10">🏥</div>
+                        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3 relative z-10 leading-tight">Is your clinic a partner?</h3>
                         {!showAccessCodeInput ? (
                             <button
-                                className="checkout-access-code-button"
+                                className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold px-6 py-3 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[48px]"
                                 onClick={() => setShowAccessCodeInput(true)}
                             >
                                 Enter Access Code
                             </button>
                         ) : (
-                            <form onSubmit={handleAccessCodeSubmit} className="access-code-form">
+                            <form onSubmit={handleAccessCodeSubmit} className="flex flex-col items-center gap-4 max-w-xs w-full mx-auto relative z-10">
                                 <input
                                     type="text"
                                     value={accessCode}
                                     onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                                     placeholder="Enter your access code"
-                                    className="access-code-input"
+                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base text-center tracking-wider uppercase transition-all duration-300 bg-white font-semibold text-gray-800 focus:border-blue-600 focus:shadow-lg focus:bg-gray-50 min-h-[48px]"
                                 />
-                                <button type="submit" className="access-code-submit">
+                                <button type="submit" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold px-6 py-3 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 min-h-[48px]">
                                     Submit
                                 </button>
                                 {accessCodeError && (
-                                    <div className="access-code-error">{accessCodeError}</div>
+                                    <div className="text-red-600 text-sm font-semibold text-center mt-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">{accessCodeError}</div>
                                 )}
                             </form>
                         )}
                     </div>
 
-                    <div className="checkout-enterprise-section">
-                        <h3>Looking to sign up your whole clinic staff, or multiple clinics?</h3>
-                        <p>We've got you covered! Contact support@petwise.vet for enterprise plans.</p>
-                        <a href="mailto:support@petwise.vet" className="enterprise-contact-btn">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl md:rounded-2xl p-3 md:p-4 text-center shadow-lg border border-gray-200 min-h-[120px] md:min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
+                        <div className="absolute top-3 right-3 text-xl opacity-10">🏢</div>
+                        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-2 relative z-10 leading-tight">Looking to sign up your whole clinic staff, or multiple clinics?</h3>
+                        <p className="text-gray-600 mb-4 relative z-10 leading-relaxed font-medium max-w-xs mx-auto text-sm">We've got you covered! Contact support@petwise.vet for enterprise plans.</p>
+                        <a href="mailto:support@petwise.vet" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold px-6 py-3 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[48px] no-underline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="mr-2">
                                 <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z" />
                             </svg>
                             Contact Us!
@@ -374,12 +439,13 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
 
                 {/* Billing Management Section for Active Subscribers */}
                 {subscriptionStatus === 'active' && user.stripe_customer_id && (
-                    <div className="checkout-billing-management">
-                        <h3>Billing Management</h3>
-                        <p>Update your payment method, view invoices, and manage billing details.</p>
+                    <div className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 rounded-xl md:rounded-2xl p-3 md:p-4 mx-auto text-center max-w-md shadow-lg min-h-[120px] md:min-h-[140px] flex flex-col justify-center relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-300">
+                        <div className="absolute top-3 right-3 text-xl opacity-15">💳</div>
+                        <h3 className="text-gray-800 text-lg font-bold mb-3 relative z-10">Billing Management</h3>
+                        <p className="text-gray-600 mb-4 relative z-10 leading-relaxed font-medium max-w-xs mx-auto text-sm">Update your payment method, view invoices, and manage billing details.</p>
                         <button
                             onClick={handleBillingPortal}
-                            className="checkout-billing-portal-button"
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-none px-6 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 inline-flex items-center gap-2 shadow-lg hover:from-blue-600 hover:to-blue-700 hover:-translate-y-0.5 relative z-10 min-h-[48px]"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M4 10a1 1 0 0 1 2 0v1a1 1 0 0 1-2 0v-1zm6-6a1 1 0 0 1 2 0v7a1 1 0 0 1-2 0V4zM2 7a1 1 0 0 1 2 0v4a1 1 0 0 1-2 0V7zm8-5a1 1 0 0 1 2 0v9a1 1 0 0 1-2 0V2zm-2-1a1 1 0 0 1 2 0v10a1 1 0 0 1-2 0V1z" />
@@ -390,8 +456,11 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                 )}
 
                 {!embedded && (
-                    <div className="checkout-footer">
-                        <button onClick={onBack} className="checkout-back-button">
+                    <div className="flex justify-center items-center mt-8 pt-4 w-full">
+                        <button
+                            onClick={onBack}
+                            className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-600 cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:border-blue-600 hover:text-blue-600 hover:-translate-y-0.5"
+                        >
                             ← Back
                         </button>
                     </div>
