@@ -16,6 +16,24 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
 
     const years = Array.from({ length: 5 }, (_, i) => new Date().getUTCFullYear() + i); // now..now+4
 
+    const canRedeemStudentAccess = () => {
+        // Check if user has active paid subscription
+        if (userData?.stripe_customer_id &&
+            userData?.subscription_status === 'active' &&
+            !userData?.cancel_at_period_end) {
+            return false; // Block student access
+        }
+
+        // Existing graduation year check
+        if (userData?.student_grad_year) {
+            const gradYear = userData.student_grad_year;
+            const cutoffDate = new Date(Date.UTC(gradYear, 7, 31, 23, 59, 59, 999));
+            return new Date() < cutoffDate;
+        }
+
+        return true;
+    };
+
     const redeem = async () => {
         try {
             setError("");
@@ -49,6 +67,14 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
             </div>
 
             <div className="space-y-4">
+                {!canRedeemStudentAccess() && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
+                        <p className="text-yellow-800 text-sm">
+                            You currently have an active paid subscription. Please cancel your subscription first before redeeming student access.
+                        </p>
+                    </div>
+                )}
+
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                         Access Code *
@@ -58,7 +84,7 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                         value={accessCode}
                         onChange={e => setAccessCode(e.target.value)}
                         placeholder="Enter your student access code"
-                        disabled={loading}
+                        disabled={loading || !canRedeemStudentAccess()}
                     />
                 </div>
 
@@ -70,7 +96,7 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         value={gradYear}
                         onChange={e => setGradYear(Number(e.target.value))}
-                        disabled={loading || !!userData?.student_grad_year}
+                        disabled={loading || !!userData?.student_grad_year || !canRedeemStudentAccess()}
                     >
                         {years.map(y => (
                             <option key={y} value={y}>{y}</option>
@@ -93,7 +119,7 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                         onChange={e => setEmail(e.target.value)}
                         placeholder="name@school.edu"
                         type="email"
-                        disabled={loading}
+                        disabled={loading || !canRedeemStudentAccess()}
                         required
                     />
                 </div>
@@ -106,7 +132,7 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
 
                 <div className="flex space-x-3 pt-4">
                     <button
-                        disabled={loading || !accessCode || !gradYear || !email}
+                        disabled={loading || !accessCode || !gradYear || !email || !canRedeemStudentAccess()}
                         onClick={redeem}
                         className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
