@@ -1040,3 +1040,61 @@
         font-size: 0.85rem !important;
     }
 }
+
+/* Mathematical expressions styling */
+.math-expression {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    background-color: rgba(59, 130, 246, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: #1e40af;
+    font-size: 0.95em;
+    display: inline-block;
+    margin: 0 1px;
+}
+
+.math-display {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    background-color: rgba(59, 130, 246, 0.08);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+    font-size: 1em;
+    display: block;
+    margin: 8px 0;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Ensure mathematical expressions work well in assistant messages */
+.assistant .qq-message-content .math-expression {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    background-color: rgba(59, 130, 246, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: #1e40af;
+    font-size: 14px;
+    display: inline-block;
+    margin: 0 1px;
+}
+
+.assistant .qq-message-content .math-display {
+    font-family: 'Times New Roman', serif;
+    font-style: italic;
+    background-color: rgba(59, 130, 246, 0.08);
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+    font-size: 14px;
+    display: block;
+    margin: 8px 0;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}

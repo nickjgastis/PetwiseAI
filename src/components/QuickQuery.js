@@ -9,8 +9,23 @@ const API_URL = process.env.NODE_ENV === 'production'
     : 'http://localhost:3001';
 
 const formatMessage = (content) => {
+    // First, handle multiline LaTeX expressions before splitting into lines
+    let processedContent = content;
+
+    // Handle multiline display math expressions \[ ... \]
+    processedContent = processedContent.replace(/\\\[([\s\S]*?)\\\]/g, (match, mathContent) => {
+        // Clean up the math content
+        let cleanMath = mathContent
+            .replace(/\\text\{([^}]+)\}/g, '$1')  // Remove \text{...} commands
+            .replace(/\\[,:;]/g, ' ')            // Convert spacing commands to spaces
+            .replace(/\\quad/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+            .replace(/\\qquad/g, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')
+            .trim();
+        return `<div class="math-display">${cleanMath}</div>`;
+    });
+
     // Split into lines and find first non-empty line
-    const lines = content.split('\n');
+    const lines = processedContent.split('\n');
     const firstNonEmptyLineIndex = lines.findIndex(line => line.trim().length > 0);
 
     // Handle title line separately (it's our main header)
@@ -47,8 +62,25 @@ const formatMessage = (content) => {
         // Skip empty lines
         if (line === '') continue;
 
-        // First, process any bold text in the line to avoid regex conflicts
+        // Process remaining mathematical expressions and LaTeX formatting
         let processedLine = line;
+
+        // Handle LaTeX-style math expressions \( ... \)
+        processedLine = processedLine.replace(/\\\(([^)]+)\\\)/g, '<span class="math-expression">$1</span>');
+
+        // Handle inline math expressions with $ delimiters
+        processedLine = processedLine.replace(/\$([^$]+)\$/g, '<span class="math-expression">$1</span>');
+
+        // Handle text formatting issues like {text bold}
+        processedLine = processedLine.replace(/\{([^}]+)\}/g, '$1');
+
+        // Handle LaTeX text commands like \text{...}
+        processedLine = processedLine.replace(/\\text\{([^}]+)\}/g, '$1');
+
+        // Handle LaTeX spacing commands like \, \: \; \quad \qquad
+        processedLine = processedLine.replace(/\\[,:;]/g, ' ');
+        processedLine = processedLine.replace(/\\quad/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
+        processedLine = processedLine.replace(/\\qquad/g, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
 
         // Only process the bold text if it's not a header line (to avoid conflicts)
         if (
