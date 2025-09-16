@@ -24,6 +24,18 @@ const formatMessage = (content) => {
         return `<div class="math-display">${cleanMath}</div>`;
     });
 
+    // Handle inline LaTeX math expressions \( ... \) at content level
+    processedContent = processedContent.replace(/\\\(([\s\S]*?)\\\)/g, (match, mathContent) => {
+        // Clean up the math content
+        let cleanMath = mathContent
+            .replace(/\\text\{([^}]+)\}/g, '$1')  // Remove \text{...} commands
+            .replace(/\\[,:;]/g, ' ')            // Convert spacing commands to spaces
+            .replace(/\\quad/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+            .replace(/\\qquad/g, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;')
+            .trim();
+        return `<span class="math-expression">${cleanMath}</span>`;
+    });
+
     // Split into lines and find first non-empty line
     const lines = processedContent.split('\n');
     const firstNonEmptyLineIndex = lines.findIndex(line => line.trim().length > 0);
@@ -65,22 +77,11 @@ const formatMessage = (content) => {
         // Process remaining mathematical expressions and LaTeX formatting
         let processedLine = line;
 
-        // Handle LaTeX-style math expressions \( ... \)
-        processedLine = processedLine.replace(/\\\(([^)]+)\\\)/g, '<span class="math-expression">$1</span>');
-
         // Handle inline math expressions with $ delimiters
         processedLine = processedLine.replace(/\$([^$]+)\$/g, '<span class="math-expression">$1</span>');
 
         // Handle text formatting issues like {text bold}
         processedLine = processedLine.replace(/\{([^}]+)\}/g, '$1');
-
-        // Handle LaTeX text commands like \text{...}
-        processedLine = processedLine.replace(/\\text\{([^}]+)\}/g, '$1');
-
-        // Handle LaTeX spacing commands like \, \: \; \quad \qquad
-        processedLine = processedLine.replace(/\\[,:;]/g, ' ');
-        processedLine = processedLine.replace(/\\quad/g, '&nbsp;&nbsp;&nbsp;&nbsp;');
-        processedLine = processedLine.replace(/\\qquad/g, '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;');
 
         // Only process the bold text if it's not a header line (to avoid conflicts)
         if (
