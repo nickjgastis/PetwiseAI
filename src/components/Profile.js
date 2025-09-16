@@ -5,6 +5,7 @@ import Checkout from './Checkout';
 import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
 import ManageAccount from './ManageAccount';
+import StudentRedeem from './StudentRedeem';
 import { loadStripe } from '@stripe/stripe-js';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -28,6 +29,7 @@ const Profile = ({ isMobileSignup = false }) => {
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const [showManageAccount, setShowManageAccount] = useState(false);
+    const [showStudentRedeem, setShowStudentRedeem] = useState(false);
 
     const getOptimizedImageUrl = (url) => {
         if (!url) return null;
@@ -61,6 +63,32 @@ const Profile = ({ isMobileSignup = false }) => {
         return null;
     };
 
+    // Helper function to check if user is in student mode
+    const isStudentMode = () => {
+        return userData?.plan_label === 'student' &&
+            userData?.subscription_end_date &&
+            new Date(userData.subscription_end_date) > new Date();
+    };
+
+    // Helper function to check if user can redeem student access
+    const canRedeemStudentAccess = () => {
+        // If user has a graduation year set, check if it has passed
+        if (userData?.student_grad_year) {
+            const gradYear = userData.student_grad_year;
+            const cutoffDate = new Date(Date.UTC(gradYear, 7, 31, 23, 59, 59, 999)); // Aug 31
+            return new Date() < cutoffDate;
+        }
+
+        // If no graduation year set, can redeem
+        return true;
+    };
+
+    const handleStudentRedeemSuccess = () => {
+        setShowStudentRedeem(false);
+        // Refresh user data to show updated subscription
+        window.location.reload();
+    };
+
     useEffect(() => {
         if (user) {
             // console.log('Auth0 user full object:', JSON.stringify(user, null, 2));
@@ -84,7 +112,10 @@ const Profile = ({ isMobileSignup = false }) => {
                         subscription_interval,
                         cancel_at_period_end,
                         dvm_name,
-                        grace_period_end
+                        grace_period_end,
+                        plan_label,
+                        student_school_email,
+                        student_grad_year
                     `)
                     .eq('auth0_user_id', user.sub)
                     .single();
@@ -178,6 +209,10 @@ const Profile = ({ isMobileSignup = false }) => {
             return <span>Loading...</span>;
         }
 
+        if (isStudentMode()) {
+            return <span className="text-purple-600 font-medium">🎓 Student Access</span>;
+        }
+
         if (subscriptionStatus !== 'active') {
             return <span>None</span>;
         }
@@ -257,9 +292,18 @@ const Profile = ({ isMobileSignup = false }) => {
                             user={user}
                             onBack={() => setShowManageAccount(false)}
                         />
+                    ) : showStudentRedeem ? (
+                        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+                            <StudentRedeem
+                                onSuccess={handleStudentRedeemSuccess}
+                                onCancel={() => setShowStudentRedeem(false)}
+                                userData={userData}
+                            />
+                        </div>
                     ) : (
                         <>
                             {!isSubscriptionLoading &&
+                                !isStudentMode() &&
                                 (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
                                     <div className="py-12 bg-white">
                                         <div className="max-w-4xl mx-auto px-6">
@@ -336,18 +380,36 @@ const Profile = ({ isMobileSignup = false }) => {
                                         <p className="text-gray-600 font-medium">{user.email}</p>
                                     </div>
                                     <div className="flex justify-center gap-4 mb-6">
-                                        <button
-                                            className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-                                            onClick={handleBillingClick}
-                                        >
-                                            Manage Subscription
-                                        </button>
+                                        {!isStudentMode() && (
+                                            <button
+                                                className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                                onClick={handleBillingClick}
+                                            >
+                                                Manage Subscription
+                                            </button>
+                                        )}
+                                        {isStudentMode() && (
+                                            <button
+                                                className="px-7 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                                onClick={handleBillingClick}
+                                            >
+                                                Upgrade to Paid Plan
+                                            </button>
+                                        )}
                                         {userData?.stripe_customer_id && (
                                             <button
                                                 className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
                                                 onClick={handleBillingPortal}
                                             >
                                                 Billing Management
+                                            </button>
+                                        )}
+                                        {canRedeemStudentAccess() && (
+                                            <button
+                                                className="px-7 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                                onClick={() => setShowStudentRedeem(true)}
+                                            >
+                                                🎓 Student Access
                                             </button>
                                         )}
                                         <button
@@ -363,7 +425,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                                                 <span className="font-semibold text-gray-700">DVM Name:</span>
                                                 <span className="text-gray-800 font-medium">
-                                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set'}
+                                                    {isStudentMode() ? 'Student Mode' : (userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set')}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
@@ -386,6 +448,22 @@ const Profile = ({ isMobileSignup = false }) => {
                                                     {getSubscriptionDisplay()}
                                                 </span>
                                             </div>
+                                            {isStudentMode() && (
+                                                <>
+                                                    <div className="flex justify-between items-center p-4 bg-purple-50 rounded-xl border border-purple-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                        <span className="font-semibold text-purple-700">Student Email:</span>
+                                                        <span className="text-purple-800 font-medium">
+                                                            {userData?.student_school_email || 'Not provided'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center p-4 bg-purple-50 rounded-xl border border-purple-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
+                                                        <span className="font-semibold text-purple-700">Graduation Year:</span>
+                                                        <span className="text-purple-800 font-medium">
+                                                            {userData?.student_grad_year || 'Not set'}
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                 </>

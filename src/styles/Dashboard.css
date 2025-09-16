@@ -511,6 +511,46 @@ h3 {
     display: none;
 }
 
+/* Student Mode Styling */
+.student-mode {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    border-radius: 8px;
+    margin: 8px;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+}
+
+.student-banner {
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    opacity: 0.95;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.student-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+}
+
+.student-name {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.student-expiry {
+    font-size: 0.75rem;
+    opacity: 0.85;
+    font-weight: 400;
+    line-height: 1.1;
+}
+
 /* Mobile Notification Screen */
 .mobile-notification {
     display: flex;

@@ -4,6 +4,7 @@ const Stripe = require('stripe');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
+const studentRouter = require('./routes/studentRoutes');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 // ================ APP INITIALIZATION ================
@@ -65,6 +66,9 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
 }));
+
+// Mount student routes
+app.use('/student', studentRouter);
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
@@ -303,7 +307,12 @@ app.post('/webhook', async (req, res) => {
                     reports_used_today: 0,
                     last_report_date: new Date().toISOString().split('T')[0],
                     has_used_trial: true,
-                    cancel_at_period_end: false
+                    cancel_at_period_end: false,
+                    // Clear student fields on paid activation (but preserve graduation year)
+                    plan_label: null,
+                    student_school_email: null,
+                    student_last_student_redeem_at: null
+                    // student_grad_year: null, // REMOVED - graduation year is permanent
                 };
 
                 console.log('Updating user with data:', {
@@ -372,7 +381,12 @@ app.post('/webhook', async (req, res) => {
                             subscription_status: 'active',
                             subscription_interval: subscriptionInterval,
                             subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-                            cancel_at_period_end: subscription.cancel_at_period_end || false
+                            cancel_at_period_end: subscription.cancel_at_period_end || false,
+                            // Clear student fields on paid activation (but preserve graduation year)
+                            plan_label: null,
+                            student_school_email: null,
+                            student_last_student_redeem_at: null
+                            // student_grad_year: null, // REMOVED - graduation year is permanent
                         })
                         .eq('auth0_user_id', userData.auth0_user_id);
 
@@ -572,7 +586,12 @@ app.post('/activate-trial', async (req, res) => {
             has_used_trial: true,
             reports_used_today: 0,
             last_report_date: new Date().toISOString().split('T')[0],
-            email_opt_out: emailOptOut
+            email_opt_out: emailOptOut,
+            // Clear student fields when activating trial (but preserve graduation year)
+            plan_label: null,
+            student_school_email: null,
+            student_last_student_redeem_at: null
+            // student_grad_year: null, // REMOVED - graduation year is permanent
         };
 
         console.log('Updating user with data:', updateData);

@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import CancelSubscription from './CancelSubscription';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../supabaseClient';
+import StudentRedeem from './StudentRedeem';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -21,6 +22,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
     const [accessCodeError, setAccessCodeError] = useState('');
     const [showAccessCodeInput, setShowAccessCodeInput] = useState(false);
     const [currency, setCurrency] = useState('usd');
+    const [showStudentRedeem, setShowStudentRedeem] = useState(false);
 
     const PRICES = {
         usd: {
@@ -172,6 +174,12 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
         }
     };
 
+    const handleStudentRedeemSuccess = () => {
+        setShowStudentRedeem(false);
+        // Refresh user data to show updated subscription
+        window.location.reload();
+    };
+
     const handleBillingPortal = async () => {
         try {
             const response = await fetch(`${API_URL}/create-customer-portal`, {
@@ -234,6 +242,15 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
 
     return (
         <div className={`${embedded ? 'w-full' : 'max-w-6xl mx-auto px-6 py-6'}`}>
+            {showStudentRedeem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <StudentRedeem
+                        onSuccess={handleStudentRedeemSuccess}
+                        onCancel={() => setShowStudentRedeem(false)}
+                        userData={user}
+                    />
+                </div>
+            )}
             <div className="w-full">
                 {!embedded && (
                     <div className="text-center mb-8">
@@ -393,43 +410,55 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     </div>
                 </div>
 
-                {/* Create a wrapper for the access code and enterprise sections */}
-                <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 max-w-4xl mx-auto ${embedded ? 'mb-6' : 'mb-8'} px-4 md:px-0`}>
-                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl md:rounded-2xl p-3 md:p-4 text-center shadow-lg border border-gray-200 min-h-[120px] md:min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
-                        <div className="absolute top-3 right-3 text-xl opacity-10">🏥</div>
-                        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-3 relative z-10 leading-tight">Is your clinic a partner?</h3>
+                {/* Create a wrapper for the access code, student, and enterprise sections */}
+                <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-6xl mx-auto ${embedded ? 'mb-6' : 'mb-8'} px-4 md:px-0`}>
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-3 text-center shadow-lg border border-gray-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
+                        <div className="absolute top-2 right-2 text-lg opacity-10">🏥</div>
+                        <h3 className="text-sm font-bold text-gray-800 mb-2 relative z-10 leading-tight">Is your clinic a partner?</h3>
                         {!showAccessCodeInput ? (
                             <button
-                                className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold px-6 py-3 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[48px]"
+                                className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[36px]"
                                 onClick={() => setShowAccessCodeInput(true)}
                             >
                                 Enter Access Code
                             </button>
                         ) : (
-                            <form onSubmit={handleAccessCodeSubmit} className="flex flex-col items-center gap-4 max-w-xs w-full mx-auto relative z-10">
+                            <form onSubmit={handleAccessCodeSubmit} className="flex flex-col items-center gap-2 max-w-xs w-full mx-auto relative z-10">
                                 <input
                                     type="text"
                                     value={accessCode}
                                     onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                                     placeholder="Enter your access code"
-                                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-base text-center tracking-wider uppercase transition-all duration-300 bg-white font-semibold text-gray-800 focus:border-blue-600 focus:shadow-lg focus:bg-gray-50 min-h-[48px]"
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm text-center tracking-wider uppercase transition-all duration-300 bg-white font-semibold text-gray-800 focus:border-blue-600 focus:shadow-lg focus:bg-gray-50 min-h-[36px]"
                                 />
-                                <button type="submit" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold px-6 py-3 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 min-h-[48px]">
+                                <button type="submit" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 min-h-[36px]">
                                     Submit
                                 </button>
                                 {accessCodeError && (
-                                    <div className="text-red-600 text-sm font-semibold text-center mt-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">{accessCodeError}</div>
+                                    <div className="text-red-600 text-xs font-semibold text-center mt-1 px-2 py-1 bg-red-50 rounded border border-red-200">{accessCodeError}</div>
                                 )}
                             </form>
                         )}
                     </div>
 
-                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl md:rounded-2xl p-3 md:p-4 text-center shadow-lg border border-gray-200 min-h-[120px] md:min-h-[140px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
-                        <div className="absolute top-3 right-3 text-xl opacity-10">🏢</div>
-                        <h3 className="text-base md:text-lg font-bold text-gray-800 mb-2 relative z-10 leading-tight">Looking to sign up your whole clinic staff, or multiple clinics?</h3>
-                        <p className="text-gray-600 mb-4 relative z-10 leading-relaxed font-medium max-w-xs mx-auto text-sm">We've got you covered! Contact support@petwise.vet for enterprise plans.</p>
-                        <a href="mailto:support@petwise.vet" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-semibold px-6 py-3 border-none rounded-xl cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[48px] no-underline">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" className="mr-2">
+                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-3 text-center shadow-lg border-2 border-purple-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-purple-300 relative overflow-hidden">
+                        <div className="absolute top-2 right-2 text-lg opacity-10">🎓</div>
+                        <h3 className="text-sm font-bold text-purple-800 mb-2 relative z-10 leading-tight">Are you a veterinary student?</h3>
+                        <p className="text-purple-600 mb-3 relative z-10 leading-relaxed font-medium text-xs">Get free access with your student credentials!</p>
+                        <button
+                            className="inline-flex items-center justify-center bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-purple-700 hover:to-purple-800 hover:-translate-y-0.5 relative z-10 min-h-[36px]"
+                            onClick={() => setShowStudentRedeem(true)}
+                        >
+                            🎓 Student Access
+                        </button>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-3 text-center shadow-lg border border-gray-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
+                        <div className="absolute top-2 right-2 text-lg opacity-10">🏢</div>
+                        <h3 className="text-sm font-bold text-gray-800 mb-2 relative z-10 leading-tight">Looking to sign up your whole clinic staff?</h3>
+                        <p className="text-gray-600 mb-3 relative z-10 leading-relaxed font-medium text-xs">We've got you covered! Contact us for enterprise plans.</p>
+                        <a href="mailto:support@petwise.vet" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[36px] no-underline">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mr-1">
                                 <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z" />
                             </svg>
                             Contact Us!

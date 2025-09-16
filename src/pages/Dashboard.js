@@ -31,6 +31,13 @@ const Dashboard = () => {
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
 
+    // Helper function to check if user is in student mode
+    const isStudentMode = () => {
+        return userData?.plan_label === 'student' &&
+            userData?.subscription_end_date &&
+            new Date(userData.subscription_end_date) > new Date();
+    };
+
     // ================ EVENT HANDLERS ================
     const handleLogout = () => {
         logout({
@@ -64,7 +71,7 @@ const Dashboard = () => {
             try {
                 const { data, error } = await supabase
                     .from('users')
-                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end')
+                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year')
                     .eq('auth0_user_id', user.sub)
                     .single();
 
@@ -120,7 +127,14 @@ const Dashboard = () => {
 
                     setHasAcceptedTerms(data.has_accepted_terms);
                     setSubscriptionStatus(data.subscription_status);
-                    setIsSubscribed(['active', 'past_due'].includes(data.subscription_status));
+
+                    // Check if user has active subscription OR student access
+                    const hasActiveSubscription = ['active', 'past_due'].includes(data.subscription_status);
+                    const isStudentMode = data.plan_label === 'student' &&
+                        data.subscription_end_date &&
+                        new Date(data.subscription_end_date) > new Date();
+
+                    setIsSubscribed(hasActiveSubscription || isStudentMode);
                     setUserData(data);
 
                     if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
@@ -277,8 +291,20 @@ const Dashboard = () => {
                         </span>
                     </Link>
                 </div>
-                {userData?.dvm_name && (
-                    <div className="dvm-section">Dr. {userData.dvm_name}</div>
+                {isStudentMode() ? (
+                    <div className="dvm-section student-mode">
+                        <div className="student-banner">🎓 PetWise Student</div>
+                        <div className="student-info">
+                            <div className="student-name">{userData?.nickname || 'Student'}</div>
+                            <div className="student-expiry">
+                                Access until {new Date(userData.subscription_end_date).toLocaleDateString()}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    userData?.dvm_name && (
+                        <div className="dvm-section">Dr. {userData.dvm_name}</div>
+                    )
                 )}
                 <button className="sidebar-toggle" onClick={toggleSidebar} aria-label="Toggle Sidebar">
                     {isSidebarCollapsed ? '›' : '‹'}
