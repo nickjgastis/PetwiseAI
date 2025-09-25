@@ -572,6 +572,7 @@ const ReportForm = () => {
         const savedFields = localStorage.getItem('enabledFields');
         return savedFields ? JSON.parse(savedFields) : {
             patientInformation: true,
+            doctor: true,
             examDate: true,
             presentingComplaint: true,
             history: true,
@@ -838,7 +839,7 @@ const ReportForm = () => {
                 doctor: userData?.dvm_name || '',
                 presentingComplaint, history,
                 physicalExamFindings, diagnosticTests, assessment, diagnosis,
-                differentialDiagnosis, treatment, clientCommunications, planFollowUp,
+                differentialDiagnosis, treatment, monitoring, clientCommunications, planFollowUp,
                 naturopathicMedicine, patientVisitSummary, notes
             };
 
@@ -1683,12 +1684,19 @@ const ReportForm = () => {
 
                     <div className="form-field-container">
                         <label className="form-label">Doctor:</label>
-                        <input
-                            type="text"
-                            className="form-input doctor-input"
-                            value={`Dr. ${userData?.dvm_name || ''}`}
-                            disabled
-                        />
+                        <div className="input-toggle-wrapper">
+                            <input
+                                type="text"
+                                className={`form-input doctor-input ${!enabledFields.doctor ? 'disabled' : ''}`}
+                                value={`Dr. ${userData?.dvm_name || ''}`}
+                                disabled
+                            />
+                            <ToggleSwitch
+                                fieldName="doctor"
+                                enabled={enabledFields.doctor}
+                                onChange={() => handleToggleField('doctor')}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-field-container">

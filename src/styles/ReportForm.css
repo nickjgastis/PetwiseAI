@@ -1381,9 +1381,6 @@ input:checked+.slider:before {
     transition: all 0.3s ease;
 }
 
-.soap-copy-button.copied .copy-icon {
-    /* Removed bounce animation */
-}
 
 .copy-text {
     transition: all 0.3s ease;
@@ -1638,6 +1635,12 @@ input:checked+.slider:before {
 
 .soap-plan .soap-editable-section [data-slate-node="element"][data-slate-type="heading"] {
     color: #991b1b;
+}
+
+/* Fix alignment for Include Patient Information toggle - multiple approaches */
+.form-field-container .field-header .toggle-switch {
+    margin-left: -50px !important;
+    transform: translateX(-10px) !important;
 }
 
 /* Text selection in editable SOAP sections */
