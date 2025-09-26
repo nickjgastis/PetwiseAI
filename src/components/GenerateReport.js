@@ -47,10 +47,16 @@ const GenerateReport = async (inputs, enabledFields) => {
       const prompt = `
 You are a highly experienced veterinarian. CRITICAL INSTRUCTION: If a user provides input for any field, use ONLY that input and expand it professionally. DO NOT generate additional content beyond what the user provided. If a field is empty, then generate appropriate content. If a field has user input, respect it completely and only expand with professional details.
 
-Based on the following input details, create a comprehensive veterinary prognosis report that adheres to the exact format and structure provided below. IMPORTANT: Follow all formatting rules precisely.
+Based on the following input details, create a comprehensive veterinary medical record that adheres to the exact format and structure provided below. IMPORTANT: Follow all formatting rules precisely.
+
+CRITICAL AUDIENCE DISTINCTION:
+- ALL sections from Patient Information through Follow-Up are MEDICAL RECORDS for veterinary staff - use medical terminology, past tense, and clinical language
+- ONLY Patient Visit Summary and Notes sections are CLIENT-FACING - use simple, caring language for pet owners
+- Do NOT use client-friendly language in the medical record sections
 
 FORMATTING RULES:
 CRITICAL FORMATTING RULES (MUST FOLLOW EXACTLY):
+0. MOST IMPORTANT: Within each section, each line should end with two spaces for line breaks, but there should be NO blank lines between content lines. Lines should appear on separate lines but be consecutive without extra spacing. Only add blank lines between major sections, never within a section's content.
 1. ALL section headers must be wrapped in ** including the colon, exactly like this:
 **Veterinary Medical Record:** 
    **Patient Information:**
@@ -78,6 +84,7 @@ CRITICAL FORMATTING RULES (MUST FOLLOW EXACTLY):
 8. Use two newlines between major sections
 9. For lists (like in Treatment), each item should be on its own line
 10. Maintain exact spacing and formatting as shown in the template
+11. CRITICAL: Within each section, lines should be consecutive with NO blank lines between them unless specifically breaking up subsections that need separation. Do not add extra line spacing within a section's content.
 
 INCLUDE ONLY THE FOLLOWING SECTIONS:
 ${getEnabledContent('patientInformation', enabledFields.patientInformation) ? '**Patient Information:**' : ''}
@@ -99,9 +106,14 @@ ${getEnabledContent('notes', enabledFields.notes) ? '**Notes:**' : ''}
 EXAMPLE FORMAT:
 **Patient Information:**  
 Patient: John Doe  
+Species: Canine  
+Breed: Golden Retriever  
 
 **Staff:**  
 Doctor: Dr. Smith  
+Exam Date: January 15, 2024  
+
+CRITICAL SPACING RULE: Notice in the example above that within each section (Patient Information, Staff), each line ends with two spaces and appears on its own line, but there are NO blank lines between the content lines within each section. Lines are consecutive without extra spacing. Only blank lines appear between different sections. This same pattern MUST be followed throughout the entire report.
 
 Where placeholders like "Provide here" are used, do not generate or fill in data. Use input data as provided for medical content. For missing or incomplete sections, use best practices and standard veterinary protocols to fill in gaps with relevant details. If evidence for specific sections such as Differential Diagnoses, Treatment, Assessment, Drug Interactions, or Naturopathic Treatment is not explicitly provided, infer based on the diagnosis and other input details.
  
@@ -301,14 +313,14 @@ Expand with:
   
 ${getEnabledContent('clientCommunications', inputs.clientCommunications) !== null ? `
 **Client Communications:**  
-Generate the client communications explained based on the treatment plan and diagnosis in past tense. Include the prognosis. Don't say "the veterinarian said" or "the veterinarian recommended". Each sentence should be on its own line.
+Generate medical record documentation of what was communicated to the client based on the treatment plan and diagnosis. Write in past tense using clinical terminology for the medical record. Include the prognosis discussed. Don't say "the veterinarian said" or "the veterinarian recommended". Each sentence should be on its own line with NO blank lines between sentences - keep all sentences consecutive.
 
 ${hasUserInput(getEnabledContent('clientCommunications', inputs.clientCommunications))
                         ? `
-Additionally, expand and integrate the following user input into professional client communication statements:
+Additionally, expand and integrate the following user input into professional medical record documentation:
 User Input: "${getEnabledContent('clientCommunications', inputs.clientCommunications)}"
 
-Convert this input into complete professional sentences in past tense about what was discussed with the client. For example, if user enters "e collar", expand it to "Discussed the importance of using an e-collar to prevent self-trauma during healing" and add it seamlessly to the communications above.`
+Convert this input into complete professional medical record sentences in past tense documenting what was discussed with the client. For example, if user enters "e collar", expand it to "Discussed the importance of using an e-collar to prevent self-trauma during healing" and add it seamlessly to the communications above. CRITICAL: Keep all sentences consecutive with NO blank lines between them.`
                         : ''}` : ''}
   
 ${getEnabledContent('planFollowUp', inputs.planFollowUp) !== null ? `
@@ -330,7 +342,7 @@ Expand with:
 ${getEnabledContent('patientVisitSummary', inputs.patientVisitSummary) !== null ? `
 **Patient Visit Summary:**  
 ${hasUserInput(getEnabledContent('patientVisitSummary', inputs.patientVisitSummary))
-                        ? `Expand the following user summary input into a complete client-friendly letter about ${inputs.patientName || '[Pet Name]'}'s visit. Use simple, non-medical language that pet owners can easily understand.
+                        ? `CRITICAL: This section is CLIENT-FACING. Expand the following user summary input into a complete client-friendly letter about ${inputs.patientName || '[Pet Name]'}'s visit. Use simple, non-medical language that pet owners can easily understand.
 
 User Summary Input: "${getEnabledContent('patientVisitSummary', inputs.patientVisitSummary)}"
 
@@ -345,7 +357,7 @@ Write in a warm, caring tone and include:
 - Do NOT start with "Dear Client" or similar greeting
 - Use proper line spacing with two spaces at end of lines
 - End with a professional sign-off including Dr. ${inputs.doctor?.replace(/^Dr\.\s*/, '') || '[Doctor name]'}'s name`
-                        : `Generate a warm, client-friendly letter about ${inputs.patientName ? `${inputs.patientName}'s` : 'your pet\'s'} visit today. Write in simple, caring language that explains:
+                        : `CRITICAL: This section is CLIENT-FACING. Generate a warm, client-friendly letter about ${inputs.patientName ? `${inputs.patientName}'s` : 'your pet\'s'} visit today. Write in simple, caring language that explains:
 
 - What condition ${inputs.patientName ? `${inputs.patientName}` : 'your pet'} has (in everyday terms, not medical jargon)
 - What treatment we're providing and why it will help
@@ -361,7 +373,7 @@ Write in a warm, caring tone and include:
 ${getEnabledContent('notes', inputs.notes) !== null ? `
 ${hasUserInput(getEnabledContent('notes', inputs.notes))
                         ? `**Notes:**  
-Create a concise client handout based on the following question or topic:
+CRITICAL: This section is CLIENT-FACING. Create a concise client handout based on the following question or topic:
 
 Question/Topic: "${getEnabledContent('notes', inputs.notes)}"
 
@@ -370,6 +382,7 @@ Generate a brief, informative client handout that answers this question or provi
   
 FINAL NOTES DO NOT INCLUDE IN REPORT::
 Never use - in front of a sentence.
+CRITICAL SPACING RULE: Each content line should end with two spaces and appear on its own line, but ABSOLUTELY NO blank lines between content lines within sections. Lines should be consecutive without extra spacing. Only use blank lines to separate major sections from each other. This is the most important formatting rule - violating this creates unprofessional reports.
                         `;
 
 
