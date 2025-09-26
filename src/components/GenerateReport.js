@@ -373,11 +373,20 @@ Write in a warm, caring tone and include:
 ${getEnabledContent('notes', inputs.notes) !== null ? `
 ${hasUserInput(getEnabledContent('notes', inputs.notes))
                         ? `**Notes:**  
-CRITICAL: This section is CLIENT-FACING. Create a concise client handout based on the following question or topic:
+CRITICAL: This section is CLIENT-FACING. Based on the following instruction/topic, create appropriate client-facing content:
 
-Question/Topic: "${getEnabledContent('notes', inputs.notes)}"
+Instruction/Topic: "${getEnabledContent('notes', inputs.notes)}"
 
-Generate a brief, informative client handout that answers this question or provides information on this topic. Write in simple, client-friendly language that pet owners can understand. Format as educational content without dashes or bullet points. If there are multiple topics or questions, separate each topic with a single blank line for better readability. For example, if the question is "hookworm prevention", provide a concise handout about preventing hookworms in pets.`
+Instructions for content creation:
+- If the instruction mentions a specific item/product (like "paw socks", "E-collar", "special diet"), explain what it is, why it's needed for ${inputs.patientName || 'their pet'}, and how to use it properly
+- If the instruction asks for a "client handout" or "information sheet" on a topic, create a comprehensive educational handout directed to the client
+- If the instruction mentions a condition or treatment, provide client-friendly explanation and care instructions
+- Use simple, non-medical language that pet owners can easily understand
+- Write in a warm, professional tone directly addressing the pet owner
+- Include practical tips and specific guidance relevant to ${inputs.patientName || 'their pet'}
+- Format as educational content without dashes or bullet points
+- Focus on being helpful and informative
+- If there are multiple topics, separate each with a single blank line for better readability`
                         : ''}` : ''}
   
 FINAL NOTES DO NOT INCLUDE IN REPORT::
