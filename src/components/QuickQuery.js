@@ -981,13 +981,13 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     return (
         <div className="min-h-screen bg-white flex flex-col">
             <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white">
-                <h2 className="text-3xl font-bold text-blue-400">PetQuery</h2>
+                <h2 className="text-3xl font-bold text-primary-500">PetQuery</h2>
             </div>
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto px-4 py-6 pb-32 space-y-6">
                     {messages.length === 0 && (
                         <>
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
+                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
                                 <strong className="block mb-2 text-sm font-semibold text-gray-700">Disclaimer:</strong>
                                 <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only.
                                     These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
@@ -997,10 +997,10 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 {randomSuggestions.map((suggestion, index) => (
                                     <div
                                         key={index}
-                                        className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-200 hover:-translate-y-1"
+                                        className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 hover:-translate-y-1"
                                         onClick={() => handleSuggestionClick(suggestion.question)}
                                     >
-                                        <h4 className="text-blue-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
+                                        <h4 className="text-primary-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
                                         <p className="text-gray-700 text-sm leading-relaxed">{suggestion.question}</p>
                                     </div>
                                 ))}
@@ -1031,8 +1031,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 : ''
                                 }`}>
                                 <div className={`max-w-4xl w-full ${msg.role === 'user'
-                                    ? 'bg-blue-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
-                                    : 'bg-blue-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-blue-400 message-content'
+                                    ? 'bg-primary-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
+                                    : 'bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400 message-content'
                                     }`}>
                                     {msg.role === 'assistant' ? (
                                         <div dangerouslySetInnerHTML={{ __html: formatMessage(getContentWithoutSources(msg.content, userMessage)) }} />
@@ -1043,8 +1043,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         <div className="flex items-center gap-2 mt-3">
                                             <button
                                                 className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${copiedIndex === index
-                                                    ? 'bg-blue-500 text-white border-blue-500'
-                                                    : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-blue-600 hover:-translate-y-0.5'
+                                                    ? 'bg-primary-500 text-white border-primary-500'
+                                                    : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
                                                     }`}
                                                 onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
                                                 aria-label="Copy message"
@@ -1061,7 +1061,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 )}
                                             </button>
                                             <button
-                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-blue-600 transition-all duration-200 hover:-translate-y-0.5"
+                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 hover:-translate-y-0.5"
                                                 onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
                                                 aria-label="Print message"
                                             >
@@ -1072,8 +1072,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                             {extractSources(msg.content, userMessage) && (
                                                 <button
                                                     className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${showSources[index]
-                                                        ? 'bg-blue-100 text-blue-700 border-blue-300'
-                                                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-blue-600 hover:-translate-y-0.5'
+                                                        ? 'bg-primary-100 text-primary-700 border-primary-300'
+                                                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
                                                         }`}
                                                     onClick={() => toggleSources(index)}
                                                     aria-label="Show sources"
@@ -1114,7 +1114,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 <button
                                     onClick={() => setIsLongAnswerMode(false)}
                                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${!isLongAnswerMode
-                                        ? 'bg-blue-400 text-white shadow-sm'
+                                        ? 'bg-primary-400 text-white shadow-sm'
                                         : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
@@ -1123,7 +1123,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 <button
                                     onClick={() => setIsLongAnswerMode(true)}
                                     className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isLongAnswerMode
-                                        ? 'bg-blue-400 text-white shadow-sm'
+                                        ? 'bg-primary-400 text-white shadow-sm'
                                         : 'text-gray-600 hover:text-gray-900'
                                         }`}
                                 >
@@ -1160,14 +1160,14 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         }
                                     }}
                                     placeholder="Ask me anything about veterinary medicine..."
-                                    className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-blue-400 focus:ring-4 focus:ring-blue-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                                    className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
                                     disabled={isLoading}
                                     rows="1"
                                 />
                                 {inputMessage && (
                                     <button
                                         type="button"
-                                        className="absolute top-3 right-3 p-1 text-gray-400 hover:text-blue-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
+                                        className="absolute top-3 right-3 p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
                                         onClick={() => {
                                             const textarea = document.querySelector('textarea');
                                             textarea.style.height = '52px';
@@ -1182,7 +1182,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             </div>
                             <button
                                 type="submit"
-                                className="w-12 h-12 bg-blue-500 text-white rounded-full hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center flex-shrink-0 group"
+                                className="w-12 h-12 bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center flex-shrink-0 group"
                                 disabled={isLoading || !inputMessage.trim()}
                                 aria-label="Send message"
                             >

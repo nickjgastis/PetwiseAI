@@ -148,7 +148,7 @@ const Help = () => {
         if (item.isTrainingSection) {
             return (
                 <div key={index} className="p-5 border-t border-gray-200">
-                    <h3 className="text-blue-600 mb-3 text-lg font-semibold">{item.question}</h3>
+                    <h3 className="text-primary-600 mb-3 text-lg font-semibold">{item.question}</h3>
                     <div className="flex flex-col gap-4 mt-4">
                         {item.trainingSections.map((training) => (
                             <div
@@ -176,7 +176,7 @@ const Help = () => {
         }
         return (
             <div key={index} className="p-5 border-t border-gray-200">
-                <h3 className="text-blue-600 mb-3 text-lg font-semibold">{item.question}</h3>
+                <h3 className="text-primary-600 mb-3 text-lg font-semibold">{item.question}</h3>
                 <p className="text-gray-600 leading-relaxed m-0">{formatText(item.answer)}</p>
             </div>
         );
@@ -206,8 +206,8 @@ const Help = () => {
 
                     <section className="bg-white rounded-lg shadow-md p-5 text-center">
                         <h2 className="text-xl font-semibold text-gray-800 mb-4">Contact Support</h2>
-                        <p className="text-gray-600 mb-2">Need additional help? Email us at <a href="mailto:support@petwise.vet" className="text-blue-600 hover:underline no-underline">support@petwise.vet</a></p>
-                        <p className="text-gray-600">View our <Link to="/privacy" className="text-blue-600 hover:underline no-underline">Privacy Policy</Link> and <Link to="/terms" className="text-blue-600 hover:underline no-underline">Terms of Service</Link></p>
+                        <p className="text-gray-600 mb-2">Need additional help? Email us at <a href="mailto:support@petwise.vet" className="text-primary-600 hover:underline no-underline">support@petwise.vet</a></p>
+                        <p className="text-gray-600">View our <Link to="/privacy" className="text-primary-600 hover:underline no-underline">Privacy Policy</Link> and <Link to="/terms" className="text-primary-600 hover:underline no-underline">Terms of Service</Link></p>
                     </section>
                 </div>
             </div>

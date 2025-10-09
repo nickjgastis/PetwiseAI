@@ -1,13 +1,16 @@
 /* General Styles */
 :root {
-    --primary-color: #3f8ddb;
-    --primary-hover: #2980b9;
-    --accent-color: #66b4e8;
-    --accent-hover: #3d7e9c;
+    --primary-color: #3369bd;
+    --primary-hover: #2c5aa3;
+    --accent-color: #5cccf0;
+    --accent-hover: #4bb8d4;
     --danger-color: #fc8181;
     --danger-hover: #f56565;
     --text-color: #2c3e50;
-    --text-secondary: #64748b;
+    --text-secondary: #6b7378;
+    --light-color: #edf2f2;
+    --warning-color: #fbaeb3;
+    --success-color: #8cc740;
 }
 
 /* Report Form Section Titles */
@@ -54,7 +57,7 @@ body {
     height: calc(100vh - 60px);
     margin: 30px auto;
     padding: 0 15px;
-    animation: fadeIn 0.5s ease-in;
+    /* animation: fadeIn 0.5s ease-in; */
     overflow-x: hidden;
 }
 

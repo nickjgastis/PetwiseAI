@@ -121,7 +121,7 @@ html {
 
 .video-header h2 {
     font-size: 2.5rem;
-    color: #3468bd;
+    color: #3369bd;
     margin-bottom: 1rem;
     font-family: 'Inter', 'Helvetica', sans-serif;
     font-weight: 700;
@@ -273,7 +273,7 @@ html {
 .pricing-card .pricing-header h3 {
     font-size: 1.3rem;
     font-weight: 700;
-    color: #1565C0;
+    color: #3369bd;
     margin-bottom: 12px;
     letter-spacing: -0.025em;
 }
@@ -339,9 +339,9 @@ html {
 
 .pricing-card .pricing-features li::before {
     content: "✓";
-    color: #1565C0;
+    color: #3369bd;
     font-weight: bold;
-    background: rgba(21, 101, 192, 0.1);
+    background: rgba(51, 105, 189, 0.1);
     min-width: 18px;
     width: 18px;
     height: 18px;
@@ -389,8 +389,8 @@ html {
 }
 
 .subscribe-button {
-    background: linear-gradient(135deg, #1565c0, #1976d2);
-    box-shadow: 0 4px 16px rgba(21, 101, 192, 0.25);
+    background: linear-gradient(135deg, #3369bd, #2c5aa3);
+    box-shadow: 0 4px 16px rgba(51, 105, 189, 0.25);
 }
 
 .trial-button:hover:not(:disabled),
@@ -404,8 +404,8 @@ html {
 }
 
 .subscribe-button:hover:not(:disabled) {
-    box-shadow: 0 8px 24px rgba(21, 101, 192, 0.35);
-    background: linear-gradient(135deg, #1976d2, #1e88e5);
+    box-shadow: 0 8px 24px rgba(51, 105, 189, 0.35);
+    background: linear-gradient(135deg, #2c5aa3, #254b89);
 }
 
 .trial-button:disabled,
@@ -474,7 +474,7 @@ html {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1565c0, #1976d2);
+    background: linear-gradient(135deg, #3369bd, #2c5aa3);
     color: white;
     font-size: 0.95rem;
     font-weight: 600;
@@ -483,7 +483,7 @@ html {
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 16px rgba(21, 101, 192, 0.2);
+    box-shadow: 0 4px 16px rgba(51, 105, 189, 0.2);
     text-decoration: none;
     position: relative;
     z-index: 1;
@@ -493,8 +493,8 @@ html {
 
 .enterprise-contact-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(21, 101, 192, 0.3);
-    background: linear-gradient(135deg, #1976d2, #1e88e5);
+    box-shadow: 0 8px 24px rgba(51, 105, 189, 0.3);
+    background: linear-gradient(135deg, #2c5aa3, #254b89);
 }
 
 .enterprise-contact-btn svg {
@@ -1107,7 +1107,7 @@ html {
     position: relative;
     height: calc(100vh - var(--navbar-height));
     width: 100%;
-    background: linear-gradient(135deg, #3468bd 0%, #5ccdf0 50%, #2563eb 100%);
+    background: linear-gradient(135deg, #3369bd 0%, #5cccf0 50%, #2c5aa3 100%);
     display: flex;
     align-items: center;
     overflow: hidden;
@@ -1297,7 +1297,7 @@ html {
 
 .hero-cta-button {
     background: rgba(255, 255, 255, 0.95);
-    color: #3468bd;
+    color: #3369bd;
     font-family: 'Inter', 'Helvetica', sans-serif;
     font-size: 1.1rem;
     font-weight: 700;
@@ -1462,7 +1462,7 @@ html {
 /* Left half - Blue background with content */
 .protocol-content-half {
     flex: 1;
-    background: linear-gradient(135deg, #3468bd, #5ccdf0);
+    background: linear-gradient(135deg, #3369bd, #5cccf0);
     padding: 3rem;
     display: flex;
     flex-direction: column;
@@ -1495,7 +1495,7 @@ html {
 }
 
 .petnote-protocol-header h2 .brand-name {
-    color: #3468bd;
+    color: #3369bd;
     background: rgba(255, 255, 255, 0.9);
     padding: 0.1em 0.3em;
     border-radius: 8px;
@@ -1608,7 +1608,7 @@ html {
     max-height: 80vh;
     object-fit: contain;
     border-radius: 20px;
-    border: 1px solid #1565c0;
+    border: 1px solid #3369bd;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25), 0 8px 25px rgba(0, 0, 0, 0.15);
     transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     overflow: hidden;
@@ -1630,7 +1630,7 @@ html {
     left: 10%;
     width: 120px;
     height: 120px;
-    background: #1565c0;
+    background: #3369bd;
     border-radius: 50%;
     filter: blur(40px);
     animation: protocolBlob1 8s ease-in-out infinite;
@@ -1645,7 +1645,7 @@ html {
     right: 15%;
     width: 100px;
     height: 100px;
-    background: #5ccdf0;
+    background: #5cccf0;
     border-radius: 50%;
     filter: blur(35px);
     animation: protocolBlob2 9s ease-in-out infinite reverse;
@@ -1672,7 +1672,7 @@ html {
     left: 15%;
     width: 120px;
     height: 120px;
-    background: #1565c0;
+    background: #3369bd;
     animation: protocolBlob1 8s ease-in-out infinite;
     opacity: 0.6;
 }

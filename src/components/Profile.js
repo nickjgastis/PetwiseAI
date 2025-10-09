@@ -225,7 +225,7 @@ const Profile = ({ isMobileSignup = false }) => {
         return (
             <>
                 {planType}
-                <span className="text-blue-600 text-sm ml-1 font-medium">{planInterval}</span>
+                <span className="text-primary-600 text-sm ml-1 font-medium">{planInterval}</span>
             </>
         );
     };
@@ -263,9 +263,9 @@ const Profile = ({ isMobileSignup = false }) => {
                 <div className={`${isMobileSignup ? 'w-full' : 'max-w-6xl mx-auto px-6 py-6'}`}>
                     {isMobileSignup && (
                         <>
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 text-center">
+                            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-4 text-center">
                                 <h3 className="text-2xl mb-2">📱 ➡️ 💻</h3>
-                                <p className="text-blue-100 font-medium">For full access to all PetWise features, please switch to your desktop computer.</p>
+                                <p className="text-primary-100 font-medium">For full access to all PetWise features, please switch to your desktop computer.</p>
                             </div>
                             {!isSubscribed && (
                                 <div className="bg-white p-4 text-center border-b border-gray-200">
@@ -308,7 +308,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <div className="py-12 bg-white">
                                         <div className="max-w-4xl mx-auto px-6">
                                             <div className="text-center mb-8">
-                                                <h2 className="text-3xl font-bold text-blue-400 mb-3">Get Started with PetWise</h2>
+                                                <h2 className="text-3xl font-bold text-primary-400 mb-3">Get Started with PetWise</h2>
                                                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
                                                     Choose the perfect plan for your veterinary practice. Start with a free trial or select a subscription that fits your needs.
                                                 </p>
@@ -367,7 +367,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <img
                                                 src={getOptimizedImageUrl(user?.picture)}
                                                 alt={userData?.dvm_name || user?.name || 'User'}
-                                                className="w-20 h-20 rounded-full object-cover border-3 border-blue-100 shadow-lg hover:scale-105 transition-all duration-300 bg-gray-100"
+                                                className="w-20 h-20 rounded-full object-cover border-3 border-primary-100 shadow-lg hover:scale-105 transition-all duration-300 bg-gray-100"
                                                 crossOrigin="anonymous"
                                                 referrerPolicy="no-referrer"
                                                 onError={(e) => {
@@ -382,7 +382,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <div className="flex justify-center gap-4 mb-6">
                                         {!isStudentMode() && (
                                             <button
-                                                className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                                className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
                                                 onClick={handleBillingClick}
                                             >
                                                 Manage Subscription
@@ -398,7 +398,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                         )}
                                         {userData?.stripe_customer_id && (
                                             <button
-                                                className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                                className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
                                                 onClick={handleBillingPortal}
                                             >
                                                 Billing Management
@@ -413,14 +413,14 @@ const Profile = ({ isMobileSignup = false }) => {
                                             </button>
                                         )}
                                         <button
-                                            className="px-7 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
+                                            className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
                                             onClick={() => setShowManageAccount(true)}
                                         >
                                             Manage Account
                                         </button>
                                     </div>
                                     <div className="bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm">
-                                        <h3 className="text-blue-600 text-xl font-semibold border-b-2 border-blue-100 pb-2 mb-4">Profile Information</h3>
+                                        <h3 className="text-primary-600 text-xl font-semibold border-b-2 border-primary-100 pb-2 mb-4">Profile Information</h3>
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
                                                 <span className="font-semibold text-gray-700">DVM Name:</span>
@@ -506,20 +506,20 @@ const Profile = ({ isMobileSignup = false }) => {
 
                                     <div className="bg-white p-4 border-t border-b border-gray-200 mb-5">
                                         <h3 className="text-gray-800 text-lg font-semibold mb-3 text-center">Your Subscription</h3>
-                                        <div className="bg-blue-50 p-3 rounded-lg border-l-4 border-blue-600 mb-4">
+                                        <div className="bg-primary-50 p-3 rounded-lg border-l-4 border-primary-600 mb-4">
                                             <p className="text-sm text-gray-700 font-medium mb-1"><strong>Status:</strong> {getSubscriptionStatus()}</p>
                                             <p className="text-sm text-gray-700 font-medium"><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
                                         </div>
                                         <div className="flex flex-col gap-2">
                                             <button
-                                                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                                className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
                                                 onClick={handleBillingClick}
                                             >
                                                 Manage Subscription
                                             </button>
                                             {userData?.stripe_customer_id && (
                                                 <button
-                                                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                                    className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
                                                     onClick={handleBillingPortal}
                                                 >
                                                     Billing Management
@@ -537,7 +537,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <p className="text-gray-600 text-sm text-center mb-4">View and manage your account settings, or delete your account.</p>
                                     <div className="flex flex-col gap-2">
                                         <button
-                                            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
+                                            className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
                                             onClick={() => setShowManageAccount(true)}
                                         >
                                             Manage Account

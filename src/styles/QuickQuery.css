@@ -1,12 +1,12 @@
 :root {
-    --primary-color: #3f8ddb;
-    --primary-hover: #2980b9;
-    --accent-color: #66b4e8;
-    --accent-hover: #3d7e9c;
+    --primary-color: #3369bd;
+    --primary-hover: #2c5aa3;
+    --accent-color: #5cccf0;
+    --accent-hover: #4bb8d4;
     --danger-color: #fc8181;
     --danger-hover: #f56565;
     --text-color: #2c3e50;
-    --text-secondary: #64748b;
+    --text-secondary: #6b7378;
     --bg-light: #f4f7fa;
     --bg-white: #ffffff;
     --border: #e2e8f0;
@@ -29,7 +29,7 @@
     min-height: calc(100dvh - 32px);
     display: flex;
     flex-direction: column;
-    background: linear-gradient(135deg, #2c5aa0 0%, #3f8ddb 50%, #5ba0f2 100%);
+    background: linear-gradient(135deg, #3369bd 0%, #5cccf0 50%, #2c5aa3 100%);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-xl);
     position: relative;

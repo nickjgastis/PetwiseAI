@@ -221,8 +221,8 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
         <div className={`flex justify-center gap-1 ${embedded ? 'mb-4' : 'mb-6'} bg-gray-100 p-1 rounded-lg w-fit mx-auto`}>
             <button
                 className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${currency === 'usd'
-                    ? 'bg-white text-blue-600 shadow-sm font-semibold'
-                    : 'text-gray-600 hover:text-blue-600'
+                    ? 'bg-white text-primary-600 shadow-sm font-semibold'
+                    : 'text-gray-600 hover:text-primary-600'
                     }`}
                 onClick={() => setCurrency('usd')}
             >
@@ -230,8 +230,8 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
             </button>
             <button
                 className={`px-4 py-2 rounded-md font-medium text-sm transition-all duration-200 ${currency === 'cad'
-                    ? 'bg-white text-blue-600 shadow-sm font-semibold'
-                    : 'text-gray-600 hover:text-blue-600'
+                    ? 'bg-white text-primary-600 shadow-sm font-semibold'
+                    : 'text-gray-600 hover:text-primary-600'
                     }`}
                 onClick={() => setCurrency('cad')}
             >
@@ -254,7 +254,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
             <div className="w-full">
                 {!embedded && (
                     <div className="text-center mb-8">
-                        <h3 className="text-3xl font-bold text-blue-400 mb-2">{subscriptionStatus === 'active' ? 'Manage Subscription' : 'Choose Your Plan'}</h3>
+                        <h3 className="text-3xl font-bold text-primary-400 mb-2">{subscriptionStatus === 'active' ? 'Manage Subscription' : 'Choose Your Plan'}</h3>
                         <p className="text-gray-600 text-lg font-medium leading-relaxed">
                             {subscriptionStatus === 'active' ? (
                                 <>
@@ -279,16 +279,16 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                 <div className={`flex flex-col md:flex-row gap-4 md:gap-5 justify-center items-center ${embedded ? 'mb-6' : 'mb-8'} px-4 md:px-0`}>
                     {/* Monthly Plan Card */}
                     <div className={`w-full md:flex-1 min-w-[280px] max-w-[400px] md:max-w-[300px] min-h-[340px] md:min-h-[380px] p-4 md:p-5 flex flex-col bg-white rounded-xl md:rounded-2xl shadow-lg border transition-all duration-400 ${subscriptionInterval === 'monthly'
-                        ? 'border-blue-600 shadow-blue-100'
-                        : 'border-gray-200 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200'
+                        ? 'border-primary-600 shadow-primary-100'
+                        : 'border-gray-200 hover:-translate-y-1 hover:shadow-xl hover:border-primary-200'
                         } relative`}>
                         {subscriptionInterval === 'monthly' && (
-                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary-600 to-primary-700 text-white px-3 py-1 rounded-full text-xs font-bold">
                                 CURRENT PLAN
                             </div>
                         )}
                         <div className="min-h-[120px] pb-4 border-b border-gray-200 text-center flex flex-col justify-start mb-0">
-                            <h3 className="text-xl font-bold text-blue-600 mb-3">Monthly</h3>
+                            <h3 className="text-xl font-bold text-primary-600 mb-3">Monthly</h3>
                             <p className="text-3xl font-bold text-gray-800 flex items-baseline justify-center gap-1">
                                 {PRICES[currency].symbol}{PRICES[currency].monthly}
                                 <span className="text-sm text-gray-500 font-medium"> {PRICES[currency].code}/Vet/Month</span>
@@ -296,26 +296,26 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         </div>
                         <ul className="my-4 flex-1 flex flex-col">
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Unlimited SOAP reports
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Unlimited Quick Query
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Saved reports
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 px-1 font-medium pb-4">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Priority support
                             </li>
                         </ul>
                         <div className="mt-auto">
                             <button
                                 onClick={() => handleCheckout('monthly')}
-                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-primary-600 to-primary-700 shadow-lg hover:from-primary-700 hover:to-primary-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                                 disabled={subscriptionInterval === 'monthly' && !user.cancel_at_period_end}
                             >
                                 {subscriptionInterval === 'monthly' ? 'Current Plan' : 'Sign Up Now'}
@@ -337,15 +337,15 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         </div>
                         <ul className="my-4 flex-1 flex flex-col">
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-yellow-200 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 No credit card required
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-yellow-200 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 50 records per day
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 px-1 font-medium pb-4">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Quick Query
                             </li>
                         </ul>
@@ -362,16 +362,16 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
 
                     {/* Yearly Plan Card */}
                     <div className={`w-full md:flex-1 min-w-[280px] max-w-[400px] md:max-w-[300px] min-h-[340px] md:min-h-[380px] p-4 md:p-5 flex flex-col bg-white rounded-xl md:rounded-2xl shadow-lg border transition-all duration-400 ${subscriptionInterval === 'yearly'
-                        ? 'border-blue-600 shadow-blue-100'
-                        : 'border-gray-200 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200'
+                        ? 'border-primary-600 shadow-primary-100'
+                        : 'border-gray-200 hover:-translate-y-1 hover:shadow-xl hover:border-primary-200'
                         } relative`}>
                         {subscriptionInterval === 'yearly' && (
-                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-3 py-1 rounded-full text-xs font-bold">
+                            <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary-600 to-primary-700 text-white px-3 py-1 rounded-full text-xs font-bold">
                                 CURRENT PLAN
                             </div>
                         )}
                         <div className="min-h-[120px] pb-4 border-b border-gray-200 text-center flex flex-col justify-start mb-0">
-                            <h3 className="text-xl font-bold text-blue-600 mb-3">Yearly</h3>
+                            <h3 className="text-xl font-bold text-primary-600 mb-3">Yearly</h3>
                             <p className="text-3xl font-bold text-gray-800 flex items-baseline justify-center gap-1">
                                 {PRICES[currency].symbol}{PRICES[currency].yearly}
                                 <span className="text-sm text-gray-500 font-medium"> {PRICES[currency].code}/Vet/Month</span>
@@ -382,26 +382,26 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         </div>
                         <ul className="my-4 flex-1 flex flex-col">
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Unlimited SOAP reports
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Unlimited Quick Query
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 border-b border-gray-100 px-1 font-medium">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Saved reports
                             </li>
                             <li className="py-2 text-gray-700 text-sm flex items-center gap-2 px-1 font-medium pb-4">
-                                <span className="text-blue-600 font-bold bg-blue-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
+                                <span className="text-primary-600 font-bold bg-primary-50 min-w-[18px] w-[18px] h-[18px] flex items-center justify-center rounded-full text-xs">✓</span>
                                 Priority support
                             </li>
                         </ul>
                         <div className="mt-auto">
                             <button
                                 onClick={() => handleCheckout('yearly')}
-                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
+                                className="w-full py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border-none text-white cursor-pointer tracking-wide bg-gradient-to-r from-primary-600 to-primary-700 shadow-lg hover:from-primary-700 hover:to-primary-800 hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
                                 disabled={subscriptionInterval === 'yearly' && !user.cancel_at_period_end}
                             >
                                 {subscriptionInterval === 'yearly' ? 'Current Plan' : 'Sign Up Now'}
@@ -412,12 +412,12 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
 
                 {/* Create a wrapper for the access code, student, and enterprise sections */}
                 <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-6xl mx-auto ${embedded ? 'mb-6' : 'mb-8'} px-4 md:px-0`}>
-                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-3 text-center shadow-lg border border-gray-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-3 text-center shadow-lg border border-gray-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary-200 relative overflow-hidden">
                         <div className="absolute top-2 right-2 text-lg opacity-10">🏥</div>
                         <h3 className="text-sm font-bold text-gray-800 mb-2 relative z-10 leading-tight">Is your clinic a partner?</h3>
                         {!showAccessCodeInput ? (
                             <button
-                                className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[36px]"
+                                className="inline-flex items-center justify-center bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-primary-700 hover:to-primary-800 hover:-translate-y-0.5 relative z-10 min-h-[36px]"
                                 onClick={() => setShowAccessCodeInput(true)}
                             >
                                 Enter Access Code
@@ -429,9 +429,9 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                                     value={accessCode}
                                     onChange={(e) => setAccessCode(e.target.value.toUpperCase())}
                                     placeholder="Enter your access code"
-                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm text-center tracking-wider uppercase transition-all duration-300 bg-white font-semibold text-gray-800 focus:border-blue-600 focus:shadow-lg focus:bg-gray-50 min-h-[36px]"
+                                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg text-sm text-center tracking-wider uppercase transition-all duration-300 bg-white font-semibold text-gray-800 focus:border-primary-600 focus:shadow-lg focus:bg-gray-50 min-h-[36px]"
                                 />
-                                <button type="submit" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 min-h-[36px]">
+                                <button type="submit" className="inline-flex items-center justify-center bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-primary-700 hover:to-primary-800 hover:-translate-y-0.5 min-h-[36px]">
                                     Submit
                                 </button>
                                 {accessCodeError && (
@@ -453,11 +453,11 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                         </button>
                     </div>
 
-                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-3 text-center shadow-lg border border-gray-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-200 relative overflow-hidden">
+                    <div className="bg-gradient-to-br from-white to-gray-50 rounded-xl p-3 text-center shadow-lg border border-gray-200 min-h-[100px] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary-200 relative overflow-hidden">
                         <div className="absolute top-2 right-2 text-lg opacity-10">🏢</div>
                         <h3 className="text-sm font-bold text-gray-800 mb-2 relative z-10 leading-tight">Looking to sign up your whole clinic staff?</h3>
                         <p className="text-gray-600 mb-3 relative z-10 leading-relaxed font-medium text-xs">We've got you covered! Contact us for enterprise plans.</p>
-                        <a href="mailto:support@petwise.vet" className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-blue-700 hover:to-blue-800 hover:-translate-y-0.5 relative z-10 min-h-[36px] no-underline">
+                        <a href="mailto:support@petwise.vet" className="inline-flex items-center justify-center bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold px-4 py-2 border-none rounded-lg cursor-pointer transition-all duration-200 shadow-lg hover:from-primary-700 hover:to-primary-800 hover:-translate-y-0.5 relative z-10 min-h-[36px] no-underline">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16" className="mr-1">
                                 <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2zm13 2.383-4.708 2.825L15 11.105V5.383zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741zM1 11.105l4.708-2.897L1 5.383v5.722z" />
                             </svg>
@@ -468,13 +468,13 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
 
                 {/* Billing Management Section for Active Subscribers */}
                 {subscriptionStatus === 'active' && user.stripe_customer_id && (
-                    <div className="bg-gradient-to-br from-white to-blue-50 border-2 border-blue-200 rounded-xl md:rounded-2xl p-3 md:p-4 mx-auto text-center max-w-md shadow-lg min-h-[120px] md:min-h-[140px] flex flex-col justify-center relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-blue-300">
+                    <div className="bg-gradient-to-br from-white to-primary-50 border-2 border-primary-200 rounded-xl md:rounded-2xl p-3 md:p-4 mx-auto text-center max-w-md shadow-lg min-h-[120px] md:min-h-[140px] flex flex-col justify-center relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-primary-300">
                         <div className="absolute top-3 right-3 text-xl opacity-15">💳</div>
                         <h3 className="text-gray-800 text-lg font-bold mb-3 relative z-10">Billing Management</h3>
                         <p className="text-gray-600 mb-4 relative z-10 leading-relaxed font-medium max-w-xs mx-auto text-sm">Update your payment method, view invoices, and manage billing details.</p>
                         <button
                             onClick={handleBillingPortal}
-                            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white border-none px-6 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 inline-flex items-center gap-2 shadow-lg hover:from-blue-600 hover:to-blue-700 hover:-translate-y-0.5 relative z-10 min-h-[48px]"
+                            className="bg-gradient-to-r from-primary-500 to-primary-600 text-white border-none px-6 py-3 rounded-xl text-sm font-semibold cursor-pointer transition-all duration-200 inline-flex items-center gap-2 shadow-lg hover:from-primary-600 hover:to-primary-700 hover:-translate-y-0.5 relative z-10 min-h-[48px]"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                                 <path d="M4 10a1 1 0 0 1 2 0v1a1 1 0 0 1-2 0v-1zm6-6a1 1 0 0 1 2 0v7a1 1 0 0 1-2 0V4zM2 7a1 1 0 0 1 2 0v4a1 1 0 0 1-2 0V7zm8-5a1 1 0 0 1 2 0v9a1 1 0 0 1-2 0V2zm-2-1a1 1 0 0 1 2 0v10a1 1 0 0 1-2 0V1z" />
@@ -488,7 +488,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                     <div className="flex justify-center items-center mt-8 pt-4 w-full">
                         <button
                             onClick={onBack}
-                            className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-600 cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:border-blue-600 hover:text-blue-600 hover:-translate-y-0.5"
+                            className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300 bg-white text-gray-600 cursor-pointer transition-all duration-200 hover:bg-gray-50 hover:border-primary-600 hover:text-primary-600 hover:-translate-y-0.5"
                         >
                             ← Back
                         </button>
