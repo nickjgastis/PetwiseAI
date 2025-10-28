@@ -38,6 +38,20 @@ const Dashboard = () => {
             new Date(userData.subscription_end_date) > new Date();
     };
 
+    // Helper function to check if user has any active plan (trial, subscription, or student)
+    const hasActivePlan = () => {
+        if (isStudentMode()) return true;
+
+        // Check for active subscription
+        const hasActiveSubscription = ['active', 'past_due'].includes(userData?.subscription_status);
+
+        // Check for trial - only specific trial statuses
+        const hasTrial = userData?.subscription_status === 'trialing' ||
+            userData?.plan_label === 'trial';
+
+        return hasActiveSubscription || hasTrial;
+    };
+
     // ================ EVENT HANDLERS ================
     const handleLogout = () => {
         logout({
@@ -364,9 +378,11 @@ const Dashboard = () => {
                         userData?.dvm_name && (
                             <div className={`mx-2 my-2 p-3 bg-white bg-opacity-10 rounded-lg border border-white border-opacity-20 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-accent-400 rounded-full flex items-center justify-center">
-                                        <span className="text-white text-sm font-bold">Dr.</span>
-                                    </div>
+                                    {hasActivePlan() && (
+                                        <div className="w-8 h-8 bg-accent-400 rounded-full flex items-center justify-center">
+                                            <span className="text-white text-sm font-bold">Dr.</span>
+                                        </div>
+                                    )}
                                     <div className="text-white text-base font-medium">{userData.dvm_name}</div>
                                 </div>
                             </div>
