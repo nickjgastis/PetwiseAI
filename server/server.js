@@ -4,6 +4,10 @@ const Stripe = require('stripe');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
+const FormData = require('form-data');
+const fetch = require('node-fetch');
 const studentRouter = require('./routes/studentRoutes');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -22,6 +26,13 @@ const supabase = createClient(
 // Middleware setup
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
+
+// Multer setup for file uploads (QuickSOAP)
+const upload = multer({ dest: 'uploads/' });
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads', { recursive: true });
+}
 
 // Add these headers to all responses
 app.use((req, res, next) => {
@@ -179,6 +190,292 @@ app.post('/api/quickquery', async (req, res) => {
             return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
         }
         console.error('QuickQuery endpoint error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// ================ QUICKSOAP ENDPOINTS ================
+// Transcription endpoint using OpenAI Whisper
+app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
+    let filePath = null;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No audio file provided' });
+        }
+
+        filePath = req.file.path;
+
+        // Read file as buffer
+        const fileBuffer = fs.readFileSync(filePath);
+        const fileName = req.file.originalname || 'audio.webm';
+        const mimeType = req.file.mimetype || 'audio/webm';
+
+        // Create FormData for OpenAI API using form-data package
+        const formData = new FormData();
+
+        // Append file with proper options
+        formData.append('file', fileBuffer, {
+            filename: fileName,
+            contentType: mimeType,
+            knownLength: fileBuffer.length
+        });
+        formData.append('model', 'whisper-1');
+        formData.append('response_format', 'text');
+        // Add prompt to help clean up transcription - remove conversational filler
+        formData.append('prompt', `This is a veterinary medical dictation. Extract ONLY clinically relevant content.
+
+IGNORE and REMOVE:
+- Greetings and small talk
+- Owner chit-chat or emotional comments
+- Anything unrelated to veterinary medicine
+- Jokes, personal stories, casual conversation
+- Comments from kids or other people in the room
+- Background dialogue, noise, or interruptions
+- Anything that does not describe signalment, symptoms, physical exam, diagnostics, or medical decisions
+
+KEEP and CLEAN:
+- Signalment
+- Presenting complaint
+- History
+- Owner-reported clinical signs
+- All exam findings
+- All diagnostics
+- Diagnoses and differentials
+- Treatment decisions
+- Plans or follow-ups
+
+Rewrite the output as clean clinical dictation with no extra words.`);
+
+        // Get form-data headers
+        const formHeaders = formData.getHeaders();
+
+        // Call OpenAI Whisper API using node-fetch
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                ...formHeaders
+            },
+            body: formData
+        });
+
+        // Clean up temp file
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('OpenAI Whisper API Error:', response.status, errorText);
+            return res.status(response.status === 429 ? 429 : 502).json({
+                error: 'Transcription failed',
+                detail: errorText.slice(0, 500)
+            });
+        }
+
+        const transcription = await response.text();
+        const cleanTranscription = transcription.trim();
+
+        // Generate a brief summary of the transcription
+        let summary = '';
+        try {
+            const summaryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: `Summarize this veterinary dictation in 1-2 short sentences focusing on the main complaint or finding:\n\n"${cleanTranscription}"`
+                        }
+                    ],
+                    max_tokens: 100,
+                    temperature: 0.3
+                })
+            });
+
+            if (summaryResponse.ok) {
+                const summaryData = await summaryResponse.json();
+                summary = summaryData.choices?.[0]?.message?.content?.trim() || '';
+            }
+        } catch (err) {
+            console.error('Summary generation error:', err);
+            // Fallback: use first 100 chars as summary
+            summary = cleanTranscription.length > 100
+                ? cleanTranscription.substring(0, 100) + '...'
+                : cleanTranscription;
+        }
+
+        res.json({
+            text: cleanTranscription,
+            summary: summary || cleanTranscription.substring(0, 100) + (cleanTranscription.length > 100 ? '...' : '')
+        });
+    } catch (err) {
+        // Clean up temp file if it exists
+        if (filePath && fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+        console.error('Transcription endpoint error:', err);
+        console.error('Error details:', err.message, err.stack);
+        res.status(500).json({ error: 'Internal server error during transcription', detail: err.message });
+    }
+});
+
+// SOAP generation endpoint using gpt-4o-mini
+app.post('/api/generate-soap', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Connection', 'keep-alive');
+
+    try {
+        const { input } = req.body;
+
+        if (!input || !input.trim()) {
+            return res.status(400).json({ error: 'Input text is required' });
+        }
+
+        const prompt = `USER INPUT:
+"${input.trim()}"
+
+You are an AI veterinary medical scribe.  
+Your job is to carefully interpret the dictation and generate a complete, detailed SOAP record.
+
+OUTPUT REQUIREMENTS:
+- Use plain text only. No bold, no markdown, no symbols.
+- Every bullet point must be a short, complete clinical sentence.
+- Each SOAP subsection should contain multiple bullets when appropriate, not just one.
+- Extract ALL medically relevant information from the dictation, even if subtle.
+- Do not leave out any meaningful details (exam findings, observations, comments, measurements, impressions).
+- Include normal findings wherever the vet explicitly or implicitly confirmed them.
+- Never invent abnormalities or diagnostics not supported by the dictation.
+- If the veterinarian does not provide a diagnosis, infer the most likely primary diagnosis.
+- Always provide exactly three appropriate differential diagnoses unless the veterinarian states their own.
+- Always place past or future treatment under the Treatment section.
+- Use species-appropriate terminology and realistic veterinary phrasing.
+- If Physical Exam findings or Vital Signs are not mentioned, include them as normal. Do not say "Not Provided".
+
+EXPANSION RULES:
+- If the dictation describes several systems as normal, list them individually (e.g., normal heart sounds, clear lungs, soft abdomen).
+- If the dictation mentions multiple exam observations, create multiple physical exam bullets.
+- If the owner provides several comments, convert each into its own bullet.
+- If vital signs are mentioned, include every one and restate them clearly.
+- Do not compress multiple findings into one bullet.
+- Err on the side of including more detail rather than less.
+
+SOAP RECORD:
+
+Subjective:
+Presenting Complaint:
+-
+History:
+-
+Owner Observations:
+-
+
+Objective:
+Physical Exam:
+- General:
+- Hydration:
+- Mucous membranes:
+- Cardiovascular:
+- Respiratory:
+- Gastrointestinal:
+- Musculoskeletal:
+- Neurologic:
+- Integumentary:
+- Lymph nodes:
+- Eyes/Ears/Nose/Throat:
+Vital Signs:
+- Temperature:
+- Heart Rate:
+- Respiratory Rate:
+- Weight:
+Diagnostics:
+-
+
+Assessment:
+Problem List:
+-
+Primary Diagnosis:
+-
+Differential Diagnoses:
+-
+Prognosis:
+-
+
+Plan:
+Treatment:
+-
+Monitoring:
+-
+Client Communication:
+-
+Follow-up:
+-
+`;
+
+        const controller = new AbortController();
+        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
+        const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+
+        let oiResp;
+        try {
+            oiResp = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                signal: controller.signal,
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    max_tokens: 4000,
+                    temperature: 0.7
+                })
+            });
+        } finally {
+            clearTimeout(timer);
+        }
+
+        if (!oiResp.ok) {
+            const text = await oiResp.text().catch(() => '');
+            console.error('OpenAI API Error:', oiResp.status, text);
+            return res.status(oiResp.status === 429 ? 429 : 502).json({
+                error: 'SOAP generation failed',
+                status: oiResp.status,
+                detail: text.slice(0, 2000)
+            });
+        }
+
+        const data = await oiResp.json();
+        const report = data.choices?.[0]?.message?.content;
+        const finishReason = data.choices?.[0]?.finish_reason;
+
+        // Log if response was truncated
+        if (finishReason === 'length') {
+            console.warn('SOAP generation response was truncated due to max_tokens limit');
+        }
+
+        if (!report) {
+            return res.status(500).json({ error: 'No report generated' });
+        }
+
+        return res.status(200).json({ report });
+    } catch (err) {
+        if (err?.name === 'AbortError') {
+            console.error('OpenAI request aborted (timeout)');
+            return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
+        }
+        console.error('SOAP generation endpoint error:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });

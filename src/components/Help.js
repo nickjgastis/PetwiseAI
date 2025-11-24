@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from './Footer';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Help = () => {
     const { isAuthenticated } = useAuth0();
+    const navigate = useNavigate();
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -13,6 +14,20 @@ const Help = () => {
     }, []);
 
     const [expandedSections, setExpandedSections] = useState({});
+
+    const openTutorial = (tutorialType) => {
+        // Set localStorage flag to trigger tutorial
+        localStorage.setItem(`open${tutorialType}Tutorial`, 'true');
+        
+        // Navigate to the appropriate page
+        if (tutorialType === 'QuickSOAP') {
+            navigate('/dashboard/quicksoap');
+        } else if (tutorialType === 'PetSOAP') {
+            navigate('/dashboard/report-form');
+        } else if (tutorialType === 'PetQuery') {
+            navigate('/dashboard/quick-query');
+        }
+    };
 
     const toggleSection = (sectionId) => {
         setExpandedSections(prev => ({
@@ -186,6 +201,29 @@ const Help = () => {
         <>
             <div className="max-w-4xl mx-auto px-5 py-10 min-h-screen">
                 <h1 className="text-3xl font-bold text-gray-800 mb-10 text-center">Help Center</h1>
+                
+                {/* Tutorial Buttons */}
+                <div className="mb-8 flex flex-wrap justify-center gap-4">
+                    <button
+                        onClick={() => openTutorial('QuickSOAP')}
+                        className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md hover:bg-[#2c5aa3] transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                    >
+                        <span>QuickSOAP Tutorial</span>
+                    </button>
+                    <button
+                        onClick={() => openTutorial('PetSOAP')}
+                        className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md hover:bg-[#2c5aa3] transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                    >
+                        <span>PetSOAP Tutorial</span>
+                    </button>
+                    <button
+                        onClick={() => openTutorial('PetQuery')}
+                        className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md hover:bg-[#2c5aa3] transition-all duration-200 hover:scale-105 flex items-center gap-2"
+                    >
+                        <span>PetQuery Tutorial</span>
+                    </button>
+                </div>
+
                 <div className="flex flex-col gap-5">
                     {helpSections.map(section => (
                         <section key={section.id} className="bg-white rounded-lg shadow-md overflow-hidden">

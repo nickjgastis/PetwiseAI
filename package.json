@@ -19,8 +19,10 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
+    "form-data": "^4.0.4",
     "https-browserify": "^1.0.0",
     "jspdf": "^2.5.2",
+    "multer": "^2.0.2",
     "node-cron": "^3.0.3",
     "node-fetch": "^2.7.0",
     "openai": "^4.68.1",
@@ -32,6 +34,7 @@
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.27.0",
     "react-scripts": "5.0.1",
+    "react-voice-visualizer": "^2.0.8",
     "rss-parser": "^3.13.0",
     "slate": "^0.110.2",
     "slate-history": "^0.110.3",
@@ -42,6 +45,7 @@
     "timers-browserify": "^2.0.12",
     "url": "^0.11.4",
     "uuid": "^11.0.2",
+    "wavesurfer.js": "^7.11.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

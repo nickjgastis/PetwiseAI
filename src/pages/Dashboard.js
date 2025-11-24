@@ -1,18 +1,19 @@
 // ================ IMPORTS ================
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import ReportForm from '../components/ReportForm';
 import SavedReports from '../components/SavedReports';
 import Profile from '../components/Profile';
 import TermsOfService from '../components/TermsOfService';
 import QuickQuery from '../components/QuickQuery';
+import QuickSOAP from '../pages/QuickSOAP';
 import Help from '../components/Help';
 import Welcome from '../components/Welcome';
 import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone } from 'react-icons/fa';
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -30,6 +31,7 @@ const Dashboard = () => {
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
+    const location = useLocation();
 
     // Helper function to check if user is in student mode
     const isStudentMode = () => {
@@ -394,12 +396,25 @@ const Dashboard = () => {
                             <>
                                 <li className="mx-2 my-1 relative">
                                     <Link
+                                        to="/dashboard/quicksoap"
+                                        onClick={closeMobileMenu}
+                                        data-tooltip="QuickSOAP"
+                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : ''}`}
+                                    >
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
+                                            <FaMicrophone className="text-sm" />
+                                        </div>
+                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>QuickSOAP</span>
+                                    </Link>
+                                </li>
+                                <li className="mx-2 my-1 relative">
+                                    <Link
                                         to="/dashboard/report-form"
                                         onClick={closeMobileMenu}
                                         data-tooltip="Report Generator"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'bg-white bg-opacity-30' : ''}`}
                                     >
-                                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center transition-colors duration-200">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaFileAlt className="text-sm" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetSOAP</span>
@@ -410,9 +425,9 @@ const Dashboard = () => {
                                         to="/dashboard/quick-query"
                                         onClick={closeMobileMenu}
                                         data-tooltip="QuickMed Query"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quick-query' ? 'bg-white bg-opacity-30' : ''}`}
                                     >
-                                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center transition-colors duration-200">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaSearch className="text-sm" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetQuery</span>
@@ -422,9 +437,9 @@ const Dashboard = () => {
                                     <Link
                                         to="/dashboard/saved-reports"
                                         data-tooltip="Saved Reports"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : ''}`}
                                     >
-                                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center transition-colors duration-200">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaSave className="text-sm" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Saved Records</span>
@@ -434,9 +449,9 @@ const Dashboard = () => {
                                     <Link
                                         to="/dashboard/templates"
                                         data-tooltip="My Templates"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/templates' ? 'bg-white bg-opacity-30' : ''}`}
                                     >
-                                        <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center transition-colors duration-200">
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/templates' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaClipboard className="text-sm" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>My Templates</span>
@@ -449,9 +464,9 @@ const Dashboard = () => {
                                 to="/dashboard/profile"
                                 onClick={closeMobileMenu}
                                 data-tooltip="Profile"
-                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/profile' ? 'bg-white bg-opacity-30' : ''}`}
                             >
-                                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center transition-colors duration-200">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                     <FaUser className="text-sm" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Profile</span>
@@ -475,9 +490,9 @@ const Dashboard = () => {
                                 to="/dashboard/help"
                                 onClick={closeMobileMenu}
                                 data-tooltip="Help"
-                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : ''}`}
                             >
-                                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center transition-colors duration-200">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                     <FaQuestionCircle className="text-sm" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Help</span>
@@ -528,6 +543,14 @@ const Dashboard = () => {
                             element={
                                 isSubscribed ?
                                     <QuickQuery /> :
+                                    <Navigate to="/dashboard/profile" replace />
+                            }
+                        />
+                        <Route
+                            path="quicksoap"
+                            element={
+                                isSubscribed ?
+                                    <QuickSOAP /> :
                                     <Navigate to="/dashboard/profile" replace />
                             }
                         />

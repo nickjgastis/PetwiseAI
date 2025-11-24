@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
+import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt } from 'react-icons/fa';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -363,6 +364,18 @@ const QuickQuery = () => {
     const [showSources, setShowSources] = useState({});
     const [isLongAnswerMode, setIsLongAnswerMode] = useState(false);
     const [animateNewMessage, setAnimateNewMessage] = useState(null);
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(0);
+
+    // Check for tutorial flag from Help center
+    useEffect(() => {
+        const openTutorialFlag = localStorage.getItem('openPetQueryTutorial');
+        if (openTutorialFlag === 'true') {
+            setShowTutorial(true);
+            setTutorialStep(0);
+            localStorage.removeItem('openPetQueryTutorial');
+        }
+    }, []);
 
     useEffect(() => {
         const lastUser = localStorage.getItem('lastUserId');
@@ -652,7 +665,15 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             console.error('Error in QuickQuery:', error);
             let errorMessage = "I'm sorry, I encountered an error. Please try again.";
 
-            if (error.response?.data?.error === 'Daily report limit reached') {
+            if (error.response?.status === 429) {
+                // Check if it's a quota error from OpenAI
+                const detail = error.response?.data?.detail || '';
+                if (detail.includes('insufficient_quota') || detail.includes('quota')) {
+                    errorMessage = "OpenAI API quota exceeded. Please check your OpenAI account billing or wait for your quota to reset.";
+                } else {
+                    errorMessage = "Too many requests. Please try again in a moment.";
+                }
+            } else if (error.response?.data?.error === 'Daily report limit reached') {
                 errorMessage = "You've reached your daily query limit. Please upgrade your plan or try again tomorrow.";
             }
 
@@ -900,9 +921,21 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             }]);
         } catch (error) {
             console.error('Error in QuickQuery:', error);
+            let errorMessage = "I'm sorry, I encountered an error. Please try again.";
+
+            if (error.response?.status === 429) {
+                // Check if it's a quota error from OpenAI
+                const detail = error.response?.data?.detail || '';
+                if (detail.includes('insufficient_quota') || detail.includes('quota')) {
+                    errorMessage = "OpenAI API quota exceeded. Please check your OpenAI account billing or wait for your quota to reset.";
+                } else {
+                    errorMessage = "Too many requests. Please try again in a moment.";
+                }
+            }
+
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I'm sorry, I encountered an error. Please try again.",
+                content: errorMessage,
                 timestamp: formatTimestamp()
             }]);
         } finally {
@@ -979,10 +1012,33 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col">
-            <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white">
-                <h2 className="text-3xl font-bold text-primary-500">PetQuery</h2>
-            </div>
+        <>
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideUpScale {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px) scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+            `}} />
+            <div className="min-h-screen bg-white flex flex-col">
+                <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-3xl font-bold text-primary-500">PetQuery</h2>
+                    </div>
+                </div>
             <div className="flex-1 flex flex-col overflow-hidden">
                 <div className="flex-1 overflow-y-auto px-4 py-6 pb-32 space-y-6">
                     {messages.length === 0 && (
@@ -1107,9 +1163,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     )}
                     <div ref={messagesEndRef} />
                 </div>
-                <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-                    <div className="max-w-4xl mx-auto p-4">
-                        <div className="flex justify-center mb-3">
+                <div className="fixed bottom-0 bg-white border-t border-gray-200 shadow-lg transition-all duration-300" style={{ left: '224px', width: 'calc(100% - 224px)' }}>
+                    <div className="max-w-4xl mx-auto p-4" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+                        <div className="flex justify-center items-center gap-3 mb-3">
                             <div className="inline-flex bg-gray-100 rounded-lg p-1">
                                 <button
                                     onClick={() => setIsLongAnswerMode(false)}
@@ -1130,6 +1186,23 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     Long
                                 </button>
                             </div>
+                            {messages.length === 0 && (
+                                <div className="relative group">
+                                    <button
+                                        onClick={() => {
+                                            setShowTutorial(true);
+                                            setTutorialStep(0);
+                                        }}
+                                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
+                                        title="PetQuery tutorial"
+                                    >
+                                        <FaQuestionCircle className="text-gray-600 text-sm" />
+                                    </button>
+                                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                        PetQuery tutorial
+                                    </span>
+                                </div>
+                            )}
                         </div>
                         <form onSubmit={handleSubmit} className="flex gap-3 items-center">
                             <div className="relative flex-1">
@@ -1220,7 +1293,261 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+
+            {/* Tutorial Modal */}
+            {showTutorial && (
+                <div 
+                    className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" 
+                    onClick={() => setShowTutorial(false)}
+                    style={{
+                        left: '224px',
+                        right: '0',
+                        top: '0',
+                        bottom: '0',
+                        animation: 'fadeIn 0.3s ease-out'
+                    }}
+                >
+                    <div 
+                        className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            animation: 'slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                        }}
+                    >
+                        {/* Tutorial Header */}
+                        <div className="bg-gradient-to-r from-primary-500 to-primary-700 px-6 py-4 flex items-center justify-between">
+                            <h2 className="text-2xl font-bold text-white">PetQuery Tutorial</h2>
+                            <button
+                                onClick={() => setShowTutorial(false)}
+                                className="text-white hover:text-gray-200 transition-colors"
+                            >
+                                <FaTimes className="text-xl" />
+                            </button>
+                        </div>
+
+                        {/* Tutorial Content */}
+                        <div className="flex-1 overflow-y-auto p-8">
+                            {tutorialStep === 0 && (
+                                <div className="space-y-6">
+                                    <div className="text-center">
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to PetQuery</h3>
+                                        <p className="text-gray-600 text-lg">PetQuery is your AI veterinary assistant that provides evidence-based answers to clinical questions.</p>
+                                    </div>
+                                    <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                                        <div className="flex flex-col items-center justify-center space-y-4">
+                                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
+                                                <FaSearch className="text-white text-3xl" />
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-gray-700 font-semibold mb-2">Step 1: Ask Your Question</p>
+                                                <p className="text-gray-600 text-sm">Type your veterinary question or click a suggested question to get started</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {tutorialStep === 1 && (
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Using Suggested Questions</h3>
+                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="bg-white border border-gray-200 rounded-lg p-4 cursor-not-allowed opacity-75">
+                                                    <h4 className="text-primary-600 font-semibold mb-2 text-base">Treatment Protocols</h4>
+                                                    <p className="text-gray-700 text-sm">What is the step-by-step treatment protocol...</p>
+                                                </div>
+                                                <div className="bg-white border border-gray-200 rounded-lg p-4 cursor-not-allowed opacity-75">
+                                                    <h4 className="text-primary-600 font-semibold mb-2 text-base">Emergency Medicine</h4>
+                                                    <p className="text-gray-700 text-sm">What are the exact dosages and timing...</p>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-600">Click any suggested question card to use it, or type your own question</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {tutorialStep === 2 && (
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Asking Your Question</h3>
+                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                        <div className="space-y-4">
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4">
+                                                <div className="flex gap-3 items-center">
+                                                    <div className="relative flex-1">
+                                                        <textarea
+                                                            disabled
+                                                            className="w-full px-4 py-3 border border-gray-300 rounded-xl resize-none focus:outline-none text-sm"
+                                                            rows={2}
+                                                            value="Type your veterinary question here..."
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        disabled
+                                                        className="w-12 h-12 bg-primary-500 text-white rounded-full cursor-not-allowed opacity-75 flex items-center justify-center"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="18" height="18">
+                                                            <path d="m3 3 3 9-3 9 19-9Z" />
+                                                            <path d="m6 12 13 0" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 justify-center">
+                                                <button disabled className="px-4 py-2 text-sm font-medium rounded-md bg-primary-400 text-white cursor-not-allowed opacity-75">
+                                                    Standard
+                                                </button>
+                                                <button disabled className="px-4 py-2 text-sm font-medium rounded-md text-gray-600 cursor-not-allowed opacity-75">
+                                                    Long
+                                                </button>
+                                            </div>
+                                            <p className="text-sm text-gray-600 text-center">Choose Standard for concise answers or Long for detailed responses</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {tutorialStep === 3 && (
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Understanding Responses</h3>
+                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                        <div className="space-y-4">
+                                            <div className="bg-white rounded-xl border border-gray-200 p-4">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center flex-shrink-0">
+                                                        <FaSearch className="text-white text-sm" />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="bg-primary-50 rounded-lg p-4 mb-3">
+                                                            <p className="text-gray-700 text-sm">Your question appears here...</p>
+                                                        </div>
+                                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                            <p className="text-gray-700 text-sm font-semibold mb-2">Response Title</p>
+                                                            <p className="text-gray-600 text-sm mb-3">PetQuery provides detailed, evidence-based answers with citations...</p>
+                                                            <button disabled className="text-xs text-primary-600 cursor-not-allowed opacity-75 flex items-center gap-1">
+                                                                <FaFileAlt className="text-xs" />
+                                                                View Sources
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="text-sm text-gray-600">Responses include citations, treatment protocols, and evidence-based recommendations</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {tutorialStep === 4 && (
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Using Sources & Copying</h3>
+                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                        <div className="space-y-4">
+                                            <div className="bg-white rounded-lg p-4 border border-gray-200">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-sm font-semibold text-gray-800">Response Actions</span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <button disabled className="px-3 py-1.5 rounded text-sm bg-primary-500 text-white cursor-not-allowed opacity-75 flex items-center gap-1.5">
+                                                        <FaCopy className="text-xs" />
+                                                        Copy
+                                                    </button>
+                                                    <button disabled className="px-3 py-1.5 rounded text-sm bg-gray-200 text-gray-700 cursor-not-allowed opacity-75">
+                                                        View Sources
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <p className="text-sm font-semibold text-gray-800">Key Features:</p>
+                                                <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+                                                    <li>Click "View Sources" to see citations and references</li>
+                                                    <li>Use "Copy" to copy responses to clipboard</li>
+                                                    <li>Continue the conversation with follow-up questions</li>
+                                                    <li>Clear conversation anytime to start fresh</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {tutorialStep === 5 && (
+                                <div className="space-y-6">
+                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Best Practices</h3>
+                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                        <div className="space-y-4">
+                                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+                                                <strong className="block mb-2 text-sm font-semibold text-gray-700">Important Disclaimer:</strong>
+                                                <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only. Always verify information and consult a licensed veterinarian for clinical decisions.</p>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">1</div>
+                                                    <p className="text-sm text-gray-700">Be specific in your questions for better answers</p>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">2</div>
+                                                    <p className="text-sm text-gray-700">Review sources to verify information</p>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">3</div>
+                                                    <p className="text-sm text-gray-700">Use follow-up questions to dive deeper</p>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 text-xs font-bold">4</div>
+                                                    <p className="text-sm text-gray-700">Always use professional judgment in clinical decisions</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Tutorial Footer */}
+                        <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
+                            <div className="flex items-center gap-2">
+                                {[0, 1, 2, 3, 4, 5].map((step) => (
+                                    <div
+                                        key={step}
+                                        className={`w-2 h-2 rounded-full transition-all ${tutorialStep === step ? 'bg-[#3369bd] w-8' : 'bg-gray-300'}`}
+                                    />
+                                ))}
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {tutorialStep > 0 && (
+                                    <button
+                                        onClick={() => setTutorialStep(tutorialStep - 1)}
+                                        className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all flex items-center gap-2"
+                                    >
+                                        <FaArrowLeft className="text-sm" />
+                                        Previous
+                                    </button>
+                                )}
+                                {tutorialStep < 5 ? (
+                                    <button
+                                        onClick={() => setTutorialStep(tutorialStep + 1)}
+                                        className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-2"
+                                    >
+                                        Next
+                                        <FaArrowRight className="text-sm" />
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowTutorial(false)}
+                                        className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all"
+                                    >
+                                        Get Started
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import '../styles/SavedReports.css';
-import { FaTimes, FaEdit } from 'react-icons/fa';
+import { FaTimes, FaEdit, FaCopy } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { createEditor } from 'slate';
@@ -329,6 +329,134 @@ const processSlateForPDF = (nodes) => {
     return formattedText;
 };
 
+// Parse SOAP report in QuickSOAP format (removes markdown, finds sections by name)
+const parseSOAPReport = (text) => {
+    if (!text) return { sections: [] };
+
+    // Remove markdown formatting
+    let cleanText = text
+        .replace(/\*\*/g, '') // Remove bold markers
+        .replace(/#{1,6}\s*/g, '') // Remove headers
+        .replace(/###\s*/g, '')
+        .replace(/##\s*/g, '')
+        .replace(/#\s*/g, '')
+        .trim();
+
+    const sections = [];
+    const sectionNames = ['Subjective', 'Objective', 'Assessment', 'Plan'];
+
+    // Try to find sections by name
+    sectionNames.forEach(sectionName => {
+        // Look for section header (case insensitive) - handle both "S - Subjective" and "Subjective:" formats
+        const regex = new RegExp(`(?:^|\\n)\\s*(?:[SOAP]\\s*-\\s*)?${sectionName}:?\\s*\\n?`, 'gi');
+        const match = cleanText.match(regex);
+
+        if (match) {
+            const startIndex = cleanText.search(regex);
+            const sectionStart = startIndex + match[0].length;
+
+            // Find the next section or end of text
+            let sectionEnd = cleanText.length;
+            for (let i = 0; i < sectionNames.length; i++) {
+                if (sectionNames[i].toLowerCase() !== sectionName.toLowerCase()) {
+                    const nextRegex = new RegExp(`(?:^|\\n)\\s*(?:[SOAP]\\s*-\\s*)?${sectionNames[i]}:?\\s*\\n?`, 'gi');
+                    const nextMatch = cleanText.substring(sectionStart).search(nextRegex);
+                    if (nextMatch !== -1) {
+                        sectionEnd = sectionStart + nextMatch;
+                        break;
+                    }
+                }
+            }
+
+            const content = cleanText.substring(sectionStart, sectionEnd).trim();
+            if (content) {
+                sections.push({
+                    name: sectionName,
+                    content: content
+                });
+            }
+        }
+    });
+
+    // If no sections found, try simpler parsing
+    if (sections.length === 0) {
+        const lines = cleanText.split('\n');
+        let currentSection = null;
+        let currentContent = [];
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            const sectionMatch = sectionNames.find(name => {
+                const lowerName = name.toLowerCase();
+                return trimmed.toLowerCase().startsWith(lowerName + ':') ||
+                    trimmed.toLowerCase() === lowerName ||
+                    trimmed.toLowerCase().startsWith(lowerName.charAt(0) + ' –') ||
+                    trimmed.toLowerCase().startsWith(lowerName.charAt(0) + ' -');
+            });
+
+            if (sectionMatch) {
+                if (currentSection) {
+                    sections.push({
+                        name: currentSection,
+                        content: currentContent.join('\n').trim()
+                    });
+                }
+                currentSection = sectionMatch;
+                currentContent = [];
+            } else if (currentSection && trimmed) {
+                currentContent.push(trimmed);
+            }
+        });
+
+        if (currentSection) {
+            sections.push({
+                name: currentSection,
+                content: currentContent.join('\n').trim()
+            });
+        }
+    }
+
+    // Sort sections in SOAP order
+    const sectionOrder = ['Subjective', 'Objective', 'Assessment', 'Plan'];
+    sections.sort((a, b) => {
+        const indexA = sectionOrder.indexOf(a.name);
+        const indexB = sectionOrder.indexOf(b.name);
+        return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+
+    return { sections, rawText: cleanText };
+};
+
+// Get section colors (same as QuickSOAP)
+const getSectionColor = (sectionName) => {
+    const name = sectionName.toLowerCase();
+    if (name.includes('subjective')) return {
+        border: '#3b82f6',
+        header: 'bg-gradient-to-r from-blue-500 to-blue-700',
+        bg: 'bg-blue-50'
+    };
+    if (name.includes('objective')) return {
+        border: '#10b981',
+        header: 'bg-gradient-to-r from-green-500 to-green-700',
+        bg: 'bg-green-50'
+    };
+    if (name.includes('assessment')) return {
+        border: '#f59e0b',
+        header: 'bg-gradient-to-r from-amber-500 to-amber-700',
+        bg: 'bg-amber-50'
+    };
+    if (name.includes('plan')) return {
+        border: '#ef4444',
+        header: 'bg-gradient-to-r from-red-500 to-red-700',
+        bg: 'bg-red-50'
+    };
+    return {
+        border: '#6b7280',
+        header: 'bg-gradient-to-r from-gray-500 to-gray-700',
+        bg: 'bg-gray-50'
+    };
+};
+
 const parseReportForSOAP = (reportText) => {
     if (!reportText) return null;
 
@@ -399,7 +527,7 @@ const SavedReports = () => {
     const [editingReport, setEditingReport] = useState(null);
     const [isLoadingReports, setIsLoadingReports] = useState(true);
     const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
-    const [currentView, setCurrentView] = useState('standard');
+    const [currentView, setCurrentView] = useState('soap'); // Default to SOAP view
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -425,7 +553,7 @@ const SavedReports = () => {
 
                 const { data: reportsData, error: reportsError } = await supabase
                     .from('saved_reports')
-                    .select('id, report_name, report_text, form_data')
+                    .select('id, report_name, report_text, form_data, record_type')
                     .eq('user_id', userId)
                     .order('created_at', { ascending: false });
 
@@ -445,6 +573,17 @@ const SavedReports = () => {
 
     const handleReportClick = (report) => {
         setSelectedReport(selectedReport === report ? null : report);
+        
+        // Set default view based on record type: SOAP for QuickSOAP and Generator records
+        if (selectedReport !== report) {
+            const recordType = getRecordType(report);
+            if (recordType === 'quicksoap' || recordType === 'generator') {
+                setCurrentView('soap');
+            } else {
+                setCurrentView('standard');
+            }
+        }
+        
         setTimeout(() => {
             const content = document.querySelector('.report-content');
             if (content) {
@@ -656,6 +795,203 @@ const SavedReports = () => {
         navigate('/report');
     };
 
+    const handleLoadQuickSOAP = (report) => {
+        // Clear QuickSOAP-specific localStorage items
+        localStorage.removeItem('quickSOAP_dictations');
+        localStorage.removeItem('quickSOAP_input');
+        localStorage.removeItem('quickSOAP_report');
+        localStorage.removeItem('quickSOAP_lastInput');
+        localStorage.removeItem('currentQuickSOAPReportId');
+        localStorage.removeItem('quickSOAP_reportName');
+
+        // Load QuickSOAP data from form_data
+        if (report.form_data) {
+            const formData = report.form_data;
+            
+            if (formData.dictations) {
+                localStorage.setItem('quickSOAP_dictations', JSON.stringify(formData.dictations));
+            }
+            if (formData.input !== undefined) {
+                localStorage.setItem('quickSOAP_input', formData.input);
+            }
+            if (formData.report) {
+                localStorage.setItem('quickSOAP_report', formData.report);
+            }
+            if (formData.lastInput !== undefined) {
+                localStorage.setItem('quickSOAP_lastInput', formData.lastInput);
+            }
+        } else {
+            // Fallback: if no form_data, use report_text as the report
+            if (report.report_text) {
+                localStorage.setItem('quickSOAP_report', report.report_text);
+            }
+        }
+
+        // Load report name
+        if (report.report_name) {
+            localStorage.setItem('quickSOAP_reportName', report.report_name);
+        }
+
+        // Store the report ID for updates
+        localStorage.setItem('currentQuickSOAPReportId', report.id);
+        
+        // Set flag to indicate we're loading saved data
+        localStorage.setItem('loadQuickSOAPData', 'true');
+
+        // Navigate to QuickSOAP
+        navigate('/dashboard/quicksoap');
+    };
+
+    // Helper function to detect record type
+    const getRecordType = (report) => {
+        // First check if record_type column exists (if migration was run)
+        if (report.record_type) {
+            return report.record_type;
+        }
+
+        // Fallback: detect from form_data structure
+        if (!report.form_data) {
+            // Legacy records without form_data are assumed to be generator records
+            return 'generator';
+        }
+
+        const formData = report.form_data;
+        
+        // Check for QuickSOAP record
+        if (formData.record_type === 'quicksoap' || 
+            (formData.dictations && formData.input !== undefined)) {
+            return 'quicksoap';
+        }
+        
+        // Check for Generator record
+        if (formData.record_type === 'generator' || 
+            formData.patientName || 
+            formData.species || 
+            formData.presentingComplaint) {
+            return 'generator';
+        }
+
+        // Default to generator for unknown types
+        return 'generator';
+    };
+
+    // QuickSOAP View Component - renders SOAP sections like QuickSOAP does
+    const QuickSOAPView = ({ reportText, isEditable = false, onContentChange }) => {
+        const [parsedReport, setParsedReport] = useState(() => parseSOAPReport(reportText));
+        const [copiedSection, setCopiedSection] = useState(null);
+        const quickSOAPTextareaRefs = useRef({});
+
+        useEffect(() => {
+            setParsedReport(parseSOAPReport(reportText));
+        }, [reportText]);
+
+        const copySection = async (sectionName, content) => {
+            try {
+                await navigator.clipboard.writeText(content);
+                setCopiedSection(sectionName);
+                setTimeout(() => setCopiedSection(null), 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        };
+
+        const adjustTextareaHeight = (index, textarea) => {
+            if (!textarea) {
+                textarea = quickSOAPTextareaRefs.current[`section-${index}`];
+            }
+            if (!textarea) return;
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        };
+
+        if (!parsedReport || parsedReport.sections.length === 0) {
+            return (
+                <div className="p-8 text-center text-gray-500">
+                    <p>No SOAP sections found in this report.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className="max-w-5xl mx-auto">
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                    {parsedReport.sections.map((section, index) => {
+                        const colors = getSectionColor(section.name);
+
+                        return (
+                            <div
+                                key={index}
+                                className={`border-l-4 ${index < parsedReport.sections.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                style={{ borderLeftColor: colors.border }}
+                            >
+                                {/* Section Header */}
+                                <div className={`${colors.header} px-6 py-3 flex items-center justify-between`}>
+                                    <h3 className="text-white font-semibold text-lg tracking-wide">
+                                        {section.name.charAt(0)} – {section.name}
+                                    </h3>
+                                    <button
+                                        onClick={() => copySection(section.name, section.content)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${copiedSection === section.name
+                                            ? 'bg-white text-blue-600'
+                                            : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                            }`}
+                                    >
+                                        <FaCopy className="text-xs" />
+                                        {copiedSection === section.name ? 'Copied!' : 'Copy'}
+                                    </button>
+                                </div>
+
+                                {/* Section Content */}
+                                <div className={`${colors.bg} px-6 py-4`}>
+                                    {isEditable ? (
+                                        <textarea
+                                            ref={(el) => {
+                                                if (el) {
+                                                    quickSOAPTextareaRefs.current[`section-${index}`] = el;
+                                                    setTimeout(() => adjustTextareaHeight(index, el), 0);
+                                                }
+                                            }}
+                                            value={section.content}
+                                            onChange={(e) => {
+                                                const newSections = [...parsedReport.sections];
+                                                newSections[index].content = e.target.value;
+                                                setParsedReport(prev => ({ ...prev, sections: newSections }));
+                                                
+                                                // Update full report string
+                                                const newReport = newSections
+                                                    .map(s => `${s.name}:\n${s.content}`)
+                                                    .join('\n\n');
+                                                
+                                                if (onContentChange) {
+                                                    onContentChange(newReport);
+                                                }
+                                                
+                                                adjustTextareaHeight(index, e.target);
+                                            }}
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white text-sm"
+                                            style={{
+                                                fontFamily: 'inherit',
+                                                lineHeight: '1.6',
+                                                height: 'auto',
+                                                overflowY: 'auto',
+                                                whiteSpace: 'pre-wrap',
+                                                wordWrap: 'break-word'
+                                            }}
+                                        />
+                                    ) : (
+                                        <div className="w-full px-4 py-3 bg-white border border-gray-300 rounded-md text-gray-800 leading-relaxed text-sm whitespace-pre-wrap">
+                                            {section.content}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+    };
+
     // Handle SOAP section copy functionality
     const handleCopySection = async (sectionContent, sectionTitle) => {
         try {
@@ -783,16 +1119,16 @@ const SavedReports = () => {
                             <div className="view-controls">
                                 <div className="view-toggle-buttons">
                                     <button
-                                        className={`view-toggle-btn ${currentView === 'standard' ? 'active' : ''}`}
-                                        onClick={() => setCurrentView('standard')}
-                                    >
-                                        Standard
-                                    </button>
-                                    <button
                                         className={`view-toggle-btn ${currentView === 'soap' ? 'active' : ''}`}
                                         onClick={() => setCurrentView('soap')}
                                     >
                                         SOAP
+                                    </button>
+                                    <button
+                                        className={`view-toggle-btn ${currentView === 'standard' ? 'active' : ''}`}
+                                        onClick={() => setCurrentView('standard')}
+                                    >
+                                        Standard
                                     </button>
                                 </div>
                                 <button
@@ -806,13 +1142,31 @@ const SavedReports = () => {
                         </div>
                         <div className="action-buttons">
                             <div className="primary-actions">
-                                <button
-                                    className="load-button"
-                                    onClick={() => handleLoadReport(selectedReport)}
-                                    title="Load report in generator"
-                                >
-                                    Load in Generator
-                                </button>
+                                {(() => {
+                                    const recordType = getRecordType(selectedReport);
+                                    return (
+                                        <>
+                                            {recordType === 'generator' && (
+                                                <button
+                                                    className="load-button"
+                                                    onClick={() => handleLoadReport(selectedReport)}
+                                                    title="Load report in generator"
+                                                >
+                                                    Load in Generator
+                                                </button>
+                                            )}
+                                            {recordType === 'quicksoap' && (
+                                                <button
+                                                    className="load-button"
+                                                    onClick={() => handleLoadQuickSOAP(selectedReport)}
+                                                    title="Load report in QuickSOAP"
+                                                >
+                                                    Load in QuickSOAP
+                                                </button>
+                                            )}
+                                        </>
+                                    );
+                                })()}
                                 {editingReport?.id === selectedReport.id ? (
                                     <>
                                         <button
@@ -855,18 +1209,42 @@ const SavedReports = () => {
                     </div>
                     <div className="report-content">
                         {currentView === 'soap' ? (
-                            <SOAPView
-                                reportText={editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text}
-                                onCopySection={handleCopySection}
-                                isEditable={editingReport?.id === selectedReport.id}
-                                onContentChange={editingReport?.id === selectedReport.id ? (newText) => {
-                                    setEditingReport({
-                                        ...editingReport,
-                                        report_text: newText
-                                    });
-                                } : undefined}
-                                forceTextView={true}
-                            />
+                            (() => {
+                                const recordType = getRecordType(selectedReport);
+                                const reportText = editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text;
+                                
+                                if (recordType === 'quicksoap') {
+                                    return (
+                                        <div className="editor-wrapper" style={{ padding: '16px', backgroundColor: '#f8fafc' }}>
+                                            <QuickSOAPView
+                                                reportText={reportText}
+                                                isEditable={editingReport?.id === selectedReport.id}
+                                                onContentChange={editingReport?.id === selectedReport.id ? (newText) => {
+                                                    setEditingReport({
+                                                        ...editingReport,
+                                                        report_text: newText
+                                                    });
+                                                } : undefined}
+                                            />
+                                        </div>
+                                    );
+                                } else {
+                                    return (
+                                        <SOAPView
+                                            reportText={reportText}
+                                            onCopySection={handleCopySection}
+                                            isEditable={editingReport?.id === selectedReport.id}
+                                            onContentChange={editingReport?.id === selectedReport.id ? (newText) => {
+                                                setEditingReport({
+                                                    ...editingReport,
+                                                    report_text: newText
+                                                });
+                                            } : undefined}
+                                            forceTextView={true}
+                                        />
+                                    );
+                                }
+                            })()
                         ) : (
                             <div className="editor-wrapper">
                                 {editingReport?.id === selectedReport.id ? (

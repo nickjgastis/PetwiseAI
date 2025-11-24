@@ -11,6 +11,7 @@ import { withHistory } from 'slate-history';
 import { Node } from 'slate';
 import { Link, useNavigate } from 'react-router-dom';
 import SOAPView from './SOAPView';
+import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaFileAlt } from 'react-icons/fa';
 
 // Add this before PDFDocument component
 // const mainHeaders = [ ... ];
@@ -481,6 +482,18 @@ const ReportForm = () => {
     const [savedMessageVisible, setSavedMessageVisible] = useState(false);
     const [copiedMessageVisible, setCopiedMessageVisible] = useState(false);
     const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(0);
+
+    // Check for tutorial flag from Help center
+    useEffect(() => {
+        const openTutorialFlag = localStorage.getItem('openPetSOAPTutorial');
+        if (openTutorialFlag === 'true') {
+            setShowTutorial(true);
+            setTutorialStep(0);
+            localStorage.removeItem('openPetSOAPTutorial');
+        }
+    }, []);
 
     const [customBreed, setCustomBreed] = useState('');
     const [isCustomBreed, setIsCustomBreed] = useState(false);
@@ -947,7 +960,8 @@ const ReportForm = () => {
                     .update({
                         report_name: `${patientName} - ${new Date().toLocaleString()}`,
                         report_text: reportText,
-                        form_data: formData
+                        form_data: formData,
+                        record_type: 'generator' // Set record_type if column exists
                     })
                     .eq('id', loadedReportId)
                     .eq('user_id', userData.id);
@@ -961,7 +975,8 @@ const ReportForm = () => {
                         user_id: userData.id,
                         report_name: `${patientName} - ${new Date().toLocaleString()}`,
                         report_text: reportText,
-                        form_data: formData
+                        form_data: formData,
+                        record_type: 'generator' // Set record_type if column exists
                     }])
                     .select()
                     .single();
@@ -2130,6 +2145,21 @@ const ReportForm = () => {
 
                 <div className="report-preview-footer">
                     <div className="button-container">
+                        <div className="relative group">
+                            <button
+                                onClick={() => {
+                                    setShowTutorial(true);
+                                    setTutorialStep(0);
+                                }}
+                                className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer mr-2"
+                                title="PetSOAP tutorial"
+                            >
+                                <FaQuestionCircle className="text-sm" />
+                            </button>
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                PetSOAP tutorial
+                            </span>
+                        </div>
                         <button className="submit-button" onClick={saveReport} disabled={loading}>Save Record</button>
                         <div className="copy-button-container">
                             <button className="copy-button" onClick={copyToClipboard} disabled={loading}>
@@ -2156,6 +2186,256 @@ const ReportForm = () => {
                     {error && <div className="error-message">{error}</div>}
                 </div>
             </div>
+
+            {/* Tutorial Modal */}
+            {showTutorial && (
+                <>
+                    <style dangerouslySetInnerHTML={{__html: `
+                        @keyframes fadeIn {
+                            from {
+                                opacity: 0;
+                            }
+                            to {
+                                opacity: 1;
+                            }
+                        }
+                        @keyframes slideUpScale {
+                            from {
+                                opacity: 0;
+                                transform: translateY(20px) scale(0.95);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateY(0) scale(1);
+                            }
+                        }
+                    `}} />
+                    <div
+                        className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowTutorial(false)}
+                        style={{
+                            left: '224px',
+                            right: '0',
+                            top: '0',
+                            bottom: '0',
+                            animation: 'fadeIn 0.3s ease-out'
+                        }}
+                    >
+                        <div
+                            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ animation: 'slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
+                        >
+                            {/* Tutorial Header */}
+                            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gradient-to-r from-primary-500 to-primary-600">
+                                <h2 className="text-2xl font-bold text-white">PetSOAP Tutorial</h2>
+                                <button
+                                    onClick={() => setShowTutorial(false)}
+                                    className="w-8 h-8 rounded-full bg-white bg-opacity-20 text-white hover:bg-opacity-30 transition-all flex items-center justify-center"
+                                >
+                                    <FaTimes className="text-sm" />
+                                </button>
+                            </div>
+
+                            {/* Tutorial Content */}
+                            <div className="flex-1 overflow-y-auto p-8">
+                                {tutorialStep === 0 && (
+                                    <div className="space-y-6">
+                                        <div className="text-center">
+                                            <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to PetSOAP</h3>
+                                            <p className="text-gray-600 text-lg">PetSOAP helps you create comprehensive veterinary medical records quickly and efficiently.</p>
+                                        </div>
+                                        <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                                            <div className="flex flex-col items-center justify-center space-y-4">
+                                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
+                                                    <FaFileAlt className="text-white text-3xl" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-gray-700 font-semibold mb-2">Step 1: Patient Information</p>
+                                                    <p className="text-gray-600 text-sm">Fill out patient details including species, breed, age, and owner information</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tutorialStep === 1 && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Patient Information</h3>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                            <div className="space-y-4">
+                                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Species</label>
+                                                            <select disabled className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm">
+                                                                <option>Canine</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-sm font-semibold text-gray-700 mb-1">Breed</label>
+                                                            <input disabled type="text" className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm" value="Golden Retriever" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-gray-600">Fill in all patient details including name, age, weight, and owner information</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tutorialStep === 2 && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Exam Findings</h3>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                            <div className="space-y-4">
+                                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Presenting Complaint</label>
+                                                    <textarea
+                                                        disabled
+                                                        className="w-full resize-none border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm p-3"
+                                                        rows={2}
+                                                        value="Enter the main reason for the visit..."
+                                                    />
+                                                </div>
+                                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Physical Exam Findings</label>
+                                                    <textarea
+                                                        disabled
+                                                        className="w-full resize-none border border-gray-300 rounded-md bg-gray-50 text-gray-500 text-sm p-3"
+                                                        rows={3}
+                                                        value="Enter your examination findings..."
+                                                    />
+                                                </div>
+                                                <p className="text-sm text-gray-600">Fill in clinical findings, diagnostic tests, assessment, diagnosis, and treatment plans</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tutorialStep === 3 && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your Report</h3>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-center">
+                                                    <button
+                                                        disabled
+                                                        className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md cursor-not-allowed opacity-75"
+                                                    >
+                                                        Generate Record
+                                                    </button>
+                                                </div>
+                                                <p className="text-sm text-gray-600 text-center">Click "Generate Record" to create your comprehensive veterinary medical record</p>
+                                                <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200">
+                                                    <p className="text-xs text-gray-500 text-center italic">Your AI-generated report will appear in the preview panel</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tutorialStep === 4 && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Reviewing & Editing Your Report</h3>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                            <div className="space-y-4">
+                                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                                                    <div className="flex items-center gap-2 mb-3">
+                                                        <button disabled className="px-3 py-1 rounded text-sm bg-gray-200 text-gray-600 cursor-not-allowed">Standard</button>
+                                                        <button disabled className="px-3 py-1 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed">SOAP</button>
+                                                    </div>
+                                                    <div className="border-l-4 border-b border-gray-200" style={{ borderLeftColor: '#3b82f6' }}>
+                                                        <div className="bg-gradient-to-r from-blue-500 to-blue-700 px-4 py-2">
+                                                            <h4 className="text-white font-semibold text-sm">Subjective</h4>
+                                                        </div>
+                                                        <div className="bg-blue-50 px-4 py-3">
+                                                            <p className="text-sm text-gray-700">Your report content appears here and can be edited...</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm text-gray-600">View your report in Standard or SOAP format. Edit any section directly in the preview.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tutorialStep === 5 && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Saving & Exporting Your Report</h3>
+                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2 justify-center flex-wrap">
+                                                    <button disabled className="px-4 py-2 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed opacity-75">
+                                                        Save Record
+                                                    </button>
+                                                    <button disabled className="px-4 py-2 rounded text-sm bg-gray-200 text-gray-600 cursor-not-allowed opacity-75">
+                                                        Copy
+                                                    </button>
+                                                    <button disabled className="px-4 py-2 rounded text-sm bg-gray-200 text-gray-600 cursor-not-allowed opacity-75">
+                                                        PDF
+                                                    </button>
+                                                    <button disabled className="px-4 py-2 rounded text-sm bg-gray-200 text-gray-600 cursor-not-allowed opacity-75">
+                                                        Print
+                                                    </button>
+                                                </div>
+                                                <div className="mt-4 space-y-2">
+                                                    <p className="text-sm font-semibold text-gray-800">Save your report to:</p>
+                                                    <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+                                                        <li>Access it later from Saved Records</li>
+                                                        <li>Load it back into PetSOAP for editing</li>
+                                                        <li>Export as PDF or print directly</li>
+                                                        <li>Copy sections for use in other systems</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Tutorial Footer */}
+                            <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
+                                <div className="flex items-center gap-2">
+                                    {[0, 1, 2, 3, 4, 5].map((step) => (
+                                        <div
+                                            key={step}
+                                            className={`w-2 h-2 rounded-full transition-all ${tutorialStep === step ? 'bg-[#3369bd] w-8' : 'bg-gray-300'}`}
+                                        />
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    {tutorialStep > 0 && (
+                                        <button
+                                            onClick={() => setTutorialStep(tutorialStep - 1)}
+                                            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all flex items-center gap-2"
+                                        >
+                                            <FaArrowLeft className="text-sm" />
+                                            Previous
+                                        </button>
+                                    )}
+                                    {tutorialStep < 5 ? (
+                                        <button
+                                            onClick={() => setTutorialStep(tutorialStep + 1)}
+                                            className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-2"
+                                        >
+                                            Next
+                                            <FaArrowRight className="text-sm" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowTutorial(false)}
+                                            className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all"
+                                        >
+                                            Get Started
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
