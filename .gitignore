@@ -27,3 +27,7 @@ yarn-error.log*
 server/uploads/
 uploads/
 server/temp/
+
+# Server dependencies
+server/node_modules/
+server/package-lock.json

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
-import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt } from 'react-icons/fa';
+import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt, FaMicrophone, FaStop } from 'react-icons/fa';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -366,6 +366,11 @@ const QuickQuery = () => {
     const [animateNewMessage, setAnimateNewMessage] = useState(null);
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(0);
+    const [isRecording, setIsRecording] = useState(false);
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const mediaRecorderRef = useRef(null);
+    const streamRef = useRef(null);
+    const audioChunksRef = useRef([]);
 
     // Check for tutorial flag from Help center
     useEffect(() => {
@@ -413,6 +418,15 @@ const QuickQuery = () => {
 
     useEffect(() => {
         localStorage.setItem('quickQueryInput', inputMessage);
+        // Auto-resize textarea when input changes (including from transcription)
+        if (textareaRef.current) {
+            if (!inputMessage.trim()) {
+                textareaRef.current.style.height = '52px';
+            } else {
+                textareaRef.current.style.height = '52px';
+                textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+            }
+        }
     }, [inputMessage]);
 
     useEffect(() => {
@@ -691,6 +705,83 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         setMessages([]);
         localStorage.removeItem('quickQueryMessages');
     };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamRef.current = stream;
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                await transcribeAudio(audioBlob);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (err) {
+            console.error('Error starting recording:', err);
+            alert('Failed to access microphone. Please check permissions.');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const transcribeAudio = async (audioBlob) => {
+        setIsTranscribing(true);
+        try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+
+            const response = await axios.post(`${API_URL}/api/transcribe-simple`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data.text) {
+                // Append transcribed text to existing input
+                const transcribedText = response.data.text.trim();
+                setInputMessage(prev => {
+                    const existing = prev.trim();
+                    if (existing) {
+                        return `${existing} ${transcribedText}`;
+                    }
+                    return transcribedText;
+                });
+            } else {
+                throw new Error('No transcription received');
+            }
+        } catch (err) {
+            console.error('Transcription error:', err);
+            alert('Failed to transcribe audio. Please try again.');
+        } finally {
+            setIsTranscribing(false);
+        }
+    };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (streamRef.current) {
+                streamRef.current.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, []);
 
     const handleCopy = async (text, index) => {
         // Format the text by removing markdown
@@ -1013,7 +1104,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
     return (
         <>
-            <style dangerouslySetInnerHTML={{__html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes fadeIn {
                     from {
                         opacity: 0;
@@ -1036,269 +1128,302 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             <div className="min-h-screen bg-white flex flex-col">
                 <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-3xl font-bold text-primary-500">PetQuery</h2>
+                        <h2 className="text-3xl font-bold text-primary-600">PetQuery</h2>
                     </div>
                 </div>
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto px-4 py-6 pb-32 space-y-6">
-                    {messages.length === 0 && (
-                        <>
-                            <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
-                                <strong className="block mb-2 text-sm font-semibold text-gray-700">Disclaimer:</strong>
-                                <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only.
-                                    These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
-                                    Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-                                {randomSuggestions.map((suggestion, index) => (
-                                    <div
-                                        key={index}
-                                        className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 hover:-translate-y-1"
-                                        onClick={() => handleSuggestionClick(suggestion.question)}
-                                    >
-                                        <h4 className="text-primary-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
-                                        <p className="text-gray-700 text-sm leading-relaxed">{suggestion.question}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-                    {messages.map((msg, index) => {
-                        // Find the user message that prompted this assistant response
-                        const getUserMessage = (assistantIndex) => {
-                            // Look backwards from the assistant message to find the most recent user message
-                            for (let i = assistantIndex - 1; i >= 0; i--) {
-                                if (messages[i].role === 'user') {
-                                    return messages[i].content;
+                <div className="flex-1 flex flex-col overflow-hidden">
+                    <div className="flex-1 overflow-y-auto px-4 py-6 pb-32 space-y-6">
+                        {messages.length === 0 && (
+                            <>
+                                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
+                                    <strong className="block mb-2 text-sm font-semibold text-gray-700">Disclaimer:</strong>
+                                    <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only.
+                                        These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
+                                        Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+                                    {randomSuggestions.map((suggestion, index) => (
+                                        <div
+                                            key={index}
+                                            className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 hover:-translate-y-1"
+                                            onClick={() => handleSuggestionClick(suggestion.question)}
+                                        >
+                                            <h4 className="text-primary-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
+                                            <p className="text-gray-700 text-sm leading-relaxed">{suggestion.question}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                        {messages.map((msg, index) => {
+                            // Find the user message that prompted this assistant response
+                            const getUserMessage = (assistantIndex) => {
+                                // Look backwards from the assistant message to find the most recent user message
+                                for (let i = assistantIndex - 1; i >= 0; i--) {
+                                    if (messages[i].role === 'user') {
+                                        return messages[i].content;
+                                    }
                                 }
-                            }
-                            return '';
-                        };
+                                return '';
+                            };
 
-                        const userMessage = msg.role === 'assistant' ? getUserMessage(index) : '';
+                            const userMessage = msg.role === 'assistant' ? getUserMessage(index) : '';
 
-                        return (
-                            <div key={index} className={`flex mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none ${msg.role === 'assistant'
-                                ? animateNewMessage === index
-                                    ? 'animate-fade-in-up'
-                                    : index === messages.length - 1
-                                        ? 'opacity-0'
-                                        : ''
-                                : ''
-                                }`}>
-                                <div className={`max-w-4xl w-full ${msg.role === 'user'
-                                    ? 'bg-primary-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
-                                    : 'bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400 message-content'
+                            return (
+                                <div key={index} className={`flex mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none ${msg.role === 'assistant'
+                                    ? animateNewMessage === index
+                                        ? 'animate-fade-in-up'
+                                        : index === messages.length - 1
+                                            ? 'opacity-0'
+                                            : ''
+                                    : ''
                                     }`}>
-                                    {msg.role === 'assistant' ? (
-                                        <div dangerouslySetInnerHTML={{ __html: formatMessage(getContentWithoutSources(msg.content, userMessage)) }} />
-                                    ) : (
-                                        <div className="whitespace-pre-wrap">{msg.content}</div>
-                                    )}
-                                    {msg.role === 'assistant' && (
-                                        <div className="flex items-center gap-2 mt-3">
-                                            <button
-                                                className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${copiedIndex === index
-                                                    ? 'bg-primary-500 text-white border-primary-500'
-                                                    : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
-                                                    }`}
-                                                onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
-                                                aria-label="Copy message"
-                                            >
-                                                {copiedIndex === index ? (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                        <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
-                                                    </svg>
-                                                ) : (
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                        <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
-                                                        <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
-                                                    </svg>
-                                                )}
-                                            </button>
-                                            <button
-                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 hover:-translate-y-0.5"
-                                                onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
-                                                aria-label="Print message"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                    <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
-                                                </svg>
-                                            </button>
-                                            {extractSources(msg.content, userMessage) && (
+                                    <div className={`max-w-4xl w-full ${msg.role === 'user'
+                                        ? 'bg-primary-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
+                                        : 'bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400 message-content'
+                                        }`}>
+                                        {msg.role === 'assistant' ? (
+                                            <div dangerouslySetInnerHTML={{ __html: formatMessage(getContentWithoutSources(msg.content, userMessage)) }} />
+                                        ) : (
+                                            <div className="whitespace-pre-wrap">{msg.content}</div>
+                                        )}
+                                        {msg.role === 'assistant' && (
+                                            <div className="flex items-center gap-2 mt-3">
                                                 <button
-                                                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${showSources[index]
-                                                        ? 'bg-primary-100 text-primary-700 border-primary-300'
+                                                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${copiedIndex === index
+                                                        ? 'bg-primary-500 text-white border-primary-500'
                                                         : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
                                                         }`}
-                                                    onClick={() => toggleSources(index)}
-                                                    aria-label="Show sources"
+                                                    onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
+                                                    aria-label="Copy message"
+                                                >
+                                                    {copiedIndex === index ? (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                            <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
+                                                        </svg>
+                                                    ) : (
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                            <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
+                                                            <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
+                                                        </svg>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 hover:-translate-y-0.5"
+                                                    onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
+                                                    aria-label="Print message"
                                                 >
                                                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                        <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+                                                        <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
                                                     </svg>
                                                 </button>
-                                            )}
-                                            <span className="text-xs text-gray-500 ml-auto">{formatTimestamp()}</span>
-                                        </div>
-                                    )}
-                                    {msg.role === 'assistant' && showSources[index] && extractSources(msg.content, userMessage) && (
-                                        <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600 animate-fade-in-up">
-                                            <div dangerouslySetInnerHTML={{ __html: formatMessage(extractSources(msg.content, userMessage)) }} />
-                                        </div>
-                                    )}
-                                    {msg.role === 'user' && (
-                                        <div className="text-xs text-white/70 mt-2 text-right">{formatTimestamp()}</div>
-                                    )}
+                                                {extractSources(msg.content, userMessage) && (
+                                                    <button
+                                                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${showSources[index]
+                                                            ? 'bg-primary-100 text-primary-700 border-primary-300'
+                                                            : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
+                                                            }`}
+                                                        onClick={() => toggleSources(index)}
+                                                        aria-label="Show sources"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                            <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+                                                        </svg>
+                                                    </button>
+                                                )}
+                                                <span className="text-xs text-gray-500 ml-auto">{formatTimestamp()}</span>
+                                            </div>
+                                        )}
+                                        {msg.role === 'assistant' && showSources[index] && extractSources(msg.content, userMessage) && (
+                                            <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600 animate-fade-in-up">
+                                                <div dangerouslySetInnerHTML={{ __html: formatMessage(extractSources(msg.content, userMessage)) }} />
+                                            </div>
+                                        )}
+                                        {msg.role === 'user' && (
+                                            <div className="text-xs text-white/70 mt-2 text-right">{formatTimestamp()}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                        {isLoading && (
+                            <div className={`flex justify-start mb-6 max-w-none ${fadeOutLoader ? 'animate-fade-out' : 'animate-fade-in'}`}>
+                                <div className="shimmer-loader">
+                                    <span className="loader-text">Thinking...</span>
                                 </div>
                             </div>
-                        );
-                    })}
-                    {isLoading && (
-                        <div className={`flex justify-start mb-6 max-w-none ${fadeOutLoader ? 'animate-fade-out' : 'animate-fade-in'}`}>
-                            <div className="shimmer-loader">
-                                <span className="loader-text">Thinking...</span>
-                            </div>
-                        </div>
-                    )}
-                    <div ref={messagesEndRef} />
-                </div>
-                <div className="fixed bottom-0 bg-white border-t border-gray-200 shadow-lg transition-all duration-300" style={{ left: '224px', width: 'calc(100% - 224px)' }}>
-                    <div className="max-w-4xl mx-auto p-4" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
-                        <div className="flex justify-center items-center gap-3 mb-3">
-                            <div className="inline-flex bg-gray-100 rounded-lg p-1">
-                                <button
-                                    onClick={() => setIsLongAnswerMode(false)}
-                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${!isLongAnswerMode
-                                        ? 'bg-primary-400 text-white shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    Standard
-                                </button>
-                                <button
-                                    onClick={() => setIsLongAnswerMode(true)}
-                                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isLongAnswerMode
-                                        ? 'bg-primary-400 text-white shadow-sm'
-                                        : 'text-gray-600 hover:text-gray-900'
-                                        }`}
-                                >
-                                    Long
-                                </button>
-                            </div>
-                            {messages.length === 0 && (
-                                <div className="relative group">
+                        )}
+                        <div ref={messagesEndRef} />
+                    </div>
+                    <div className="fixed bottom-0 bg-white border-t border-gray-200 shadow-lg transition-all duration-300" style={{ left: '224px', width: 'calc(100% - 224px)' }}>
+                        <div className="max-w-4xl mx-auto p-4" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+                            <div className="flex justify-center items-center gap-3 mb-3">
+                                <div className="inline-flex bg-gray-100 rounded-lg p-1">
                                     <button
-                                        onClick={() => {
-                                            setShowTutorial(true);
-                                            setTutorialStep(0);
-                                        }}
-                                        className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
-                                        title="PetQuery tutorial"
+                                        onClick={() => setIsLongAnswerMode(false)}
+                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${!isLongAnswerMode
+                                            ? 'bg-primary-400 text-white shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                            }`}
                                     >
-                                        <FaQuestionCircle className="text-gray-600 text-sm" />
+                                        Standard
                                     </button>
-                                    <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-                                        PetQuery tutorial
-                                    </span>
+                                    <button
+                                        onClick={() => setIsLongAnswerMode(true)}
+                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isLongAnswerMode
+                                            ? 'bg-primary-400 text-white shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
+                                            }`}
+                                    >
+                                        Long
+                                    </button>
                                 </div>
-                            )}
-                        </div>
-                        <form onSubmit={handleSubmit} className="flex gap-3 items-center">
-                            <div className="relative flex-1">
-                                <textarea
-                                    ref={textareaRef}
-                                    value={inputMessage}
-                                    onChange={(e) => {
-                                        setInputMessage(e.target.value);
-                                        if (!e.target.value.trim()) {
-                                            e.target.style.height = '52px';
-                                        } else {
-                                            e.target.style.height = '52px';
-                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                        }
-                                    }}
-                                    onClick={(e) => {
-                                        if (inputMessage.trim()) {
-                                            e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                        }
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            if (inputMessage.trim() && !isLoading) {
-                                                e.target.style.height = '52px';
-                                                handleSubmit(e);
-                                            }
-                                        }
-                                    }}
-                                    placeholder="Ask me anything about veterinary medicine..."
-                                    className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
-                                    disabled={isLoading}
-                                    rows="1"
-                                />
-                                {inputMessage && (
-                                    <button
-                                        type="button"
-                                        className="absolute top-3 right-3 p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
-                                        onClick={() => {
-                                            const textarea = document.querySelector('textarea');
-                                            textarea.style.height = '52px';
-                                        }}
-                                        aria-label="Collapse input"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="m18 15-6-6-6 6" />
-                                        </svg>
-                                    </button>
+                                {messages.length === 0 && (
+                                    <div className="relative group">
+                                        <button
+                                            onClick={() => {
+                                                setShowTutorial(true);
+                                                setTutorialStep(0);
+                                            }}
+                                            className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
+                                            title="PetQuery tutorial"
+                                        >
+                                            <FaQuestionCircle className="text-gray-600 text-sm" />
+                                        </button>
+                                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                                            PetQuery tutorial
+                                        </span>
+                                    </div>
                                 )}
                             </div>
-                            <button
-                                type="submit"
-                                className="w-12 h-12 bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center flex-shrink-0 group"
-                                disabled={isLoading || !inputMessage.trim()}
-                                aria-label="Send message"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    width="18"
-                                    height="18"
-                                    className="transform group-hover:translate-x-0.5 transition-transform duration-200"
-                                >
-                                    <path d="m3 3 3 9-3 9 19-9Z" />
-                                    <path d="m6 12 13 0" />
-                                </svg>
-                            </button>
-                            {messages.length > 0 && (
+                            <form onSubmit={handleSubmit} className="flex gap-3 items-center">
+                                <div className="relative flex-1">
+                                    <textarea
+                                        ref={textareaRef}
+                                        value={inputMessage}
+                                        onChange={(e) => {
+                                            setInputMessage(e.target.value);
+                                            if (!e.target.value.trim()) {
+                                                e.target.style.height = '52px';
+                                            } else {
+                                                e.target.style.height = '52px';
+                                                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                            }
+                                        }}
+                                        onClick={(e) => {
+                                            if (inputMessage.trim()) {
+                                                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                            }
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                if (inputMessage.trim() && !isLoading) {
+                                                    e.target.style.height = '52px';
+                                                    handleSubmit(e);
+                                                }
+                                            }
+                                        }}
+                                        placeholder="Ask me anything about veterinary medicine..."
+                                        className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                                        disabled={isLoading || isRecording}
+                                        rows="1"
+                                    />
+                                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                                        {!isRecording && !isTranscribing && (
+                                            <button
+                                                type="button"
+                                                onClick={startRecording}
+                                                className="p-1.5 text-primary-500 hover:text-primary-600 transition-colors duration-200 rounded-full hover:bg-primary-50"
+                                                aria-label="Start dictation"
+                                                title="Start dictation"
+                                            >
+                                                <FaMicrophone className="text-lg" />
+                                            </button>
+                                        )}
+                                        {isRecording && (
+                                            <button
+                                                type="button"
+                                                onClick={stopRecording}
+                                                className="p-1.5 text-red-500 hover:text-red-600 transition-colors duration-200 rounded-full hover:bg-red-50 animate-pulse"
+                                                aria-label="Stop recording"
+                                                title="Stop recording"
+                                            >
+                                                <FaStop className="text-lg" />
+                                            </button>
+                                        )}
+                                        {isTranscribing && (
+                                            <div className="p-1.5 text-primary-500">
+                                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        )}
+                                        {inputMessage && !isRecording && !isTranscribing && (
+                                            <button
+                                                type="button"
+                                                className="p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
+                                                onClick={() => {
+                                                    if (textareaRef.current) {
+                                                        textareaRef.current.style.height = '52px';
+                                                    }
+                                                }}
+                                                aria-label="Collapse input"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="m18 15-6-6-6 6" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                                 <button
-                                    onClick={handleClear}
-                                    type="button"
-                                    className="px-4 py-2 h-12 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 font-medium flex-shrink-0 flex items-center gap-2"
+                                    type="submit"
+                                    className="w-12 h-12 bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center flex-shrink-0 group"
+                                    disabled={isLoading || !inputMessage.trim() || isRecording}
+                                    aria-label="Send message"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M3 6h18" />
-                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        width="18"
+                                        height="18"
+                                        className="transform group-hover:translate-x-0.5 transition-transform duration-200"
+                                    >
+                                        <path d="m3 3 3 9-3 9 19-9Z" />
+                                        <path d="m6 12 13 0" />
                                     </svg>
-                                    Clear
                                 </button>
-                            )}
-                        </form>
+                                {messages.length > 0 && (
+                                    <button
+                                        onClick={handleClear}
+                                        type="button"
+                                        className="px-4 py-2 h-12 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 font-medium flex-shrink-0 flex items-center gap-2"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M3 6h18" />
+                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                        </svg>
+                                        Clear
+                                    </button>
+                                )}
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
             </div>
 
             {/* Tutorial Modal */}
             {showTutorial && (
-                <div 
-                    className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" 
+                <div
+                    className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
                     onClick={() => setShowTutorial(false)}
                     style={{
                         left: '224px',
@@ -1308,7 +1433,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         animation: 'fadeIn 0.3s ease-out'
                     }}
                 >
-                    <div 
+                    <div
                         className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
                         onClick={(e) => e.stopPropagation()}
                         style={{

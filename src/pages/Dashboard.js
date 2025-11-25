@@ -207,7 +207,11 @@ const Dashboard = () => {
                 }
 
                 const generatedReport = response.data.report;
-                const reportName = `QuickSOAP Mobile - ${new Date().toLocaleString()}`;
+                const extractedPetName = response.data.petName;
+                const dateStr = new Date().toLocaleString();
+                const reportName = extractedPetName 
+                    ? `${extractedPetName} - ${dateStr}`
+                    : `QuickSOAP Mobile - ${dateStr}`;
 
                 // Double-check the draft still exists and hasn't been processed by another instance
                 const { data: finalDraftCheck } = await supabase

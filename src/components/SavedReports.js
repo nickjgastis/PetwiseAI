@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import '../styles/SavedReports.css';
-import { FaTimes, FaEdit, FaCopy, FaCheckCircle } from 'react-icons/fa';
+import { FaTimes, FaEdit, FaCopy } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { createEditor } from 'slate';
@@ -1331,29 +1331,6 @@ const SavedReports = () => {
         <div className="saved-reports" style={{ backgroundColor: 'transparent', minHeight: '100vh' }}>
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-6">Saved Records</h2>
-                {hasNewDesktopQuickSOAP && (
-                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <FaCheckCircle className="text-xl" />
-                            <div>
-                                <p className="font-semibold text-base">New QuickSOAP Report Saved!</p>
-                                <p className="text-sm opacity-90">Your QuickSOAP report has been automatically saved.</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={() => {
-                                setHasNewDesktopQuickSOAP(false);
-                                setNewDesktopQuickSOAPId(null);
-                                localStorage.removeItem('hasNewDesktopQuickSOAP');
-                                localStorage.removeItem('newDesktopQuickSOAPId');
-                            }}
-                            className="text-white hover:text-gray-200 transition-colors flex-shrink-0 ml-4"
-                            title="Dismiss"
-                        >
-                            <FaTimes className="text-lg" />
-                        </button>
-                    </div>
-                )}
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
                         <p className="text-red-600 text-sm">{error}</p>
