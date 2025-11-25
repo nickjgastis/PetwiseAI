@@ -1,7 +1,7 @@
 // src/App.js
 
 import React, { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
 import Navbar from './components/Navbar';
@@ -135,7 +135,18 @@ const AppContent = () => {
 };
 
 const App = () => {
-  const navigate = useNavigate();
+  // Check for required Auth0 env vars
+  if (!process.env.REACT_APP_AUTH0_DOMAIN || !process.env.REACT_APP_AUTH0_CLIENT_ID) {
+    console.error('Missing Auth0 environment variables');
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <h1>Configuration Error</h1>
+        <p>Auth0 configuration is missing. Please check your environment variables.</p>
+        <p>REACT_APP_AUTH0_DOMAIN: {process.env.REACT_APP_AUTH0_DOMAIN ? 'Set' : 'Missing'}</p>
+        <p>REACT_APP_AUTH0_CLIENT_ID: {process.env.REACT_APP_AUTH0_CLIENT_ID ? 'Set' : 'Missing'}</p>
+      </div>
+    );
+  }
 
   return (
     <Auth0Provider
@@ -146,10 +157,6 @@ const App = () => {
           ? 'https://app.petwise.vet/callback'
           : window.location.origin + '/callback',
         scope: "openid profile email"
-      }}
-      onRedirectCallback={(appState) => {
-        const targetUrl = appState?.returnTo || '/dashboard';
-        navigate(targetUrl);
       }}
       cacheLocation="localstorage"
       useRefreshTokens={true}

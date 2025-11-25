@@ -15,6 +15,7 @@ import Terms from './components/Terms';
 import Help from './components/Help';
 import AdminDashboard from './components/AdminDashboard';
 import AutoLogin from './components/AutoLogin';
+import CallbackHandler from './components/CallbackHandler';
 
 const AppRoutes = () => {
     const { isLoading, isAuthenticated, user } = useAuth0();
@@ -60,7 +61,7 @@ const AppRoutes = () => {
             />
             <Route path="/login" element={<AutoLogin />} />
             <Route path="/signup" element={<AutoLogin mode="signup" />} />
-            <Route path="/callback" element={<div>Loading...</div>} />
+            <Route path="/callback" element={<CallbackHandler />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />
