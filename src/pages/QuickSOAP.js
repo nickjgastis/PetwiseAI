@@ -1648,12 +1648,14 @@ const QuickSOAP = () => {
                             {/* Header */}
                             <div className={`${isMobile ? 'mb-4' : 'mb-8'} text-center relative flex-shrink-0`}>
                                 {/* Disclaimer */}
-                                <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
-                                    <p className="text-sm text-blue-800">
-                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
-                                        <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
-                                    </p>
-                                </div>
+                                {!isMobile && (
+                                    <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
+                                        <p className="text-sm text-blue-800">
+                                            🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
+                                            <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
+                                        </p>
+                                    </div>
+                                )}
                                 <div className="flex items-center justify-center gap-3">
                                     <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
                                         QuickSOAP
@@ -1877,12 +1879,14 @@ const QuickSOAP = () => {
                             {/* Header */}
                             <div className="mb-6">
                                 {/* Disclaimer */}
-                                <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-                                    <p className="text-sm text-blue-800">
-                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
-                                        <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
-                                    </p>
-                                </div>
+                                {!isMobile && (
+                                    <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p className="text-sm text-blue-800">
+                                            🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
+                                            <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
+                                        </p>
+                                    </div>
+                                )}
                                 <h1 className="text-2xl font-bold text-primary-500 mb-2">
                                     QuickSOAP
                                 </h1>
