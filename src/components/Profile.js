@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
 import Checkout from './Checkout';
@@ -96,51 +96,51 @@ const Profile = ({ isMobileSignup = false }) => {
         }
     }, [user]);
 
-    useEffect(() => {
-        const checkSubscription = async () => {
-            if (!user?.sub) return;
+    const checkSubscription = useCallback(async () => {
+        if (!user?.sub) return;
 
-            setIsSubscriptionLoading(true);
-            try {
-                const { data, error } = await supabase
-                    .from('users')
-                    .select(`
-                        subscription_status,
-                        subscription_end_date,
-                        stripe_customer_id,
-                        has_used_trial,
-                        subscription_interval,
-                        cancel_at_period_end,
-                        dvm_name,
-                        grace_period_end,
-                        plan_label,
-                        student_school_email,
-                        student_grad_year
-                    `)
-                    .eq('auth0_user_id', user.sub)
-                    .single();
+        setIsSubscriptionLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select(`
+                    subscription_status,
+                    subscription_end_date,
+                    stripe_customer_id,
+                    has_used_trial,
+                    subscription_interval,
+                    cancel_at_period_end,
+                    dvm_name,
+                    grace_period_end,
+                    plan_label,
+                    student_school_email,
+                    student_grad_year
+                `)
+                .eq('auth0_user_id', user.sub)
+                .single();
 
-                if (error && error.code !== 'PGRST116') {
-                    console.error('Subscription check error:', error);
-                    return;
-                }
-
-                if (data) {
-                    setSubscriptionStatus(data.subscription_status);
-                    setSubscriptionEndDate(data.subscription_end_date);
-                    setUserData(data);
-                }
-            } catch (err) {
-                console.error('Error:', err);
-            } finally {
-                setIsSubscriptionLoading(false);
+            if (error && error.code !== 'PGRST116') {
+                console.error('Subscription check error:', error);
+                return;
             }
-        };
 
+            if (data) {
+                setSubscriptionStatus(data.subscription_status);
+                setSubscriptionEndDate(data.subscription_end_date);
+                setUserData(data);
+            }
+        } catch (err) {
+            console.error('Error:', err);
+        } finally {
+            setIsSubscriptionLoading(false);
+        }
+    }, [user]);
+
+    useEffect(() => {
         if (isAuthenticated && user) {
             checkSubscription();
         }
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, user, checkSubscription]);
 
     useEffect(() => {
         if (location.state?.openCheckout) {
@@ -273,6 +273,7 @@ const Profile = ({ isMobileSignup = false }) => {
                             onBack={() => setShowCheckout(false)}
                             subscriptionStatus={subscriptionStatus}
                             isMobileSignup={isMobileSignup}
+                            onSubscriptionChange={checkSubscription}
                         />
                     ) : showManageAccount ? (
                         <ManageAccount
@@ -313,6 +314,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 onBack={null}
                                                 embedded={true}
                                                 isMobileSignup={isMobileSignup}
+                                                onSubscriptionChange={checkSubscription}
                                             />
                                         </div>
                                     </div>

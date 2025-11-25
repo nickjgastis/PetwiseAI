@@ -8,6 +8,7 @@ const multer = require('multer');
 const fs = require('fs');
 const FormData = require('form-data');
 const fetch = require('node-fetch');
+const axios = require('axios');
 const studentRouter = require('./routes/studentRoutes');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
@@ -28,11 +29,13 @@ app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // Multer setup for file uploads (QuickSOAP)
-const upload = multer({ dest: 'uploads/' });
-// Ensure uploads directory exists
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads', { recursive: true });
-}
+// Use memory storage for serverless environments (Vercel, etc.) which have read-only file systems
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 25 * 1024 * 1024 // 25MB limit (OpenAI Whisper max)
+    }
+});
 
 // Add these headers to all responses
 app.use((req, res, next) => {
@@ -197,23 +200,20 @@ app.post('/api/quickquery', async (req, res) => {
 // ================ QUICKSOAP ENDPOINTS ================
 // Transcription endpoint using OpenAI Whisper
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
-    let filePath = null;
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No audio file provided' });
         }
 
-        filePath = req.file.path;
-
-        // Read file as buffer
-        const fileBuffer = fs.readFileSync(filePath);
+        // With memory storage, file is already in buffer
+        const fileBuffer = req.file.buffer;
         const fileName = req.file.originalname || 'audio.webm';
         const mimeType = req.file.mimetype || 'audio/webm';
 
         // Create FormData for OpenAI API using form-data package
         const formData = new FormData();
 
-        // Append file with proper options
+        // Append file buffer - form-data package expects buffer as first arg, filename as second, options as third
         formData.append('file', fileBuffer, {
             filename: fileName,
             contentType: mimeType,
@@ -246,39 +246,34 @@ KEEP and CLEAN:
 
 Rewrite the output as clean clinical dictation with no extra words.`);
 
-        // Get form-data headers
-        const formHeaders = formData.getHeaders();
+        // Call OpenAI Whisper API using axios (better FormData compatibility)
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set');
+        }
 
-        // Call OpenAI Whisper API using node-fetch
-        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-            method: 'POST',
+        // Use axios which handles form-data package better than node-fetch
+        const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
             headers: {
                 'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                ...formHeaders
+                ...formData.getHeaders()
             },
-            body: formData
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+            responseType: 'text'
         });
 
-        // Clean up temp file
-        if (fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
+        // No need to clean up temp file - using memory storage
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('OpenAI Whisper API Error:', response.status, errorText);
-            return res.status(response.status === 429 ? 429 : 502).json({
-                error: 'Transcription failed',
-                detail: errorText.slice(0, 500)
-            });
-        }
-
-        const transcription = await response.text();
-        const cleanTranscription = transcription.trim();
+        // Axios response handling
+        const transcription = response.data.trim();
+        const cleanTranscription = transcription;
 
         // Generate a brief summary of the transcription
         let summary = '';
         try {
+            if (!process.env.OPENAI_API_KEY) {
+                throw new Error('OPENAI_API_KEY not available for summary');
+            }
             const summaryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -315,12 +310,20 @@ Rewrite the output as clean clinical dictation with no extra words.`);
             summary: summary || cleanTranscription.substring(0, 100) + (cleanTranscription.length > 100 ? '...' : '')
         });
     } catch (err) {
-        // Clean up temp file if it exists
-        if (filePath && fs.existsSync(filePath)) {
-            fs.unlinkSync(filePath);
-        }
+        // No need to clean up temp file - using memory storage
         console.error('Transcription endpoint error:', err);
         console.error('Error details:', err.message, err.stack);
+
+        // Handle axios errors
+        if (err.response) {
+            const errorText = err.response.data?.error?.message || JSON.stringify(err.response.data) || err.message;
+            console.error('OpenAI Whisper API Error:', err.response.status, errorText);
+            return res.status(err.response.status === 429 ? 429 : 502).json({
+                error: 'Transcription failed',
+                detail: typeof errorText === 'string' ? errorText.slice(0, 500) : errorText
+            });
+        }
+
         res.status(500).json({ error: 'Internal server error during transcription', detail: err.message });
     }
 });
@@ -1449,16 +1452,22 @@ async function checkAccessCodeValidity() {
 setInterval(checkAccessCodeValidity, 24 * 60 * 60 * 1000); // Check daily
 
 // ================ SERVER STARTUP ================
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log('Available endpoints:');
-    app._router.stack.forEach(r => {
-        if (r.route && r.route.path) {
-            console.log(`${Object.keys(r.route.methods)} ${r.route.path}`);
-        }
+// Export for Vercel serverless functions
+module.exports = app;
+
+// Only start listening if not in Vercel environment
+if (process.env.VERCEL !== '1') {
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log('Available endpoints:');
+        app._router.stack.forEach(r => {
+            if (r.route && r.route.path) {
+                console.log(`${Object.keys(r.route.methods)} ${r.route.path}`);
+            }
+        });
     });
-});
+}
 
 // Add a manual reset endpoint for testing
 app.post('/manual-reset', async (req, res) => {

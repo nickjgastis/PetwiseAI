@@ -70,9 +70,9 @@ const Dashboard = () => {
         // Check for active subscription
         const hasActiveSubscription = ['active', 'past_due'].includes(userData?.subscription_status);
 
-        // Check for trial - only specific trial statuses
-        const hasTrial = userData?.subscription_status === 'trialing' ||
-            userData?.plan_label === 'trial';
+        // Check for trial - trial has subscription_status='active' and subscription_interval='trial'
+        const hasTrial = userData?.subscription_status === 'active' && 
+            userData?.subscription_interval === 'trial';
 
         return hasActiveSubscription || hasTrial;
     };
@@ -457,7 +457,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year')
                 .eq('auth0_user_id', user.sub)
                 .single();
 
@@ -514,13 +514,14 @@ const Dashboard = () => {
                 setHasAcceptedTerms(data.has_accepted_terms);
                 setSubscriptionStatus(data.subscription_status);
 
-                // Check if user has active subscription OR student access
+                // Check if user has active subscription OR student access OR trial
                 const hasActiveSubscription = ['active', 'past_due'].includes(data.subscription_status);
+                const hasTrial = data.subscription_status === 'active' && data.subscription_interval === 'trial';
                 const isStudentMode = data.plan_label === 'student' &&
                     data.subscription_end_date &&
                     new Date(data.subscription_end_date) > new Date();
 
-                setIsSubscribed(hasActiveSubscription || isStudentMode);
+                setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
                 setUserData(data);
 
                 if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
@@ -541,6 +542,22 @@ const Dashboard = () => {
             checkSubscription();
         }
     }, [isAuthenticated, user]);
+
+    // Listen for subscription updates from Checkout component
+    useEffect(() => {
+        const handleSubscriptionUpdate = () => {
+            // Small delay to ensure database has updated
+            setTimeout(() => {
+                checkSubscription();
+            }, 300);
+        };
+
+        window.addEventListener('subscriptionUpdated', handleSubscriptionUpdate);
+        return () => {
+            window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdate);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Refetch subscription status when navigating to QuickSOAP (in case user just signed up)
     useEffect(() => {
@@ -683,76 +700,15 @@ const Dashboard = () => {
             );
         }
 
-        // Only show mobile notification if NOT on profile route
-        if (!window.location.pathname.includes('/profile')) {
-            return (
-                <>
-                    {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-600 items-center justify-between px-4 z-50 shadow-md">
-                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
-                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
-                            <span>
-                                <span className="font-bold text-white">Petwise</span>
-                                <span className="font-normal text-white">.vet</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div className="min-h-screen bg-white" style={{ paddingTop: '64px', paddingBottom: '80px' }}>
-                        <div className="flex flex-col items-center justify-center text-center min-h-screen p-5 bg-white bg-gradient-to-br from-white to-blue-50">
-                            <img src="/PW.png" alt="Petwise Logo" className="w-30 h-30 mb-5" />
-                            <h1 className="text-primary-600 text-3xl mb-5">Welcome to Petwise!</h1>
-                            {isSubscribed ? (
-                                <p className="text-lg leading-relaxed text-gray-600 mb-4 max-w-lg">PetWise is designed as a desktop application. You can manage your subscription here, but please use your desktop computer to access all features.</p>
-                            ) : (
-                                <p className="text-lg leading-relaxed text-gray-600 mb-4 max-w-lg">PetWise is designed as a desktop application, but you can sign up for a subscription here.</p>
-                            )}
-                            <p className="text-lg leading-relaxed text-gray-600 mb-6 max-w-lg">After subscribing, please use your desktop computer to access all features.</p>
-                            <div className="flex flex-col gap-3">
-                                <button
-                                    className="px-5 py-3 bg-primary-600 text-white border-none rounded-lg text-base transition-colors duration-300 cursor-pointer hover:bg-primary-700"
-                                    onClick={() => navigate('/dashboard/quicksoap')}
-                                >
-                                    Record Dictation (QuickSOAP)
-                                </button>
-                                <button
-                                    className="px-5 py-3 bg-gray-200 text-gray-700 border-none rounded-lg text-base transition-colors duration-300 cursor-pointer hover:bg-gray-300"
-                                    onClick={() => navigate('/dashboard/profile')}
-                                >
-                                    {isSubscribed ? 'Continue to Profile' : 'Continue to Sign Up'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {/* Bottom Navigation Bar */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
-                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
-                            {hasActivePlan() && (
-                                <Link
-                                    to="/dashboard/quicksoap"
-                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${
-                                        location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
-                                    }`}
-                                >
-                                    <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                    <span className="text-xs font-medium">
-                                        QuickSOAP
-                                        <span className="ml-0.5 text-[8px] font-semibold text-yellow-400 uppercase tracking-wide">beta</span>
-                                    </span>
-                                </Link>
-                            )}
-                            <Link
-                                to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${
-                                    location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
-                                }`}
-                            >
-                                <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">Profile</span>
-                            </Link>
-                        </div>
-                    </nav>
-                </>
-            );
+        // Redirect based on subscription status if not on a specific route
+        if (!window.location.pathname.includes('/profile') && !window.location.pathname.includes('/quicksoap')) {
+            // Route to QuickSOAP if user has active plan, otherwise route to Profile
+            if (hasActivePlan()) {
+                navigate('/dashboard/quicksoap', { replace: true });
+            } else {
+                navigate('/dashboard/profile', { replace: true });
+            }
+            return null;
         }
 
         // If on profile route, allow it but hide sidebar and only show profile with bottom nav

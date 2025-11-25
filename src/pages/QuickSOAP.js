@@ -1582,7 +1582,7 @@ const QuickSOAP = () => {
                         </div>
                         <div className="mb-6">
                             <p className="text-gray-700 mb-3">
-                                {isMobile 
+                                {isMobile
                                     ? "If you haven't sent this to desktop it will not be saved."
                                     : "If you haven't generated this it will not be saved."
                                 }
@@ -1622,8 +1622,8 @@ const QuickSOAP = () => {
                 {/* Left Side - Input Area */}
                 <div
                     className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed top-0 bottom-0 z-40'}
-                    style={isMobile ? { overflowY: 'hidden', height: '100vh' } : {}}
                     style={{
+                        ...(isMobile ? { overflowY: 'hidden', height: '100vh' } : {}),
                         ...(hasReport ? {
                             left: isMobile ? '0' : '224px',
                             width: isMobile ? '100%' : '25%',
@@ -1647,6 +1647,13 @@ const QuickSOAP = () => {
                         <div className={`h-full flex flex-col ${isMobile ? 'items-center justify-center' : 'items-center justify-center'} px-8 ${isMobile ? 'overflow-hidden' : ''}`} style={isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}}>
                             {/* Header */}
                             <div className={`${isMobile ? 'mb-4' : 'mb-8'} text-center relative flex-shrink-0`}>
+                                {/* Disclaimer */}
+                                <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
+                                    <p className="text-sm text-blue-800">
+                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
+                                        <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
+                                    </p>
+                                </div>
                                 <div className="flex items-center justify-center gap-3">
                                     <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
                                         QuickSOAP
@@ -1697,7 +1704,7 @@ const QuickSOAP = () => {
 
                             {/* Dictation Bubbles - Above center */}
                             {dictations.length > 0 && (
-                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full max-w-2xl space-y-3 ${isMobile ? 'flex-shrink-0' : 'overflow-y-auto max-h-64'}`} style={isMobile ? { 
+                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full max-w-2xl space-y-3 ${isMobile ? 'flex-shrink-0' : 'overflow-y-auto max-h-64'}`} style={isMobile ? {
                                     overflowY: dictations.some(d => d.expanded) ? 'auto' : 'visible',
                                     maxHeight: dictations.some(d => d.expanded) ? 'calc(50vh)' : 'none',
                                     WebkitOverflowScrolling: dictations.some(d => d.expanded) ? 'touch' : 'auto'
@@ -1808,10 +1815,10 @@ const QuickSOAP = () => {
                                             <button
                                                 onClick={stopRecording}
                                                 className={`${isMobile ? 'w-24 h-24' : 'w-24 h-24'} rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center animate-pulse`}
-                                                    title="Stop Recording"
-                                                >
-                                                    <FaStop className={isMobile ? 'text-3xl' : 'text-2xl'} />
-                                                </button>
+                                                title="Stop Recording"
+                                            >
+                                                <FaStop className={isMobile ? 'text-3xl' : 'text-2xl'} />
+                                            </button>
                                         </div>
                                         <p className="text-sm font-medium text-gray-600">
                                             {isPaused ? 'Paused' : 'Listening...'}
@@ -1869,6 +1876,13 @@ const QuickSOAP = () => {
                         <div className="h-full overflow-y-auto px-6 py-8 bg-white">
                             {/* Header */}
                             <div className="mb-6">
+                                {/* Disclaimer */}
+                                <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p className="text-sm text-blue-800">
+                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
+                                        <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
+                                    </p>
+                                </div>
                                 <h1 className="text-2xl font-bold text-primary-500 mb-2">
                                     QuickSOAP
                                 </h1>

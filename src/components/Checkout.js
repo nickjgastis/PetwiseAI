@@ -16,7 +16,7 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
+const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscriptionChange }) => {
     const { logout } = useAuth0();
     const navigate = useNavigate();
     const [subscriptionInterval, setSubscriptionInterval] = useState(null);
@@ -135,6 +135,17 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
             console.log('Trial activation response:', data);
 
             if (data && data.length > 0) {
+                // Refresh subscription data in parent component if callback provided
+                if (onSubscriptionChange) {
+                    // Small delay to ensure database has updated
+                    setTimeout(() => {
+                        onSubscriptionChange();
+                    }, 300);
+                }
+                // Dispatch event to notify Dashboard and other components
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+                }, 300);
                 // Small delay to ensure database has updated, then navigate to QuickSOAP
                 setTimeout(() => {
                     navigate('/dashboard/quicksoap');
@@ -172,7 +183,17 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
                 throw new Error(data.error);
             }
 
-            // Success! Small delay to ensure database has updated, then navigate to QuickSOAP
+            // Success! Refresh subscription data in parent component if callback provided
+            if (onSubscriptionChange) {
+                setTimeout(() => {
+                    onSubscriptionChange();
+                }, 300);
+            }
+            // Dispatch event to notify Dashboard and other components
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+            }, 300);
+            // Small delay to ensure database has updated, then navigate to QuickSOAP
             setTimeout(() => {
                 navigate('/dashboard/quicksoap');
             }, 500);
@@ -183,6 +204,16 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false }) => {
 
     const handleStudentRedeemSuccess = () => {
         setShowStudentRedeem(false);
+        // Refresh subscription data in parent component if callback provided
+        if (onSubscriptionChange) {
+            setTimeout(() => {
+                onSubscriptionChange();
+            }, 300);
+        }
+        // Dispatch event to notify Dashboard and other components
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+        }, 300);
         // Small delay to ensure database has updated, then navigate to QuickSOAP
         setTimeout(() => {
             navigate('/dashboard/quicksoap');
