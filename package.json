@@ -57,7 +57,7 @@
     "client": "react-scripts start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "dev:verbose": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"red,blue\" \"npm run server\" \"npm run client\"",
-    "vercel-build": "npm run build"
+    "vercel-build": "CI=false npm run build"
   },
   "eslintConfig": {
     "extends": [
