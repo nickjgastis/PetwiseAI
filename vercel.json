@@ -83,7 +83,7 @@
       "destination": "/api/index.js"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!static|.*\\.(js|css|json|ico|png|jpg|jpeg|svg|woff|woff2|ttf|eot|map|webp|gif)).*)",
       "destination": "/index.html"
     }
   ]

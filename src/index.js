@@ -14,13 +14,15 @@ if (!rootElement) {
 
 const root = createRoot(rootElement);
 
+// Add a simple test render first to verify React works
+console.log('=== REACT INIT START ===');
+console.log('Root element:', rootElement);
+console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('Auth0 Domain:', process.env.REACT_APP_AUTH0_DOMAIN ? 'Set' : 'Missing');
+console.log('Auth0 Client ID:', process.env.REACT_APP_AUTH0_CLIENT_ID ? 'Set' : 'Missing');
+
 // Wrap render in try-catch for initialization errors
 try {
-  console.log('Initializing React app...');
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('Auth0 Domain:', process.env.REACT_APP_AUTH0_DOMAIN ? 'Set' : 'Missing');
-  console.log('Auth0 Client ID:', process.env.REACT_APP_AUTH0_CLIENT_ID ? 'Set' : 'Missing');
-  
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
@@ -30,12 +32,11 @@ try {
       </ErrorBoundary>
     </React.StrictMode>
   );
-  
-  console.log('React app rendered successfully');
+  console.log('=== REACT RENDER CALLED ===');
 } catch (error) {
-  console.error('Failed to render React app:', error);
+  console.error('=== RENDER ERROR ===', error);
   rootElement.innerHTML = `
-    <div style="padding: 20px; text-align: center;">
+    <div style="padding: 20px; text-align: center; color: red;">
       <h1>Initialization Error</h1>
       <p>${error.message}</p>
       <pre>${error.stack}</pre>

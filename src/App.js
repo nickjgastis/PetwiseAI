@@ -9,8 +9,12 @@ import { supabase } from './supabaseClient';
 import "./styles/global.css";
 
 const AppContent = () => {
-  const { user, isAuthenticated, isLoading } = useAuth0();
+  console.log('=== AppContent rendering ===');
+  const { user, isAuthenticated, isLoading, error: auth0Error } = useAuth0();
   const location = useLocation();
+  
+  console.log('Auth0 state:', { isLoading, isAuthenticated, hasUser: !!user, error: auth0Error });
+  console.log('Current location:', location.pathname);
 
   // Hide navbar on login/callback routes
   const hideNavbar = ['/login', '/signup', '/callback'].includes(location.pathname) ||
