@@ -1,5 +1,5 @@
 // ================ IMPORTS ================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import axios from 'axios';
@@ -32,6 +32,26 @@ const slideDownStyle = `
             transform: translateY(0);
         }
     }
+    @keyframes fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    @keyframes fadeDown {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+    }
 `;
 
 // ================ DASHBOARD COMPONENT ================
@@ -51,6 +71,9 @@ const Dashboard = () => {
     const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
+    const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
+    const isProcessingQueueRef = useRef(false);
+    const processingDraftIdsRef = useRef(new Set()); // Track which drafts are currently being processed
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
@@ -102,12 +125,27 @@ const Dashboard = () => {
         };
     }, []);
 
-    // ================ FETCH NEW MOBILE DICTATIONS (Background polling) ================
+    // ================ FETCH NEW MOBILE DICTATIONS (Background polling with queue) ================
     // This runs continuously even when QuickSOAP tab is not active, so sidebar can show alerts
     useEffect(() => {
-        if (isMobile || !isAuthenticated || !user) return; // Only check on desktop when authenticated
+        if (isMobile || !isAuthenticated || !user) {
+            // Reset count when logged out
+            setMobileReportsGenerating(0);
+            return;
+        }
 
-        const fetchNewMobileDictations = async () => {
+        const processMobileDictation = async (draft) => {
+            const draftId = draft.id;
+
+            // Prevent concurrent processing of the same draft
+            if (processingDraftIdsRef.current.has(draftId)) {
+                console.log('Draft already being processed:', draftId);
+                return false;
+            }
+
+            // Mark as processing
+            processingDraftIdsRef.current.add(draftId);
+
             try {
                 const { data: userData, error: userError } = await supabase
                     .from('users')
@@ -115,80 +153,32 @@ const Dashboard = () => {
                     .eq('auth0_user_id', user.sub)
                     .single();
 
-                if (userError || !userData) return;
+                if (userError || !userData) {
+                    return false;
+                }
 
                 const userId = userData.id;
 
-                // Fetch drafts that were explicitly sent from mobile (sent_to_desktop: true)
-                const { data: allDrafts, error: draftError } = await supabase
-                    .from('saved_reports')
-                    .select('id, form_data, created_at')
-                    .eq('user_id', userId)
-                    .eq('record_type', 'quicksoap')
-                    .is('report_text', null)
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                if (draftError || !allDrafts || allDrafts.length === 0) return;
-
-                // Find the most recent draft with sent_to_desktop: true
-                const sentDraft = allDrafts.find(d => d.form_data?.sent_to_desktop === true);
-
-                if (!sentDraft || !sentDraft.form_data) return;
-
-                const sentAt = sentDraft.form_data.sent_to_desktop_at;
-                const draftId = sentDraft.id;
-
-                // Check if we've already processed this (compare sent_at timestamp)
-                const lastProcessedSentAt = localStorage.getItem('lastProcessedMobileSOAPSentAt');
-                
-                // If already processed, skip
-                if (lastProcessedSentAt === sentAt) {
-                    return; // Already processed
-                }
-
-                // Check if the draft still exists (if not, it was already processed)
+                // Check if the draft still exists and is still a draft (has no report_text)
                 const { data: draftCheck } = await supabase
                     .from('saved_reports')
-                    .select('id')
+                    .select('id, report_text')
                     .eq('id', draftId)
                     .eq('user_id', userId)
                     .maybeSingle();
 
                 if (!draftCheck) {
-                    // Draft doesn't exist anymore - already processed
-                    localStorage.setItem('lastProcessedMobileSOAPSentAt', sentAt);
-                    return;
+                    // Draft doesn't exist anymore - already processed or deleted
+                    return false;
                 }
 
-                // Check if a report with this sentAt already exists (prevent duplicates)
-                // Check by looking for reports with the same sent_to_desktop_at in form_data
-                const { data: allReports } = await supabase
-                    .from('saved_reports')
-                    .select('id, form_data')
-                    .eq('user_id', userId)
-                    .eq('record_type', 'quicksoap')
-                    .not('report_text', 'is', null);
-
-                const existingReport = allReports?.find(r => 
-                    r.form_data?.sent_to_desktop_at === sentAt
-                );
-
-                if (existingReport) {
-                    // Report already exists, mark as processed and delete draft if it still exists
-                    localStorage.setItem('lastProcessedMobileSOAPSentAt', sentAt);
-                    await supabase
-                        .from('saved_reports')
-                        .delete()
-                        .eq('id', draftId);
-                    return;
+                // If draft already has a report_text, it was already processed
+                if (draftCheck.report_text) {
+                    return true; // Already processed, consider success
                 }
-
-                // Mark as processing BEFORE starting generation to prevent duplicates
-                localStorage.setItem('lastProcessedMobileSOAPSentAt', sentAt);
 
                 // Auto-generate SOAP report from mobile dictation
-                const formData = sentDraft.form_data;
+                const formData = draft.form_data;
                 const dictations = formData.dictations || [];
                 const input = formData.input || '';
                 
@@ -198,100 +188,241 @@ const Dashboard = () => {
 
                 if (!combinedInput.trim()) {
                     console.error('No dictation content to generate SOAP from');
-                    // Remove processing flag if no content
-                    localStorage.removeItem('lastProcessedMobileSOAPSentAt');
-                    return;
+                    // Delete draft if no content
+                    await supabase
+                        .from('saved_reports')
+                        .delete()
+                        .eq('id', draftId);
+                    return false;
                 }
 
-                try {
-                    // Generate SOAP report
-                    const response = await axios.post(`${API_URL}/api/generate-soap`, {
-                        input: combinedInput.trim()
-                    });
+                // Generate SOAP report
+                const response = await axios.post(`${API_URL}/api/generate-soap`, {
+                    input: combinedInput.trim()
+                });
 
-                    if (response.data.report) {
-                        const generatedReport = response.data.report;
-                        const reportName = `QuickSOAP Mobile - ${new Date().toLocaleString()}`;
-
-                        // Double-check the report doesn't already exist before saving
-                        const { data: checkExisting } = await supabase
-                            .from('saved_reports')
-                            .select('id')
-                            .eq('user_id', userId)
-                            .eq('record_type', 'quicksoap')
-                            .not('report_text', 'is', null)
-                            .contains('form_data', { sent_to_desktop_at: sentAt })
-                            .maybeSingle();
-
-                        if (checkExisting) {
-                            // Report already exists, skip saving
-                            return;
-                        }
-
-                        // Save the generated SOAP to Saved Records
-                        const { data: savedReport, error: saveError } = await supabase
-                            .from('saved_reports')
-                            .insert({
-                                user_id: userId,
-                                report_name: reportName,
-                                report_text: generatedReport,
-                                form_data: {
-                                    ...formData,
-                                    from_mobile: true,
-                                    auto_generated: true,
-                                    generated_at: new Date().toISOString()
-                                },
-                                record_type: 'quicksoap'
-                            })
-                            .select()
-                            .single();
-
-                        if (saveError) {
-                            console.error('Error saving generated SOAP:', saveError);
-                            // Remove processing flag on error so it can retry
-                            localStorage.removeItem('lastProcessedMobileSOAPSentAt');
-                            return;
-                        }
-
-                        // Delete the original draft
-                        await supabase
-                            .from('saved_reports')
-                            .delete()
-                            .eq('id', draftId);
-                        
-                        // Set notification flag for Saved Records tab
-                        setHasNewMobileSOAP(true);
-                        localStorage.setItem('hasNewMobileSOAP', 'true');
-                        localStorage.setItem('newMobileSOAPId', savedReport.id);
-
-                        // Dispatch custom event to notify Saved Reports component and update count
-                        // The event handler will increment the count to avoid double-counting
-                        window.dispatchEvent(new CustomEvent('newMobileSOAPGenerated', { 
-                            detail: { reportId: savedReport.id } 
-                        }));
-                    }
-                } catch (genError) {
-                    console.error('Error generating SOAP from mobile dictation:', genError);
-                    // Remove processing flag on error so it can retry
-                    localStorage.removeItem('lastProcessedMobileSOAPSentAt');
+                if (!response.data || !response.data.report) {
+                    console.error('No report generated from API response:', response.data);
+                    return false;
                 }
-            } catch (err) {
-                console.error('Error fetching new mobile dictations:', err);
+
+                const generatedReport = response.data.report;
+                const reportName = `QuickSOAP Mobile - ${new Date().toLocaleString()}`;
+
+                // Double-check the draft still exists and hasn't been processed by another instance
+                const { data: finalDraftCheck } = await supabase
+                    .from('saved_reports')
+                    .select('id, report_text, form_data')
+                    .eq('id', draftId)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (!finalDraftCheck) {
+                    // Draft was deleted (likely by user on mobile) - this is okay, just skip it
+                    console.log('Draft was deleted before processing completed (likely deleted by user):', draftId);
+                    return true; // Consider success - user may have deleted it intentionally
+                }
+
+                if (finalDraftCheck.report_text) {
+                    console.log('Draft was already processed by another instance:', draftId);
+                    return true; // Already processed, consider success
+                }
+
+                // Update the draft to a report instead of inserting new (prevents duplicates)
+                const { data: savedReport, error: saveError } = await supabase
+                    .from('saved_reports')
+                    .update({
+                        report_name: reportName,
+                        report_text: generatedReport,
+                        form_data: {
+                            ...formData,
+                            from_mobile: true,
+                            auto_generated: true,
+                            generated_at: new Date().toISOString()
+                        }
+                    })
+                    .eq('id', draftId)
+                    .eq('user_id', userId)
+                    .select()
+                    .single();
+
+                if (saveError) {
+                    console.error('Error updating draft to report:', saveError, 'Draft ID:', draftId);
+                    // Don't delete draft on error so it can retry
+                    return false;
+                }
+
+                if (!savedReport) {
+                    console.error('No report returned after update:', draftId);
+                    return false;
+                }
+                
+                // Set notification flag for Saved Records tab
+                setHasNewMobileSOAP(true);
+                localStorage.setItem('hasNewMobileSOAP', 'true');
+                localStorage.setItem('newMobileSOAPId', savedReport.id);
+
+                // Dispatch custom event to notify Saved Reports component and update count
+                window.dispatchEvent(new CustomEvent('newMobileSOAPGenerated', { 
+                    detail: { reportId: savedReport.id } 
+                }));
+
+                console.log('Successfully processed mobile dictation:', draftId, 'Report ID:', savedReport.id);
+                return true;
+            } catch (genError) {
+                console.error('Error generating SOAP from mobile dictation:', genError, 'Draft ID:', draftId);
+                // Don't delete draft on error so it can retry
+                return false;
+            } finally {
+                // Ensure we always remove from processing set
+                processingDraftIdsRef.current.delete(draftId);
             }
         };
 
-        // Initial check after 2 seconds
-        const initialTimeout = setTimeout(() => {
-            fetchNewMobileDictations();
-        }, 2000);
+        const checkPendingCount = async () => {
+            try {
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('auth0_user_id', user.sub)
+                    .single();
 
-        // Poll every 5 seconds for new mobile dictations (runs even when tab is inactive)
+                if (userError || !userData) return 0;
+
+                const userId = userData.id;
+
+                // Fetch all drafts that were explicitly sent from mobile (sent_to_desktop: true)
+                // Only count drafts that don't have report_text (haven't been processed yet)
+                const { data: allDrafts, error: draftError } = await supabase
+                    .from('saved_reports')
+                    .select('id, form_data, report_text, created_at')
+                    .eq('user_id', userId)
+                    .eq('record_type', 'quicksoap')
+                    .is('report_text', null)
+                    .order('created_at', { ascending: true })
+                    .limit(20);
+
+                if (draftError || !allDrafts || allDrafts.length === 0) {
+                    return 0;
+                }
+
+                // Filter to only drafts with sent_to_desktop: true and no report_text
+                const sentDrafts = allDrafts.filter(d => 
+                    d.form_data?.sent_to_desktop === true && 
+                    !d.report_text
+                );
+                return sentDrafts.length;
+            } catch (err) {
+                console.error('Error checking pending count:', err);
+                return 0;
+            }
+        };
+
+        const processQueue = async () => {
+            // Don't start processing if already processing
+            if (isProcessingQueueRef.current) return;
+
+            try {
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('auth0_user_id', user.sub)
+                    .single();
+
+                if (userError || !userData) {
+                    setMobileReportsGenerating(0);
+                    return;
+                }
+
+                const userId = userData.id;
+
+                // Fetch all drafts that were explicitly sent from mobile (sent_to_desktop: true)
+                // Only get drafts that don't have report_text (haven't been processed yet)
+                const { data: allDrafts, error: draftError } = await supabase
+                    .from('saved_reports')
+                    .select('id, form_data, report_text, created_at')
+                    .eq('user_id', userId)
+                    .eq('record_type', 'quicksoap')
+                    .is('report_text', null)
+                    .order('created_at', { ascending: true }) // Process oldest first
+                    .limit(20);
+
+                if (draftError || !allDrafts || allDrafts.length === 0) {
+                    setMobileReportsGenerating(0);
+                    return;
+                }
+
+                // Filter to only drafts with sent_to_desktop: true and no report_text
+                const sentDrafts = allDrafts.filter(d => 
+                    d.form_data?.sent_to_desktop === true && 
+                    !d.report_text
+                );
+
+                if (sentDrafts.length === 0) {
+                    setMobileReportsGenerating(0);
+                    return;
+                }
+
+                // Update count of pending reports
+                setMobileReportsGenerating(sentDrafts.length);
+
+                // Process queue sequentially - one at a time
+                isProcessingQueueRef.current = true;
+                
+                for (let i = 0; i < sentDrafts.length; i++) {
+                    const draft = sentDrafts[i];
+                    // Update count before processing (remaining count)
+                    const remaining = sentDrafts.length - i;
+                    setMobileReportsGenerating(remaining);
+                    
+                    const success = await processMobileDictation(draft);
+                    
+                    // Small delay between processing to avoid overwhelming the API
+                    if (i < sentDrafts.length - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+
+                // Check if there are more after processing
+                const { data: remainingDrafts } = await supabase
+                    .from('saved_reports')
+                    .select('id, form_data, report_text')
+                    .eq('user_id', userId)
+                    .eq('record_type', 'quicksoap')
+                    .is('report_text', null);
+
+                const remainingSentDrafts = remainingDrafts?.filter(d => 
+                    d.form_data?.sent_to_desktop === true && 
+                    !d.report_text
+                ) || [];
+
+                setMobileReportsGenerating(remainingSentDrafts.length);
+            } catch (err) {
+                console.error('Error processing mobile dictations queue:', err);
+            } finally {
+                isProcessingQueueRef.current = false;
+            }
+        };
+
+        // Immediate check on login to show banner and start processing
+        const immediateCheck = async () => {
+            const count = await checkPendingCount();
+            setMobileReportsGenerating(count);
+            if (count > 0) {
+                // Start processing immediately if there are pending reports
+                processQueue();
+            }
+        };
+
+        // Run immediately when authenticated
+        immediateCheck();
+
+        // Poll every 5 seconds for new mobile dictations (but only if not currently processing)
         const pollingInterval = setInterval(() => {
-            fetchNewMobileDictations();
+            processQueue();
         }, 5000);
 
         return () => {
-            clearTimeout(initialTimeout);
             clearInterval(pollingInterval);
         };
     }, [isMobile, isAuthenticated, user]);
@@ -1091,9 +1222,29 @@ const Dashboard = () => {
                     {/* Mobile padding for header */}
                     <div className="md:hidden h-16"></div>
                     
+                    {/* Mobile Reports Generating Banner */}
+                    {mobileReportsGenerating > 0 && !isMobile && (
+                        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-base">
+                                        {mobileReportsGenerating === 1 
+                                            ? '1 report generating from mobile' 
+                                            : `${mobileReportsGenerating} reports generating from mobile`
+                                        }
+                                    </p>
+                                    <p className="text-sm opacity-90">Reports will appear in Saved Records when complete</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Site-wide Mobile SOAP Notification Banner */}
-                    {showMobileSOAPNotification && mobileSOAPCount > 0 && !isMobile && (
-                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative" style={{ animation: 'slideDown 0.3s ease-out', zIndex: 9999 }}>
+                    {showMobileSOAPNotification && mobileSOAPCount > 0 && !isMobile && mobileReportsGenerating === 0 && (
+                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
                             <div className="flex items-center gap-3">
                                 <FaMobile className="text-xl flex-shrink-0" />
                                 <div>

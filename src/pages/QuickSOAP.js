@@ -1273,7 +1273,63 @@ const QuickSOAP = () => {
                         .single();
 
                     if (userData) {
-                        // Delete the draft record from Supabase
+                        // Check if draft has been sent to desktop or is being processed before deleting
+                        const { data: draftCheck } = await supabase
+                            .from('saved_reports')
+                            .select('form_data, report_text, created_at')
+                            .eq('id', draftRecordId)
+                            .eq('user_id', userData.id)
+                            .maybeSingle();
+
+                        if (!draftCheck) {
+                            // Draft doesn't exist, nothing to delete
+                            draftRecordIdRef.current = null;
+                            setDraftRecordId(null);
+                            localStorage.removeItem('currentQuickSOAPReportId');
+                            return;
+                        }
+
+                        // Never delete if:
+                        // 1. It was sent to desktop (sent_to_desktop: true)
+                        // 2. It's already been processed (has report_text)
+                        // 3. It was created recently (within last 5 minutes) - might be processing
+                        const wasSentToDesktop = draftCheck.form_data?.sent_to_desktop === true;
+                        const isProcessed = !!draftCheck.report_text;
+                        const isRecent = draftCheck.created_at &&
+                            (new Date() - new Date(draftCheck.created_at)) < 5 * 60 * 1000; // 5 minutes
+
+                        if (wasSentToDesktop || isProcessed) {
+                            // Draft was sent to desktop or already processed - don't delete
+                            console.log('Draft was sent to desktop or processed, not deleting from database');
+                            // Just clear local state
+                            draftRecordIdRef.current = null;
+                            setDraftRecordId(null);
+                            localStorage.removeItem('currentQuickSOAPReportId');
+                            return;
+                        }
+
+                        if (isRecent) {
+                            // Recent draft - might be processing, be cautious
+                            console.log('Draft is recent, checking if it was sent to desktop...');
+                            // Wait a moment and check again
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            const { data: recheck } = await supabase
+                                .from('saved_reports')
+                                .select('form_data, report_text')
+                                .eq('id', draftRecordId)
+                                .eq('user_id', userData.id)
+                                .maybeSingle();
+
+                            if (recheck?.form_data?.sent_to_desktop || recheck?.report_text) {
+                                console.log('Draft was sent to desktop after recheck, not deleting');
+                                draftRecordIdRef.current = null;
+                                setDraftRecordId(null);
+                                localStorage.removeItem('currentQuickSOAPReportId');
+                                return;
+                            }
+                        }
+
+                        // Safe to delete - draft wasn't sent to desktop and isn't processed
                         await supabase
                             .from('saved_reports')
                             .delete()

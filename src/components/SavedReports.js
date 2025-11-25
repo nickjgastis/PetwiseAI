@@ -573,7 +573,16 @@ const SavedReports = () => {
 
                 if (reportsError) throw reportsError;
 
-                setReports(reportsData);
+                // Filter out drafts that are being processed (sent_to_desktop but no report_text)
+                const filteredReportsData = reportsData?.filter(report => {
+                    // Exclude drafts that are being processed on desktop
+                    if (!report.report_text && report.form_data?.sent_to_desktop === true) {
+                        return false; // Don't show drafts being processed
+                    }
+                    return true;
+                }) || [];
+
+                setReports(filteredReportsData);
                 
                 // After fetching reports, check for desktop QuickSOAP notification
                 const hasNewDesktopQuickSOAPFlag = localStorage.getItem('hasNewDesktopQuickSOAP') === 'true';
@@ -650,7 +659,14 @@ const SavedReports = () => {
                                 .order('created_at', { ascending: false });
 
                             if (reportsData) {
-                                setReports(reportsData);
+                                // Filter out drafts that are being processed
+                                const filteredReportsData = reportsData.filter(report => {
+                                    if (!report.report_text && report.form_data?.sent_to_desktop === true) {
+                                        return false; // Don't show drafts being processed
+                                    }
+                                    return true;
+                                });
+                                setReports(filteredReportsData);
                             }
                         }
                     } catch (error) {
@@ -687,7 +703,14 @@ const SavedReports = () => {
                                 .order('created_at', { ascending: false });
 
                             if (reportsData) {
-                                setReports(reportsData);
+                                // Filter out drafts that are being processed
+                                const filteredReportsData = reportsData.filter(report => {
+                                    if (!report.report_text && report.form_data?.sent_to_desktop === true) {
+                                        return false; // Don't show drafts being processed
+                                    }
+                                    return true;
+                                });
+                                setReports(filteredReportsData);
                             }
                         }
                     } catch (error) {
@@ -888,6 +911,10 @@ const SavedReports = () => {
     };
 
     const filteredReports = reports.filter(report => {
+        // Exclude drafts that are being processed (sent_to_desktop but no report_text)
+        if (!report.report_text && report.form_data?.sent_to_desktop === true) {
+            return false; // Don't show drafts being processed
+        }
         // Filter by type
         const recordType = getRecordType(report);
         const matchesType = filterType === 'all' || 
@@ -1304,24 +1331,6 @@ const SavedReports = () => {
         <div className="saved-reports" style={{ backgroundColor: 'transparent', minHeight: '100vh' }}>
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-6">Saved Records</h2>
-                {hasNewMobileSOAP && (
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <FaCheckCircle className="text-xl" />
-                            <div>
-                                <p className="font-semibold text-base">New SOAP Report Generated!</p>
-                                <p className="text-sm opacity-90">Your mobile dictation has been automatically converted to a SOAP report.</p>
-                            </div>
-                        </div>
-                        <button
-                            onClick={handleDismissMobileSOAPAlert}
-                            className="text-white hover:text-gray-200 transition-colors flex-shrink-0 ml-4"
-                            title="Dismiss"
-                        >
-                            <FaTimes className="text-lg" />
-                        </button>
-                    </div>
-                )}
                 {hasNewDesktopQuickSOAP && (
                     <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -1426,7 +1435,7 @@ const SavedReports = () => {
                                     key={report.id} 
                                     className={`rounded-xl shadow-md hover:shadow-lg border transition-all duration-200 p-5 cursor-pointer group ${
                                         isUnopened 
-                                            ? 'bg-blue-50 border-blue-200' 
+                                            ? 'bg-blue-100 border-blue-400' 
                                             : 'bg-white border-gray-200'
                                     }`}
                                     onClick={() => handleReportClick(report)}
@@ -1450,13 +1459,13 @@ const SavedReports = () => {
                                                     </div>
                                                     <span className={`font-medium text-base flex-1 min-w-0 truncate transition-colors ${
                                                         isUnopened 
-                                                            ? 'text-blue-700 group-hover:text-blue-800' 
+                                                            ? 'text-blue-900 group-hover:text-blue-950 font-semibold' 
                                                             : 'text-gray-800 group-hover:text-primary-600'
                                                     }`}>
                                                         {report.report_name}
                                                     </span>
                                                     {isUnopened && (
-                                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse flex-shrink-0" title="New mobile SOAP report"></div>
+                                                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse flex-shrink-0" title="New mobile SOAP report"></div>
                                                     )}
                                                 </>
                                             )}
