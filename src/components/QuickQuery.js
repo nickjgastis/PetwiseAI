@@ -5,9 +5,9 @@ import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt } from 'react-icons/fa';
 
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'
-    : 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:3001');
 
 const formatMessage = (content) => {
     // First, handle multiline LaTeX expressions before splitting into lines
@@ -1036,7 +1036,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             <div className="min-h-screen bg-white flex flex-col">
                 <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
                     <div className="flex items-center gap-3">
-                        <h2 className="text-3xl font-bold text-primary-500">PetQuery</h2>
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">PetQuery</h2>
                     </div>
                 </div>
             <div className="flex-1 flex flex-col overflow-hidden">

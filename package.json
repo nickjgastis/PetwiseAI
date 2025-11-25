@@ -56,7 +56,8 @@
     "server": "cd server && node server.js",
     "client": "react-scripts start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "dev:verbose": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"red,blue\" \"npm run server\" \"npm run client\""
+    "dev:verbose": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"red,blue\" \"npm run server\" \"npm run client\"",
+    "vercel-build": "npm run build"
   },
   "eslintConfig": {
     "extends": [

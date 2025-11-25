@@ -12,9 +12,9 @@ const stripePromise = loadStripe(
         : process.env.REACT_APP_STRIPE_PUBLIC_KEY
 );
 
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'
-    : 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:3001');
 
 const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscriptionChange }) => {
     const { logout } = useAuth0();

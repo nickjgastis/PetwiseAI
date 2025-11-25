@@ -7,9 +7,9 @@ const CancelSubscription = ({ user, isTrial }) => {
     const [error, setError] = useState(null);
 
     // Use REACT_APP_API_URL environment variable directly
-    const API_URL = process.env.NODE_ENV === 'production'
-        ? 'https://api.petwise.vet'
-        : 'http://localhost:3001';
+    const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+        ? ''
+        : 'http://localhost:3001');
 
     // Handler for subscription cancellation
     // Includes confirmation dialog and API call

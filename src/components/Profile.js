@@ -8,9 +8,9 @@ import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import { loadStripe } from '@stripe/stripe-js';
 
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'
-    : 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:3001');
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'

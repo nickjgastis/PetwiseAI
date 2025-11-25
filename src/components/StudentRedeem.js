@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useAuth0 } from "@auth0/auth0-react";
 
-const API_URL = process.env.NODE_ENV === "production"
-    ? "https://api.petwise.vet"
-    : "http://localhost:3001";
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === "production"
+    ? ""
+    : "http://localhost:3001");
 
 export default function StudentRedeem({ onSuccess, onCancel, userData }) {
     const { getAccessTokenSilently, user } = useAuth0();

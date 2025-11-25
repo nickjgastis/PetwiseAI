@@ -826,6 +826,39 @@ const SavedReports = () => {
         return unopenedReports.includes(report.id) && !viewedReports.includes(report.id);
     };
 
+    const handleMarkAsOpened = (e, report) => {
+        e.stopPropagation(); // Prevent triggering the report click handler
+        
+        const recordType = getRecordType(report);
+        
+        // Mark mobile report as viewed
+        if (report.form_data?.from_mobile === true) {
+            const viewedReports = JSON.parse(localStorage.getItem('viewedMobileSOAPReports') || '[]');
+            if (!viewedReports.includes(report.id)) {
+                viewedReports.push(report.id);
+                localStorage.setItem('viewedMobileSOAPReports', JSON.stringify(viewedReports));
+            }
+        } else if (recordType === 'quicksoap') {
+            // Mark desktop QuickSOAP as viewed
+            const viewedReports = JSON.parse(localStorage.getItem('viewedDesktopQuickSOAPReports') || '[]');
+            if (!viewedReports.includes(report.id)) {
+                viewedReports.push(report.id);
+                localStorage.setItem('viewedDesktopQuickSOAPReports', JSON.stringify(viewedReports));
+                // Remove from unopened list
+                const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
+                const updatedUnopened = unopenedReports.filter(id => id !== report.id);
+                localStorage.setItem('unopenedDesktopQuickSOAPReports', JSON.stringify(updatedUnopened));
+                // Update notification state
+                if (updatedUnopened.length === 0) {
+                    setHasNewDesktopQuickSOAP(false);
+                }
+            }
+        }
+        
+        // Force re-render by updating state
+        setReports([...reports]);
+    };
+
     const handleDeleteReport = async (id) => {
         if (!window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
             return;
@@ -1465,7 +1498,11 @@ const SavedReports = () => {
                                                         {report.report_name}
                                                     </span>
                                                     {isUnopened && (
-                                                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse flex-shrink-0" title="New mobile SOAP report"></div>
+                                                        <button
+                                                            onClick={(e) => handleMarkAsOpened(e, report)}
+                                                            className="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse flex-shrink-0 hover:bg-blue-700 hover:scale-110 transition-all cursor-pointer"
+                                                            title="Mark as opened"
+                                                        ></button>
                                                     )}
                                                 </>
                                             )}

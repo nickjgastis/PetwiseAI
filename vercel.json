@@ -1,0 +1,91 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "build",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/student/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/webhook",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/create-checkout-session",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/cancel-subscription",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/activate-trial",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/cancel-trial",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/generate-report",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/check-subscription/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/create-customer-portal",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/delete-account",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/activate-access-code",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/revoke-access-code",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/admin-metrics",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/test-reset/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/test-expiration/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/test-cancellation-flow/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/test-payment-failure/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/test-payment-success/:path*",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/manual-reset",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
+

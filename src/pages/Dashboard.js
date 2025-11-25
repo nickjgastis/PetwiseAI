@@ -16,9 +16,9 @@ import Templates from '../components/Templates';
 import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile } from 'react-icons/fa';
 
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'
-    : 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:3001');
 
 // Add slideDown animation style
 const slideDownStyle = `

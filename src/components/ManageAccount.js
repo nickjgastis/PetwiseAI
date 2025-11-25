@@ -63,9 +63,9 @@ const ManageAccount = ({ user, onBack }) => {
         }
 
         try {
-            const API_URL = process.env.NODE_ENV === 'production'
-                ? 'https://api.petwise.vet'
-                : 'http://localhost:3001';
+            const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+                ? ''
+                : 'http://localhost:3001');
 
             const response = await fetch(`${API_URL}/delete-account`, {
                 method: 'POST',

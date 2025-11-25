@@ -4,9 +4,9 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile } from 'react-icons/fa';
 
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'
-    : 'http://localhost:3001';
+const API_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production'
+    ? ''
+    : 'http://localhost:3001');
 
 // Normalize spacing before headers (add blank line before headers ending with colon)
 const normalizeHeaderSpacing = (content) => {
@@ -2509,16 +2509,16 @@ const QuickSOAP = () => {
 
                                             {tutorialStep === 1 && (
                                                 <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Recording Dictations</h3>
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Record Dictation & Generate SOAP</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                                         <div className="space-y-4">
                                                             <div className="flex items-center gap-4">
-                                                                <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-md">
-                                                                    <FaStop className="text-white text-xl" />
+                                                                <div className="w-16 h-16 rounded-full bg-primary-600 flex items-center justify-center shadow-md">
+                                                                    <FaMicrophone className="text-white text-xl" />
                                                                 </div>
                                                                 <div>
-                                                                    <p className="font-semibold text-gray-800">Recording Controls</p>
-                                                                    <p className="text-sm text-gray-600">Click the microphone to start, pause/resume as needed, and stop when finished</p>
+                                                                    <p className="font-semibold text-gray-800">Record Your Dictation</p>
+                                                                    <p className="text-sm text-gray-600">Click the microphone to start recording your clinical notes. You can pause/resume or stop when finished.</p>
                                                                 </div>
                                                             </div>
                                                             <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200">
@@ -2527,37 +2527,7 @@ const QuickSOAP = () => {
                                                                 </div>
                                                                 <p className="text-sm text-gray-700 italic">Your transcribed dictation will appear here...</p>
                                                             </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {tutorialStep === 2 && (
-                                                <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Adding Manual Notes</h3>
-                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                                        <div className="space-y-4">
-                                                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                                                                <textarea
-                                                                    disabled
-                                                                    className="w-full resize-none border-0 focus:outline-none text-gray-900 placeholder-gray-400 text-sm"
-                                                                    placeholder="Add additional notes (optional)..."
-                                                                    rows={3}
-                                                                    value="You can type additional clinical notes here..."
-                                                                />
-                                                            </div>
-                                                            <p className="text-sm text-gray-600">Type any additional notes or observations in the text field</p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {tutorialStep === 3 && (
-                                                <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your SOAP Report</h3>
-                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                                        <div className="space-y-4">
-                                                            <div className="flex items-center justify-center">
+                                                            <div className="mt-4 flex items-center justify-center">
                                                                 <button
                                                                     disabled
                                                                     className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md cursor-not-allowed opacity-75"
@@ -2565,15 +2535,49 @@ const QuickSOAP = () => {
                                                                     Generate SOAP
                                                                 </button>
                                                             </div>
-                                                            <p className="text-sm text-gray-600 text-center">Click "Generate SOAP" to create your report from all dictations and notes</p>
+                                                            <p className="text-sm text-gray-600 text-center">Once you have your dictation, click "Generate SOAP" to create your report</p>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 4 && (
+                                            {tutorialStep === 2 && (
                                                 <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Reviewing & Editing Your Report</h3>
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Auto-Saved to Saved Records</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="text-center">
+                                                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg mx-auto mb-4">
+                                                                    <FaCheckCircle className="text-white text-3xl" />
+                                                                </div>
+                                                                <p className="font-semibold text-gray-800 mb-2">Report Automatically Saved!</p>
+                                                                <p className="text-sm text-gray-600">When you generate your SOAP report, it's automatically saved to your Saved Records.</p>
+                                                            </div>
+                                                            <div className="mt-4 space-y-3">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">✓</div>
+                                                                    <p className="text-sm text-gray-700">Your report is immediately available in Saved Records</p>
+                                                                </div>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">✓</div>
+                                                                    <p className="text-sm text-gray-700">No need to manually save - it's already there!</p>
+                                                                </div>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">✓</div>
+                                                                    <p className="text-sm text-gray-700">You'll now enter the edit view to refine your report</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                                <p className="text-xs text-blue-600 text-center">After generation, you'll automatically see your report in an editable format</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 3 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Edit Your SOAP Report</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                                         <div className="space-y-4">
                                                             <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -2590,20 +2594,34 @@ const QuickSOAP = () => {
                                                                             disabled
                                                                             className="w-full px-4 py-3 border border-gray-300 rounded-md bg-white text-sm"
                                                                             rows={3}
-                                                                            value="Your report content appears here and can be edited..."
+                                                                            value="Edit content directly in any section..."
                                                                         />
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <p className="text-sm text-gray-600">Each SOAP section is color-coded and fully editable. Click any section to modify the content.</p>
+                                                            <div className="mt-4 space-y-3">
+                                                                <p className="text-sm font-semibold text-gray-800">In the edit view, you can:</p>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">1</div>
+                                                                    <p className="text-sm text-gray-700"><span className="font-semibold">Add more dictations</span> - Record additional notes and they'll be added to your report</p>
+                                                                </div>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">2</div>
+                                                                    <p className="text-sm text-gray-700"><span className="font-semibold">Type notes directly</span> - Add or edit text in any SOAP section</p>
+                                                                </div>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">3</div>
+                                                                    <p className="text-sm text-gray-700"><span className="font-semibold">Edit sections</span> - Each color-coded section is fully editable</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 5 && (
+                                            {tutorialStep === 4 && (
                                                 <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Saving Your Report</h3>
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Save Your Changes</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                                         <div className="space-y-4">
                                                             <div className="flex items-center gap-2 justify-center">
@@ -2614,51 +2632,51 @@ const QuickSOAP = () => {
                                                                 <button disabled className="px-3 py-1.5 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed opacity-75">
                                                                     Copy All
                                                                 </button>
-                                                                <button disabled className="px-3 py-1.5 rounded text-sm bg-red-200 text-red-800 cursor-not-allowed opacity-75">
-                                                                    Clear
-                                                                </button>
                                                             </div>
                                                             <div className="mt-4 space-y-2">
                                                                 <p className="text-sm font-semibold text-gray-800">Save your report to:</p>
                                                                 <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
-                                                                    <li>Access it later from Saved Records</li>
-                                                                    <li>Load it back into QuickSOAP for editing</li>
-                                                                    <li>Keep a permanent record</li>
+                                                                    <li>Update the saved version in Saved Records</li>
+                                                                    <li>Keep all your edits and additions</li>
+                                                                    <li>Access it anytime for future reference</li>
                                                                 </ul>
+                                                            </div>
+                                                            <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                                                                <p className="text-xs text-green-700 text-center">💡 Remember: Your report was auto-saved when generated. Use Save to update it with your edits!</p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 6 && (
+                                            {tutorialStep === 5 && (
                                                 <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Mobile Dictations</h3>
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Dictate Remotely from the Exam Room</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                                         <div className="space-y-4">
                                                             <div className="text-center">
                                                                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg mx-auto mb-4">
                                                                     <FaMobile className="text-white text-3xl" />
                                                                 </div>
-                                                                <p className="font-semibold text-gray-800 mb-2">Record Dictations Anywhere</p>
-                                                                <p className="text-sm text-gray-600">You can log into Petwise on your mobile device and send dictations directly from the exam room, wherever you are.</p>
+                                                                <p className="font-semibold text-gray-800 mb-2">Use QuickSOAP on Your Phone</p>
+                                                                <p className="text-sm text-gray-600">Log into Petwise on your mobile device and dictate directly from the exam room. Your dictations will sync to your desktop automatically.</p>
                                                             </div>
                                                             <div className="mt-4 space-y-3">
                                                                 <div className="flex items-start gap-3">
                                                                     <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">1</div>
-                                                                    <p className="text-sm text-gray-700">Open Petwise on your mobile device</p>
+                                                                    <p className="text-sm text-gray-700">Log into Petwise on your phone</p>
                                                                 </div>
                                                                 <div className="flex items-start gap-3">
                                                                     <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">2</div>
-                                                                    <p className="text-sm text-gray-700">Record your dictation in QuickSOAP Mobile</p>
+                                                                    <p className="text-sm text-gray-700">Open QuickSOAP and record your dictation during the exam</p>
                                                                 </div>
                                                                 <div className="flex items-start gap-3">
                                                                     <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">3</div>
-                                                                    <p className="text-sm text-gray-700">Send it to your desktop - you'll see a notification banner when it arrives</p>
+                                                                    <p className="text-sm text-gray-700">Send to desktop - it will appear in Saved Records and you can generate the SOAP report</p>
                                                                 </div>
                                                             </div>
                                                             <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                                                <p className="text-xs text-blue-600 text-center">Perfect for recording notes during patient exams, then generating reports back at your desk</p>
+                                                                <p className="text-sm text-blue-700 text-center font-medium">💡 Perfect workflow: Record notes during patient exams on your phone, then generate and edit SOAP reports back at your desk!</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2671,7 +2689,7 @@ const QuickSOAP = () => {
                                 {/* Tutorial Footer */}
                                 <div className={`border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0 ${isMobileDevice ? 'px-2 py-2' : 'px-6 py-4'}`}>
                                     <div className={`flex items-center ${isMobileDevice ? 'gap-1' : 'gap-2'}`}>
-                                        {(isMobileDevice ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]).map((step) => (
+                                        {(isMobileDevice ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5]).map((step) => (
                                             <div
                                                 key={step}
                                                 className={`rounded-full transition-all ${isMobileDevice ? 'h-1.5' : 'h-2'} ${tutorialStep === step ? `bg-[#3369bd] ${isMobileDevice ? 'w-6' : 'w-8'}` : `bg-gray-300 ${isMobileDevice ? 'w-1.5' : 'w-2'}`}`}
@@ -2688,7 +2706,7 @@ const QuickSOAP = () => {
                                                 <span className={isMobileDevice ? 'hidden sm:inline' : ''}>Previous</span>
                                             </button>
                                         )}
-                                        {tutorialStep < (isMobileDevice ? 4 : 6) ? (
+                                        {tutorialStep < (isMobileDevice ? 4 : 5) ? (
                                             <button
                                                 onClick={() => setTutorialStep(tutorialStep + 1)}
                                                 className={`rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-1 ${isMobileDevice ? 'px-2 py-1 text-xs' : 'px-4 py-2'}`}
