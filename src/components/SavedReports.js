@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import '../styles/SavedReports.css';
-import { FaTimes, FaEdit, FaCopy } from 'react-icons/fa';
+import { FaTimes, FaEdit, FaCopy, FaCheckCircle } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { createEditor } from 'slate';
@@ -528,7 +528,21 @@ const SavedReports = () => {
     const [isLoadingReports, setIsLoadingReports] = useState(true);
     const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
     const [currentView, setCurrentView] = useState('soap'); // Default to SOAP view
+    const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
+    const [newMobileSOAPId, setNewMobileSOAPId] = useState(null);
+    const [hasNewDesktopQuickSOAP, setHasNewDesktopQuickSOAP] = useState(false);
+    const [newDesktopQuickSOAPId, setNewDesktopQuickSOAPId] = useState(null);
+    const [filterType, setFilterType] = useState(() => {
+        // Load from localStorage or default to 'all'
+        const savedFilter = localStorage.getItem('savedReportsFilterType');
+        return savedFilter || 'all';
+    });
     const navigate = useNavigate();
+
+    // Save filter type to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('savedReportsFilterType', filterType);
+    }, [filterType]);
 
     useEffect(() => {
         const fetchReports = async () => {
@@ -560,6 +574,16 @@ const SavedReports = () => {
                 if (reportsError) throw reportsError;
 
                 setReports(reportsData);
+                
+                // After fetching reports, check for desktop QuickSOAP notification
+                const hasNewDesktopQuickSOAPFlag = localStorage.getItem('hasNewDesktopQuickSOAP') === 'true';
+                if (hasNewDesktopQuickSOAPFlag) {
+                    setHasNewDesktopQuickSOAP(true);
+                    const newDesktopQuickSOAPIdFromStorage = localStorage.getItem('newDesktopQuickSOAPId');
+                    if (newDesktopQuickSOAPIdFromStorage) {
+                        setNewDesktopQuickSOAPId(newDesktopQuickSOAPIdFromStorage);
+                    }
+                }
             } catch (error) {
                 setError("Failed to fetch reports. Please try again later.");
                 console.error("Unexpected error fetching reports:", error);
@@ -569,15 +593,186 @@ const SavedReports = () => {
         };
 
         fetchReports();
+        
+        // Clear sidebar notification when SavedReports component is viewed
+        setHasNewMobileSOAP(false);
+        localStorage.removeItem('hasNewMobileSOAP');
+        // Clear site-wide notification count
+        localStorage.removeItem('mobileSOAPCount');
+        // Dispatch event to Dashboard to clear sidebar and site-wide notifications
+        window.dispatchEvent(new CustomEvent('clearMobileSOAPNotification'));
+        
+        // Note: Don't clear desktop QuickSOAP notification here - let user dismiss it manually
     }, [isAuthenticated, user]);
 
+    // Check for new mobile SOAP on mount and listen for events
+    useEffect(() => {
+        // Check localStorage on mount
+        const hasNewSOAP = localStorage.getItem('hasNewMobileSOAP') === 'true';
+        const newSOAPId = localStorage.getItem('newMobileSOAPId');
+        if (hasNewSOAP && newSOAPId) {
+            setHasNewMobileSOAP(true);
+            setNewMobileSOAPId(newSOAPId);
+        }
+
+        // Check for new desktop QuickSOAP on mount
+        const hasNewDesktopQuickSOAPFlag = localStorage.getItem('hasNewDesktopQuickSOAP') === 'true';
+        const newDesktopQuickSOAPIdFromStorage = localStorage.getItem('newDesktopQuickSOAPId');
+        if (hasNewDesktopQuickSOAPFlag) {
+            setHasNewDesktopQuickSOAP(true);
+            if (newDesktopQuickSOAPIdFromStorage) {
+                setNewDesktopQuickSOAPId(newDesktopQuickSOAPIdFromStorage);
+            }
+        }
+
+        // Listen for new mobile SOAP events
+        const handleNewMobileSOAP = (event) => {
+            const reportId = event.detail?.reportId;
+            if (reportId) {
+                setHasNewMobileSOAP(true);
+                setNewMobileSOAPId(reportId);
+                localStorage.setItem('hasNewMobileSOAP', 'true');
+                localStorage.setItem('newMobileSOAPId', reportId);
+                // Refresh reports to show the new one
+                const fetchReports = async () => {
+                    try {
+                        const { data: userData } = await supabase
+                            .from('users')
+                            .select('id')
+                            .eq('auth0_user_id', user.sub)
+                            .single();
+
+                        if (userData) {
+                            const { data: reportsData } = await supabase
+                                .from('saved_reports')
+                                .select('id, report_name, report_text, form_data, record_type')
+                                .eq('user_id', userData.id)
+                                .order('created_at', { ascending: false });
+
+                            if (reportsData) {
+                                setReports(reportsData);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error refreshing reports:', error);
+                    }
+                };
+                fetchReports();
+            }
+        };
+
+        // Listen for new desktop QuickSOAP events
+        const handleNewDesktopQuickSOAP = (event) => {
+            const reportId = event.detail?.reportId;
+            if (reportId) {
+                setHasNewDesktopQuickSOAP(true);
+                setNewDesktopQuickSOAPId(reportId);
+                // Store in localStorage so it persists even if component unmounts
+                localStorage.setItem('hasNewDesktopQuickSOAP', 'true');
+                localStorage.setItem('newDesktopQuickSOAPId', reportId);
+                // Refresh reports to show the new one
+                const fetchReports = async () => {
+                    try {
+                        const { data: userData } = await supabase
+                            .from('users')
+                            .select('id')
+                            .eq('auth0_user_id', user.sub)
+                            .single();
+
+                        if (userData) {
+                            const { data: reportsData } = await supabase
+                                .from('saved_reports')
+                                .select('id, report_name, report_text, form_data, record_type')
+                                .eq('user_id', userData.id)
+                                .order('created_at', { ascending: false });
+
+                            if (reportsData) {
+                                setReports(reportsData);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error refreshing reports:', error);
+                    }
+                };
+                fetchReports();
+            }
+        };
+
+        window.addEventListener('newMobileSOAPGenerated', handleNewMobileSOAP);
+        window.addEventListener('newDesktopQuickSOAPGenerated', handleNewDesktopQuickSOAP);
+
+        return () => {
+            window.removeEventListener('newMobileSOAPGenerated', handleNewMobileSOAP);
+            window.removeEventListener('newDesktopQuickSOAPGenerated', handleNewDesktopQuickSOAP);
+        };
+    }, [isAuthenticated, user]);
+
+    // Check for unopened desktop QuickSOAP reports after reports are fetched
+    // This is for visual indicators only - notification banner is controlled by localStorage flag
+    useEffect(() => {
+        if (reports.length > 0 && isAuthenticated) {
+            const unopenedDesktopReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
+            const viewedReports = JSON.parse(localStorage.getItem('viewedDesktopQuickSOAPReports') || '[]');
+            const hasUnopened = reports.some(r => {
+                const recordType = getRecordType(r);
+                return recordType === 'quicksoap' && !r.form_data?.from_mobile && unopenedDesktopReports.includes(r.id) && !viewedReports.includes(r.id);
+            });
+            // Only set notification banner if localStorage flag is set (don't clear it here)
+            const hasNotificationFlag = localStorage.getItem('hasNewDesktopQuickSOAP') === 'true';
+            if (hasNotificationFlag || hasUnopened) {
+                setHasNewDesktopQuickSOAP(true);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [reports.length, isAuthenticated]);
+
     const handleReportClick = (report) => {
+        // Check if this is a QuickSOAP report - if so, auto-load it instead of showing preview
+        const recordType = getRecordType(report);
+        if (recordType === 'quicksoap') {
+            // Mark mobile report as viewed when clicked
+            if (report.form_data?.from_mobile === true) {
+                const viewedReports = JSON.parse(localStorage.getItem('viewedMobileSOAPReports') || '[]');
+                if (!viewedReports.includes(report.id)) {
+                    viewedReports.push(report.id);
+                    localStorage.setItem('viewedMobileSOAPReports', JSON.stringify(viewedReports));
+                }
+            } else {
+                // Mark desktop QuickSOAP as viewed when clicked
+                const viewedReports = JSON.parse(localStorage.getItem('viewedDesktopQuickSOAPReports') || '[]');
+                if (!viewedReports.includes(report.id)) {
+                    viewedReports.push(report.id);
+                    localStorage.setItem('viewedDesktopQuickSOAPReports', JSON.stringify(viewedReports));
+                    // Remove from unopened list
+                    const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
+                    const updatedUnopened = unopenedReports.filter(id => id !== report.id);
+                    localStorage.setItem('unopenedDesktopQuickSOAPReports', JSON.stringify(updatedUnopened));
+                    // Update notification state
+                    if (updatedUnopened.length === 0) {
+                        setHasNewDesktopQuickSOAP(false);
+                    }
+                }
+            }
+            // Auto-load into QuickSOAP
+            handleLoadQuickSOAP(report);
+            return;
+        }
+        
+        // For non-QuickSOAP reports, show preview as before
         setSelectedReport(selectedReport === report ? null : report);
         
-        // Set default view based on record type: SOAP for QuickSOAP and Generator records
+        // Mark mobile report as viewed when clicked
+        if (report.form_data?.from_mobile === true) {
+            const viewedReports = JSON.parse(localStorage.getItem('viewedMobileSOAPReports') || '[]');
+            if (!viewedReports.includes(report.id)) {
+                viewedReports.push(report.id);
+                localStorage.setItem('viewedMobileSOAPReports', JSON.stringify(viewedReports));
+            }
+        }
+        
+        // Set default view based on record type: SOAP for Generator records
         if (selectedReport !== report) {
-            const recordType = getRecordType(report);
-            if (recordType === 'quicksoap' || recordType === 'generator') {
+            if (recordType === 'generator') {
                 setCurrentView('soap');
             } else {
                 setCurrentView('standard');
@@ -590,6 +785,22 @@ const SavedReports = () => {
                 content.classList.toggle('expanded', selectedReport !== report);
             }
         }, 50);
+    };
+    
+    // Helper function to check if a mobile report is unopened
+    const isUnopenedMobileReport = (report) => {
+        if (!report.form_data?.from_mobile) return false;
+        const viewedReports = JSON.parse(localStorage.getItem('viewedMobileSOAPReports') || '[]');
+        return !viewedReports.includes(report.id);
+    };
+
+    // Helper function to check if a desktop QuickSOAP report is unopened
+    const isUnopenedDesktopQuickSOAP = (report) => {
+        const recordType = getRecordType(report);
+        if (recordType !== 'quicksoap' || report.form_data?.from_mobile) return false;
+        const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
+        const viewedReports = JSON.parse(localStorage.getItem('viewedDesktopQuickSOAPReports') || '[]');
+        return unopenedReports.includes(report.id) && !viewedReports.includes(report.id);
     };
 
     const handleDeleteReport = async (id) => {
@@ -623,6 +834,39 @@ const SavedReports = () => {
         setNewReportName(e.target.value);
     };
 
+    // Helper function to detect record type (moved before filteredReports)
+    const getRecordType = (report) => {
+        // First check if record_type column exists (if migration was run)
+        if (report.record_type) {
+            return report.record_type;
+        }
+
+        // Fallback: detect from form_data structure
+        if (!report.form_data) {
+            // Legacy records without form_data are assumed to be generator records
+            return 'generator';
+        }
+
+        const formData = report.form_data;
+        
+        // Check for QuickSOAP record
+        if (formData.record_type === 'quicksoap' || 
+            (formData.dictations && formData.input !== undefined)) {
+            return 'quicksoap';
+        }
+        
+        // Check for Generator record
+        if (formData.record_type === 'generator' || 
+            formData.patientName || 
+            formData.species || 
+            formData.presentingComplaint) {
+            return 'generator';
+        }
+
+        // Default to generator for unknown types
+        return 'generator';
+    };
+
     const handleNameBlur = async (id) => {
         try {
             const { error } = await supabase
@@ -643,10 +887,19 @@ const SavedReports = () => {
         }
     };
 
-    const filteredReports = reports.filter(report =>
-        report.report_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.report_text.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredReports = reports.filter(report => {
+        // Filter by type
+        const recordType = getRecordType(report);
+        const matchesType = filterType === 'all' || 
+            (filterType === 'quicksoap' && recordType === 'quicksoap') ||
+            (filterType === 'petsoap' && recordType === 'generator');
+        
+        // Filter by search term
+        const matchesSearch = report.report_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            report.report_text.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        return matchesType && matchesSearch;
+    });
 
     const handleSaveEdit = async (report) => {
         try {
@@ -804,36 +1057,58 @@ const SavedReports = () => {
         localStorage.removeItem('currentQuickSOAPReportId');
         localStorage.removeItem('quickSOAP_reportName');
 
-        // Load QuickSOAP data from form_data
-        if (report.form_data) {
-            const formData = report.form_data;
+        // For mobile-generated reports (with report_text), load directly into generated view
+        if (report.report_text && report.form_data?.from_mobile) {
+            // Load the generated report text directly
+            localStorage.setItem('quickSOAP_report', report.report_text);
             
-            if (formData.dictations) {
-                localStorage.setItem('quickSOAP_dictations', JSON.stringify(formData.dictations));
+            // Load dictations if available (for reference)
+            if (report.form_data.dictations) {
+                localStorage.setItem('quickSOAP_dictations', JSON.stringify(report.form_data.dictations));
             }
-            if (formData.input !== undefined) {
-                localStorage.setItem('quickSOAP_input', formData.input);
+            
+            // Load report name
+            if (report.report_name) {
+                localStorage.setItem('quickSOAP_reportName', report.report_name);
             }
-            if (formData.report) {
-                localStorage.setItem('quickSOAP_report', formData.report);
-            }
-            if (formData.lastInput !== undefined) {
-                localStorage.setItem('quickSOAP_lastInput', formData.lastInput);
-            }
+            
+            // Store the report ID for updates
+            localStorage.setItem('currentQuickSOAPReportId', report.id);
         } else {
-            // Fallback: if no form_data, use report_text as the report
-            if (report.report_text) {
-                localStorage.setItem('quickSOAP_report', report.report_text);
+            // For other reports, load from form_data as before
+            if (report.form_data) {
+                const formData = report.form_data;
+                
+                if (formData.dictations) {
+                    localStorage.setItem('quickSOAP_dictations', JSON.stringify(formData.dictations));
+                }
+                if (formData.input !== undefined) {
+                    localStorage.setItem('quickSOAP_input', formData.input);
+                }
+                if (formData.report) {
+                    localStorage.setItem('quickSOAP_report', formData.report);
+                } else if (report.report_text) {
+                    // Fallback: use report_text if no form_data.report
+                    localStorage.setItem('quickSOAP_report', report.report_text);
+                }
+                if (formData.lastInput !== undefined) {
+                    localStorage.setItem('quickSOAP_lastInput', formData.lastInput);
+                }
+            } else {
+                // Fallback: if no form_data, use report_text as the report
+                if (report.report_text) {
+                    localStorage.setItem('quickSOAP_report', report.report_text);
+                }
             }
-        }
 
-        // Load report name
-        if (report.report_name) {
-            localStorage.setItem('quickSOAP_reportName', report.report_name);
-        }
+            // Load report name
+            if (report.report_name) {
+                localStorage.setItem('quickSOAP_reportName', report.report_name);
+            }
 
-        // Store the report ID for updates
-        localStorage.setItem('currentQuickSOAPReportId', report.id);
+            // Store the report ID for updates
+            localStorage.setItem('currentQuickSOAPReportId', report.id);
+        }
         
         // Set flag to indicate we're loading saved data
         localStorage.setItem('loadQuickSOAPData', 'true');
@@ -842,38 +1117,6 @@ const SavedReports = () => {
         navigate('/dashboard/quicksoap');
     };
 
-    // Helper function to detect record type
-    const getRecordType = (report) => {
-        // First check if record_type column exists (if migration was run)
-        if (report.record_type) {
-            return report.record_type;
-        }
-
-        // Fallback: detect from form_data structure
-        if (!report.form_data) {
-            // Legacy records without form_data are assumed to be generator records
-            return 'generator';
-        }
-
-        const formData = report.form_data;
-        
-        // Check for QuickSOAP record
-        if (formData.record_type === 'quicksoap' || 
-            (formData.dictations && formData.input !== undefined)) {
-            return 'quicksoap';
-        }
-        
-        // Check for Generator record
-        if (formData.record_type === 'generator' || 
-            formData.patientName || 
-            formData.species || 
-            formData.presentingComplaint) {
-            return 'generator';
-        }
-
-        // Default to generator for unknown types
-        return 'generator';
-    };
 
     // QuickSOAP View Component - renders SOAP sections like QuickSOAP does
     const QuickSOAPView = ({ reportText, isEditable = false, onContentChange }) => {
@@ -1040,79 +1283,220 @@ const SavedReports = () => {
         return <div>Please log in to view your saved reports.</div>;
     }
 
+    const handleDismissMobileSOAPAlert = () => {
+        setHasNewMobileSOAP(false);
+        setNewMobileSOAPId(null);
+        localStorage.removeItem('hasNewMobileSOAP');
+        localStorage.removeItem('newMobileSOAPId');
+    };
+
+    // Helper function to get record type badge color
+    const getRecordTypeBadgeColor = (recordType) => {
+        if (recordType === 'quicksoap') {
+            return 'bg-gradient-to-r from-primary-600 to-primary-700';
+        } else if (recordType === 'generator') {
+            return 'bg-gradient-to-r from-purple-500 to-purple-700';
+        }
+        return 'bg-gradient-to-r from-gray-500 to-gray-700';
+    };
+
     return (
-        <div className="saved-reports">
-            <h2>Saved Records</h2>
-            {error && <div className="error-message">{error}</div>}
-
-            {!selectedReport && (
-                <div className="search-container">
-                    <div className="search-input-wrapper">
-                        <input
-                            type="text"
-                            placeholder="Search records..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="search-input"
-                        />
-                    </div>
-                </div>
-            )}
-
-            <div className={`report-list ${selectedReport ? 'hidden' : ''}`}>
-                {isLoadingReports ? (
-                    <div className="reports-loading">
-                        <div className="reports-loader"></div>
-                    </div>
-                ) : filteredReports.length > 0 ? (
-                    filteredReports.map((report, index) => (
-                        <div key={report.id} className="report-item">
-                            {editingIndex === index ? (
-                                <input
-                                    type="text"
-                                    value={newReportName}
-                                    onChange={handleNameChange}
-                                    onBlur={() => handleNameBlur(report.id)}
-                                    autoFocus
-                                />
-                            ) : (
-                                <span onClick={() => handleReportClick(report)}>
-                                    {report.report_name}
-                                </span>
-                            )}
-                            <div className="button-group">
-                                <button
-                                    className="edit-name-button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditClick(index);
-                                    }}
-                                    title="Edit name"
-                                >
-                                    <FaEdit />
-                                </button>
-                                <button
-                                    className="delete-button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteReport(report.id);
-                                    }}
-                                    title="Delete report"
-                                >
-                                    <FaTimes />
-                                </button>
+        <div className="saved-reports" style={{ backgroundColor: 'transparent', minHeight: '100vh' }}>
+            <div className="max-w-6xl mx-auto px-6 py-8">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-6">Saved Records</h2>
+                {hasNewMobileSOAP && (
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <FaCheckCircle className="text-xl" />
+                            <div>
+                                <p className="font-semibold text-base">New SOAP Report Generated!</p>
+                                <p className="text-sm opacity-90">Your mobile dictation has been automatically converted to a SOAP report.</p>
                             </div>
                         </div>
-                    ))
-                ) : (
-                    <div className="no-reports">
-                        <p>No saved reports available.</p>
+                        <button
+                            onClick={handleDismissMobileSOAPAlert}
+                            className="text-white hover:text-gray-200 transition-colors flex-shrink-0 ml-4"
+                            title="Dismiss"
+                        >
+                            <FaTimes className="text-lg" />
+                        </button>
                     </div>
                 )}
-            </div>
+                {hasNewDesktopQuickSOAP && (
+                    <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <FaCheckCircle className="text-xl" />
+                            <div>
+                                <p className="font-semibold text-base">New QuickSOAP Report Saved!</p>
+                                <p className="text-sm opacity-90">Your QuickSOAP report has been automatically saved.</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => {
+                                setHasNewDesktopQuickSOAP(false);
+                                setNewDesktopQuickSOAPId(null);
+                                localStorage.removeItem('hasNewDesktopQuickSOAP');
+                                localStorage.removeItem('newDesktopQuickSOAPId');
+                            }}
+                            className="text-white hover:text-gray-200 transition-colors flex-shrink-0 ml-4"
+                            title="Dismiss"
+                        >
+                            <FaTimes className="text-lg" />
+                        </button>
+                    </div>
+                )}
+                {error && (
+                    <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+                        <p className="text-red-600 text-sm">{error}</p>
+                    </div>
+                )}
 
-            {selectedReport && (
-                <div className="report-card">
+                {!selectedReport && (
+                    <div className="mb-6 flex gap-4 items-center">
+                        <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200">
+                            <input
+                                type="text"
+                                placeholder="Search records..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-3 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-400"
+                            />
+                        </div>
+                        {/* Filter Buttons */}
+                        <div className="relative bg-gray-100 rounded-xl p-1 inline-flex h-[52px]">
+                            <div 
+                                className="absolute top-1 bottom-1 bg-white rounded-lg shadow-sm transition-all duration-300 ease-out"
+                                style={{
+                                    width: filterType === 'all' ? '44px' : filterType === 'quicksoap' ? '92px' : '76px',
+                                    left: filterType === 'all' ? '0.25rem' : filterType === 'quicksoap' ? '48px' : '144px',
+                                }}
+                            />
+                            <button
+                                onClick={() => setFilterType('all')}
+                                className={`relative z-10 px-2 py-3 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                                    filterType === 'all' 
+                                        ? 'text-primary-600' 
+                                        : 'text-gray-600 hover:text-gray-800'
+                                }`}
+                                style={{ width: '44px' }}
+                            >
+                                All
+                            </button>
+                            <button
+                                onClick={() => setFilterType('quicksoap')}
+                                className={`relative z-10 px-2 py-3 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                                    filterType === 'quicksoap' 
+                                        ? 'text-primary-600' 
+                                        : 'text-gray-600 hover:text-gray-800'
+                                }`}
+                                style={{ width: '92px' }}
+                            >
+                                QuickSOAP
+                            </button>
+                            <button
+                                onClick={() => setFilterType('petsoap')}
+                                className={`relative z-10 px-2 py-3 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                                    filterType === 'petsoap' 
+                                        ? 'text-primary-600' 
+                                        : 'text-gray-600 hover:text-gray-800'
+                                }`}
+                                style={{ width: '76px' }}
+                            >
+                                PetSOAP
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                <div className={`${selectedReport ? 'hidden' : ''}`}>
+                    {isLoadingReports ? (
+                        <div className="flex justify-center items-center py-12">
+                            <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
+                        </div>
+                    ) : filteredReports.length > 0 ? (
+                        <div className="grid gap-4">
+                            {filteredReports.map((report, index) => {
+                                const isUnopenedMobile = isUnopenedMobileReport(report);
+                                const isUnopenedDesktop = isUnopenedDesktopQuickSOAP(report);
+                                const isUnopened = isUnopenedMobile || isUnopenedDesktop;
+                                const recordType = getRecordType(report);
+                                const badgeColor = getRecordTypeBadgeColor(recordType);
+                                return (
+                                <div 
+                                    key={report.id} 
+                                    className={`rounded-xl shadow-md hover:shadow-lg border transition-all duration-200 p-5 cursor-pointer group ${
+                                        isUnopened 
+                                            ? 'bg-blue-50 border-blue-200' 
+                                            : 'bg-white border-gray-200'
+                                    }`}
+                                    onClick={() => handleReportClick(report)}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            {editingIndex === index ? (
+                                                <input
+                                                    type="text"
+                                                    value={newReportName}
+                                                    onChange={handleNameChange}
+                                                    onBlur={() => handleNameBlur(report.id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                                    autoFocus
+                                                />
+                                            ) : (
+                                                <>
+                                                    <div className={`${badgeColor} text-white text-xs font-semibold px-3 py-1 rounded-lg uppercase tracking-wide flex-shrink-0`}>
+                                                        {recordType === 'quicksoap' ? 'quicksoap' : recordType === 'generator' ? 'petsoap' : 'report'}
+                                                    </div>
+                                                    <span className={`font-medium text-base flex-1 min-w-0 truncate transition-colors ${
+                                                        isUnopened 
+                                                            ? 'text-blue-700 group-hover:text-blue-800' 
+                                                            : 'text-gray-800 group-hover:text-primary-600'
+                                                    }`}>
+                                                        {report.report_name}
+                                                    </span>
+                                                    {isUnopened && (
+                                                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse flex-shrink-0" title="New mobile SOAP report"></div>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2 ml-4">
+                                            <button
+                                                className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-lg"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditClick(index);
+                                                }}
+                                                title="Edit name"
+                                            >
+                                                <FaEdit className="text-sm" />
+                                            </button>
+                                            <button
+                                                className="text-gray-400 hover:text-red-500 transition-colors p-2 hover:bg-red-50 rounded-lg"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteReport(report.id);
+                                                }}
+                                                title="Delete report"
+                                            >
+                                                <FaTimes className="text-sm" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="bg-white rounded-xl shadow-md border border-gray-200 p-12 text-center">
+                            <p className="text-gray-500 text-lg">No saved reports available.</p>
+                        </div>
+                    )}
+                </div>
+
+                {selectedReport && (
+                    <div className="report-card">
                     <div className="report-card-header">
                         <div className="header-top">
                             <h3>{selectedReport.report_name}</h3>
@@ -1352,7 +1736,8 @@ const SavedReports = () => {
                         )}
                     </div>
                 </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

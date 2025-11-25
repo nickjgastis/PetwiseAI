@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
-import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft } from 'react-icons/fa';
+import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile } from 'react-icons/fa';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -147,33 +147,130 @@ const parseSOAPReport = (text) => {
 
 const QuickSOAP = () => {
     const { user, isAuthenticated } = useAuth0();
-    const [input, setInput] = useState('');
-    const [dictations, setDictations] = useState([]); // Array of {id, fullText, summary, expanded}
-    const [report, setReport] = useState('');
-    const [parsedReport, setParsedReport] = useState({ sections: [], rawText: '' });
+    // Check if we're loading from saved records synchronously to prevent flash
+    const checkLoadingFromSaved = () => {
+        if (typeof window === 'undefined') return false;
+        const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+        const loadedReport = localStorage.getItem('quickSOAP_report');
+        if (loadedQuickSOAPData === 'true' && loadedReport) {
+            const parsed = parseSOAPReport(loadedReport);
+            return parsed.sections.length > 0;
+        }
+        return false;
+    };
+    const [input, setInput] = useState(() => {
+        // Initialize input synchronously if loading from saved
+        if (typeof window !== 'undefined') {
+            const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+            if (loadedQuickSOAPData === 'true') {
+                const loadedInput = localStorage.getItem('quickSOAP_input');
+                return loadedInput || '';
+            }
+        }
+        return '';
+    });
+    const [dictations, setDictations] = useState(() => {
+        // Initialize dictations synchronously if loading from saved
+        if (typeof window !== 'undefined') {
+            const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+            if (loadedQuickSOAPData === 'true') {
+                const loadedDictations = localStorage.getItem('quickSOAP_dictations');
+                if (loadedDictations) {
+                    try {
+                        return JSON.parse(loadedDictations);
+                    } catch (e) {
+                        console.error('Failed to parse loaded dictations:', e);
+                    }
+                }
+            }
+        }
+        return [];
+    });
+    const [report, setReport] = useState(() => {
+        // Initialize report synchronously if loading from saved
+        if (typeof window !== 'undefined') {
+            const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+            const loadedReport = localStorage.getItem('quickSOAP_report');
+            if (loadedQuickSOAPData === 'true' && loadedReport) {
+                return loadedReport;
+            }
+        }
+        return '';
+    });
+    const [parsedReport, setParsedReport] = useState(() => {
+        // Initialize parsedReport synchronously if loading from saved
+        if (typeof window !== 'undefined') {
+            const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+            const loadedReport = localStorage.getItem('quickSOAP_report');
+            if (loadedQuickSOAPData === 'true' && loadedReport) {
+                return parseSOAPReport(loadedReport);
+            }
+        }
+        return { sections: [], rawText: '' };
+    });
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [isTranscribing, setIsTranscribing] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState('');
-    const [lastInput, setLastInput] = useState('');
+    const [lastInput, setLastInput] = useState(() => {
+        // Initialize lastInput synchronously if loading from saved
+        if (typeof window !== 'undefined') {
+            const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+            if (loadedQuickSOAPData === 'true') {
+                const loadedLastInput = localStorage.getItem('quickSOAP_lastInput');
+                return loadedLastInput || '';
+            }
+        }
+        return '';
+    });
     const [copiedSection, setCopiedSection] = useState(null);
-    const [hasReport, setHasReport] = useState(false);
+    const [hasReport, setHasReport] = useState(checkLoadingFromSaved);
     const [audioLevels, setAudioLevels] = useState([]);
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isReportTransitioning, setIsReportTransitioning] = useState(false);
+    const [isLoadingFromSaved, setIsLoadingFromSaved] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return localStorage.getItem('loadQuickSOAPData') === 'true';
+    });
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessageVisible, setSaveMessageVisible] = useState(false);
-    const [reportName, setReportName] = useState('');
+    const [reportName, setReportName] = useState(() => {
+        // Initialize reportName synchronously if loading from saved
+        if (typeof window !== 'undefined') {
+            const loadedQuickSOAPData = localStorage.getItem('loadQuickSOAPData');
+            if (loadedQuickSOAPData === 'true') {
+                const savedReportName = localStorage.getItem('quickSOAP_reportName');
+                return savedReportName || '';
+            }
+        }
+        return '';
+    });
     const [isEditingReportName, setIsEditingReportName] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(0);
+    const [isMobile, setIsMobile] = useState(() => {
+        // Check on initial render to avoid layout shift
+        if (typeof window !== 'undefined') {
+            return window.innerWidth <= 768;
+        }
+        return false;
+    });
+    const [draftRecordId, setDraftRecordId] = useState(null);
+    const [lastDictationCount, setLastDictationCount] = useState(0);
+    const [showSendToDesktopModal, setShowSendToDesktopModal] = useState(false);
+    const [isSendingToDesktop, setIsSendingToDesktop] = useState(false);
+    const [showSendSuccessModal, setShowSendSuccessModal] = useState(false);
+    const [showDeleteDictationModal, setShowDeleteDictationModal] = useState(false);
+    const [dictationToDelete, setDictationToDelete] = useState(null);
+    const pollingIntervalRef = useRef(null);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const textareaRefs = useRef({});
     const inputTextareaRef = useRef(null);
     const sidebarInputTextareaRef = useRef(null);
+    const draftRecordIdRef = useRef(null);
     const reportScrollContainerRef = useRef(null);
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
@@ -261,6 +358,16 @@ const QuickSOAP = () => {
         }
     }, [parsedReport.sections.length]);
 
+    // Mobile detection
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
     // Check for tutorial flag from Help center
     useEffect(() => {
         const openTutorialFlag = localStorage.getItem('openQuickSOAPTutorial');
@@ -283,7 +390,10 @@ const QuickSOAP = () => {
         const savedReportName = localStorage.getItem('quickSOAP_reportName');
 
         if (loadedQuickSOAPData === 'true') {
-            // Loading from SavedReports - use the loaded data
+            // Loading from SavedReports - skip ungenerated view fade-out, go straight to blank then fade in generated report
+            setIsLoadingFromSaved(true);
+            // Don't set isTransitioning - we want to skip the ungenerated view fade-out
+
             if (loadedDictations) {
                 try {
                     setDictations(JSON.parse(loadedDictations));
@@ -297,12 +407,31 @@ const QuickSOAP = () => {
             if (loadedLastInput) {
                 setLastInput(loadedLastInput);
             }
+
+            // Report data already set synchronously in useState initialization
+            // Just ensure everything is in sync
             if (loadedReport) {
-                setReport(loadedReport);
+                const parsed = parseSOAPReport(loadedReport);
+                // Only update if different (avoid unnecessary re-renders)
+                if (report !== loadedReport) {
+                    setReport(loadedReport);
+                }
+                if (JSON.stringify(parsedReport) !== JSON.stringify(parsed)) {
+                    setParsedReport(parsed);
+                }
+                if (!hasReport && parsed.sections.length > 0) {
+                    setHasReport(true);
+                }
             }
             if (savedReportName) {
                 setReportName(savedReportName);
             }
+
+            // Fade in the generated report after a brief delay to allow smooth transition
+            setTimeout(() => {
+                setIsLoadingFromSaved(false);
+            }, 50);
+
             // Keep currentQuickSOAPReportId for updates (set by handleLoadQuickSOAP)
             // Clear the load flag
             localStorage.removeItem('loadQuickSOAPData');
@@ -334,6 +463,176 @@ const QuickSOAP = () => {
             }
         }
     }, []);
+
+    // Helper to load draft data into component state
+    const loadDraftData = useCallback((draftData, skipIfSameDraft = false) => {
+        if (!draftData.form_data) return;
+
+        // Skip reloading if we're already on this draft (prevents glitchy reloads)
+        if (skipIfSameDraft && draftRecordIdRef.current === draftData.id) {
+            return;
+        }
+
+        const formData = draftData.form_data;
+        if (formData.dictations) {
+            setDictations(formData.dictations);
+            setLastDictationCount(formData.dictations.length);
+        }
+        if (formData.input !== undefined) {
+            setInput(formData.input);
+        }
+        if (formData.lastInput !== undefined) {
+            setLastInput(formData.lastInput);
+        }
+        if (formData.reportName !== undefined) {
+            setReportName(formData.reportName);
+        }
+        draftRecordIdRef.current = draftData.id;
+        setDraftRecordId(draftData.id);
+        localStorage.setItem('currentQuickSOAPReportId', draftData.id);
+    }, []);
+
+    // Load draft dictations from Supabase (for desktop)
+    // Only loads drafts that were explicitly sent from mobile (sent_to_desktop flag)
+    const loadDraftDictations = useCallback(async () => {
+        if (!isAuthenticated || !user || isMobile) return;
+
+        try {
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (userError || !userData) {
+                console.log('No user data found, skipping draft load');
+                return;
+            }
+
+            const userId = userData.id;
+
+            // Only load desktop-originated drafts on mount
+            // Desktop should NOT auto-load mobile drafts - only when explicitly sent via checkForNewDictations
+            // Check localStorage for existing desktop draft first
+            const savedDraftId = localStorage.getItem('currentQuickSOAPReportId');
+            if (savedDraftId && !hasReport) {
+                const { data: savedDraft } = await supabase
+                    .from('saved_reports')
+                    .select('id, report_name, form_data')
+                    .eq('id', savedDraftId)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                // Only load if it's a desktop-created draft (sent_to_desktop is undefined = desktop origin)
+                // Do NOT load mobile drafts (sent_to_desktop: false) - those need to be sent first
+                // Do NOT load drafts that were sent from mobile - those are handled by checkForNewDictations polling
+                if (savedDraft && savedDraft.form_data && !savedDraft.report_text) {
+                    const isDesktopDraft = savedDraft.form_data.sent_to_desktop === undefined;
+
+                    // Only load desktop-originated drafts on mount
+                    // Mobile drafts (sent_to_desktop: false or true) are handled separately via polling
+                    if (isDesktopDraft) {
+                        loadDraftData(savedDraft);
+                    } else {
+                        // This is a mobile draft - clear localStorage so desktop doesn't try to load it
+                        localStorage.removeItem('currentQuickSOAPReportId');
+                        draftRecordIdRef.current = null;
+                        setDraftRecordId(null);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error loading draft dictations (non-critical):', err);
+            // Don't throw - allow component to render even if draft load fails
+        }
+    }, [isAuthenticated, user, isMobile, hasReport, loadDraftData]);
+
+
+    // Load mobile drafts on mount (mobile only - loads its own drafts, not desktop ones)
+    const loadMobileDrafts = useCallback(async () => {
+        if (!isAuthenticated || !user || !isMobile) return;
+
+        // On mobile, prioritize localStorage - only load from Supabase if localStorage is empty
+        // This ensures deleted dictations don't reappear
+        const savedDictations = localStorage.getItem('quickSOAP_dictations');
+        if (savedDictations) {
+            // localStorage has dictations - use those instead of Supabase
+            // This prevents deleted dictations from reloading
+            return;
+        }
+
+        try {
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (userError || !userData) return;
+
+            const userId = userData.id;
+
+            // Only load from Supabase if localStorage is empty
+            // Check localStorage first for draft ID
+            const savedDraftId = localStorage.getItem('currentQuickSOAPReportId');
+            if (savedDraftId) {
+                const { data: savedDraft } = await supabase
+                    .from('saved_reports')
+                    .select('id, report_name, form_data')
+                    .eq('id', savedDraftId)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                // Only load if it's a mobile draft (sent_to_desktop is false/undefined, not true)
+                if (savedDraft && savedDraft.form_data && !savedDraft.report_text) {
+                    const isMobileDraft = savedDraft.form_data.sent_to_desktop !== true;
+                    if (isMobileDraft) {
+                        // Skip reload if we're already on this draft (prevents glitchy reloads)
+                        loadDraftData(savedDraft, true);
+                        return;
+                    }
+                }
+            }
+
+            // If no saved draft ID, try to find most recent mobile draft
+            const { data: allDrafts } = await supabase
+                .from('saved_reports')
+                .select('id, report_name, form_data, created_at')
+                .eq('user_id', userId)
+                .eq('record_type', 'quicksoap')
+                .is('report_text', null)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (allDrafts && allDrafts.length > 0) {
+                // Find most recent mobile draft (sent_to_desktop !== true)
+                const mobileDraft = allDrafts.find(d =>
+                    d.form_data && d.form_data.sent_to_desktop !== true
+                );
+                if (mobileDraft) {
+                    // Skip reload if we're already on this draft (prevents glitchy reloads)
+                    loadDraftData(mobileDraft, true);
+                }
+            }
+        } catch (err) {
+            console.error('Error loading mobile drafts:', err);
+        }
+    }, [isAuthenticated, user, isMobile, loadDraftData]);
+
+    // Restore pending dictation banner on mount (desktop only)
+
+    // Load draft dictations and set up polling (desktop only)
+    useEffect(() => {
+        if (!isAuthenticated || !user) return;
+
+        if (isMobile) {
+            // Mobile: Load its own drafts on mount
+            loadMobileDrafts();
+        } else {
+            // Desktop: Load desktop drafts
+            loadDraftDictations();
+        }
+    }, [isAuthenticated, user, isMobile, loadDraftDictations, loadMobileDrafts]);
 
     // Save reportName to localStorage
     useEffect(() => {
@@ -395,6 +694,21 @@ const QuickSOAP = () => {
             setHasReport(false);
         }
     }, [report]);
+
+
+    // Prevent body scrolling on mobile QuickSOAP
+    useEffect(() => {
+        if (isMobile) {
+            // Prevent body scroll
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
+            return () => {
+                // Restore body scroll on unmount
+                document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
+            };
+        }
+    }, [isMobile]);
 
     // Cleanup audio visualization on unmount
     useEffect(() => {
@@ -577,8 +891,16 @@ const QuickSOAP = () => {
                     summary: response.data.summary || response.data.text.substring(0, 100) + (response.data.text.length > 100 ? '...' : ''),
                     expanded: false
                 };
-                setDictations(prev => [...prev, newDictation]);
-                setLastInput(response.data.text);
+                const newLastInput = response.data.text;
+                setDictations(prev => {
+                    const updated = [...prev, newDictation];
+                    // Auto-save draft after transcription (especially important for mobile)
+                    if (isAuthenticated) {
+                        saveDraftDictations(updated, input, newLastInput);
+                    }
+                    return updated;
+                });
+                setLastInput(newLastInput);
             } else {
                 throw new Error('No transcription received');
             }
@@ -590,13 +912,119 @@ const QuickSOAP = () => {
         }
     };
 
+    // Auto-save helper function (extracted from handleSaveRecord)
+    const autoSaveRecord = async (generatedReport) => {
+        if (!isAuthenticated || !user) return;
+
+        try {
+            // Get user's UUID from users table
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (userError || !userData) {
+                console.error('User not found in Supabase for auto-save.');
+                return;
+            }
+
+            const userId = userData.id;
+            const loadedReportId = localStorage.getItem('currentQuickSOAPReportId');
+
+            // Prepare form_data with QuickSOAP structure
+            const formData = {
+                record_type: 'quicksoap',
+                dictations: dictations,
+                input: input,
+                report: generatedReport,
+                lastInput: lastInput,
+                auto_generated: true,
+                generated_at: new Date().toISOString()
+            };
+
+            // Use reportName if set, otherwise generate default
+            const finalReportName = reportName.trim() || `QuickSOAP - ${new Date().toLocaleString()}`;
+
+            const reportIdToUse = loadedReportId || draftRecordId;
+
+            if (reportIdToUse) {
+                // Update existing report
+                const { error: updateError } = await supabase
+                    .from('saved_reports')
+                    .update({
+                        report_name: finalReportName,
+                        report_text: generatedReport,
+                        form_data: formData,
+                        record_type: 'quicksoap'
+                    })
+                    .eq('id', reportIdToUse)
+                    .eq('user_id', userId);
+
+                if (updateError) {
+                    console.error('Error auto-saving QuickSOAP record:', updateError);
+                } else {
+                    // Clear draft flag since it's now a completed report
+                    draftRecordIdRef.current = null;
+                    setDraftRecordId(null);
+                    // Mark as unopened if it wasn't already opened
+                    const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
+                    const viewedReports = JSON.parse(localStorage.getItem('viewedDesktopQuickSOAPReports') || '[]');
+                    if (!viewedReports.includes(reportIdToUse) && !unopenedReports.includes(reportIdToUse)) {
+                        unopenedReports.push(reportIdToUse);
+                        localStorage.setItem('unopenedDesktopQuickSOAPReports', JSON.stringify(unopenedReports));
+                        // Set notification flags in localStorage
+                        localStorage.setItem('hasNewDesktopQuickSOAP', 'true');
+                        localStorage.setItem('newDesktopQuickSOAPId', reportIdToUse);
+                        // Dispatch event to notify SavedReports
+                        window.dispatchEvent(new CustomEvent('newDesktopQuickSOAPGenerated', { detail: { reportId: reportIdToUse } }));
+                    }
+                }
+            } else {
+                // Create new report
+                const { data: newReport, error: insertError } = await supabase
+                    .from('saved_reports')
+                    .insert([{
+                        user_id: userId,
+                        report_name: finalReportName,
+                        report_text: generatedReport,
+                        form_data: formData,
+                        record_type: 'quicksoap'
+                    }])
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    console.error('Error auto-saving QuickSOAP record:', insertError);
+                } else {
+                    // Store the new report ID
+                    localStorage.setItem('currentQuickSOAPReportId', newReport.id);
+                    // Mark as unopened and trigger notification
+                    const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
+                    if (!unopenedReports.includes(newReport.id)) {
+                        unopenedReports.push(newReport.id);
+                        localStorage.setItem('unopenedDesktopQuickSOAPReports', JSON.stringify(unopenedReports));
+                        // Set notification flags in localStorage
+                        localStorage.setItem('hasNewDesktopQuickSOAP', 'true');
+                        localStorage.setItem('newDesktopQuickSOAPId', newReport.id);
+                        // Dispatch event to notify SavedReports
+                        window.dispatchEvent(new CustomEvent('newDesktopQuickSOAPGenerated', { detail: { reportId: newReport.id } }));
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Error auto-saving QuickSOAP record:', err);
+            // Don't show error to user for auto-save failures
+        }
+    };
+
     const handleGenerateSOAP = async () => {
         // Combine all dictations and manual input
         const allDictations = dictations.map(d => d.fullText).join('\n\n');
         const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
 
-        if (!combinedInput.trim()) {
-            setError('Please enter or record some notes first.');
+        if (!combinedInput.trim() || dictations.length === 0) {
+            setError('Please record at least one dictation first.');
             return;
         }
 
@@ -614,11 +1042,14 @@ const QuickSOAP = () => {
                     });
 
                     if (response.data.report) {
-                        setReport(response.data.report);
+                        const generatedReport = response.data.report;
+                        setReport(generatedReport);
                         // Set default report name if not already set
                         if (!reportName) {
                             setReportName(`QuickSOAP - ${new Date().toLocaleString()}`);
                         }
+                        // Auto-save after generation
+                        await autoSaveRecord(generatedReport);
                         setTimeout(() => {
                             setIsReportTransitioning(false);
                         }, 100);
@@ -641,14 +1072,17 @@ const QuickSOAP = () => {
                 });
 
                 if (response.data.report) {
+                    const generatedReport = response.data.report;
                     // Start transition - fade out center input
                     setIsTransitioning(true);
                     setTimeout(() => {
-                        setReport(response.data.report);
+                        setReport(generatedReport);
                         // Set default report name if not already set
                         if (!reportName) {
                             setReportName(`QuickSOAP - ${new Date().toLocaleString()}`);
                         }
+                        // Auto-save after generation
+                        autoSaveRecord(generatedReport);
                         // Fade in sidebar and report after a delay to allow center to fade out first
                         setTimeout(() => {
                             setIsTransitioning(false);
@@ -693,6 +1127,21 @@ const QuickSOAP = () => {
         }, 400);
     };
 
+    // Save draft dictations to localStorage only (not to Supabase - records only save when user clicks Save)
+    const saveDraftDictations = async (dictationsToSave, inputToSave, lastInputToSave) => {
+        // Only save to localStorage - do NOT save to Supabase until user explicitly clicks Save
+        // This prevents blank draft records from appearing in Saved Records
+        try {
+            // Save to localStorage for persistence across sessions
+            localStorage.setItem('quickSOAP_dictations', JSON.stringify(dictationsToSave));
+            localStorage.setItem('quickSOAP_input', inputToSave);
+            localStorage.setItem('quickSOAP_lastInput', lastInputToSave);
+        } catch (err) {
+            console.error('Error saving draft dictations to localStorage:', err);
+        }
+    };
+
+
     const handleSaveRecord = async () => {
         if (!isAuthenticated) {
             setError('Please log in to save the record.');
@@ -723,31 +1172,41 @@ const QuickSOAP = () => {
             const loadedReportId = localStorage.getItem('currentQuickSOAPReportId');
 
             // Prepare form_data with QuickSOAP structure
+            // Desktop saves don't include sent_to_desktop flag (desktop origin)
             const formData = {
                 record_type: 'quicksoap',
                 dictations: dictations,
                 input: input,
                 report: report,
-                lastInput: lastInput
+                lastInput: lastInput,
+                // Desktop saves don't have sent_to_desktop flag - this is desktop-originated
+                sent_to_desktop: undefined
             };
 
             // Use reportName if set, otherwise generate default
             const finalReportName = reportName.trim() || `QuickSOAP - ${new Date().toLocaleString()}`;
 
-            if (loadedReportId) {
-                // Update existing report
+            const reportIdToUse = loadedReportId || draftRecordId;
+
+            if (reportIdToUse) {
+                // Update existing report (could be draft or completed)
+                // Note: updated_at is automatically updated by database trigger
                 const { error: updateError } = await supabase
                     .from('saved_reports')
                     .update({
                         report_name: finalReportName,
-                        report_text: report,
+                        report_text: report, // Now has report - no longer a draft
                         form_data: formData,
-                        record_type: 'quicksoap' // Set record_type if column exists
+                        record_type: 'quicksoap'
                     })
-                    .eq('id', loadedReportId)
+                    .eq('id', reportIdToUse)
                     .eq('user_id', userId);
 
                 if (updateError) throw updateError;
+
+                // Clear draft flag since it's now a completed report
+                draftRecordIdRef.current = null;
+                setDraftRecordId(null);
             } else {
                 // Create new report
                 const { data: newReport, error: insertError } = await supabase
@@ -757,7 +1216,7 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: report,
                         form_data: formData,
-                        record_type: 'quicksoap' // Set record_type if column exists
+                        record_type: 'quicksoap'
                     }])
                     .select()
                     .single();
@@ -784,8 +1243,152 @@ const QuickSOAP = () => {
         ));
     };
 
-    const removeDictation = (id) => {
-        setDictations(prev => prev.filter(d => d.id !== id));
+    const handleDeleteDictationClick = (id) => {
+        setDictationToDelete(id);
+        setShowDeleteDictationModal(true);
+    };
+
+    const removeDictation = async (id) => {
+        const updatedDictations = dictations.filter(d => d.id !== id);
+        setDictations(updatedDictations);
+
+        // Update localStorage immediately
+        if (updatedDictations.length === 0) {
+            // Clear localStorage if no dictations left
+            localStorage.removeItem('quickSOAP_dictations');
+        } else {
+            localStorage.setItem('quickSOAP_dictations', JSON.stringify(updatedDictations));
+        }
+
+        if (isAuthenticated && user) {
+            if (isMobile && draftRecordId) {
+                // On mobile: Delete the draft record entirely from Supabase
+                // Mobile should be one dictation at a time, so deleting removes it completely
+                // This ensures deleted dictations don't reappear on reload
+                try {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('auth0_user_id', user.sub)
+                        .single();
+
+                    if (userData) {
+                        // Delete the draft record from Supabase
+                        await supabase
+                            .from('saved_reports')
+                            .delete()
+                            .eq('id', draftRecordId)
+                            .eq('user_id', userData.id);
+
+                        // Clear the draft record ID
+                        draftRecordIdRef.current = null;
+                        setDraftRecordId(null);
+                        localStorage.removeItem('currentQuickSOAPReportId');
+                    }
+                } catch (err) {
+                    console.error('Error deleting mobile dictation from database:', err);
+                }
+            } else {
+                // On desktop: Just update localStorage (don't save to Supabase until user clicks Save)
+                saveDraftDictations(updatedDictations, input, lastInput).catch(err => {
+                    console.error('Error saving dictation removal:', err);
+                });
+            }
+        }
+    };
+
+    // Show send to desktop modal (mobile only)
+    const handleSendToDesktopClick = () => {
+        if (!isAuthenticated || !user || !isMobile) return;
+        setShowSendToDesktopModal(true);
+    };
+
+    // Send dictations to desktop (mobile only)
+    const sendToDesktop = async () => {
+        if (!isAuthenticated || !user || !isMobile) return;
+
+        setIsSendingToDesktop(true);
+        try {
+            // Get user's UUID from users table
+            const { data: userData, error: userError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (userError || !userData) {
+                console.error('Error fetching user for send to desktop:', userError);
+                setIsSendingToDesktop(false);
+                return;
+            }
+
+            const userId = userData.id;
+            const draftName = `QuickSOAP Draft - ${new Date().toLocaleDateString()}`;
+
+            // Prepare form_data with sent_to_desktop flag
+            const formData = {
+                record_type: 'quicksoap',
+                dictations: dictations,
+                input: input,
+                report: null,
+                lastInput: lastInput,
+                sent_to_desktop: true, // Mark as sent to desktop
+                sent_to_desktop_at: new Date().toISOString() // Timestamp
+            };
+
+            if (draftRecordId) {
+                // Update existing draft with sent_to_desktop flag
+                const { error: updateError } = await supabase
+                    .from('saved_reports')
+                    .update({
+                        report_name: draftName,
+                        report_text: null,
+                        form_data: formData,
+                        record_type: 'quicksoap'
+                    })
+                    .eq('id', draftRecordId)
+                    .eq('user_id', userId);
+
+                if (updateError) {
+                    console.error('Error sending to desktop:', updateError);
+                    setIsSendingToDesktop(false);
+                } else {
+                    setIsSendingToDesktop(false);
+                    setShowSendToDesktopModal(false);
+                    setShowSendSuccessModal(true);
+                    setTimeout(() => setShowSendSuccessModal(false), 3000);
+                }
+            } else {
+                // Create new draft with sent_to_desktop flag
+                const { data: newDraft, error: insertError } = await supabase
+                    .from('saved_reports')
+                    .insert([{
+                        user_id: userId,
+                        report_name: draftName,
+                        report_text: null,
+                        form_data: formData,
+                        record_type: 'quicksoap'
+                    }])
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    console.error('Error creating draft for desktop:', insertError);
+                    setIsSendingToDesktop(false);
+                } else if (newDraft) {
+                    draftRecordIdRef.current = newDraft.id;
+                    setDraftRecordId(newDraft.id);
+                    localStorage.setItem('currentQuickSOAPReportId', newDraft.id);
+                    setIsSendingToDesktop(false);
+                    setShowSendToDesktopModal(false);
+                    setShowSendSuccessModal(true);
+                    setTimeout(() => setShowSendSuccessModal(false), 3000);
+                }
+            }
+        } catch (err) {
+            console.error('Error sending to desktop:', err);
+            setIsSendingToDesktop(false);
+        }
     };
 
     const copySection = async (sectionName, content) => {
@@ -858,38 +1461,196 @@ const QuickSOAP = () => {
                         transform: translateY(0) scale(1);
                     }
                 }
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-100%);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
             `}</style>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex overflow-hidden relative w-full">
+
+
+            {/* Send to Desktop Modal (Mobile) */}
+            {showSendToDesktopModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50" style={{ left: isMobile ? '0' : '224px' }}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-fadeIn">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Send to Desktop</h3>
+                            <button
+                                onClick={() => setShowSendToDesktopModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                disabled={isSendingToDesktop}
+                            >
+                                <FaTimes className="text-lg" />
+                            </button>
+                        </div>
+                        <div className="mb-6">
+                            <p className="text-gray-600 mb-3">
+                                Your dictations will be automatically converted to a SOAP report and saved to <span className="font-semibold text-primary-600">Saved Records</span> on your desktop.
+                            </p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                <p className="text-sm text-blue-700 font-medium">
+                                    ⏱️ It may take 1-2 minutes for the report to appear in Saved Records after sending.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowSendToDesktopModal(false)}
+                                disabled={isSendingToDesktop}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={sendToDesktop}
+                                disabled={isSendingToDesktop}
+                                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isSendingToDesktop ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                        <span>Sending...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaDesktop className="text-sm" />
+                                        <span>Send</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Save Prompt Modal (Desktop - when loading new dictation with report open) */}
+
+            {/* Success Modal (Send to Desktop) */}
+            {showSendSuccessModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50" style={{ left: isMobile ? '0' : '224px' }}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-fadeIn">
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <FaCheckCircle className="text-2xl text-green-600" />
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Dictations Sent!</h3>
+                            <p className="text-gray-600 mb-3">
+                                Your dictations have been sent to desktop and will be automatically converted to a SOAP report.
+                            </p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                                <p className="text-sm text-blue-700 font-medium mb-1">
+                                    📋 Check <span className="font-semibold">Saved Records</span> on your desktop
+                                </p>
+                                <p className="text-xs text-blue-600 mb-2">
+                                    ⏱️ It may take 1-2 minutes for the report to appear
+                                </p>
+                                <p className="text-xs text-blue-600 font-medium">
+                                    ✓ Dictations saved to cloud
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowSendSuccessModal(false)}
+                                className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-all"
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Dictation Confirmation Modal */}
+            {showDeleteDictationModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50" style={{ left: isMobile ? '0' : '224px' }}>
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-fadeIn">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-xl font-bold text-gray-900">Delete Dictation</h3>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteDictationModal(false);
+                                    setDictationToDelete(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <FaTimes className="text-lg" />
+                            </button>
+                        </div>
+                        <div className="mb-6">
+                            <p className="text-gray-700 mb-3">
+                                {isMobile 
+                                    ? "If you haven't sent this to desktop it will not be saved."
+                                    : "If you haven't generated this it will not be saved."
+                                }
+                            </p>
+                            <p className="text-gray-600 font-medium">
+                                Are you sure you want to remove this dictation?
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowDeleteDictationModal(false);
+                                    setDictationToDelete(null);
+                                }}
+                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (dictationToDelete) {
+                                        removeDictation(dictationToDelete);
+                                    }
+                                    setShowDeleteDictationModal(false);
+                                    setDictationToDelete(null);
+                                }}
+                                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-all"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className={`${isMobile ? 'h-screen overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full`} style={isMobile ? { overflowY: 'hidden', height: '100vh', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } : {}}>
                 {/* Left Side - Input Area */}
                 <div
-                    className={`fixed top-0 bottom-0 z-40`}
+                    className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed top-0 bottom-0 z-40'}
+                    style={isMobile ? { overflowY: 'hidden', height: '100vh' } : {}}
                     style={{
                         ...(hasReport ? {
-                            left: '224px',
-                            width: '25%',
+                            left: isMobile ? '0' : '224px',
+                            width: isMobile ? '100%' : '25%',
                             backgroundColor: 'white',
-                            borderRight: '2px solid #e5e7eb',
+                            borderRight: isMobile ? 'none' : '2px solid #e5e7eb',
                             opacity: isTransitioning ? 0 : 1,
                             transform: isTransitioning ? 'translateX(-150px)' : 'translateX(0)',
                             transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                         } : {
-                            left: '224px',
-                            width: 'calc(100% - 224px)',
-                            backgroundColor: 'transparent',
+                            left: isMobile ? '0' : '224px',
+                            width: isMobile ? '100%' : 'calc(100% - 224px)',
+                            backgroundColor: isMobile ? 'white' : 'transparent',
                             opacity: isTransitioning ? 0 : 1,
                             transform: isTransitioning ? 'scale(0.95)' : 'scale(1)',
                             transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out'
                         })
                     }}
                 >
-                    {!hasReport ? (
+                    {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className="h-full flex flex-col items-center justify-center px-8">
+                        <div className={`h-full flex flex-col ${isMobile ? 'items-center justify-center' : 'items-center justify-center'} px-8 ${isMobile ? 'overflow-hidden' : ''}`} style={isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {}}>
                             {/* Header */}
-                            <div className="mb-8 text-center relative">
+                            <div className={`${isMobile ? 'mb-4' : 'mb-8'} text-center relative flex-shrink-0`}>
                                 <div className="flex items-center justify-center gap-3">
-                                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-500 to-primary-700 bg-clip-text text-transparent mb-2">
+                                    <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
                                         QuickSOAP
+                                        <span className="text-sm font-semibold text-yellow-500 uppercase tracking-wide">beta</span>
                                     </h1>
                                     <div className="relative group mb-2">
                                         <button
@@ -909,20 +1670,38 @@ const QuickSOAP = () => {
                                     </div>
                                 </div>
                                 <p className="text-gray-500 text-sm">
-                                    Record dictations or type notes to generate SOAP reports
+                                    {isMobile
+                                        ? 'Record dictations to generate SOAP reports, then send to your desktop'
+                                        : 'Record dictations or type notes to generate SOAP reports'
+                                    }
                                 </p>
                             </div>
 
                             {/* Error Message */}
                             {error && (
-                                <div className="mb-6 w-full max-w-2xl bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm">
+                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full max-w-2xl bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm flex-shrink-0`}>
                                     <p className="text-red-600 text-sm text-center">{error}</p>
+                                </div>
+                            )}
+
+                            {/* Generation Banner - Desktop Only */}
+                            {isGenerating && !isMobile && !hasReport && (
+                                <div className="mb-6 w-full max-w-2xl bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 flex-shrink-0">
+                                    <FaSave className="text-xl flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-base">Generating your SOAP report...</p>
+                                        <p className="text-sm opacity-90">This report will be automatically saved to your records. Feel free to name it and edit it once it's generated.</p>
+                                    </div>
                                 </div>
                             )}
 
                             {/* Dictation Bubbles - Above center */}
                             {dictations.length > 0 && (
-                                <div className="mb-6 w-full max-w-2xl space-y-3 max-h-64 overflow-y-auto">
+                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full max-w-2xl space-y-3 ${isMobile ? 'flex-shrink-0' : 'overflow-y-auto max-h-64'}`} style={isMobile ? { 
+                                    overflowY: dictations.some(d => d.expanded) ? 'auto' : 'visible',
+                                    maxHeight: dictations.some(d => d.expanded) ? 'calc(50vh)' : 'none',
+                                    WebkitOverflowScrolling: dictations.some(d => d.expanded) ? 'touch' : 'auto'
+                                } : {}}>
                                     {dictations.map((dictation) => (
                                         <div
                                             key={dictation.id}
@@ -956,7 +1735,7 @@ const QuickSOAP = () => {
                                                     </p>
                                                 </div>
                                                 <button
-                                                    onClick={() => removeDictation(dictation.id)}
+                                                    onClick={() => handleDeleteDictationClick(dictation.id)}
                                                     className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
                                                     title="Remove dictation"
                                                 >
@@ -970,11 +1749,11 @@ const QuickSOAP = () => {
 
                             {/* Waveform Visualization */}
                             {isRecording && !isPaused && audioLevels.length > 0 && (
-                                <div className="mb-6 flex items-end justify-center gap-1 h-20 px-2">
+                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} flex items-end justify-center gap-1 h-20 px-2 flex-shrink-0`}>
                                     {audioLevels.map((level, index) => (
                                         <div
                                             key={index}
-                                            className="bg-primary-500 rounded-t transition-all duration-75 ease-out"
+                                            className="bg-primary-600 rounded-t transition-all duration-75 ease-out"
                                             style={{
                                                 width: '5px',
                                                 height: `${level}%`,
@@ -990,47 +1769,49 @@ const QuickSOAP = () => {
                             {/* Main Input Container - ChatGPT style */}
                             <div className="w-full max-w-2xl">
                                 {/* Large Microphone Button - Front and Center */}
-                                {!isRecording && dictations.length === 0 && (
-                                    <div className="flex justify-center mb-6">
+                                {/* Desktop: Only show when no dictations exist (one dictation before generating) */}
+                                {/* Mobile: Only show when no dictations exist (one dictation at a time) */}
+                                {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
+                                    <div className={`flex justify-center ${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'}`}>
                                         <button
                                             onClick={startRecording}
                                             disabled={isTranscribing || isGenerating}
-                                            className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none"
+                                            className={`${isMobile ? 'w-24 h-24' : 'w-28 h-28'} rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none`}
                                             title="Start Recording"
                                         >
-                                            <FaMicrophone className="text-2xl" />
+                                            <FaMicrophone className={isMobile ? 'text-3xl' : 'text-4xl'} />
                                         </button>
                                     </div>
                                 )}
 
                                 {/* Recording Controls */}
                                 {isRecording && (
-                                    <div className="flex flex-col items-center gap-4 mb-6">
+                                    <div className={`flex flex-col items-center gap-4 ${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'}`}>
                                         <div className="flex items-center gap-4">
                                             {!isPaused ? (
                                                 <button
                                                     onClick={pauseRecording}
-                                                    className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center"
+                                                    className={`${isMobile ? 'w-20 h-20' : 'w-20 h-20'} rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center`}
                                                     title="Pause Recording"
                                                 >
-                                                    <FaPause className="text-xl" />
+                                                    <FaPause className={isMobile ? 'text-2xl' : 'text-xl'} />
                                                 </button>
                                             ) : (
                                                 <button
                                                     onClick={resumeRecording}
-                                                    className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center"
+                                                    className={`${isMobile ? 'w-20 h-20' : 'w-20 h-20'} rounded-full bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center`}
                                                     title="Resume Recording"
                                                 >
-                                                    <FaPlay className="text-xl" />
+                                                    <FaPlay className={isMobile ? 'text-2xl' : 'text-xl'} />
                                                 </button>
                                             )}
                                             <button
                                                 onClick={stopRecording}
-                                                className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center animate-pulse"
-                                                title="Stop Recording"
-                                            >
-                                                <FaStop className="text-2xl" />
-                                            </button>
+                                                className={`${isMobile ? 'w-24 h-24' : 'w-24 h-24'} rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center animate-pulse`}
+                                                    title="Stop Recording"
+                                                >
+                                                    <FaStop className={isMobile ? 'text-3xl' : 'text-2xl'} />
+                                                </button>
                                         </div>
                                         <p className="text-sm font-medium text-gray-600">
                                             {isPaused ? 'Paused' : 'Listening...'}
@@ -1040,67 +1821,47 @@ const QuickSOAP = () => {
 
                                 {/* Transcribing Indicator */}
                                 {isTranscribing && (
-                                    <div className="flex justify-center mb-6">
+                                    <div className={`flex justify-center ${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'}`}>
                                         <div className="flex items-center gap-3 text-gray-600">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-500 border-t-transparent"></div>
+                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
                                             <span className="text-sm font-medium">Transcribing...</span>
                                         </div>
                                     </div>
                                 )}
 
-                                {/* Input Bar - ChatGPT style */}
-                                <div className="bg-white rounded-2xl shadow-lg border border-gray-200 hover:border-gray-300 transition-all duration-200">
-                                    <div className="flex items-end gap-2 p-3">
-                                        <div className="flex-1">
-                                            <textarea
-                                                ref={inputTextareaRef}
-                                                value={input}
-                                                onChange={(e) => {
-                                                    setInput(e.target.value);
-                                                    adjustInputTextareaHeight();
-                                                }}
-                                                placeholder="Add additional notes (optional)..."
-                                                className="w-full resize-none border-0 focus:outline-none text-gray-900 placeholder-gray-400 text-sm leading-5"
-                                                style={{
-                                                    whiteSpace: 'pre-wrap',
-                                                    wordWrap: 'break-word',
-                                                    minHeight: '24px',
-                                                    maxHeight: '120px',
-                                                    overflowY: 'auto',
-                                                    height: '24px'
-                                                }}
-                                                disabled={isTranscribing || isGenerating}
-                                                onKeyDown={(e) => {
-                                                    const hasContent = dictations.length > 0 || input.trim();
-                                                    if (e.key === 'Enter' && !e.shiftKey && !isGenerating && !isTranscribing && hasContent) {
-                                                        e.preventDefault();
-                                                        handleGenerateSOAP();
-                                                    }
-                                                }}
-                                                rows={1}
-                                            />
-                                        </div>
+                                {/* Generate Button - Show only after dictation is complete (Desktop only) */}
+                                {!isMobile && !hasReport && dictations.length > 0 && !isTranscribing && (
+                                    <div className="flex justify-center mt-4">
                                         <button
                                             onClick={handleGenerateSOAP}
-                                            disabled={(dictations.length === 0 && !input.trim()) || isGenerating || isTranscribing}
-                                            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-all duration-200 shadow-sm hover:shadow disabled:shadow-none flex-shrink-0"
+                                            disabled={isGenerating}
+                                            className="px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-base transition-all duration-200 shadow-md hover:shadow-lg disabled:shadow-none"
                                         >
                                             {isGenerating ? (
                                                 <div className="flex items-center gap-2">
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                                    <span>Generating</span>
+                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                                    <span>Generating...</span>
                                                 </div>
                                             ) : (
-                                                'Generate'
+                                                'Generate SOAP'
                                             )}
                                         </button>
                                     </div>
-                                </div>
+                                )}
 
-                                {/* Helper Text */}
-                                <p className="text-xs text-gray-400 text-center mt-3">
-                                    Press Enter to generate • Shift+Enter for new line
-                                </p>
+                                {/* Mobile: Send to Desktop Button */}
+                                {isMobile && dictations.length > 0 && (
+                                    <div className="w-full max-w-2xl mt-4 space-y-2 flex-shrink-0">
+                                        <button
+                                            onClick={handleSendToDesktopClick}
+                                            disabled={isTranscribing || isGenerating}
+                                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            <FaDesktop className="text-base" />
+                                            Send to Desktop
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     ) : (
@@ -1159,7 +1920,7 @@ const QuickSOAP = () => {
                                                     </p>
                                                 </div>
                                                 <button
-                                                    onClick={() => removeDictation(dictation.id)}
+                                                    onClick={() => handleDeleteDictationClick(dictation.id)}
                                                     className="text-gray-400 hover:text-red-500 transition-colors"
                                                     title="Remove dictation"
                                                 >
@@ -1171,27 +1932,39 @@ const QuickSOAP = () => {
                                 </div>
                             )}
 
-                            {/* Input Textarea */}
-                            <div className="mb-4">
-                                <textarea
-                                    ref={sidebarInputTextareaRef}
-                                    value={input}
-                                    onChange={(e) => {
-                                        setInput(e.target.value);
-                                        setTimeout(() => adjustSidebarInputTextareaHeight(), 0);
-                                    }}
-                                    onInput={() => adjustSidebarInputTextareaHeight()}
-                                    placeholder="Add additional notes here (optional)..."
-                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm"
-                                    style={{
-                                        whiteSpace: 'pre-wrap',
-                                        wordWrap: 'break-word',
-                                        height: 'auto',
-                                        overflow: 'hidden'
-                                    }}
-                                    disabled={isTranscribing || isGenerating}
-                                />
-                            </div>
+                            {/* Transcribing Indicator */}
+                            {isTranscribing && (
+                                <div className="mb-4 flex justify-center">
+                                    <div className="flex items-center gap-3 text-gray-600">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
+                                        <span className="text-sm font-medium">Transcribing...</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Input Textarea (Desktop only) */}
+                            {!isMobile && (
+                                <div className="mb-4">
+                                    <textarea
+                                        ref={sidebarInputTextareaRef}
+                                        value={input}
+                                        onChange={(e) => {
+                                            setInput(e.target.value);
+                                            setTimeout(() => adjustSidebarInputTextareaHeight(), 0);
+                                        }}
+                                        onInput={() => adjustSidebarInputTextareaHeight()}
+                                        placeholder="Add additional notes here (optional)..."
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm"
+                                        style={{
+                                            whiteSpace: 'pre-wrap',
+                                            wordWrap: 'break-word',
+                                            height: 'auto',
+                                            overflow: 'hidden'
+                                        }}
+                                        disabled={isTranscribing || isGenerating}
+                                    />
+                                </div>
+                            )}
 
                             {/* Buttons */}
                             <div className="flex flex-col gap-3">
@@ -1201,32 +1974,32 @@ const QuickSOAP = () => {
                                             <button
                                                 onClick={pauseRecording}
                                                 disabled={isTranscribing || isGenerating}
-                                                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                                className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed ${isMobile ? 'w-20 h-20' : 'w-16 h-16'}`}
                                                 title="Pause Recording"
                                             >
-                                                <FaPause className="text-sm" />
+                                                <FaPause className={isMobile ? 'text-xl' : 'text-lg'} />
                                             </button>
                                         )}
                                         {isRecording && isPaused && (
                                             <button
                                                 onClick={resumeRecording}
                                                 disabled={isTranscribing || isGenerating}
-                                                className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-green-500 hover:bg-green-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
+                                                className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-green-500 hover:bg-green-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed ${isMobile ? 'w-20 h-20' : 'w-16 h-16'}`}
                                                 title="Resume Recording"
                                             >
-                                                <FaPlay className="text-sm" />
+                                                <FaPlay className={isMobile ? 'text-xl' : 'text-lg'} />
                                             </button>
                                         )}
                                         <button
                                             onClick={isRecording ? stopRecording : startRecording}
                                             disabled={isTranscribing || isGenerating}
-                                            className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${isRecording
+                                            className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${isRecording
                                                 ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
-                                                : 'bg-primary-500 hover:bg-primary-600 text-white'
-                                                } disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none`}
+                                                : 'bg-primary-600 hover:bg-primary-700 text-white'
+                                                } disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none ${isMobile ? 'w-24 h-24' : 'w-20 h-20'}`}
                                             title={isRecording ? 'Stop Recording' : 'Start Recording'}
                                         >
-                                            {isRecording ? <FaStop className="text-lg" /> : <FaMicrophone className="text-lg" />}
+                                            {isRecording ? <FaStop className={isMobile ? 'text-2xl' : 'text-xl'} /> : <FaMicrophone className={isMobile ? 'text-2xl' : 'text-xl'} />}
                                         </button>
                                     </div>
                                     {isRecording && (
@@ -1235,20 +2008,34 @@ const QuickSOAP = () => {
                                         </p>
                                     )}
                                 </div>
-                                <button
-                                    onClick={handleGenerateSOAP}
-                                    disabled={(dictations.length === 0 && !input.trim()) || isGenerating || isTranscribing}
-                                    className="w-full px-6 py-3 bg-primary-500 text-white rounded-lg font-semibold hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
-                                >
-                                    {isGenerating ? 'Generating...' : 'Generate SOAP'}
-                                </button>
+                                {!isMobile && dictations.length > 0 && !isTranscribing && (
+                                    <button
+                                        onClick={handleGenerateSOAP}
+                                        disabled={isGenerating}
+                                        className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                                    >
+                                        {isGenerating ? 'Generating...' : 'Generate SOAP'}
+                                    </button>
+                                )}
+                                {isMobile && dictations.length > 0 && (
+                                    <div className="w-full space-y-2">
+                                        <button
+                                            onClick={handleSendToDesktopClick}
+                                            disabled={isTranscribing || isGenerating}
+                                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            <FaDesktop className="text-base" />
+                                            Send to Desktop
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
                 </div>
 
                 {/* Right Side - Report Display */}
-                {hasReport && (
+                {hasReport && !isMobile && (
                     <div
                         ref={(el) => {
                             if (el) reportScrollContainerRef.current = el;
@@ -1265,6 +2052,16 @@ const QuickSOAP = () => {
                             transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                         }}>
                         <div className="max-w-5xl mx-auto px-8 py-4">
+                            {/* Generation Banner - Desktop Only */}
+                            {isGenerating && !isMobile && (
+                                <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center gap-3">
+                                    <FaSave className="text-xl flex-shrink-0" />
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-base">Generating your SOAP report...</p>
+                                        <p className="text-sm opacity-90">This report will be automatically saved to your records. Feel free to name it and edit it once it's generated.</p>
+                                    </div>
+                                </div>
+                            )}
                             {/* Report Title - Editable */}
                             <div className="mb-3">
                                 {isEditingReportName ? (
@@ -1343,9 +2140,10 @@ const QuickSOAP = () => {
                             ) : (
                                 <div
                                     style={{
-                                        opacity: isReportTransitioning ? 0 : 1,
-                                        transform: isReportTransitioning ? 'translateX(100px)' : 'translateX(0)',
-                                        transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                                        opacity: (isReportTransitioning || isLoadingFromSaved) ? 0 : 1,
+                                        transform: (isReportTransitioning || isLoadingFromSaved) ? 'translateX(100px)' : 'translateX(0)',
+                                        transition: 'opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        animation: isLoadingFromSaved ? 'fadeIn 0.5s ease-in-out' : 'none'
                                     }}
                                 >
                                     {/* Unified SOAP Record Card */}
@@ -1444,224 +2242,400 @@ const QuickSOAP = () => {
                 )}
 
                 {/* Tutorial Modal */}
-                {showTutorial && (
-                    <div
-                        className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn"
-                        onClick={() => setShowTutorial(false)}
-                        style={{
-                            left: '224px',
-                            right: '0',
-                            top: '0',
-                            bottom: '0',
-                            animation: 'fadeIn 0.3s ease-out'
-                        }}
-                    >
+                {showTutorial && (() => {
+                    // Check mobile status directly to ensure accurate detection
+                    const isMobileDevice = typeof window !== 'undefined' && window.innerWidth <= 768;
+                    return (
                         <div
-                            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
-                            onClick={(e) => e.stopPropagation()}
+                            className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn"
+                            onClick={() => setShowTutorial(false)}
                             style={{
-                                animation: 'slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                                left: isMobileDevice ? '0' : '224px',
+                                right: '0',
+                                top: '0',
+                                bottom: '0',
+                                animation: 'fadeIn 0.3s ease-out'
                             }}
                         >
-                            {/* Tutorial Header */}
-                            <div className="bg-gradient-to-r from-primary-500 to-primary-700 px-6 py-4 flex items-center justify-between">
-                                <h2 className="text-2xl font-bold text-white">QuickSOAP Tutorial</h2>
-                                <button
-                                    onClick={() => setShowTutorial(false)}
-                                    className="text-white hover:text-gray-200 transition-colors"
-                                >
-                                    <FaTimes className="text-xl" />
-                                </button>
-                            </div>
-
-                            {/* Tutorial Content */}
-                            <div className="flex-1 overflow-y-auto p-8">
-                                {tutorialStep === 0 && (
-                                    <div className="space-y-6">
-                                        <div className="text-center">
-                                            <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to QuickSOAP</h3>
-                                            <p className="text-gray-600 text-lg">QuickSOAP helps you create professional SOAP reports quickly using voice dictation or manual input.</p>
-                                        </div>
-                                        <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
-                                            <div className="flex flex-col items-center justify-center space-y-4">
-                                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
-                                                    <FaMicrophone className="text-white text-3xl" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-gray-700 font-semibold mb-2">Step 1: Record or Type</p>
-                                                    <p className="text-gray-600 text-sm">Click the microphone to record dictations or type notes directly</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {tutorialStep === 1 && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Recording Dictations</h3>
-                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-md">
-                                                        <FaStop className="text-white text-xl" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-semibold text-gray-800">Recording Controls</p>
-                                                        <p className="text-sm text-gray-600">Click the microphone to start, pause/resume as needed, and stop when finished</p>
-                                                    </div>
-                                                </div>
-                                                <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">Dictation Summary</span>
-                                                    </div>
-                                                    <p className="text-sm text-gray-700 italic">Your transcribed dictation will appear here...</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {tutorialStep === 2 && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Adding Manual Notes</h3>
-                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                            <div className="space-y-4">
-                                                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                                                    <textarea
-                                                        disabled
-                                                        className="w-full resize-none border-0 focus:outline-none text-gray-900 placeholder-gray-400 text-sm"
-                                                        placeholder="Add additional notes (optional)..."
-                                                        rows={3}
-                                                        value="You can type additional clinical notes here..."
-                                                    />
-                                                </div>
-                                                <p className="text-sm text-gray-600">Type any additional notes or observations in the text field</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {tutorialStep === 3 && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your SOAP Report</h3>
-                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center justify-center">
-                                                    <button
-                                                        disabled
-                                                        className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md cursor-not-allowed opacity-75"
-                                                    >
-                                                        Generate SOAP
-                                                    </button>
-                                                </div>
-                                                <p className="text-sm text-gray-600 text-center">Click "Generate SOAP" to create your report from all dictations and notes</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {tutorialStep === 4 && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Reviewing & Editing Your Report</h3>
-                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                            <div className="space-y-4">
-                                                <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                                                    <div className="border-l-4 border-b border-gray-200" style={{ borderLeftColor: '#3b82f6' }}>
-                                                        <div className="bg-gradient-to-r from-blue-500 to-blue-700 px-6 py-3 flex items-center justify-between">
-                                                            <h3 className="text-white font-semibold text-lg">S – Subjective</h3>
-                                                            <button disabled className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm bg-white bg-opacity-20 text-white cursor-not-allowed">
-                                                                <FaCopy className="text-xs" />
-                                                                Copy
-                                                            </button>
-                                                        </div>
-                                                        <div className="bg-blue-50 px-6 py-4">
-                                                            <textarea
-                                                                disabled
-                                                                className="w-full px-4 py-3 border border-gray-300 rounded-md bg-white text-sm"
-                                                                rows={3}
-                                                                value="Your report content appears here and can be edited..."
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <p className="text-sm text-gray-600">Each SOAP section is color-coded and fully editable. Click any section to modify the content.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {tutorialStep === 5 && (
-                                    <div className="space-y-6">
-                                        <h3 className="text-2xl font-bold text-gray-800 mb-4">Saving Your Report</h3>
-                                        <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-2 justify-center">
-                                                    <button disabled className="px-3 py-1.5 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed opacity-75 flex items-center gap-1.5">
-                                                        <FaSave className="text-xs" />
-                                                        Save
-                                                    </button>
-                                                    <button disabled className="px-3 py-1.5 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed opacity-75">
-                                                        Copy All
-                                                    </button>
-                                                    <button disabled className="px-3 py-1.5 rounded text-sm bg-red-200 text-red-800 cursor-not-allowed opacity-75">
-                                                        Clear
-                                                    </button>
-                                                </div>
-                                                <div className="mt-4 space-y-2">
-                                                    <p className="text-sm font-semibold text-gray-800">Save your report to:</p>
-                                                    <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
-                                                        <li>Access it later from Saved Records</li>
-                                                        <li>Load it back into QuickSOAP for editing</li>
-                                                        <li>Keep a permanent record</li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Tutorial Footer */}
-                            <div className="border-t border-gray-200 px-6 py-4 flex items-center justify-between bg-gray-50">
-                                <div className="flex items-center gap-2">
-                                    {[0, 1, 2, 3, 4, 5].map((step) => (
-                                        <div
-                                            key={step}
-                                            className={`w-2 h-2 rounded-full transition-all ${tutorialStep === step ? 'bg-[#3369bd] w-8' : 'bg-gray-300'}`}
-                                        />
-                                    ))}
+                            <div
+                                className={`bg-white rounded-2xl shadow-2xl w-full overflow-hidden flex flex-col transform transition-all ${isMobileDevice ? 'max-w-full mx-1 max-h-[95vh]' : 'max-w-4xl max-h-[90vh]'}`}
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                    animation: 'slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                                }}
+                            >
+                                {/* Tutorial Header */}
+                                <div className={`bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-between flex-shrink-0 ${isMobileDevice ? 'px-3 py-2' : 'px-6 py-4'}`}>
+                                    <h2 className={`font-bold text-white ${isMobileDevice ? 'text-base' : 'text-2xl'}`}>
+                                        {isMobileDevice ? 'QuickSOAP Mobile Tutorial' : 'QuickSOAP Tutorial'}
+                                    </h2>
+                                    <button
+                                        onClick={() => setShowTutorial(false)}
+                                        className="text-white hover:text-gray-200 transition-colors flex-shrink-0"
+                                    >
+                                        <FaTimes className={isMobileDevice ? 'text-base' : 'text-xl'} />
+                                    </button>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                    {tutorialStep > 0 && (
-                                        <button
-                                            onClick={() => setTutorialStep(tutorialStep - 1)}
-                                            className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all flex items-center gap-2"
-                                        >
-                                            <FaArrowLeft className="text-sm" />
-                                            Previous
-                                        </button>
-                                    )}
-                                    {tutorialStep < 5 ? (
-                                        <button
-                                            onClick={() => setTutorialStep(tutorialStep + 1)}
-                                            className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-2"
-                                        >
-                                            Next
-                                            <FaArrowRight className="text-sm" />
-                                        </button>
+
+                                {/* Tutorial Content */}
+                                <div className={`flex-1 overflow-y-auto ${isMobileDevice ? 'p-3' : 'p-8'}`}>
+                                    {isMobileDevice ? (
+                                        // Mobile Tutorial
+                                        <>
+                                            {tutorialStep === 0 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <div className="text-center">
+                                                        <h3 className={`font-bold text-gray-800 mb-2 ${isMobileDevice ? 'text-lg' : 'text-2xl'}`}>Welcome to QuickSOAP Mobile</h3>
+                                                        <p className={`text-gray-600 ${isMobileDevice ? 'text-sm' : 'text-lg'}`}>Record dictations on your mobile device and send them to your desktop to generate professional SOAP reports.</p>
+                                                    </div>
+                                                    <div className={`bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 ${isMobileDevice ? 'p-4' : 'p-6'}`}>
+                                                        <div className="flex flex-col items-center justify-center space-y-3">
+                                                            <div className={`rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg ${isMobileDevice ? 'w-16 h-16' : 'w-20 h-20'}`}>
+                                                                <FaMicrophone className={`text-white ${isMobileDevice ? 'text-2xl' : 'text-3xl'}`} />
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className={`text-gray-700 font-semibold mb-1 ${isMobileDevice ? 'text-sm' : 'mb-2'}`}>Step 1: Record Dictation</p>
+                                                                <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Tap the microphone button to start recording your clinical notes</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 1 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Recording Your Dictation</h3>
+                                                    <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
+                                                        <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-4'}`}>
+                                                            <div className={`flex items-center ${isMobileDevice ? 'gap-2' : 'gap-4'}`}>
+                                                                <div className={`rounded-full bg-primary-600 flex items-center justify-center shadow-md flex-shrink-0 ${isMobileDevice ? 'w-10 h-10' : 'w-12 h-12'}`}>
+                                                                    <FaMicrophone className={`text-white ${isMobileDevice ? 'text-xs' : 'text-sm'}`} />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : ''}`}>Start Recording</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Tap the large microphone button to begin recording</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-center ${isMobileDevice ? 'gap-2 mt-2' : 'gap-4 mt-4'}`}>
+                                                                <div className={`rounded-full bg-yellow-500 flex items-center justify-center shadow-md flex-shrink-0 ${isMobileDevice ? 'w-10 h-10' : 'w-12 h-12'}`}>
+                                                                    <FaPause className={`text-white ${isMobileDevice ? 'text-xs' : 'text-sm'}`} />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : ''}`}>Pause/Resume</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Pause if you need a moment, then resume</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-center ${isMobileDevice ? 'gap-2 mt-2' : 'gap-4 mt-4'}`}>
+                                                                <div className={`rounded-full bg-red-500 flex items-center justify-center shadow-md flex-shrink-0 ${isMobileDevice ? 'w-10 h-10' : 'w-12 h-12'}`}>
+                                                                    <FaStop className={`text-white ${isMobileDevice ? 'text-xs' : 'text-sm'}`} />
+                                                                </div>
+                                                                <div className="min-w-0 flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : ''}`}>Stop Recording</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Tap stop when you're finished speaking</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 2 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Review Your Dictation</h3>
+                                                    <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
+                                                        <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-4'}`}>
+                                                            <div className={`bg-white rounded-lg border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-4'}`}>
+                                                                <div className={`flex items-center gap-2 ${isMobileDevice ? 'mb-1' : 'mb-2'}`}>
+                                                                    <span className={`font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded ${isMobileDevice ? 'text-[10px]' : 'text-xs'}`}>Dictation Summary</span>
+                                                                </div>
+                                                                <p className={`text-gray-700 italic ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Your transcribed dictation will appear here...</p>
+                                                            </div>
+                                                            <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Review your dictation summary. You can expand to see the full transcript or remove it if needed.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 3 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Send to Desktop</h3>
+                                                    <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
+                                                        <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-4'}`}>
+                                                            <div className="flex items-center justify-center">
+                                                                <button
+                                                                    disabled
+                                                                    className={`bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold shadow-md cursor-not-allowed opacity-75 flex items-center gap-2 ${isMobileDevice ? 'px-4 py-2 text-xs' : 'px-6 py-3'}`}
+                                                                >
+                                                                    <FaDesktop className={isMobileDevice ? 'text-sm' : 'text-base'} />
+                                                                    Send to Desktop
+                                                                </button>
+                                                            </div>
+                                                            <p className={`text-gray-600 text-center ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Once you've recorded your dictation, tap "Send to Desktop" to transfer it to your desktop computer</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 4 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Find Your Report on Desktop</h3>
+                                                    <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
+                                                        <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-4'}`}>
+                                                            <div className="text-center">
+                                                                <div className={`rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg mx-auto ${isMobileDevice ? 'w-12 h-12 mb-2' : 'w-16 h-16 mb-4'}`}>
+                                                                    <FaDesktop className={`text-white ${isMobileDevice ? 'text-lg' : 'text-2xl'}`} />
+                                                                </div>
+                                                                <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs mb-1' : 'mb-2'}`}>Your SOAP Report is Ready</p>
+                                                                <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>After sending, your dictation will be automatically converted to a SOAP report.</p>
+                                                            </div>
+                                                            <div className={`${isMobileDevice ? 'mt-2 space-y-2' : 'mt-4 space-y-3'}`}>
+                                                                <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                    <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>1</div>
+                                                                    <p className={`text-gray-700 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Go to <span className="font-semibold text-primary-600">Saved Records</span> on your desktop</p>
+                                                                </div>
+                                                                <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                    <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>2</div>
+                                                                    <p className={`text-gray-700 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Look for your report (it may take 1-2 minutes to appear)</p>
+                                                                </div>
+                                                                <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                    <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>3</div>
+                                                                    <p className={`text-gray-700 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Click the report to view and edit it</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`bg-blue-50 border border-blue-200 rounded-lg ${isMobileDevice ? 'mt-2 p-2' : 'mt-4 p-4'}`}>
+                                                                <p className={`text-blue-700 text-center font-medium ${isMobileDevice ? 'text-[10px]' : 'text-xs'}`}>⏱️ Reports appear in Saved Records within 1-2 minutes</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
                                     ) : (
-                                        <button
-                                            onClick={() => setShowTutorial(false)}
-                                            className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all"
-                                        >
-                                            Get Started
-                                        </button>
+                                        // Desktop Tutorial
+                                        <>
+                                            {tutorialStep === 0 && (
+                                                <div className="space-y-6">
+                                                    <div className="text-center">
+                                                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to QuickSOAP</h3>
+                                                        <p className="text-gray-600 text-lg">QuickSOAP helps you create professional SOAP reports quickly using voice dictation or manual input.</p>
+                                                    </div>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
+                                                        <div className="flex flex-col items-center justify-center space-y-4">
+                                                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg">
+                                                                <FaMicrophone className="text-white text-3xl" />
+                                                            </div>
+                                                            <div className="text-center">
+                                                                <p className="text-gray-700 font-semibold mb-2">Step 1: Record or Type</p>
+                                                                <p className="text-gray-600 text-sm">Click the microphone to record dictations or type notes directly</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 1 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Recording Dictations</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-md">
+                                                                    <FaStop className="text-white text-xl" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800">Recording Controls</p>
+                                                                    <p className="text-sm text-gray-600">Click the microphone to start, pause/resume as needed, and stop when finished</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-4 bg-white rounded-lg p-4 border border-gray-200">
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <span className="text-xs font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded">Dictation Summary</span>
+                                                                </div>
+                                                                <p className="text-sm text-gray-700 italic">Your transcribed dictation will appear here...</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 2 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Adding Manual Notes</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                                                                <textarea
+                                                                    disabled
+                                                                    className="w-full resize-none border-0 focus:outline-none text-gray-900 placeholder-gray-400 text-sm"
+                                                                    placeholder="Add additional notes (optional)..."
+                                                                    rows={3}
+                                                                    value="You can type additional clinical notes here..."
+                                                                />
+                                                            </div>
+                                                            <p className="text-sm text-gray-600">Type any additional notes or observations in the text field</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 3 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your SOAP Report</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center justify-center">
+                                                                <button
+                                                                    disabled
+                                                                    className="px-6 py-3 bg-[#3369bd] text-white rounded-lg font-semibold shadow-md cursor-not-allowed opacity-75"
+                                                                >
+                                                                    Generate SOAP
+                                                                </button>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 text-center">Click "Generate SOAP" to create your report from all dictations and notes</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 4 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Reviewing & Editing Your Report</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                                                <div className="border-l-4 border-b border-gray-200" style={{ borderLeftColor: '#3b82f6' }}>
+                                                                    <div className="bg-gradient-to-r from-blue-500 to-blue-700 px-6 py-3 flex items-center justify-between">
+                                                                        <h3 className="text-white font-semibold text-lg">S – Subjective</h3>
+                                                                        <button disabled className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm bg-white bg-opacity-20 text-white cursor-not-allowed">
+                                                                            <FaCopy className="text-xs" />
+                                                                            Copy
+                                                                        </button>
+                                                                    </div>
+                                                                    <div className="bg-blue-50 px-6 py-4">
+                                                                        <textarea
+                                                                            disabled
+                                                                            className="w-full px-4 py-3 border border-gray-300 rounded-md bg-white text-sm"
+                                                                            rows={3}
+                                                                            value="Your report content appears here and can be edited..."
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <p className="text-sm text-gray-600">Each SOAP section is color-coded and fully editable. Click any section to modify the content.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 5 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Saving Your Report</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-center gap-2 justify-center">
+                                                                <button disabled className="px-3 py-1.5 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed opacity-75 flex items-center gap-1.5">
+                                                                    <FaSave className="text-xs" />
+                                                                    Save
+                                                                </button>
+                                                                <button disabled className="px-3 py-1.5 rounded text-sm bg-[#3369bd] text-white cursor-not-allowed opacity-75">
+                                                                    Copy All
+                                                                </button>
+                                                                <button disabled className="px-3 py-1.5 rounded text-sm bg-red-200 text-red-800 cursor-not-allowed opacity-75">
+                                                                    Clear
+                                                                </button>
+                                                            </div>
+                                                            <div className="mt-4 space-y-2">
+                                                                <p className="text-sm font-semibold text-gray-800">Save your report to:</p>
+                                                                <ul className="text-sm text-gray-600 space-y-1 ml-4 list-disc">
+                                                                    <li>Access it later from Saved Records</li>
+                                                                    <li>Load it back into QuickSOAP for editing</li>
+                                                                    <li>Keep a permanent record</li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 6 && (
+                                                <div className="space-y-6">
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Mobile Dictations</h3>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="text-center">
+                                                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg mx-auto mb-4">
+                                                                    <FaMobile className="text-white text-3xl" />
+                                                                </div>
+                                                                <p className="font-semibold text-gray-800 mb-2">Record Dictations Anywhere</p>
+                                                                <p className="text-sm text-gray-600">You can log into Petwise on your mobile device and send dictations directly from the exam room, wherever you are.</p>
+                                                            </div>
+                                                            <div className="mt-4 space-y-3">
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">1</div>
+                                                                    <p className="text-sm text-gray-700">Open Petwise on your mobile device</p>
+                                                                </div>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">2</div>
+                                                                    <p className="text-sm text-gray-700">Record your dictation in QuickSOAP Mobile</p>
+                                                                </div>
+                                                                <div className="flex items-start gap-3">
+                                                                    <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">3</div>
+                                                                    <p className="text-sm text-gray-700">Send it to your desktop - you'll see a notification banner when it arrives</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                                <p className="text-xs text-blue-600 text-center">Perfect for recording notes during patient exams, then generating reports back at your desk</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
+                                </div>
+
+                                {/* Tutorial Footer */}
+                                <div className={`border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0 ${isMobileDevice ? 'px-2 py-2' : 'px-6 py-4'}`}>
+                                    <div className={`flex items-center ${isMobileDevice ? 'gap-1' : 'gap-2'}`}>
+                                        {(isMobileDevice ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5, 6]).map((step) => (
+                                            <div
+                                                key={step}
+                                                className={`rounded-full transition-all ${isMobileDevice ? 'h-1.5' : 'h-2'} ${tutorialStep === step ? `bg-[#3369bd] ${isMobileDevice ? 'w-6' : 'w-8'}` : `bg-gray-300 ${isMobileDevice ? 'w-1.5' : 'w-2'}`}`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <div className={`flex items-center ${isMobileDevice ? 'gap-1.5' : 'gap-3'}`}>
+                                        {tutorialStep > 0 && (
+                                            <button
+                                                onClick={() => setTutorialStep(tutorialStep - 1)}
+                                                className={`rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all flex items-center gap-1 ${isMobileDevice ? 'px-2 py-1 text-xs' : 'px-4 py-2'}`}
+                                            >
+                                                <FaArrowLeft className={isMobileDevice ? 'text-xs' : 'text-sm'} />
+                                                <span className={isMobileDevice ? 'hidden sm:inline' : ''}>Previous</span>
+                                            </button>
+                                        )}
+                                        {tutorialStep < (isMobileDevice ? 4 : 6) ? (
+                                            <button
+                                                onClick={() => setTutorialStep(tutorialStep + 1)}
+                                                className={`rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-1 ${isMobileDevice ? 'px-2 py-1 text-xs' : 'px-4 py-2'}`}
+                                            >
+                                                <span className={isMobileDevice ? 'hidden sm:inline' : ''}>Next</span>
+                                                <FaArrowRight className={isMobileDevice ? 'text-xs' : 'text-sm'} />
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => setShowTutorial(false)}
+                                                className={`rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all ${isMobileDevice ? 'px-2 py-1 text-xs' : 'px-4 py-2'}`}
+                                            >
+                                                Get Started
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
             </div>
         </>
     );

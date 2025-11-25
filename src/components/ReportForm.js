@@ -2227,7 +2227,7 @@ const ReportForm = () => {
                             style={{ animation: 'slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)' }}
                         >
                             {/* Tutorial Header */}
-                            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gradient-to-r from-primary-500 to-primary-600">
+                            <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-gradient-to-r from-primary-600 to-primary-700">
                                 <h2 className="text-2xl font-bold text-white">PetSOAP Tutorial</h2>
                                 <button
                                     onClick={() => setShowTutorial(false)}

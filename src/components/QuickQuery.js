@@ -1316,7 +1316,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         }}
                     >
                         {/* Tutorial Header */}
-                        <div className="bg-gradient-to-r from-primary-500 to-primary-700 px-6 py-4 flex items-center justify-between">
+                        <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4 flex items-center justify-between">
                             <h2 className="text-2xl font-bold text-white">PetQuery Tutorial</h2>
                             <button
                                 onClick={() => setShowTutorial(false)}

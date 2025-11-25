@@ -364,6 +364,7 @@ EXPANSION RULES:
 - If vital signs are mentioned, include every one and restate them clearly.
 - Do not compress multiple findings into one bullet.
 - Err on the side of including more detail rather than less.
+- CONDITIONAL SECTIONS: Only include a "Masses:" subsection under Physical Exam if the dictation mentions any masses, lumps, nodules, or similar findings. If no masses are mentioned, omit this section entirely.
 
 SOAP RECORD:
 
@@ -388,6 +389,7 @@ Physical Exam:
 - Integumentary:
 - Lymph nodes:
 - Eyes/Ears/Nose/Throat:
+- Masses: (ONLY include this line and subsection if masses are mentioned in the dictation)
 Vital Signs:
 - Temperature:
 - Heart Rate:

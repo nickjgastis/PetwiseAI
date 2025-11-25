@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
+import axios from 'axios';
 import ReportForm from '../components/ReportForm';
 import SavedReports from '../components/SavedReports';
 import Profile from '../components/Profile';
@@ -13,7 +14,25 @@ import Welcome from '../components/Welcome';
 import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile } from 'react-icons/fa';
+
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.petwise.vet'
+    : 'http://localhost:3001';
+
+// Add slideDown animation style
+const slideDownStyle = `
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -28,6 +47,10 @@ const Dashboard = () => {
     const [needsWelcome, setNeedsWelcome] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [showMobileProfile, setShowMobileProfile] = useState(false);
+    const [hasPendingDictation, setHasPendingDictation] = useState(false);
+    const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
+    const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
+    const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
 
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
@@ -79,97 +102,471 @@ const Dashboard = () => {
         };
     }, []);
 
-    // ================ SUBSCRIPTION CHECK ================
+    // ================ FETCH NEW MOBILE DICTATIONS (Background polling) ================
+    // This runs continuously even when QuickSOAP tab is not active, so sidebar can show alerts
     useEffect(() => {
-        const checkSubscription = async () => {
-            if (!user?.sub) return;
+        if (isMobile || !isAuthenticated || !user) return; // Only check on desktop when authenticated
 
+        const fetchNewMobileDictations = async () => {
             try {
-                const { data, error } = await supabase
+                const { data: userData, error: userError } = await supabase
                     .from('users')
-                    .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year')
+                    .select('id')
                     .eq('auth0_user_id', user.sub)
                     .single();
 
-                if (error) {
-                    if (error.code === 'PGRST116') {
-                        // Create new user - ensure email is captured
-                        if (!user.email) {
-                            console.error('No email provided from Auth0');
-                            throw new Error('Email is required for registration');
+                if (userError || !userData) return;
+
+                const userId = userData.id;
+
+                // Fetch drafts that were explicitly sent from mobile (sent_to_desktop: true)
+                const { data: allDrafts, error: draftError } = await supabase
+                    .from('saved_reports')
+                    .select('id, form_data, created_at')
+                    .eq('user_id', userId)
+                    .eq('record_type', 'quicksoap')
+                    .is('report_text', null)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (draftError || !allDrafts || allDrafts.length === 0) return;
+
+                // Find the most recent draft with sent_to_desktop: true
+                const sentDraft = allDrafts.find(d => d.form_data?.sent_to_desktop === true);
+
+                if (!sentDraft || !sentDraft.form_data) return;
+
+                const sentAt = sentDraft.form_data.sent_to_desktop_at;
+                const draftId = sentDraft.id;
+
+                // Check if we've already processed this (compare sent_at timestamp)
+                const lastProcessedSentAt = localStorage.getItem('lastProcessedMobileSOAPSentAt');
+                
+                // If already processed, skip
+                if (lastProcessedSentAt === sentAt) {
+                    return; // Already processed
+                }
+
+                // Check if the draft still exists (if not, it was already processed)
+                const { data: draftCheck } = await supabase
+                    .from('saved_reports')
+                    .select('id')
+                    .eq('id', draftId)
+                    .eq('user_id', userId)
+                    .maybeSingle();
+
+                if (!draftCheck) {
+                    // Draft doesn't exist anymore - already processed
+                    localStorage.setItem('lastProcessedMobileSOAPSentAt', sentAt);
+                    return;
+                }
+
+                // Check if a report with this sentAt already exists (prevent duplicates)
+                // Check by looking for reports with the same sent_to_desktop_at in form_data
+                const { data: allReports } = await supabase
+                    .from('saved_reports')
+                    .select('id, form_data')
+                    .eq('user_id', userId)
+                    .eq('record_type', 'quicksoap')
+                    .not('report_text', 'is', null);
+
+                const existingReport = allReports?.find(r => 
+                    r.form_data?.sent_to_desktop_at === sentAt
+                );
+
+                if (existingReport) {
+                    // Report already exists, mark as processed and delete draft if it still exists
+                    localStorage.setItem('lastProcessedMobileSOAPSentAt', sentAt);
+                    await supabase
+                        .from('saved_reports')
+                        .delete()
+                        .eq('id', draftId);
+                    return;
+                }
+
+                // Mark as processing BEFORE starting generation to prevent duplicates
+                localStorage.setItem('lastProcessedMobileSOAPSentAt', sentAt);
+
+                // Auto-generate SOAP report from mobile dictation
+                const formData = sentDraft.form_data;
+                const dictations = formData.dictations || [];
+                const input = formData.input || '';
+                
+                // Combine all dictations and manual input
+                const allDictations = dictations.map(d => d.fullText || d.summary || '').join('\n\n');
+                const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
+
+                if (!combinedInput.trim()) {
+                    console.error('No dictation content to generate SOAP from');
+                    // Remove processing flag if no content
+                    localStorage.removeItem('lastProcessedMobileSOAPSentAt');
+                    return;
+                }
+
+                try {
+                    // Generate SOAP report
+                    const response = await axios.post(`${API_URL}/api/generate-soap`, {
+                        input: combinedInput.trim()
+                    });
+
+                    if (response.data.report) {
+                        const generatedReport = response.data.report;
+                        const reportName = `QuickSOAP Mobile - ${new Date().toLocaleString()}`;
+
+                        // Double-check the report doesn't already exist before saving
+                        const { data: checkExisting } = await supabase
+                            .from('saved_reports')
+                            .select('id')
+                            .eq('user_id', userId)
+                            .eq('record_type', 'quicksoap')
+                            .not('report_text', 'is', null)
+                            .contains('form_data', { sent_to_desktop_at: sentAt })
+                            .maybeSingle();
+
+                        if (checkExisting) {
+                            // Report already exists, skip saving
+                            return;
                         }
 
-                        const { data: newUser, error: createError } = await supabase
-                            .from('users')
-                            .insert([{
-                                auth0_user_id: user.sub,
-                                email: user.email,  // This is already being captured
-                                nickname: user.nickname || user.name,
-                                subscription_status: 'inactive',
-                                has_accepted_terms: false,
-                                dvm_name: null,
-                                created_at: new Date().toISOString() // Add creation timestamp
-                            }])
+                        // Save the generated SOAP to Saved Records
+                        const { data: savedReport, error: saveError } = await supabase
+                            .from('saved_reports')
+                            .insert({
+                                user_id: userId,
+                                report_name: reportName,
+                                report_text: generatedReport,
+                                form_data: {
+                                    ...formData,
+                                    from_mobile: true,
+                                    auto_generated: true,
+                                    generated_at: new Date().toISOString()
+                                },
+                                record_type: 'quicksoap'
+                            })
                             .select()
                             .single();
 
-                        if (createError) throw createError;
-                        setHasAcceptedTerms(false);
-                        setNeedsWelcome(true);
-                        setUserData(newUser);
-                    } else {
-                        // Add retry for other errors
-                        console.error('Error fetching user data:', error);
-                        setTimeout(() => checkSubscription(), 2000);
-                        return;
+                        if (saveError) {
+                            console.error('Error saving generated SOAP:', saveError);
+                            // Remove processing flag on error so it can retry
+                            localStorage.removeItem('lastProcessedMobileSOAPSentAt');
+                            return;
+                        }
+
+                        // Delete the original draft
+                        await supabase
+                            .from('saved_reports')
+                            .delete()
+                            .eq('id', draftId);
+                        
+                        // Set notification flag for Saved Records tab
+                        setHasNewMobileSOAP(true);
+                        localStorage.setItem('hasNewMobileSOAP', 'true');
+                        localStorage.setItem('newMobileSOAPId', savedReport.id);
+
+                        // Dispatch custom event to notify Saved Reports component and update count
+                        // The event handler will increment the count to avoid double-counting
+                        window.dispatchEvent(new CustomEvent('newMobileSOAPGenerated', { 
+                            detail: { reportId: savedReport.id } 
+                        }));
                     }
-                } else {
-                    // Add email check and update
-                    if (user.email && data.email !== user.email) {
-                        const { error: updateError } = await supabase
-                            .from('users')
-                            .update({ email: user.email })
-                            .eq('auth0_user_id', user.sub);
-
-                        if (updateError) console.error('Error updating email:', updateError);
-                        data.email = user.email; // Update local data
-                    }
-
-                    // Add retry for pending states
-                    if (data.subscription_status === 'pending' || data.subscription_status === 'incomplete') {
-                        setTimeout(() => checkSubscription(), 2000);
-                        return;
-                    }
-
-                    setHasAcceptedTerms(data.has_accepted_terms);
-                    setSubscriptionStatus(data.subscription_status);
-
-                    // Check if user has active subscription OR student access
-                    const hasActiveSubscription = ['active', 'past_due'].includes(data.subscription_status);
-                    const isStudentMode = data.plan_label === 'student' &&
-                        data.subscription_end_date &&
-                        new Date(data.subscription_end_date) > new Date();
-
-                    setIsSubscribed(hasActiveSubscription || isStudentMode);
-                    setUserData(data);
-
-                    if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
-                        setNeedsWelcome(true);
-                    }
+                } catch (genError) {
+                    console.error('Error generating SOAP from mobile dictation:', genError);
+                    // Remove processing flag on error so it can retry
+                    localStorage.removeItem('lastProcessedMobileSOAPSentAt');
                 }
             } catch (err) {
-                console.error('Error:', err);
-                // Add retry for any other errors
-                setTimeout(() => checkSubscription(), 2000);
-            } finally {
-                setIsLoading(false);
+                console.error('Error fetching new mobile dictations:', err);
             }
         };
 
+        // Initial check after 2 seconds
+        const initialTimeout = setTimeout(() => {
+            fetchNewMobileDictations();
+        }, 2000);
+
+        // Poll every 5 seconds for new mobile dictations (runs even when tab is inactive)
+        const pollingInterval = setInterval(() => {
+            fetchNewMobileDictations();
+        }, 5000);
+
+        return () => {
+            clearTimeout(initialTimeout);
+            clearInterval(pollingInterval);
+        };
+    }, [isMobile, isAuthenticated, user]);
+
+    // Check for new mobile SOAP on mount and listen for events
+    useEffect(() => {
+        if (isMobile || !isAuthenticated) return;
+
+        // Check localStorage on mount for count
+        const savedCount = parseInt(localStorage.getItem('mobileSOAPCount') || '0', 10);
+        if (savedCount > 0) {
+            setMobileSOAPCount(savedCount);
+            setShowMobileSOAPNotification(true);
+        }
+
+        const hasNewSOAP = localStorage.getItem('hasNewMobileSOAP') === 'true';
+        if (hasNewSOAP) {
+            setHasNewMobileSOAP(true);
+        }
+
+        // Listen for new mobile SOAP events
+        const handleNewMobileSOAP = (event) => {
+            setHasNewMobileSOAP(true);
+            // Increment count
+            const currentCount = parseInt(localStorage.getItem('mobileSOAPCount') || '0', 10);
+            const newCount = currentCount + 1;
+            setMobileSOAPCount(newCount);
+            setShowMobileSOAPNotification(true);
+            localStorage.setItem('mobileSOAPCount', newCount.toString());
+        };
+
+        // Listen for clear notification event (when SavedReports is viewed)
+        const handleClearNotification = () => {
+            setHasNewMobileSOAP(false);
+            setMobileSOAPCount(0);
+            setShowMobileSOAPNotification(false);
+            localStorage.removeItem('mobileSOAPCount');
+        };
+
+        window.addEventListener('newMobileSOAPGenerated', handleNewMobileSOAP);
+        window.addEventListener('clearMobileSOAPNotification', handleClearNotification);
+
+        return () => {
+            window.removeEventListener('newMobileSOAPGenerated', handleNewMobileSOAP);
+            window.removeEventListener('clearMobileSOAPNotification', handleClearNotification);
+        };
+    }, [isMobile, isAuthenticated]);
+
+    // ================ CHECK FOR PENDING DICTATIONS ================
+    useEffect(() => {
+        if (isMobile || !isAuthenticated || !user) return; // Only check on desktop when authenticated
+
+        let lastSupabaseCheck = 0;
+        const SUPABASE_CHECK_INTERVAL = 15000; // Check Supabase every 15 seconds (optimized)
+
+        const checkPendingDictation = async (forceSupabaseCheck = false) => {
+            const pendingSentAt = localStorage.getItem('pendingMobileDictation');
+            const pendingId = localStorage.getItem('pendingMobileDictationId');
+            
+            // Quick localStorage check first
+            if (!pendingSentAt || !pendingId) {
+                setHasPendingDictation(false);
+                return;
+            }
+
+            // Check if user dismissed this dictation
+            const dismissedDictations = JSON.parse(localStorage.getItem('dismissedMobileDictations') || '[]');
+            if (dismissedDictations.includes(pendingId)) {
+                setHasPendingDictation(false);
+                return;
+            }
+
+            // Verify with Supabase periodically (optimized - only when tab is active and enough time has passed)
+            const now = Date.now();
+            const shouldCheckSupabase = forceSupabaseCheck || (now - lastSupabaseCheck > SUPABASE_CHECK_INTERVAL);
+            const isTabActive = !document.hidden;
+
+            if (shouldCheckSupabase && isTabActive) {
+                try {
+                    const { data: userData } = await supabase
+                        .from('users')
+                        .select('id')
+                        .eq('auth0_user_id', user.sub)
+                        .single();
+
+                    if (userData) {
+                        // Check if the pending dictation still exists and is still pending
+                        const { data: pendingDraft } = await supabase
+                            .from('saved_reports')
+                            .select('id, form_data')
+                            .eq('id', pendingId)
+                            .eq('user_id', userData.id)
+                            .maybeSingle();
+
+                        if (pendingDraft && pendingDraft.form_data?.sent_to_desktop === true) {
+                            // Still pending - show indicator
+                            setHasPendingDictation(true);
+                            lastSupabaseCheck = now;
+                        } else {
+                            // No longer pending - clear localStorage
+                            localStorage.removeItem('pendingMobileDictation');
+                            localStorage.removeItem('pendingMobileDictationId');
+                            setHasPendingDictation(false);
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error checking pending dictation:', err);
+                    // Fallback to localStorage state if Supabase check fails
+                    setHasPendingDictation(true);
+                }
+            } else {
+                // Use localStorage state (faster, no DB query)
+                setHasPendingDictation(true);
+            }
+        };
+
+        // Check on mount
+        checkPendingDictation(true); // Force Supabase check on mount
+
+        // Listen for storage changes (when dictations arrive or are dismissed from other tabs)
+        const handleStorageChange = (e) => {
+            if (e.key === 'pendingMobileDictation' || e.key === 'pendingMobileDictationId' || e.key === 'dismissedMobileDictations') {
+                checkPendingDictation(false);
+            }
+        };
+
+        // Listen for custom events (when dictations arrive or are dismissed in same tab)
+        const handlePendingDictationChange = (e) => {
+            setHasPendingDictation(e.detail.hasPending);
+        };
+
+        // Listen for tab visibility changes (only poll when tab is active)
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                // Tab became active - check immediately
+                checkPendingDictation(true);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('pendingDictationChanged', handlePendingDictationChange);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Check periodically (optimized - only when tab is active, less frequent)
+        const interval = setInterval(() => {
+            if (!document.hidden) {
+                checkPendingDictation(false);
+            }
+        }, 5000); // Check every 5 seconds (localStorage only, Supabase check happens less frequently)
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('pendingDictationChanged', handlePendingDictationChange);
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearInterval(interval);
+        };
+    }, [isMobile, isAuthenticated, user]);
+
+    // ================ SUBSCRIPTION CHECK ================
+    const checkSubscription = async () => {
+        if (!user?.sub) return;
+
+        try {
+            const { data, error } = await supabase
+                .from('users')
+                .select('subscription_status, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year')
+                .eq('auth0_user_id', user.sub)
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    // Create new user - ensure email is captured
+                    if (!user.email) {
+                        console.error('No email provided from Auth0');
+                        throw new Error('Email is required for registration');
+                    }
+
+                    const { data: newUser, error: createError } = await supabase
+                        .from('users')
+                        .insert([{
+                            auth0_user_id: user.sub,
+                            email: user.email,  // This is already being captured
+                            nickname: user.nickname || user.name,
+                            subscription_status: 'inactive',
+                            has_accepted_terms: false,
+                            dvm_name: null,
+                            created_at: new Date().toISOString() // Add creation timestamp
+                        }])
+                        .select()
+                        .single();
+
+                    if (createError) throw createError;
+                    setHasAcceptedTerms(false);
+                    setNeedsWelcome(true);
+                    setUserData(newUser);
+                } else {
+                    // Add retry for other errors
+                    console.error('Error fetching user data:', error);
+                    setTimeout(() => checkSubscription(), 2000);
+                    return;
+                }
+            } else {
+                // Add email check and update
+                if (user.email && data.email !== user.email) {
+                    const { error: updateError } = await supabase
+                        .from('users')
+                        .update({ email: user.email })
+                        .eq('auth0_user_id', user.sub);
+
+                    if (updateError) console.error('Error updating email:', updateError);
+                    data.email = user.email; // Update local data
+                }
+
+                // Add retry for pending states
+                if (data.subscription_status === 'pending' || data.subscription_status === 'incomplete') {
+                    setTimeout(() => checkSubscription(), 2000);
+                    return;
+                }
+
+                setHasAcceptedTerms(data.has_accepted_terms);
+                setSubscriptionStatus(data.subscription_status);
+
+                // Check if user has active subscription OR student access
+                const hasActiveSubscription = ['active', 'past_due'].includes(data.subscription_status);
+                const isStudentMode = data.plan_label === 'student' &&
+                    data.subscription_end_date &&
+                    new Date(data.subscription_end_date) > new Date();
+
+                setIsSubscribed(hasActiveSubscription || isStudentMode);
+                setUserData(data);
+
+                if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
+                    setNeedsWelcome(true);
+                }
+            }
+        } catch (err) {
+            console.error('Error:', err);
+            // Add retry for any other errors
+            setTimeout(() => checkSubscription(), 2000);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         if (isAuthenticated && user) {
             checkSubscription();
         }
     }, [isAuthenticated, user]);
+
+    // Refetch subscription status when navigating to QuickSOAP (in case user just signed up)
+    useEffect(() => {
+        if (location.pathname === '/dashboard/quicksoap' && isAuthenticated && user) {
+            // Small delay to ensure database has updated
+            const timer = setTimeout(() => {
+                checkSubscription();
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname, isAuthenticated, user]);
+
+    // Redirect mobile users from QuickSOAP to profile if they don't have an active plan
+    useEffect(() => {
+        if (isMobile && location.pathname === '/dashboard/quicksoap' && !isLoading && userData) {
+            // Wait a bit for subscription status to update after trial activation
+            const timer = setTimeout(() => {
+                if (!hasActivePlan()) {
+                    navigate('/dashboard/profile', { replace: true });
+                }
+            }, 1000); // Give time for subscription check to complete
+            return () => clearTimeout(timer);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isMobile, location.pathname, isLoading, userData]);
 
     const handleAcceptTerms = async ({ emailOptOut }) => {
         try {
@@ -204,6 +601,17 @@ const Dashboard = () => {
 
     // Then check if they need to set their DVM name
     if (needsWelcome || !userData?.dvm_name) {
+        // On mobile, skip welcome page and go to profile
+        if (isMobile) {
+            // Still show welcome for DVM name setup, but navigate to profile after
+            return <Welcome onComplete={(updatedData) => {
+                setNeedsWelcome(false);
+                setUserData(updatedData);
+                // Navigate to profile on mobile after DVM name is set
+                navigate('/dashboard/profile');
+            }} />;
+        }
+        // On desktop, show welcome normally
         return <Welcome onComplete={(updatedData) => {
             setNeedsWelcome(false);
             setUserData(updatedData);
@@ -219,36 +627,180 @@ const Dashboard = () => {
             return null;
         }
 
-        // Only show mobile notification if NOT on profile route
-        if (!window.location.pathname.includes('/profile')) {
+        // Check QuickSOAP route - only allow if user has active plan
+        const isQuickSOAPRoute = window.location.pathname.includes('/quicksoap');
+        if (isQuickSOAPRoute) {
+            // Don't render if no active plan - useEffect will handle redirect
+            if (!hasActivePlan()) {
+                return null;
+            }
+            // Render QuickSOAP with mobile header and bottom nav
             return (
-                <div className="min-h-screen bg-white">
-                    <div className="flex flex-col items-center justify-center text-center min-h-screen p-5 bg-white bg-gradient-to-br from-white to-blue-50">
-                        <img src="/PW.png" alt="Petwise Logo" className="w-30 h-30 mb-5" />
-                        <h1 className="text-primary-500 text-3xl mb-5">Welcome to Petwise!</h1>
-                        {isSubscribed ? (
-                            <p className="text-lg leading-relaxed text-gray-600 mb-4 max-w-lg">PetWise is designed as a desktop application. You can manage your subscription here, but please use your desktop computer to access all features.</p>
-                        ) : (
-                            <p className="text-lg leading-relaxed text-gray-600 mb-4 max-w-lg">PetWise is designed as a desktop application, but you can sign up for a subscription here.</p>
-                        )}
-                        <p className="text-lg leading-relaxed text-gray-600 mb-6 max-w-lg">After subscribing, please use your desktop computer to access all features.</p>
-                        <button
-                            className="px-5 py-3 bg-primary-500 text-white border-none rounded-lg text-base transition-colors duration-300 cursor-pointer hover:bg-primary-600"
-                            onClick={() => navigate('/dashboard/profile')}
-                        >
-                            {isSubscribed ? 'Continue to Profile' : 'Continue to Sign Up'}
-                        </button>
+                <>
+                    {/* Mobile Header */}
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-600 items-center justify-between px-4 z-50 shadow-md">
+                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
+                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
+                            <span>
+                                <span className="font-bold text-white">Petwise</span>
+                                <span className="font-normal text-white">.vet</span>
+                            </span>
+                        </div>
                     </div>
-                </div>
+                    {/* QuickSOAP Component */}
+                    <div style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                        <QuickSOAP />
+                    </div>
+                    {/* Bottom Navigation Bar */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
+                            {hasActivePlan() && (
+                                <Link
+                                    to="/dashboard/quicksoap"
+                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${
+                                        location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
+                                    }`}
+                                >
+                                    <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                    <span className="text-xs font-medium">
+                                        QuickSOAP
+                                        <span className="ml-0.5 text-[8px] font-semibold text-yellow-400 uppercase tracking-wide">beta</span>
+                                    </span>
+                                </Link>
+                            )}
+                            <Link
+                                to="/dashboard/profile"
+                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${
+                                    location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
+                                }`}
+                            >
+                                <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">Profile</span>
+                            </Link>
+                        </div>
+                    </nav>
+                </>
             );
         }
 
-        // If on profile route, allow it but hide sidebar and only show profile
+        // Only show mobile notification if NOT on profile route
+        if (!window.location.pathname.includes('/profile')) {
+            return (
+                <>
+                    {/* Mobile Header */}
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-600 items-center justify-between px-4 z-50 shadow-md">
+                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
+                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
+                            <span>
+                                <span className="font-bold text-white">Petwise</span>
+                                <span className="font-normal text-white">.vet</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div className="min-h-screen bg-white" style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                        <div className="flex flex-col items-center justify-center text-center min-h-screen p-5 bg-white bg-gradient-to-br from-white to-blue-50">
+                            <img src="/PW.png" alt="Petwise Logo" className="w-30 h-30 mb-5" />
+                            <h1 className="text-primary-600 text-3xl mb-5">Welcome to Petwise!</h1>
+                            {isSubscribed ? (
+                                <p className="text-lg leading-relaxed text-gray-600 mb-4 max-w-lg">PetWise is designed as a desktop application. You can manage your subscription here, but please use your desktop computer to access all features.</p>
+                            ) : (
+                                <p className="text-lg leading-relaxed text-gray-600 mb-4 max-w-lg">PetWise is designed as a desktop application, but you can sign up for a subscription here.</p>
+                            )}
+                            <p className="text-lg leading-relaxed text-gray-600 mb-6 max-w-lg">After subscribing, please use your desktop computer to access all features.</p>
+                            <div className="flex flex-col gap-3">
+                                <button
+                                    className="px-5 py-3 bg-primary-600 text-white border-none rounded-lg text-base transition-colors duration-300 cursor-pointer hover:bg-primary-700"
+                                    onClick={() => navigate('/dashboard/quicksoap')}
+                                >
+                                    Record Dictation (QuickSOAP)
+                                </button>
+                                <button
+                                    className="px-5 py-3 bg-gray-200 text-gray-700 border-none rounded-lg text-base transition-colors duration-300 cursor-pointer hover:bg-gray-300"
+                                    onClick={() => navigate('/dashboard/profile')}
+                                >
+                                    {isSubscribed ? 'Continue to Profile' : 'Continue to Sign Up'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {/* Bottom Navigation Bar */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
+                            {hasActivePlan() && (
+                                <Link
+                                    to="/dashboard/quicksoap"
+                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${
+                                        location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
+                                    }`}
+                                >
+                                    <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                    <span className="text-xs font-medium">
+                                        QuickSOAP
+                                        <span className="ml-0.5 text-[8px] font-semibold text-yellow-400 uppercase tracking-wide">beta</span>
+                                    </span>
+                                </Link>
+                            )}
+                            <Link
+                                to="/dashboard/profile"
+                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${
+                                    location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
+                                }`}
+                            >
+                                <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">Profile</span>
+                            </Link>
+                        </div>
+                    </nav>
+                </>
+            );
+        }
+
+        // If on profile route, allow it but hide sidebar and only show profile with bottom nav
         if (window.location.pathname.includes('/profile')) {
             return (
-                <div className="min-h-screen bg-white p-0">
-                    <Profile isMobileSignup={true} />
-                </div>
+                <>
+                    {/* Mobile Header */}
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-600 items-center justify-between px-4 z-50 shadow-md">
+                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
+                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
+                            <span>
+                                <span className="font-bold text-white">Petwise</span>
+                                <span className="font-normal text-white">.vet</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div className="min-h-screen bg-white p-0" style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                        <Profile isMobileSignup={true} />
+                    </div>
+                    {/* Bottom Navigation Bar */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
+                            {hasActivePlan() && (
+                                <Link
+                                    to="/dashboard/quicksoap"
+                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${
+                                        location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
+                                    }`}
+                                >
+                                    <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                    <span className="text-xs font-medium">
+                                        QuickSOAP
+                                        <span className="ml-0.5 text-[8px] font-semibold text-yellow-400 uppercase tracking-wide">beta</span>
+                                    </span>
+                                </Link>
+                            )}
+                            <Link
+                                to="/dashboard/profile"
+                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${
+                                    location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
+                                }`}
+                            >
+                                <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">Profile</span>
+                            </Link>
+                        </div>
+                    </nav>
+                </>
             );
         }
 
@@ -269,8 +821,30 @@ const Dashboard = () => {
     // ================ RENDER COMPONENT ================
     return (
         <>
+            <style>{`
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            `}</style>
             {/* Tooltip styles for collapsed sidebar */}
-            <style jsx>{`
+            <style dangerouslySetInnerHTML={{__html: `
+                @keyframes slideDown {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-20px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
                 .sidebar-collapsed [data-tooltip]:hover::after {
                     content: attr(data-tooltip);
                     position: absolute;
@@ -314,7 +888,7 @@ const Dashboard = () => {
                         transform: translateY(-50%) scale(1);
                     }
                 }
-            `}</style>
+            `}} />
             <div className="flex h-screen bg-white">
                 {/* Mobile Header */}
                 {window.innerWidth <= 768 && (
@@ -392,8 +966,9 @@ const Dashboard = () => {
                     )}
                     {/* Navigation Menu */}
                     <ul className="list-none p-0 m-0 flex-1">
-                        {isSubscribed && (
+                        {hasActivePlan() && (
                             <>
+                                {/* QuickSOAP */}
                                 <li className="mx-2 my-1 relative">
                                     <Link
                                         to="/dashboard/quicksoap"
@@ -401,12 +976,27 @@ const Dashboard = () => {
                                         data-tooltip="QuickSOAP"
                                         className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : ''}`}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 relative ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaMicrophone className="text-sm" />
+                                            {/* Notification dot for pending dictations */}
+                                            {hasPendingDictation && !isMobile && (
+                                                <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
+                                            )}
                                         </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>QuickSOAP</span>
+                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'} relative`}>
+                                            QuickSOAP
+                                            <span className="ml-1.5 text-[10px] font-semibold text-yellow-300 uppercase tracking-wide">beta</span>
+                                            {/* Notification dot next to text when expanded */}
+                                            {hasPendingDictation && !isMobile && !isSidebarCollapsed && (
+                                                <FaCircle className="inline-block ml-2 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
+                                            )}
+                                        </span>
                                     </Link>
                                 </li>
+                            </>
+                        )}
+                        {isSubscribed && (
+                            <>
                                 <li className="mx-2 my-1 relative">
                                     <Link
                                         to="/dashboard/report-form"
@@ -439,10 +1029,20 @@ const Dashboard = () => {
                                         data-tooltip="Saved Reports"
                                         className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : ''}`}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 relative ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaSave className="text-sm" />
+                                            {/* Notification dot for new mobile SOAP */}
+                                            {hasNewMobileSOAP && !isMobile && (
+                                                <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
+                                            )}
                                         </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Saved Records</span>
+                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'} relative`}>
+                                            Saved Records
+                                            {/* Notification dot next to text when expanded */}
+                                            {hasNewMobileSOAP && !isMobile && !isSidebarCollapsed && (
+                                                <FaCircle className="inline-block ml-2 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
+                                            )}
+                                        </span>
                                     </Link>
                                 </li>
                                 <li className="mx-2 my-1 relative">
@@ -531,11 +1131,56 @@ const Dashboard = () => {
                 <main className={`flex-1 bg-white transition-all duration-300 min-h-screen ${isSidebarCollapsed ? 'ml-20' : 'ml-56'}`} style={{ width: isSidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 224px)' }}>
                     {/* Mobile padding for header */}
                     <div className="md:hidden h-16"></div>
+                    
+                    {/* Site-wide Mobile SOAP Notification Banner */}
+                    {showMobileSOAPNotification && mobileSOAPCount > 0 && !isMobile && (
+                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative" style={{ animation: 'slideDown 0.3s ease-out', zIndex: 9999 }}>
+                            <div className="flex items-center gap-3">
+                                <FaMobile className="text-xl flex-shrink-0" />
+                                <div>
+                                    <p className="font-semibold text-base">
+                                        {mobileSOAPCount === 1 
+                                            ? 'New record saved from mobile' 
+                                            : `${mobileSOAPCount} new records saved from mobile`
+                                        }
+                                    </p>
+                                    <p className="text-sm opacity-90">Click to view in Saved Records</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3" style={{ position: 'relative', zIndex: 10000 }}>
+                                <button
+                                    onClick={() => {
+                                        navigate('/dashboard/saved-reports');
+                                    }}
+                                    className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg font-medium text-sm transition-all relative"
+                                    style={{ zIndex: 10001 }}
+                                >
+                                    View
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowMobileSOAPNotification(false);
+                                        setMobileSOAPCount(0);
+                                        localStorage.removeItem('mobileSOAPCount');
+                                    }}
+                                    className="text-white hover:text-gray-200 transition-colors flex-shrink-0"
+                                    title="Dismiss"
+                                >
+                                    <FaTimes className="text-lg" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
                     <Routes>
                         <Route
                             path="/"
                             element={
-                                <Navigate to={isSubscribed ? "/dashboard/report-form" : "/dashboard/profile"} replace />
+                                <Navigate to={
+                                    isMobile 
+                                        ? "/dashboard/profile" 
+                                        : (hasActivePlan() ? "/dashboard/quicksoap" : "/dashboard/profile")
+                                } replace />
                             }
                         />
                         <Route
@@ -549,7 +1194,8 @@ const Dashboard = () => {
                         <Route
                             path="quicksoap"
                             element={
-                                isSubscribed ?
+                                // Only allow QuickSOAP if user has an active plan (trial, paid, or student)
+                                hasActivePlan() ?
                                     <QuickSOAP /> :
                                     <Navigate to="/dashboard/profile" replace />
                             }

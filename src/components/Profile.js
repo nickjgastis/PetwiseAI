@@ -261,20 +261,7 @@ const Profile = ({ isMobileSignup = false }) => {
         isAuthenticated && (
             <div className={`min-h-screen ${isMobileSignup ? 'bg-gray-50' : 'bg-white'}`}>
                 <div className={`${isMobileSignup ? 'w-full' : 'max-w-6xl mx-auto px-6 py-6'}`}>
-                    {isMobileSignup && (
-                        <>
-                            <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-4 text-center">
-                                <h3 className="text-2xl mb-2">📱 ➡️ 💻</h3>
-                                <p className="text-primary-100 font-medium">For full access to all PetWise features, please switch to your desktop computer.</p>
-                            </div>
-                            {!isSubscribed && (
-                                <div className="bg-white p-4 text-center border-b border-gray-200">
-                                    <h2 className="text-xl font-bold text-gray-800 mb-1">Complete Your Subscription</h2>
-                                    <p className="text-gray-600">Choose a plan to get started with PetWise</p>
-                                </div>
-                            )}
-                        </>
-                    )}
+                    {/* Removed mobile banner and subscription header for cleaner mobile experience */}
 
                     {showCheckout ? (
                         <Checkout
@@ -310,7 +297,10 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <div className="text-center mb-8">
                                                 <h2 className="text-3xl font-bold text-primary-400 mb-3">Get Started with PetWise</h2>
                                                 <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                                                    Choose the perfect plan for your veterinary practice. Start with a free trial or select a subscription that fits your needs.
+                                                    {isMobileSignup
+                                                        ? "Start with a free trial. No credit card required."
+                                                        : "Choose the perfect plan for your veterinary practice. Start with a free trial or select a subscription that fits your needs."
+                                                    }
                                                 </p>
                                             </div>
                                             <Checkout

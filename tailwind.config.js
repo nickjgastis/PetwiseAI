@@ -13,12 +13,12 @@ module.exports = {
                     '100': '#e0efff',
                     '200': '#b9dfff',
                     '300': '#7cc7ff',
-                    '400': '#36a9ff',
-                    '500': '#3369bd', // Main primary color
-                    '600': '#2c5aa3',
-                    '700': '#254b89',
-                    '800': '#1e3c6f',
-                    '900': '#172d55',
+                    '400': '#5ab5ff',
+                    '500': '#3db6fd', // Main primary color
+                    '600': '#3468bd', // Primary deep
+                    '700': '#2c5aa3',
+                    '800': '#254b89',
+                    '900': '#1e3c6f',
                 },
                 'accent': {
                     '50': '#f0fcff',
