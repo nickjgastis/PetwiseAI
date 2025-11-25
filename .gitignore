@@ -26,3 +26,4 @@ yarn-error.log*
 # Temporary uploads directory (QuickSOAP)
 server/uploads/
 uploads/
+server/temp/

@@ -9,8 +9,19 @@ const fs = require('fs');
 const FormData = require('form-data');
 const fetch = require('node-fetch');
 const axios = require('axios');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegStatic = require('ffmpeg-static');
+const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+// Set ffmpeg and ffprobe paths
+if (ffmpegStatic) {
+    ffmpeg.setFfmpegPath(ffmpegStatic);
+}
+if (ffprobeStatic) {
+    ffmpeg.setFfprobePath(ffprobeStatic.path);
+}
 
 // ================ APP INITIALIZATION ================
 const app = express();
@@ -29,9 +40,22 @@ app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
 // Multer setup for file uploads (QuickSOAP)
-// Use memory storage for serverless environments (Vercel, etc.) which have read-only file systems
+// Use disk storage for temp files to enable audio processing
+const tempDir = path.join(__dirname, 'temp');
+if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+}
+
 const upload = multer({
-    storage: multer.memoryStorage(),
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, tempDir);
+        },
+        filename: (req, file, cb) => {
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            cb(null, 'audio-' + uniqueSuffix + path.extname(file.originalname || '.webm'));
+        }
+    }),
     limits: {
         fileSize: 25 * 1024 * 1024 // 25MB limit (OpenAI Whisper max)
     }
@@ -198,31 +222,124 @@ app.post('/api/quickquery', async (req, res) => {
 });
 
 // ================ QUICKSOAP ENDPOINTS ================
-// Transcription endpoint using OpenAI Whisper
+// Helper function to clean up temporary files
+const cleanupTempFiles = (filePaths) => {
+    filePaths.forEach(filePath => {
+        try {
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        } catch (err) {
+            console.error(`Error deleting temp file ${filePath}:`, err.message);
+        }
+    });
+};
+
+// Helper function to get audio duration in seconds
+const getAudioDuration = (filePath) => {
+    return new Promise((resolve, reject) => {
+        ffmpeg.ffprobe(filePath, (err, metadata) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(metadata.format.duration || 0);
+            }
+        });
+    });
+};
+
+// Helper function to clean transcript
+const cleanTranscript = (text) => {
+    if (!text) return '';
+
+    // Remove repeated sentences (simple approach)
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const uniqueSentences = [];
+    const seen = new Set();
+
+    sentences.forEach(sentence => {
+        const normalized = sentence.trim().toLowerCase();
+        if (!seen.has(normalized) && normalized.length > 10) {
+            seen.add(normalized);
+            uniqueSentences.push(sentence.trim());
+        }
+    });
+
+    // Join and normalize spacing
+    let cleaned = uniqueSentences.join('. ').replace(/\s+/g, ' ').trim();
+
+    // Remove filler artifacts from segmentation
+    cleaned = cleaned.replace(/\b(um|uh|er|ah)\b/gi, '');
+    cleaned = cleaned.replace(/\.{2,}/g, '.');
+    cleaned = cleaned.replace(/\s+\./g, '.');
+    cleaned = cleaned.replace(/\.\s+\./g, '.');
+
+    return cleaned;
+};
+
+// Transcription endpoint using OpenAI Whisper with segmentation support
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
+    const tempFiles = [];
+    const tempDirs = [];
+
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No audio file provided' });
         }
 
-        // With memory storage, file is already in buffer
-        const fileBuffer = req.file.buffer;
-        const fileName = req.file.originalname || 'audio.webm';
-        const mimeType = req.file.mimetype || 'audio/webm';
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set');
+        }
 
-        // Create FormData for OpenAI API using form-data package
-        const formData = new FormData();
+        const originalFilePath = req.file.path;
+        tempFiles.push(originalFilePath);
 
-        // Append file buffer - form-data package expects buffer as first arg, filename as second, options as third
-        formData.append('file', fileBuffer, {
-            filename: fileName,
-            contentType: mimeType,
-            knownLength: fileBuffer.length
+        // Validate file exists and isn't empty
+        const stats = fs.statSync(originalFilePath);
+        if (stats.size === 0) {
+            throw new Error('Audio file is empty');
+        }
+
+        // Create unique temp directory for this transcription
+        const sessionId = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const sessionTempDir = path.join(tempDir, `session-${sessionId}`);
+        fs.mkdirSync(sessionTempDir, { recursive: true });
+        tempDirs.push(sessionTempDir);
+
+        // Phase 1: Convert audio to Whisper-safe format (mono, 16kHz, MP3)
+        const convertedFilePath = path.join(sessionTempDir, 'converted.mp3');
+        tempFiles.push(convertedFilePath);
+
+        await new Promise((resolve, reject) => {
+            ffmpeg(originalFilePath)
+                .audioChannels(1) // Mono
+                .audioFrequency(16000) // 16kHz
+                .audioCodec('libmp3lame') // MP3 format
+                .audioBitrate(64) // Lower bitrate for smaller files
+                .format('mp3')
+                .on('end', () => {
+                    console.log('Audio conversion completed');
+                    resolve();
+                })
+                .on('error', (err) => {
+                    console.error('Audio conversion error:', err);
+                    reject(err);
+                })
+                .save(convertedFilePath);
         });
-        formData.append('model', 'whisper-1');
-        formData.append('response_format', 'text');
-        // Add prompt to help clean up transcription - remove conversational filler
-        formData.append('prompt', `This is a veterinary medical dictation. Extract ONLY clinically relevant content.
+
+        // Phase 2: Determine if segmentation is needed
+        const convertedStats = fs.statSync(convertedFilePath);
+        const fileSizeMB = convertedStats.size / (1024 * 1024);
+        const duration = await getAudioDuration(convertedFilePath);
+        const durationMinutes = duration / 60;
+
+        const SEGMENTATION_THRESHOLD_MB = 20;
+        const SEGMENTATION_THRESHOLD_MINUTES = 3;
+        const needsSegmentation = fileSizeMB > SEGMENTATION_THRESHOLD_MB || durationMinutes > SEGMENTATION_THRESHOLD_MINUTES;
+
+        let combinedTranscript = '';
+        const basePrompt = `This is a veterinary medical dictation. Extract ONLY clinically relevant content.
 
 IGNORE and REMOVE:
 - Greetings and small talk
@@ -244,36 +361,144 @@ KEEP and CLEAN:
 - Treatment decisions
 - Plans or follow-ups
 
-Rewrite the output as clean clinical dictation with no extra words.`);
+Rewrite the output as clean clinical dictation with no extra words.`;
 
-        // Call OpenAI Whisper API using axios (better FormData compatibility)
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY environment variable is not set');
+        if (needsSegmentation) {
+            // Phase 3: Segment audio into 3-minute chunks
+            console.log(`Segmenting audio: ${fileSizeMB.toFixed(2)}MB, ${durationMinutes.toFixed(2)} minutes`);
+
+            const chunkDuration = 180; // 3 minutes in seconds
+            const numChunks = Math.ceil(duration / chunkDuration);
+            const chunkFiles = [];
+
+            // Create chunks
+            for (let i = 0; i < numChunks; i++) {
+                const startTime = i * chunkDuration;
+                const chunkFilePath = path.join(sessionTempDir, `chunk_${String(i + 1).padStart(3, '0')}.mp3`);
+                chunkFiles.push(chunkFilePath);
+                tempFiles.push(chunkFilePath);
+
+                await new Promise((resolve, reject) => {
+                    ffmpeg(convertedFilePath)
+                        .seekInput(startTime)
+                        .duration(chunkDuration)
+                        .audioChannels(1)
+                        .audioFrequency(16000)
+                        .audioCodec('libmp3lame')
+                        .audioBitrate(64)
+                        .format('mp3')
+                        .on('end', () => resolve())
+                        .on('error', (err) => {
+                            console.error(`Error creating chunk ${i + 1}:`, err);
+                            reject(err);
+                        })
+                        .save(chunkFilePath);
+                });
+            }
+
+            // Phase 4: Transcribe chunks with parallel processing for speed
+            console.log(`Transcribing ${chunkFiles.length} chunks (parallel processing enabled)...`);
+
+            // Helper function to transcribe a single chunk with retries
+            const transcribeChunk = async (chunkFilePath, chunkIndex, contextPrompt = null) => {
+                let retries = 2;
+                while (retries >= 0) {
+                    try {
+                        const chunkFormData = new FormData();
+                        const chunkBuffer = fs.readFileSync(chunkFilePath);
+
+                        chunkFormData.append('file', chunkBuffer, {
+                            filename: `chunk_${chunkIndex + 1}.mp3`,
+                            contentType: 'audio/mpeg',
+                            knownLength: chunkBuffer.length
+                        });
+                        chunkFormData.append('model', 'whisper-1');
+                        chunkFormData.append('response_format', 'text');
+                        chunkFormData.append('prompt', contextPrompt || basePrompt);
+
+                        const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', chunkFormData, {
+                            headers: {
+                                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                                ...chunkFormData.getHeaders()
+                            },
+                            maxContentLength: Infinity,
+                            maxBodyLength: Infinity,
+                            responseType: 'text'
+                        });
+
+                        return response.data.trim();
+                    } catch (err) {
+                        console.error(`Error transcribing chunk ${chunkIndex + 1} (retries left: ${retries}):`, err.message);
+                        if (retries === 0) {
+                            console.error(`Failed to transcribe chunk ${chunkIndex + 1} after all retries`);
+                            return `[Transcription error for segment ${chunkIndex + 1}]`;
+                        }
+                        retries--;
+                        if (retries >= 0) {
+                            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                        }
+                    }
+                }
+                return '';
+            };
+
+            // Transcribe first chunk sequentially (needed for context)
+            const firstChunkTranscript = await transcribeChunk(chunkFiles[0], 0, basePrompt);
+            combinedTranscript = firstChunkTranscript;
+
+            // Transcribe remaining chunks in parallel (with first chunk context for continuity)
+            if (chunkFiles.length > 1) {
+                const firstChunkContext = firstChunkTranscript.trim().split(/\s+/).slice(-200).join(' ');
+                const contextPrompt = basePrompt + '\n\nPrevious context: ' + firstChunkContext;
+
+                const remainingChunks = chunkFiles.slice(1).map((chunkFilePath, index) =>
+                    transcribeChunk(chunkFilePath, index + 1, contextPrompt)
+                );
+
+                const remainingTranscripts = await Promise.all(remainingChunks);
+
+                // Combine transcripts in order
+                remainingTranscripts.forEach(transcript => {
+                    if (transcript) {
+                        combinedTranscript += ' ' + transcript;
+                    }
+                });
+            }
+        } else {
+            // Single file transcription (no segmentation needed)
+            console.log('Transcribing single file (no segmentation needed)');
+
+            const fileBuffer = fs.readFileSync(convertedFilePath);
+            const formData = new FormData();
+
+            formData.append('file', fileBuffer, {
+                filename: 'converted.mp3',
+                contentType: 'audio/mpeg',
+                knownLength: fileBuffer.length
+            });
+            formData.append('model', 'whisper-1');
+            formData.append('response_format', 'text');
+            formData.append('prompt', basePrompt);
+
+            const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    ...formData.getHeaders()
+                },
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity,
+                responseType: 'text'
+            });
+
+            combinedTranscript = response.data.trim();
         }
 
-        // Use axios which handles form-data package better than node-fetch
-        const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                ...formData.getHeaders()
-            },
-            maxContentLength: Infinity,
-            maxBodyLength: Infinity,
-            responseType: 'text'
-        });
+        // Phase 5: Clean the final transcript
+        const cleanTranscription = cleanTranscript(combinedTranscript);
 
-        // No need to clean up temp file - using memory storage
-
-        // Axios response handling
-        const transcription = response.data.trim();
-        const cleanTranscription = transcription;
-
-        // Generate a brief summary of the transcription
+        // Generate summary
         let summary = '';
         try {
-            if (!process.env.OPENAI_API_KEY) {
-                throw new Error('OPENAI_API_KEY not available for summary');
-            }
             const summaryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -299,22 +524,97 @@ Rewrite the output as clean clinical dictation with no extra words.`);
             }
         } catch (err) {
             console.error('Summary generation error:', err);
-            // Fallback: use first 100 chars as summary
             summary = cleanTranscription.length > 100
                 ? cleanTranscription.substring(0, 100) + '...'
                 : cleanTranscription;
         }
+
+        // Phase 6: Cleanup temp files
+        cleanupTempFiles(tempFiles);
+        tempDirs.forEach(dir => {
+            try {
+                if (fs.existsSync(dir)) {
+                    fs.rmSync(dir, { recursive: true, force: true });
+                }
+            } catch (err) {
+                console.error(`Error deleting temp directory ${dir}:`, err.message);
+            }
+        });
 
         res.json({
             text: cleanTranscription,
             summary: summary || cleanTranscription.substring(0, 100) + (cleanTranscription.length > 100 ? '...' : '')
         });
     } catch (err) {
-        // No need to clean up temp file - using memory storage
+        // Cleanup on error
+        cleanupTempFiles(tempFiles);
+        tempDirs.forEach(dir => {
+            try {
+                if (fs.existsSync(dir)) {
+                    fs.rmSync(dir, { recursive: true, force: true });
+                }
+            } catch (cleanupErr) {
+                console.error(`Error during cleanup:`, cleanupErr.message);
+            }
+        });
+
         console.error('Transcription endpoint error:', err);
         console.error('Error details:', err.message, err.stack);
 
         // Handle axios errors
+        if (err.response) {
+            const errorText = err.response.data?.error?.message || JSON.stringify(err.response.data) || err.message;
+            console.error('OpenAI Whisper API Error:', err.response.status, errorText);
+            return res.status(err.response.status === 429 ? 429 : 502).json({
+                error: 'Transcription failed',
+                detail: typeof errorText === 'string' ? errorText.slice(0, 500) : errorText
+            });
+        }
+
+        res.status(500).json({ error: 'Internal server error during transcription', detail: err.message });
+    }
+});
+
+// Simplified transcription endpoint for PetQuery (just transcribes, no cleaning)
+app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No audio file provided' });
+        }
+
+        const fileBuffer = req.file.buffer;
+        const fileName = req.file.originalname || 'audio.webm';
+        const mimeType = req.file.mimetype || 'audio/webm';
+
+        const formData = new FormData();
+        formData.append('file', fileBuffer, {
+            filename: fileName,
+            contentType: mimeType,
+            knownLength: fileBuffer.length
+        });
+        formData.append('model', 'whisper-1');
+        formData.append('response_format', 'text');
+
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set');
+        }
+
+        const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                ...formData.getHeaders()
+            },
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+            responseType: 'text'
+        });
+
+        const transcription = response.data.trim();
+
+        res.json({ text: transcription });
+    } catch (err) {
+        console.error('Simple transcription endpoint error:', err);
+
         if (err.response) {
             const errorText = err.response.data?.error?.message || JSON.stringify(err.response.data) || err.message;
             console.error('OpenAI Whisper API Error:', err.response.status, errorText);
@@ -420,6 +720,18 @@ Client Communication:
 -
 Follow-up:
 -
+
+---
+
+PET NAME EXTRACTION:
+After the SOAP record above, extract the pet's name from the dictation if mentioned. Look for names mentioned in signalment, owner observations, or throughout the dictation. Scan all dictations provided.
+If a pet name is found, add this line at the very end:
+PET_NAME: [name]
+If no pet name is found or mentioned, add this line at the very end:
+PET_NAME: no name provided
+Always include the PET_NAME line - either with the actual name or "no name provided".
+Example: PET_NAME: Buddy
+Example: PET_NAME: no name provided
 `;
 
         const controller = new AbortController();
@@ -462,7 +774,7 @@ Follow-up:
         }
 
         const data = await oiResp.json();
-        const report = data.choices?.[0]?.message?.content;
+        const fullResponse = data.choices?.[0]?.message?.content;
         const finishReason = data.choices?.[0]?.finish_reason;
 
         // Log if response was truncated
@@ -470,11 +782,26 @@ Follow-up:
             console.warn('SOAP generation response was truncated due to max_tokens limit');
         }
 
-        if (!report) {
+        if (!fullResponse) {
             return res.status(500).json({ error: 'No report generated' });
         }
 
-        return res.status(200).json({ report });
+        // Extract pet name if present
+        let report = fullResponse;
+        let petName = null;
+
+        const petNameMatch = fullResponse.match(/PET_NAME:\s*(.+?)(?:\n|$)/i);
+        if (petNameMatch && petNameMatch[1]) {
+            const extractedName = petNameMatch[1].trim();
+            // Only set petName if it's not "no name provided"
+            if (extractedName.toLowerCase() !== 'no name provided') {
+                petName = extractedName;
+            }
+            // Remove the PET_NAME line from the report
+            report = fullResponse.replace(/PET_NAME:\s*.+?(?:\n|$)/i, '').trim();
+        }
+
+        return res.status(200).json({ report, petName });
     } catch (err) {
         if (err?.name === 'AbortError') {
             console.error('OpenAI request aborted (timeout)');
