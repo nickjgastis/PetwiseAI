@@ -1046,12 +1046,15 @@ const Dashboard = () => {
                                 to="/dashboard/help"
                                 onClick={closeMobileMenu}
                                 data-tooltip="Help"
-                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : ''}`}
+                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : ''} relative`}
                             >
                                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                     <FaQuestionCircle className="text-sm" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Help</span>
+                                {!isSidebarCollapsed && (
+                                    <span className="absolute top-1/2 -translate-y-1/2 right-2 bg-yellow-400/80 backdrop-blur-sm text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-yellow-500/30">NEW</span>
+                                )}
                             </Link>
                         </li>
                         <li className="mx-2 my-1 relative">
