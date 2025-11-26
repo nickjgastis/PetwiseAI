@@ -956,12 +956,16 @@ const QuickSOAP = () => {
             // Calculate report name with pet name if available
             const dateStr = new Date().toLocaleString();
             let finalReportName;
-            if (reportName.trim()) {
-                // If reportName is already set, use it (might already include pet name)
-                finalReportName = reportName.trim();
-            } else if (petNameToUse) {
-                // If pet name is available but reportName not set, use pet name
+            // Prioritize pet name if available - check if reportName already contains pet name
+            if (petNameToUse) {
+                // If pet name is available, use it (even if reportName is set, pet name takes priority)
                 finalReportName = `${petNameToUse} - ${dateStr}`;
+            } else if (reportName.trim() && !reportName.trim().startsWith('QuickSOAP')) {
+                // If reportName is set and doesn't start with generic "QuickSOAP", use it
+                finalReportName = reportName.trim();
+            } else if (reportName.trim()) {
+                // If reportName is set but is generic, use it (user may have customized it)
+                finalReportName = reportName.trim();
             } else {
                 // Default fallback
                 finalReportName = `QuickSOAP - ${dateStr}`;
@@ -1260,8 +1264,22 @@ const QuickSOAP = () => {
                 sent_to_desktop: undefined
             };
 
-            // Use reportName if set, otherwise generate default
-            const finalReportName = reportName.trim() || `QuickSOAP - ${new Date().toLocaleString()}`;
+            // Use reportName if set and contains pet name, otherwise prioritize pet name
+            const dateStr = new Date().toLocaleString();
+            let finalReportName;
+            if (petName && !reportName.trim().includes(petName)) {
+                // If pet name exists but reportName doesn't include it, use pet name
+                finalReportName = `${petName} - ${dateStr}`;
+            } else if (reportName.trim()) {
+                // If reportName is set (and may already include pet name), use it
+                finalReportName = reportName.trim();
+            } else if (petName) {
+                // If pet name exists but no reportName, use pet name
+                finalReportName = `${petName} - ${dateStr}`;
+            } else {
+                // Default fallback
+                finalReportName = `QuickSOAP - ${dateStr}`;
+            }
 
             const reportIdToUse = loadedReportId || draftRecordId;
 
@@ -1838,7 +1856,7 @@ const QuickSOAP = () => {
                                     WebkitOverflowScrolling: 'touch',
                                     overflowY: 'auto'
                                 } : {}}>
-                                    {dictations.map((dictation) => (
+                                    {(isMobile ? [...dictations].reverse() : dictations).map((dictation) => (
                                         <div
                                             key={dictation.id}
                                             className={`bg-white border border-gray-200 rounded-xl ${isMobile ? 'p-2' : 'p-4'} shadow-md hover:shadow-lg transition-shadow`}

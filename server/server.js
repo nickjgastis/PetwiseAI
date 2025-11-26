@@ -41,7 +41,8 @@ app.use(express.json());
 
 // Multer setup for file uploads (QuickSOAP)
 // Use disk storage for temp files to enable audio processing
-const tempDir = path.join(__dirname, 'temp');
+// Use /tmp for Vercel serverless (only writable directory)
+const tempDir = process.env.VERCEL ? '/tmp/temp' : path.join(__dirname, 'temp');
 if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
@@ -165,59 +166,145 @@ app.post('/api/quickquery', async (req, res) => {
             presence_penalty = 0.5
         } = req.body || {};
 
+        // Validate messages array
         if (!Array.isArray(messages) || messages.length === 0) {
+            console.error('Invalid messages array:', {
+                isArray: Array.isArray(messages),
+                length: messages?.length,
+                messages: JSON.stringify(messages).slice(0, 500)
+            });
             return res.status(400).json({ error: 'Messages array is required' });
         }
 
-        // Own the timeout (Vercel will kill at maxDuration if we don't finish)
-        const controller = new AbortController();
-        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
-        const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
+        // Validate each message has required fields
+        for (let i = 0; i < messages.length; i++) {
+            const msg = messages[i];
+            if (!msg || typeof msg !== 'object') {
+                console.error(`Invalid message at index ${i}:`, msg);
+                return res.status(400).json({ error: `Invalid message at index ${i}` });
+            }
+            if (!msg.role || msg.content === undefined || msg.content === null) {
+                console.error(`Message at index ${i} missing role or content:`, msg);
+                return res.status(400).json({ error: `Message at index ${i} must have role and content` });
+            }
+            // Ensure content is a string
+            if (typeof msg.content !== 'string') {
+                console.error(`Message at index ${i} content is not a string:`, typeof msg.content, msg.content);
+                // Try to convert to string if it's not
+                messages[i].content = String(msg.content);
+            }
+            // Trim and validate content isn't empty after trimming
+            const trimmedContent = messages[i].content.trim();
+            if (!trimmedContent) {
+                console.error(`Message at index ${i} has empty content after trimming`);
+                return res.status(400).json({ error: `Message at index ${i} content cannot be empty` });
+            }
+            messages[i].content = trimmedContent;
+        }
 
-        let oiResp;
+        // Log the last user message for debugging (first 200 chars)
+        const lastUserMessage = messages.filter(m => m.role === 'user').pop();
+        if (lastUserMessage) {
+            console.log('Processing QuickQuery request:', {
+                messageCount: messages.length,
+                lastUserMessagePreview: lastUserMessage.content.substring(0, 200),
+                model,
+                max_tokens
+            });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('OPENAI_API_KEY environment variable is not set');
+            return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
+        }
+
+        // Use axios instead of node-fetch for better reliability
+        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
+
+        let response;
         try {
-            oiResp = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                signal: controller.signal,
+            response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                model,
+                messages,
+                max_tokens,
+                temperature,
+                top_p,
+                frequency_penalty,
+                presence_penalty,
+                stream: false
+            }, {
                 headers: {
                     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    model,
-                    messages,
-                    max_tokens,
-                    temperature,
-                    top_p,
-                    frequency_penalty,
-                    presence_penalty,
-                    stream: false
-                })
+                timeout: OPENAI_TIMEOUT_MS,
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
             });
-        } finally {
-            clearTimeout(timer);
+        } catch (axiosErr) {
+            // Handle axios errors
+            if (axiosErr.response) {
+                // OpenAI API returned an error response
+                const status = axiosErr.response.status;
+                const errorText = axiosErr.response.data?.error?.message || JSON.stringify(axiosErr.response.data) || axiosErr.message;
+                console.error('OpenAI API Error:', status, errorText);
+                return res.status(status === 429 ? 429 : 502).json({
+                    error: 'OpenAI request failed',
+                    status: status,
+                    detail: typeof errorText === 'string' ? errorText.slice(0, 2000) : errorText
+                });
+            }
+            // Re-throw network/timeout errors to be handled by outer catch
+            throw axiosErr;
         }
 
-        if (!oiResp.ok) {
-            const text = await oiResp.text().catch(() => '');
-            console.error('OpenAI API Error:', oiResp.status, text);
-            // Surface upstream info to help debugging from the UI
-            return res.status(oiResp.status === 429 ? 429 : 502).json({
-                error: 'OpenAI request failed',
-                status: oiResp.status,
-                detail: text.slice(0, 2000)
+        const data = response.data;
+
+        if (!data?.choices?.[0]?.message?.content) {
+            console.error('Invalid OpenAI response structure:', JSON.stringify(data).slice(0, 500));
+            return res.status(502).json({
+                error: 'Invalid response from OpenAI',
+                detail: 'Response missing expected data'
             });
         }
 
-        const data = await oiResp.json();
         return res.status(200).json(data);
     } catch (err) {
-        if (err?.name === 'AbortError') {
-            console.error('OpenAI request aborted (timeout)');
+        // Handle axios timeout errors
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+            console.error('OpenAI request timeout');
             return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
         }
+
+        // Handle network errors
+        const isNetworkError =
+            err?.code === 'ECONNRESET' ||
+            err?.code === 'ECONNREFUSED' ||
+            err?.code === 'ETIMEDOUT' ||
+            err?.code === 'ENOTFOUND' ||
+            err?.errno === 'ECONNRESET' ||
+            err?.message?.includes('socket hang up') ||
+            err?.message?.includes('ECONNRESET') ||
+            err?.message?.includes('ECONNREFUSED') ||
+            err?.message?.includes('Network Error');
+
+        if (isNetworkError) {
+            console.error('Network error connecting to OpenAI:', {
+                code: err?.code,
+                message: err?.message
+            });
+            return res.status(503).json({
+                error: 'Network error',
+                detail: 'Connection to OpenAI failed. Please try again.'
+            });
+        }
+
         console.error('QuickQuery endpoint error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', err.stack);
+        return res.status(500).json({
+            error: 'Internal server error',
+            detail: err.message
+        });
     }
 });
 
@@ -577,14 +664,18 @@ Rewrite the output as clean clinical dictation with no extra words.`;
 
 // Simplified transcription endpoint for PetQuery (just transcribes, no cleaning)
 app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
+    const tempFile = req.file?.path;
+
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'No audio file provided' });
         }
 
-        const fileBuffer = req.file.buffer;
         const fileName = req.file.originalname || 'audio.webm';
         const mimeType = req.file.mimetype || 'audio/webm';
+
+        // Read file from disk since multer uses diskStorage
+        const fileBuffer = fs.readFileSync(req.file.path);
 
         const formData = new FormData();
         formData.append('file', fileBuffer, {
@@ -614,6 +705,7 @@ app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
         res.json({ text: transcription });
     } catch (err) {
         console.error('Simple transcription endpoint error:', err);
+        console.error('Error stack:', err.stack);
 
         if (err.response) {
             const errorText = err.response.data?.error?.message || JSON.stringify(err.response.data) || err.message;
@@ -625,6 +717,15 @@ app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
         }
 
         res.status(500).json({ error: 'Internal server error during transcription', detail: err.message });
+    } finally {
+        // Clean up temp file
+        if (tempFile && fs.existsSync(tempFile)) {
+            try {
+                fs.unlinkSync(tempFile);
+            } catch (cleanupErr) {
+                console.error('Error cleaning up temp file:', cleanupErr.message);
+            }
+        }
     }
 });
 
@@ -638,6 +739,11 @@ app.post('/api/generate-soap', async (req, res) => {
 
         if (!input || !input.trim()) {
             return res.status(400).json({ error: 'Input text is required' });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('OPENAI_API_KEY environment variable is not set');
+            return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
         }
 
         const prompt = `USER INPUT:
@@ -734,46 +840,47 @@ Example: PET_NAME: Buddy
 Example: PET_NAME: no name provided
 `;
 
-        const controller = new AbortController();
+        // Use axios instead of node-fetch for better reliability
         const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
-        const timer = setTimeout(() => controller.abort(), OPENAI_TIMEOUT_MS);
 
-        let oiResp;
+        let response;
         try {
-            oiResp = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                signal: controller.signal,
+            response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: 4000,
+                temperature: 0.7
+            }, {
                 headers: {
                     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [
-                        {
-                            role: 'user',
-                            content: prompt
-                        }
-                    ],
-                    max_tokens: 4000,
-                    temperature: 0.7
-                })
+                timeout: OPENAI_TIMEOUT_MS,
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
             });
-        } finally {
-            clearTimeout(timer);
+        } catch (axiosErr) {
+            // Handle axios errors
+            if (axiosErr.response) {
+                const status = axiosErr.response.status;
+                const errorText = axiosErr.response.data?.error?.message || JSON.stringify(axiosErr.response.data) || axiosErr.message;
+                console.error('OpenAI API Error:', status, errorText);
+                return res.status(status === 429 ? 429 : 502).json({
+                    error: 'SOAP generation failed',
+                    status: status,
+                    detail: typeof errorText === 'string' ? errorText.slice(0, 2000) : errorText
+                });
+            }
+            // Re-throw network/timeout errors to be handled by outer catch
+            throw axiosErr;
         }
 
-        if (!oiResp.ok) {
-            const text = await oiResp.text().catch(() => '');
-            console.error('OpenAI API Error:', oiResp.status, text);
-            return res.status(oiResp.status === 429 ? 429 : 502).json({
-                error: 'SOAP generation failed',
-                status: oiResp.status,
-                detail: text.slice(0, 2000)
-            });
-        }
-
-        const data = await oiResp.json();
+        const data = response.data;
         const fullResponse = data.choices?.[0]?.message?.content;
         const finishReason = data.choices?.[0]?.finish_reason;
 
@@ -803,12 +910,41 @@ Example: PET_NAME: no name provided
 
         return res.status(200).json({ report, petName });
     } catch (err) {
-        if (err?.name === 'AbortError') {
-            console.error('OpenAI request aborted (timeout)');
+        // Handle axios timeout errors
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+            console.error('OpenAI request timeout');
             return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
         }
+
+        // Handle network errors
+        const isNetworkError =
+            err?.code === 'ECONNRESET' ||
+            err?.code === 'ECONNREFUSED' ||
+            err?.code === 'ETIMEDOUT' ||
+            err?.code === 'ENOTFOUND' ||
+            err?.errno === 'ECONNRESET' ||
+            err?.message?.includes('socket hang up') ||
+            err?.message?.includes('ECONNRESET') ||
+            err?.message?.includes('ECONNREFUSED') ||
+            err?.message?.includes('Network Error');
+
+        if (isNetworkError) {
+            console.error('Network error connecting to OpenAI:', {
+                code: err?.code,
+                message: err?.message
+            });
+            return res.status(503).json({
+                error: 'Network error',
+                detail: 'Connection to OpenAI failed. Please try again.'
+            });
+        }
+
         console.error('SOAP generation endpoint error:', err);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('Error stack:', err.stack);
+        return res.status(500).json({
+            error: 'Internal server error',
+            detail: err.message
+        });
     }
 });
 
