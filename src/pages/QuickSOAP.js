@@ -1762,55 +1762,57 @@ const QuickSOAP = () => {
                 >
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className={`h-full flex flex-col ${dictations.length > 0 && isMobile ? 'items-center justify-start' : 'items-center justify-center'} px-8 ${isMobile ? 'overflow-hidden' : ''}`} style={dictations.length > 0 && isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: '6rem' } : (isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {})}>
+                        <div className={`h-full flex flex-col ${dictations.length > 0 && isMobile && !isRecording ? 'items-center justify-start' : 'items-center justify-center'} px-8 ${isMobile ? 'overflow-hidden' : ''}`} style={dictations.length > 0 && isMobile && !isRecording ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: '6rem' } : (isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {})}>
                             {/* Header */}
-                            <div className={`${dictations.length > 0 && isMobile ? 'mb-4' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full`}>
-                                {dictations.length === 0 || !isMobile ? (
-                                    <>
-                                        {/* Disclaimer */}
-                                        {!isMobile && (
-                                            <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
-                                                <p className="text-sm text-blue-800">
-                                                    🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
-                                                    <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
-                                                </p>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center justify-center gap-3">
-                                            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
-                                                QuickSOAP
-                                                <span className="text-sm font-semibold text-yellow-500 uppercase tracking-wide">beta</span>
-                                            </h1>
-                                            <div className="relative group mb-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setShowTutorial(true);
-                                                        setTutorialStep(0);
-                                                    }}
-                                                    className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
-                                                    title="Quick SOAP tutorial"
-                                                >
-                                                    <FaQuestionCircle className="text-gray-600 text-sm" />
-                                                </button>
-                                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                    Quick SOAP tutorial
-                                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                            {!isRecording && (
+                                <div className={`${dictations.length > 0 && isMobile ? 'mb-4' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full`}>
+                                    {dictations.length === 0 || !isMobile ? (
+                                        <>
+                                            {/* Disclaimer */}
+                                            {!isMobile && (
+                                                <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
+                                                    <p className="text-sm text-blue-800">
+                                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
+                                                        <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center justify-center gap-3">
+                                                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
+                                                    QuickSOAP
+                                                    <span className="text-sm font-semibold text-yellow-500 uppercase tracking-wide">beta</span>
+                                                </h1>
+                                                <div className="relative group mb-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setShowTutorial(true);
+                                                            setTutorialStep(0);
+                                                        }}
+                                                        className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
+                                                        title="Quick SOAP tutorial"
+                                                    >
+                                                        <FaQuestionCircle className="text-gray-600 text-sm" />
+                                                    </button>
+                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                        Quick SOAP tutorial
+                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <p className="text-gray-500 text-sm">
-                                            {isMobile
-                                                ? 'Record dictations to generate SOAP reports, then send to your desktop'
-                                                : 'Record dictations or type notes to generate SOAP reports'
-                                            }
-                                        </p>
-                                    </>
-                                ) : (
-                                    <h2 className="text-xl font-semibold text-primary-700 text-center w-full">
-                                        Your Dictations
-                                    </h2>
-                                )}
-                            </div>
+                                            <p className="text-gray-500 text-sm">
+                                                {isMobile
+                                                    ? 'Record dictations to generate SOAP reports, then send to your desktop'
+                                                    : 'Record dictations or type notes to generate SOAP reports'
+                                                }
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <h2 className="text-xl font-semibold text-primary-700 text-center w-full">
+                                            Your Dictations
+                                        </h2>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Error Message */}
                             {error && (
@@ -1831,8 +1833,8 @@ const QuickSOAP = () => {
                             )}
 
                             {/* Dictation Bubbles - Above center */}
-                            {dictations.length > 0 && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-6 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-32' : 'overflow-y-auto max-h-64'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
+                            {dictations.length > 0 && !isRecording && (
+                                <div className={`${dictations.length > 0 && isMobile ? 'mb-6 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-40' : 'overflow-y-auto max-h-80'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
                                     WebkitOverflowScrolling: 'touch',
                                     overflowY: 'auto'
                                 } : {}}>
@@ -2004,7 +2006,7 @@ const QuickSOAP = () => {
                                 )}
 
                                 {/* Mobile: Send to Desktop Button */}
-                                {isMobile && dictations.length > 0 && (
+                                {isMobile && dictations.length > 0 && !isRecording && (
                                     <div className="w-full max-w-2xl mt-3 space-y-2 flex-shrink-0">
                                         <button
                                             onClick={handleSendToDesktopClick}
