@@ -710,6 +710,12 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
+            
+            // Ensure all audio tracks are enabled and active
+            stream.getAudioTracks().forEach(track => {
+                track.enabled = true;
+            });
+            
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
@@ -726,8 +732,12 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 stream.getTracks().forEach(track => track.stop());
             };
 
-            mediaRecorder.start();
+            // Set recording state immediately so UI updates right away
             setIsRecording(true);
+            
+            // Start recording immediately with a small timeslice (50ms) for continuous capture
+            // The timeslice ensures data is captured in frequent chunks, minimizing loss at the start
+            mediaRecorder.start(50);
         } catch (err) {
             console.error('Error starting recording:', err);
             alert('Failed to access microphone. Please check permissions.');
@@ -1124,6 +1134,13 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         transform: translateY(0) scale(1);
                     }
                 }
+                .hide-scrollbar {
+                    scrollbar-width: none; /* Firefox */
+                    -ms-overflow-style: none; /* IE and Edge */
+                }
+                .hide-scrollbar::-webkit-scrollbar {
+                    display: none; /* Chrome, Safari, Opera */
+                }
             `}} />
             <div className="min-h-screen bg-white flex flex-col">
                 <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
@@ -1325,7 +1342,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                             }
                                         }}
                                         placeholder="Ask me anything about veterinary medicine..."
-                                        className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm"
+                                        className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm hide-scrollbar overflow-y-auto"
                                         disabled={isLoading || isRecording}
                                         rows="1"
                                     />

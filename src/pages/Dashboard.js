@@ -208,9 +208,11 @@ const Dashboard = () => {
 
                 const generatedReport = response.data.report;
                 const extractedPetName = response.data.petName;
+                
                 const dateStr = new Date().toLocaleString();
-                const reportName = extractedPetName 
-                    ? `${extractedPetName} - ${dateStr}`
+                // Handle empty strings, null, undefined - only use pet name if it's a valid non-empty string
+                const reportName = (extractedPetName && extractedPetName.trim && extractedPetName.trim()) 
+                    ? `${extractedPetName.trim()} - ${dateStr}`
                     : `QuickSOAP Mobile - ${dateStr}`;
 
                 // Double-check the draft still exists and hasn't been processed by another instance
@@ -240,6 +242,8 @@ const Dashboard = () => {
                         report_text: generatedReport,
                         form_data: {
                             ...formData,
+                            reportName: reportName, // Ensure reportName in form_data matches report_name
+                            petName: extractedPetName || formData.petName || null, // Store pet name in form_data
                             from_mobile: true,
                             auto_generated: true,
                             generated_at: new Date().toISOString()

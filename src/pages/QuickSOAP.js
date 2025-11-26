@@ -939,7 +939,8 @@ const QuickSOAP = () => {
             const loadedReportId = localStorage.getItem('currentQuickSOAPReportId');
 
             // Use extracted pet name if provided, otherwise use state
-            const petNameToUse = extractedPetName || petName;
+            // Handle empty strings by checking truthiness and trimming
+            const petNameToUse = (extractedPetName && extractedPetName.trim()) || (petName && petName.trim()) || null;
 
             // Prepare form_data with QuickSOAP structure
             const formData = {
@@ -956,16 +957,18 @@ const QuickSOAP = () => {
             // Calculate report name with pet name if available
             const dateStr = new Date().toLocaleString();
             let finalReportName;
-            // Prioritize pet name if available - check if reportName already contains pet name
+            const trimmedReportName = reportName.trim();
+
+            // Always prioritize pet name when available (from parameter, not state)
+            // This ensures we use the pet name even if reportName state hasn't updated yet
             if (petNameToUse) {
-                // If pet name is available, use it (even if reportName is set, pet name takes priority)
                 finalReportName = `${petNameToUse} - ${dateStr}`;
-            } else if (reportName.trim() && !reportName.trim().startsWith('QuickSOAP')) {
+            } else if (trimmedReportName && !trimmedReportName.match(/^QuickSOAP/i)) {
                 // If reportName is set and doesn't start with generic "QuickSOAP", use it
-                finalReportName = reportName.trim();
-            } else if (reportName.trim()) {
+                finalReportName = trimmedReportName;
+            } else if (trimmedReportName) {
                 // If reportName is set but is generic, use it (user may have customized it)
-                finalReportName = reportName.trim();
+                finalReportName = trimmedReportName;
             } else {
                 // Default fallback
                 finalReportName = `QuickSOAP - ${dateStr}`;
@@ -1264,15 +1267,17 @@ const QuickSOAP = () => {
                 sent_to_desktop: undefined
             };
 
-            // Use reportName if set and contains pet name, otherwise prioritize pet name
+            // Use reportName if set, otherwise prioritize pet name
             const dateStr = new Date().toLocaleString();
             let finalReportName;
-            if (petName && !reportName.trim().includes(petName)) {
-                // If pet name exists but reportName doesn't include it, use pet name
+            const trimmedReportName = reportName.trim();
+
+            // If pet name exists and reportName doesn't include it, use pet name
+            if (petName && (!trimmedReportName || !trimmedReportName.includes(petName))) {
                 finalReportName = `${petName} - ${dateStr}`;
-            } else if (reportName.trim()) {
+            } else if (trimmedReportName) {
                 // If reportName is set (and may already include pet name), use it
-                finalReportName = reportName.trim();
+                finalReportName = trimmedReportName;
             } else if (petName) {
                 // If pet name exists but no reportName, use pet name
                 finalReportName = `${petName} - ${dateStr}`;
@@ -1782,7 +1787,7 @@ const QuickSOAP = () => {
                         // Centered floating input before report generation
                         <div className={`h-full flex flex-col ${dictations.length > 0 && isMobile && !isRecording ? 'items-center justify-start' : 'items-center justify-center'} px-8 ${isMobile ? 'overflow-hidden' : ''}`} style={dictations.length > 0 && isMobile && !isRecording ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: '6rem' } : (isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {})}>
                             {/* Header */}
-                            {!isRecording && (
+                            {(!isRecording || !isMobile) && (
                                 <div className={`${dictations.length > 0 && isMobile ? 'mb-4' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full`}>
                                     {dictations.length === 0 || !isMobile ? (
                                         <>
@@ -1851,7 +1856,7 @@ const QuickSOAP = () => {
                             )}
 
                             {/* Dictation Bubbles - Above center */}
-                            {dictations.length > 0 && !isRecording && (
+                            {dictations.length > 0 && (!isRecording || !isMobile) && (
                                 <div className={`${dictations.length > 0 && isMobile ? 'mb-6 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-40' : 'overflow-y-auto max-h-80'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
                                     WebkitOverflowScrolling: 'touch',
                                     overflowY: 'auto'
