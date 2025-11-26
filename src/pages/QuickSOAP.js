@@ -1824,48 +1824,58 @@ const QuickSOAP = () => {
 
                             {/* Dictation Bubbles - Above center */}
                             {dictations.length > 0 && (
-                                <div className={`${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-64' : 'overflow-y-auto max-h-64'} space-y-3`} style={isMobile ? {
+                                <div className={`${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'} w-full max-w-2xl ${isMobile ? 'overflow-y-auto' : 'overflow-y-auto max-h-64'} ${isMobile ? 'space-y-1' : 'space-y-3'}`} style={isMobile ? {
                                     WebkitOverflowScrolling: 'touch',
-                                    overflowY: 'auto'
+                                    overflowY: 'auto',
+                                    maxHeight: '8rem'
                                 } : {}}>
                                     {dictations.map((dictation) => (
                                         <div
                                             key={dictation.id}
-                                            className="bg-white border border-gray-200 rounded-xl p-4 shadow-md hover:shadow-lg transition-shadow"
+                                            className={`border rounded shadow-md transition-shadow ${isMobile ? 'bg-blue-50 border-blue-200 p-1.5' : 'bg-white border-gray-200 rounded-xl p-4 shadow-md hover:shadow-lg'}`}
                                         >
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <span className="text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-1 rounded">
-                                                            {dictation.expanded ? 'Full Transcript' : 'Dictation Summary'}
+                                            <div className={`flex items-start justify-between ${isMobile ? 'gap-1' : 'gap-3'}`}>
+                                                <div className="flex-1 min-w-0 overflow-hidden">
+                                                    <div className={`flex items-center ${isMobile ? 'gap-1 mb-0.5' : 'gap-2 mb-2'}`}>
+                                                        <span className={`font-semibold ${isMobile ? 'text-primary-600 text-[6px]' : 'text-primary-600 bg-primary-50 px-2 py-1 rounded text-xs'}`} style={isMobile ? { fontSize: '0.65rem' } : {}}>
+                                                            {dictation.expanded ? 'Full' : 'Summary'}
                                                         </span>
                                                         <button
                                                             onClick={() => toggleDictationExpand(dictation.id)}
-                                                            className="text-gray-500 hover:text-gray-700 text-xs flex items-center gap-1 transition-colors"
+                                                            className={`hover:text-gray-700 flex items-center transition-colors ${isMobile ? 'text-blue-600 hover:text-blue-800 text-[6px] gap-0.5' : 'text-gray-500 text-xs gap-1'}`}
+                                                            style={isMobile ? { fontSize: '0.65rem' } : {}}
                                                         >
                                                             {dictation.expanded ? (
                                                                 <>
-                                                                    <FaChevronUp className="text-xs" />
-                                                                    <span>Collapse</span>
+                                                                    <FaChevronUp className={isMobile ? 'text-[5px]' : 'text-xs'} style={isMobile ? { fontSize: '0.5rem' } : {}} />
+                                                                    {!isMobile && <span>Collapse</span>}
                                                                 </>
                                                             ) : (
                                                                 <>
-                                                                    <FaChevronDown className="text-xs" />
-                                                                    <span>Expand</span>
+                                                                    <FaChevronDown className={isMobile ? 'text-[5px]' : 'text-xs'} style={isMobile ? { fontSize: '0.5rem' } : {}} />
+                                                                    {!isMobile && <span>Expand</span>}
                                                                 </>
                                                             )}
                                                         </button>
                                                     </div>
-                                                    <p className="text-sm text-gray-700 leading-relaxed">
+                                                    <p className={`text-gray-700 ${isMobile ? 'leading-tight' : 'text-sm leading-relaxed'}`} style={isMobile ? {
+                                                        display: '-webkit-box',
+                                                        WebkitLineClamp: 2,
+                                                        WebkitBoxOrient: 'vertical',
+                                                        overflow: 'hidden',
+                                                        maxHeight: '1.5rem',
+                                                        lineHeight: '1.3',
+                                                        fontSize: '0.65rem'
+                                                    } : {}}>
                                                         {dictation.expanded ? dictation.fullText : dictation.summary}
                                                     </p>
                                                 </div>
                                                 <button
                                                     onClick={() => handleDeleteDictationClick(dictation.id)}
-                                                    className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                                                    className={`hover:text-red-500 transition-colors flex-shrink-0 ${isMobile ? 'text-gray-400 ml-0.5' : 'text-gray-400'}`}
                                                     title="Remove dictation"
                                                 >
-                                                    <FaTimes className="text-sm" />
+                                                    <FaTimes className={isMobile ? 'text-[5px]' : 'text-sm'} style={isMobile ? { fontSize: '0.5rem' } : {}} />
                                                 </button>
                                             </div>
                                         </div>
