@@ -1,0 +1,75 @@
+pancreatitis
+pyometra
+hemangiosarcoma
+lymphoma
+mast cell tumor
+fibrosarcoma
+osteosarcoma
+melanoma
+hepatocellular carcinoma
+transitional cell carcinoma
+tcc
+bladder cancer
+inflammatory bowel disease
+ibd
+cholangiohepatitis
+renal failure
+acute kidney injury
+aki
+chronic kidney disease
+ckd
+azotemia
+uremia
+hepatomegaly
+splenomegaly
+pleural effusion
+pericardial effusion
+pneumonia
+bronchitis
+asthma
+upper respiratory infection
+feline asthma
+heartworm disease
+hyperthyroidism
+hypothyroidism
+cushings disease
+addisons disease
+hypoadrenocorticism
+hyperadrenocorticism
+dka
+diabetes mellitus
+parvovirus
+distemper
+leptospirosis
+anaplasmosis
+ehrlichiosis
+lyme disease
+immune mediated hemolytic anemia
+imha
+immune mediated thrombocytopenia
+imt
+thrombocytopenia
+pancytopenia
+otitis externa
+otitis media
+keratitis
+corneal ulcer
+uveitis
+glaucoma
+conjunctivitis
+seizure
+epilepsy
+vestibular disease
+megaesophagus
+gastritis
+enteritis
+colitis
+vomiting
+diarrhea
+regurgitation
+tachypnea
+dyspnea
+cyanosis
+shock
+sepsis
+sirs

@@ -1,0 +1,371 @@
+pancreatitis
+pyometra
+hemangiosarcoma
+hepatocellular carcinoma
+osteosarcoma
+lymphoma
+lymphosarcoma
+mast cell tumor
+fibrosarcoma
+cholangiohepatitis
+inflammatory bowel disease
+gastric dilatation volvulus
+parvovirus
+distemper
+leptospirosis
+ehrlichiosis
+anaplasmosis
+lyme disease
+immune mediated hemolytic anemia
+immune mediated thrombocytopenia
+pancytopenia
+thrombocytopenia
+polycythemia
+azotemia
+uremia
+acute kidney injury
+chronic kidney disease
+glomerulonephritis
+interstitial nephritis
+cystitis
+urethritis
+urinary obstruction
+feline lower urinary tract disease
+diabetes mellitus
+diabetic ketoacidosis
+hyperadrenocorticism
+hypoadrenocorticism
+addisonian crisis
+insulinoma
+hypoglycemia
+hyperthyroidism
+hypothyroidism
+megaesophagus
+tracheal collapse
+pulmonary edema
+pneumonia
+atelectasis
+pleural effusion
+pyothorax
+chylothorax
+hemoabdomen
+peritonitis
+septic peritonitis
+sepsis
+systemic inflammatory response syndrome
+tachycardia
+bradycardia
+tachypnea
+bradypnea
+dyspnea
+orthopnea
+stridor
+stertor
+cyanosis
+hypoxia
+hypercapnia
+bar
+qar
+obtunded
+stuporous
+comatose
+ataxia
+paresis
+paralysis
+seizure
+cluster seizures
+status epilepticus
+syncope
+vestibular disease
+meningitis
+encephalitis
+myelitis
+otitis externa
+otitis media
+otitis interna
+conjunctivitis
+keratoconjunctivitis sicca
+corneal ulcer
+uveitis
+glaucoma
+retinal detachment
+retinopathy
+dermatitis
+pyoderma
+folliculitis
+furunculosis
+alopecia
+pruritus
+erythema
+lichenification
+hyperkeratosis
+onychomycosis
+onychogryphosis
+pododermatitis
+lymphadenopathy
+splenomegaly
+hepatomegaly
+gastritis
+enteritis
+colitis
+constipation
+obstipation
+tenesmus
+hematochezia
+melena
+regurgitation
+vomiting
+diarrhea
+weight loss
+anorexia
+polyuria
+polydipsia
+dysuria
+stranguria
+pollakiuria
+hematuria
+proteinuria
+pyuria
+crystalluria
+azotemia
+isosthenuria
+hyperbilirubinemia
+hyponatremia
+hypernatremia
+hypokalemia
+hyperkalemia
+hypocalcemia
+hypercalcemia
+
+radiographs
+ultrasound
+ultrasonography
+echocardiogram
+electrocardiogram
+cytology
+histopathology
+fine needle aspirate
+needle aspirate
+cbc
+chemistry panel
+blood gas
+coagulation panel
+ptt
+pt
+acth stimulation test
+t4
+free t4
+cpl
+fpl
+urinalysis
+fecal flotation
+parvo snap test
+heartworm snap test
+giardia snap test
+
+cephalexin
+cefovecin
+convenia
+amoxicillin
+amoxicillin clavulanate
+clavamox
+enrofloxacin
+baytril
+ciprofloxacin
+marbofloxacin
+metronidazole
+doxycycline
+clindamycin
+azithromycin
+gabapentin
+tramadol
+buprenorphine
+hydromorphone
+fentanyl
+methadone
+butorphanol
+carprofen
+rimadyl
+meloxicam
+metacam
+robenacoxib
+onsior
+prednisone
+prednisolone
+dexamethasone
+apoquel
+cytopoint
+atopica
+cyclosporine
+pantoprazole
+omeprazole
+famotidine
+cerenia
+maropitant
+ondansetron
+sucralfate
+pimobendan
+vetmedin
+enalapril
+benazepril
+furosemide
+lasix
+spironolactone
+theophylline
+albuterol
+terbutaline
+levetiracetam
+keppra
+phenobarbital
+zonisamide
+ketamine
+propofol
+isoflurane
+sevoflurane
+
+mg/kg
+mcg/kg
+ml/kg
+iu/kg
+sid
+bid
+tid
+qid
+prn
+im
+iv
+sq
+po
+transdermal
+ophthalmic
+otic
+rectal
+
+thoracocentesis
+abdominocentesis
+cystocentesis
+urinary catheterization
+endotracheal intubation
+oxygen therapy
+fluid resuscitation
+bolus
+nebulization
+nebulizer
+bandage
+cast
+splint
+wound debridement
+wound management
+lavage
+lavaging
+nutritional support
+feeding tube
+esophagostomy tube
+gastrostomy tube
+
+thoracic cavity
+abdominal cavity
+epaxial muscles
+thoracolumbar spine
+cervical spine
+lumbar spine
+lumbosacral region
+carpus
+tarsus
+stifle
+hock
+femur
+tibia
+radius
+ulna
+pelvis
+ilium
+ischium
+pubis
+mandible
+maxilla
+
+labrador retriever
+golden retriever
+german shepherd
+poodle
+bulldog
+french bulldog
+beagle
+rottweiler
+yorkshire terrier
+boxer
+dachshund
+chihuahua
+pomeranian
+shih tzu
+husky
+border collie
+australian shepherd
+doberman
+great dane
+cavalier king charles spaniel
+persian
+maine coon
+ragdoll
+siamese
+sphynx
+bengal
+exotic shorthair
+british shorthair
+
+triage
+shock
+hypovolemic shock
+septic shock
+cardiogenic shock
+early sepsis
+late sepsis
+systemic inflammation
+resuscitation
+crystalloid fluids
+colloid fluids
+hypertonic saline
+vasopressor
+norepinephrine
+dopamine
+dobutamine
+epinephrine
+
+oncology
+chemotherapy
+vincristine
+cyclophosphamide
+lomustine
+chlorambucil
+toceranib
+palladia
+carboplatin
+doxorubicin
+
+surgery
+spay
+neuter
+ovariohysterectomy
+orchiectomy
+gastrotomy
+enterotomy
+enterectomy
+splenectomy
+cystotomy
+mass removal
+biopsy
+
+triadan system
+dental calculus
+gingivitis
+stomatitis
+malocclusion
+resorptive lesions
+
+behavior
+anxiolytic
+pheromone diffuser
+thunderstorm phobia
+
+end of list

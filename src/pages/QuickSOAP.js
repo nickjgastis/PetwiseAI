@@ -1825,7 +1825,7 @@ const QuickSOAP = () => {
                                             <p className="text-gray-500 text-sm">
                                                 {isMobile
                                                     ? 'Record dictations to generate SOAP reports, then send to your desktop'
-                                                    : 'Record dictations or type notes to generate SOAP reports'
+                                                    : 'Record dictations to generate SOAP reports'
                                                 }
                                             </p>
                                         </>
@@ -2542,6 +2542,40 @@ const QuickSOAP = () => {
                                             {tutorialStep === 0 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <div className="text-center">
+                                                        <h3 className={`font-bold text-gray-800 mb-2 ${isMobileDevice ? 'text-lg' : 'text-2xl'}`}>How to Speak During Dictation</h3>
+                                                        <p className={`text-gray-600 ${isMobileDevice ? 'text-sm' : 'text-lg'}`}>Follow these tips for accurate transcription</p>
+                                                    </div>
+                                                    <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-4' : 'p-6'}`}>
+                                                        <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-4'}`}>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>1</div>
+                                                                <div className="flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Speak Clearly</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Speak clearly and at a normal pace, especially when saying drugs, dosages, treatments, and medical terms</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>2</div>
+                                                                <div className="flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Making Corrections</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>If you need to repeat or correct something, say <span className="font-semibold text-primary-600">"Correction"</span> and then provide your update</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>3</div>
+                                                                <div className="flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>You Can Always Edit</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Don't worry about perfection - you can always edit the SOAP report after it's generated</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 1 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <div className="text-center">
                                                         <h3 className={`font-bold text-gray-800 mb-2 ${isMobileDevice ? 'text-lg' : 'text-2xl'}`}>Welcome to QuickSOAP Mobile</h3>
                                                         <p className={`text-gray-600 ${isMobileDevice ? 'text-sm' : 'text-lg'}`}>Record dictations on your mobile device and send them to your desktop to generate professional SOAP reports.</p>
                                                     </div>
@@ -2562,7 +2596,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 1 && (
+                                            {tutorialStep === 2 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Recording Your Dictation</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -2599,7 +2633,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 2 && (
+                                            {tutorialStep === 3 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Review Your Dictation</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -2616,7 +2650,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 3 && (
+                                            {tutorialStep === 4 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Send to Desktop</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -2636,7 +2670,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 4 && (
+                                            {tutorialStep === 5 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Send to Desktop & Generate Report</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -2676,6 +2710,40 @@ const QuickSOAP = () => {
                                             {tutorialStep === 0 && (
                                                 <div className="space-y-6">
                                                     <div className="text-center">
+                                                        <h3 className="text-2xl font-bold text-gray-800 mb-3">How to Speak During Dictation</h3>
+                                                        <p className="text-gray-600 text-lg">Follow these tips for accurate transcription</p>
+                                                    </div>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">1</div>
+                                                                <div className="flex-1">
+                                                                    <p className="font-semibold text-gray-800 text-sm">Speak Clearly</p>
+                                                                    <p className="text-gray-600 text-sm">Speak clearly and at a normal pace, especially when saying drugs, dosages, treatments, and medical terms</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">2</div>
+                                                                <div className="flex-1">
+                                                                    <p className="font-semibold text-gray-800 text-sm">Making Corrections</p>
+                                                                    <p className="text-gray-600 text-sm">If you need to repeat or correct something, say <span className="font-semibold text-primary-600">"Correction"</span> and then provide your update</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">3</div>
+                                                                <div className="flex-1">
+                                                                    <p className="font-semibold text-gray-800 text-sm">You Can Always Edit</p>
+                                                                    <p className="text-gray-600 text-sm">Don't worry about perfection - you can always edit the SOAP report after it's generated</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 1 && (
+                                                <div className="space-y-6">
+                                                    <div className="text-center">
                                                         <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to QuickSOAP</h3>
                                                         <p className="text-gray-600 text-lg">Type or dictate your clinical notes to generate a SOAP report. Your record will automatically save to Saved Records.</p>
                                                     </div>
@@ -2696,7 +2764,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 1 && (
+                                            {tutorialStep === 2 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Recording Dictations</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -2721,7 +2789,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 2 && (
+                                            {tutorialStep === 3 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your SOAP Report</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -2743,7 +2811,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 3 && (
+                                            {tutorialStep === 4 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Editing Your Report</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -2787,7 +2855,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 4 && (
+                                            {tutorialStep === 5 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Copy Sections & Save Changes</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -2816,7 +2884,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 5 && (
+                                            {tutorialStep === 6 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Use QuickSOAP on Mobile</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -2861,7 +2929,7 @@ const QuickSOAP = () => {
                                 {/* Tutorial Footer */}
                                 <div className={`border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0 ${isMobileDevice ? 'px-2 py-2' : 'px-6 py-4'}`}>
                                     <div className={`flex items-center ${isMobileDevice ? 'gap-1' : 'gap-2'}`}>
-                                        {(isMobileDevice ? [0, 1, 2, 3, 4] : [0, 1, 2, 3, 4, 5]).map((step) => (
+                                        {(isMobileDevice ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]).map((step) => (
                                             <div
                                                 key={step}
                                                 className={`rounded-full transition-all ${isMobileDevice ? 'h-1.5' : 'h-2'} ${tutorialStep === step ? `bg-[#3369bd] ${isMobileDevice ? 'w-6' : 'w-8'}` : `bg-gray-300 ${isMobileDevice ? 'w-1.5' : 'w-2'}`}`}
@@ -2878,7 +2946,7 @@ const QuickSOAP = () => {
                                                 <span className={isMobileDevice ? 'hidden sm:inline' : ''}>Previous</span>
                                             </button>
                                         )}
-                                        {tutorialStep < (isMobileDevice ? 4 : 5) ? (
+                                        {tutorialStep < (isMobileDevice ? 5 : 6) ? (
                                             <button
                                                 onClick={() => setTutorialStep(tutorialStep + 1)}
                                                 className={`rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-1 ${isMobileDevice ? 'px-2 py-1 text-xs' : 'px-4 py-2'}`}

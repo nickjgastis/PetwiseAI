@@ -13,7 +13,52 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
+const { correctTranscript } = require('./utils/vetCorrector');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+// Load veterinary lexicon for Whisper boosting
+const lexiconPath = path.join(__dirname, 'lexicon', 'vetLexicon.txt');
+let vetLexicon = '';
+try {
+    if (fs.existsSync(lexiconPath)) {
+        vetLexicon = fs.readFileSync(lexiconPath, 'utf8').trim();
+        const lexiconLineCount = vetLexicon.split('\n').filter(line => line.trim().length > 0).length;
+        console.log("Lexicon loaded with", lexiconLineCount, "terms");
+    } else {
+        console.warn("Lexicon file not found at:", lexiconPath);
+    }
+} catch (err) {
+    console.error("Error loading lexicon:", err.message);
+}
+
+// Helper function to build boosted prompt with fail-safes
+const buildBoostedPrompt = (basePrompt, contextPrompt = null) => {
+    const prompt = contextPrompt || basePrompt;
+
+    // Estimate tokens (rough: ~4 chars per token)
+    const MAX_PROMPT_TOKENS = 4500; // Leave room for Whisper's internal limits
+    const MAX_LEXICON_TOKENS = 4000; // Max lexicon tokens
+
+    let lexiconToUse = vetLexicon;
+
+    // If lexicon is too large, truncate it
+    if (lexiconToUse.length > MAX_LEXICON_TOKENS * 4) {
+        console.warn("Lexicon too large, truncating to", MAX_LEXICON_TOKENS, "estimated tokens");
+        lexiconToUse = lexiconToUse.substring(0, MAX_LEXICON_TOKENS * 4);
+    }
+
+    // Build boosted prompt
+    const lexiconSection = lexiconToUse ? `\n\nVETERINARY_TERMINOLOGY_BOOST:\n${lexiconToUse}` : '';
+    const boostedPrompt = prompt + lexiconSection;
+
+    // Final check: if still too large, fallback to base prompt only
+    if (boostedPrompt.length > MAX_PROMPT_TOKENS * 4) {
+        console.warn("Boosted prompt too large, falling back to base prompt only");
+        return prompt;
+    }
+
+    return boostedPrompt;
+};
 
 // Set ffmpeg and ffprobe paths
 if (ffmpegStatic) {
@@ -361,6 +406,13 @@ const cleanTranscript = (text) => {
     cleaned = cleaned.replace(/\s+\./g, '.');
     cleaned = cleaned.replace(/\.\s+\./g, '.');
 
+    // Fix decimal numbers: "5. 2" -> "5.2", "5 .2" -> "5.2", "5 . 2" -> "5.2"
+    cleaned = cleaned.replace(/(\d+)\s*\.\s*(\d+)/g, '$1.$2');
+
+    // Fix cases where decimal might be followed by a space and then a single digit
+    // Pattern: number, optional space, period, space, single digit -> merge to decimal
+    cleaned = cleaned.replace(/(\d+)\s*\.\s+(\d{1})\b/g, '$1.$2');
+
     return cleaned;
 };
 
@@ -428,6 +480,26 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
         let combinedTranscript = '';
         const basePrompt = `This is a veterinary medical dictation. Extract ONLY clinically relevant content.
 
+CRITICAL: MAXIMUM ACCURACY FOR VETERINARY MEDICAL TERMINOLOGY REQUIRED.
+
+You must transcribe veterinary medical language with EXTREME PRECISION. Pay special attention to:
+- Long, complex scientific terms (e.g., pancreatitis, pyometra, hemangiosarcoma, lymphosarcoma, cholangiohepatitis, polycythemia, thrombocytopenia)
+- Medication names (e.g., enrofloxacin, metronidazole, prednisolone, cephalexin, amoxicillin-clavulanate, furosemide, atenolol, gabapentin, tramadol, buprenorphine, maropitant, ondansetron)
+- Diagnostic terms (e.g., echocardiogram, electrocardiogram, radiographs, ultrasonography, cytology, histopathology, biochemistry, hematology)
+- Anatomical terms (e.g., gastrointestinal, cardiovascular, respiratory, musculoskeletal, integumentary, neurological, urogenital)
+- Disease names (e.g., diabetes mellitus, hyperadrenocorticism, hypothyroidism, chronic kidney disease, inflammatory bowel disease, atopic dermatitis)
+- Veterinary acronyms (e.g., CBC, CPL, TLI, BUN, CREA, ALT, AST, ALP, GGT, PT, PTT, ACTH, TSH, T4, FNA, BCS, MCS, IV, IM, SQ, PO, SID, BID, TID, QID, PRN)
+- Breed names and species-specific terminology
+- Dosage units (mg/kg, mL/kg, units/kg, mcg/kg)
+- Clinical measurements and values
+
+When encountering unclear audio for medical terms:
+- Prioritize veterinary medical terminology over common words
+- Use context clues from surrounding medical language
+- Preserve exact spelling of medications, diagnoses, and scientific terms
+- Do NOT simplify or abbreviate unless the speaker clearly uses an abbreviation
+- Maintain capitalization for proper nouns (medication brand names, breed names)
+
 IGNORE and REMOVE:
 - Greetings and small talk
 - Owner chit-chat or emotional comments
@@ -448,7 +520,7 @@ KEEP and CLEAN:
 - Treatment decisions
 - Plans or follow-ups
 
-Rewrite the output as clean clinical dictation with no extra words.`;
+Rewrite the output as clean clinical dictation with no extra words, maintaining maximum accuracy for all veterinary medical terminology.`;
 
         if (needsSegmentation) {
             // Phase 3: Segment audio into 3-minute chunks
@@ -501,7 +573,8 @@ Rewrite the output as clean clinical dictation with no extra words.`;
                         });
                         chunkFormData.append('model', 'whisper-1');
                         chunkFormData.append('response_format', 'text');
-                        chunkFormData.append('prompt', contextPrompt || basePrompt);
+                        const boostedPrompt = buildBoostedPrompt(basePrompt, contextPrompt);
+                        chunkFormData.append('prompt', boostedPrompt);
 
                         const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', chunkFormData, {
                             headers: {
@@ -530,16 +603,18 @@ Rewrite the output as clean clinical dictation with no extra words.`;
             };
 
             // Transcribe first chunk sequentially (needed for context)
-            const firstChunkTranscript = await transcribeChunk(chunkFiles[0], 0, basePrompt);
+            const firstChunkBoostedPrompt = buildBoostedPrompt(basePrompt);
+            const firstChunkTranscript = await transcribeChunk(chunkFiles[0], 0, firstChunkBoostedPrompt);
             combinedTranscript = firstChunkTranscript;
 
             // Transcribe remaining chunks in parallel (with first chunk context for continuity)
             if (chunkFiles.length > 1) {
                 const firstChunkContext = firstChunkTranscript.trim().split(/\s+/).slice(-200).join(' ');
                 const contextPrompt = basePrompt + '\n\nPrevious context: ' + firstChunkContext;
+                const boostedContextPrompt = buildBoostedPrompt(basePrompt, contextPrompt);
 
                 const remainingChunks = chunkFiles.slice(1).map((chunkFilePath, index) =>
-                    transcribeChunk(chunkFilePath, index + 1, contextPrompt)
+                    transcribeChunk(chunkFilePath, index + 1, boostedContextPrompt)
                 );
 
                 const remainingTranscripts = await Promise.all(remainingChunks);
@@ -565,7 +640,9 @@ Rewrite the output as clean clinical dictation with no extra words.`;
             });
             formData.append('model', 'whisper-1');
             formData.append('response_format', 'text');
-            formData.append('prompt', basePrompt);
+            const boostedPrompt = buildBoostedPrompt(basePrompt);
+            console.log("Whisper prompt length:", boostedPrompt.length);
+            formData.append('prompt', boostedPrompt);
 
             const response = await axios.post('https://api.openai.com/v1/audio/transcriptions', formData, {
                 headers: {
@@ -583,6 +660,9 @@ Rewrite the output as clean clinical dictation with no extra words.`;
         // Phase 5: Clean the final transcript
         const cleanTranscription = cleanTranscript(combinedTranscript);
 
+        // Phase 6: Apply veterinary terminology correction
+        const corrected = correctTranscript(cleanTranscription);
+
         // Generate summary
         let summary = '';
         try {
@@ -597,10 +677,10 @@ Rewrite the output as clean clinical dictation with no extra words.`;
                     messages: [
                         {
                             role: 'user',
-                            content: `Summarize this veterinary dictation in 1-2 short sentences focusing on the main complaint or finding:\n\n"${cleanTranscription}"`
+                            content: `Summarize this veterinary dictation in 1-2 short sentences focusing on the main complaint or finding. Include exact drug names, diagnoses, and medical terms as stated:\n\n"${corrected}"`
                         }
                     ],
-                    max_tokens: 100,
+                    max_tokens: 150,
                     temperature: 0.3
                 })
             });
@@ -611,12 +691,12 @@ Rewrite the output as clean clinical dictation with no extra words.`;
             }
         } catch (err) {
             console.error('Summary generation error:', err);
-            summary = cleanTranscription.length > 100
-                ? cleanTranscription.substring(0, 100) + '...'
-                : cleanTranscription;
+            summary = corrected.length > 100
+                ? corrected.substring(0, 100) + '...'
+                : corrected;
         }
 
-        // Phase 6: Cleanup temp files
+        // Phase 7: Cleanup temp files
         cleanupTempFiles(tempFiles);
         tempDirs.forEach(dir => {
             try {
@@ -629,8 +709,8 @@ Rewrite the output as clean clinical dictation with no extra words.`;
         });
 
         res.json({
-            text: cleanTranscription,
-            summary: summary || cleanTranscription.substring(0, 100) + (cleanTranscription.length > 100 ? '...' : '')
+            text: corrected,
+            summary: summary || corrected.substring(0, 100) + (corrected.length > 100 ? '...' : '')
         });
     } catch (err) {
         // Cleanup on error
@@ -686,6 +766,34 @@ app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
         formData.append('model', 'whisper-1');
         formData.append('response_format', 'text');
 
+        const petQueryPrompt = `This is a veterinary medical query dictation. Transcribe with MAXIMUM ACCURACY for veterinary medical terminology.
+
+CRITICAL: MAXIMUM ACCURACY FOR VETERINARY MEDICAL TERMINOLOGY REQUIRED.
+
+You must transcribe veterinary medical language with EXTREME PRECISION. Pay special attention to:
+- Long, complex scientific terms (e.g., pancreatitis, pyometra, hemangiosarcoma, lymphosarcoma, cholangiohepatitis, polycythemia, thrombocytopenia)
+- Medication names (e.g., enrofloxacin, metronidazole, prednisolone, cephalexin, amoxicillin-clavulanate, furosemide, atenolol, gabapentin, tramadol, buprenorphine, maropitant, ondansetron)
+- Diagnostic terms (e.g., echocardiogram, electrocardiogram, radiographs, ultrasonography, cytology, histopathology, biochemistry, hematology)
+- Anatomical terms (e.g., gastrointestinal, cardiovascular, respiratory, musculoskeletal, integumentary, neurological, urogenital)
+- Disease names (e.g., diabetes mellitus, hyperadrenocorticism, hypothyroidism, chronic kidney disease, inflammatory bowel disease, atopic dermatitis)
+- Veterinary acronyms (e.g., CBC, CPL, TLI, BUN, CREA, ALT, AST, ALP, GGT, PT, PTT, ACTH, TSH, T4, FNA, BCS, MCS, IV, IM, SQ, PO, SID, BID, TID, QID, PRN)
+- Breed names and species-specific terminology
+- Dosage units (mg/kg, mL/kg, units/kg, mcg/kg)
+- Clinical measurements and values
+
+When encountering unclear audio for medical terms:
+- Prioritize veterinary medical terminology over common words
+- Use context clues from surrounding medical language
+- Preserve exact spelling of medications, diagnoses, and scientific terms
+- Do NOT simplify or abbreviate unless the speaker clearly uses an abbreviation
+- Maintain capitalization for proper nouns (medication brand names, breed names)
+
+Transcribe the complete veterinary medical question or query with maximum accuracy for all terminology.`;
+
+        const boostedPetQueryPrompt = buildBoostedPrompt(petQueryPrompt);
+        console.log("Whisper prompt length:", boostedPetQueryPrompt.length);
+        formData.append('prompt', boostedPetQueryPrompt);
+
         if (!process.env.OPENAI_API_KEY) {
             throw new Error('OPENAI_API_KEY environment variable is not set');
         }
@@ -702,7 +810,10 @@ app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
 
         const transcription = response.data.trim();
 
-        res.json({ text: transcription });
+        // Apply veterinary terminology correction
+        const corrected = correctTranscript(transcription);
+
+        res.json({ text: corrected });
     } catch (err) {
         console.error('Simple transcription endpoint error:', err);
         console.error('Error stack:', err.stack);
@@ -765,6 +876,9 @@ OUTPUT REQUIREMENTS:
 - Always place past or future treatment under the Treatment section.
 - Use species-appropriate terminology and realistic veterinary phrasing.
 - If Physical Exam findings or Vital Signs are not mentioned, include them as normal. Do not say "Not Provided".
+- PET NAME USAGE: 
+  * CRITICAL: In the Subjective section (Presenting Complaint, History, Owner Observations), you MUST use the pet's name if it is mentioned anywhere in the dictation. Scan the entire dictation for pet names. If a name is found (e.g., "Joe", "Jasper", "Buddy", "Milo"), use it throughout the Subjective section (e.g., "Joe is a feline domestic shorthair with bladder cancer" NOT "The patient is a feline..."). Only use "the patient" or "the [species]" if NO pet name is mentioned in the dictation at all.
+  * STRICTLY FORBIDDEN: In the Objective, Assessment, and Plan sections, you MUST NEVER use the pet's name. Always use "patient", "the patient", "animal", or species-specific terms (e.g., "cat", "dog", "feline", "canine") instead. Examples: "The patient appears lethargic" NOT "Milo appears lethargic", "Monitor the patient's hydration" NOT "Monitor Milo's hydration". If you see the pet name in these sections, replace it with "patient" or the species.
 
 EXPANSION RULES:
 - If the dictation describes several systems as normal, list them individually (e.g., normal heart sounds, clear lungs, soft abdomen).
@@ -775,21 +889,35 @@ EXPANSION RULES:
 - Err on the side of including more detail rather than less.
 - CONDITIONAL SECTIONS: Only include a "Masses:" subsection under Physical Exam if the dictation mentions any masses, lumps, nodules, or similar findings. If no masses are mentioned, omit this section entirely.
 
+TREATMENT SECTION FORMATTING:
+- List medications and treatments in a concise, direct format.
+- Do NOT use phrases like "The patient was prescribed" or "The patient was given".
+- Format as: [Drug name] [dosage] [route] [frequency] [duration/indication].
+- Examples:
+  * "Neopolydex eye drops OU TID for 10 days"
+  * "Pimobendan 0.5 mg/kg PO SID to prevent cardiomegaly"
+  * "Cerenia 1 mg/kg SQ once daily for nausea"
+- Keep each treatment bullet short, clean, and clinically formatted.
+- Include route (PO, SQ, IM, IV, OU, OD, OS, transdermal, etc.) when specified.
+- Include indication or purpose when relevant (e.g., "for nausea", "to prevent cardiomegaly").
+
 SOAP RECORD:
 
 Subjective:
 Presenting Complaint:
--
+- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION, otherwise use "the patient" or "the [species]"]
 History:
--
+- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION]
 Owner Observations:
--
+- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION]
 
 Objective:
 Physical Exam:
 - General:
+- Body Condition Score: x/9 (x is the body condition score out of 9)
 - Hydration:
 - Mucous membranes:
+- CRT:
 - Cardiovascular:
 - Respiratory:
 - Gastrointestinal:
@@ -813,8 +941,6 @@ Problem List:
 Primary Diagnosis:
 -
 Differential Diagnoses:
--
-Prognosis:
 -
 
 Plan:
