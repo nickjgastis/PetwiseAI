@@ -1,9 +1,10 @@
 // ================ IMPORTS AND SETUP ================
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const express = require('express');
 const Stripe = require('stripe');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const path = require('path');
 const multer = require('multer');
 const fs = require('fs');
 const FormData = require('form-data');
@@ -14,7 +15,7 @@ const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
 const { correctTranscript } = require('./utils/vetCorrector');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { runMedicalCleanup } = require('./utils/medicalCleanup');
 
 // Load veterinary lexicon for Whisper boosting
 const lexiconPath = path.join(__dirname, 'lexicon', 'vetLexicon.txt');
@@ -660,8 +661,18 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
         // Phase 5: Clean the final transcript
         const cleanTranscription = cleanTranscript(combinedTranscript);
 
+        // Phase 5.5: GPT-4o-mini medical cleanup (before VetCorrector)
+        // Wrap in try-catch to ensure we never fail the entire request if cleanup fails
+        let cleanedTranscript = cleanTranscription;
+        try {
+            cleanedTranscript = await runMedicalCleanup(cleanTranscription);
+        } catch (cleanupErr) {
+            console.error('Medical cleanup failed, using cleaned transcript:', cleanupErr.message);
+            cleanedTranscript = cleanTranscription; // Fallback to cleaned transcript
+        }
+
         // Phase 6: Apply veterinary terminology correction
-        const corrected = correctTranscript(cleanTranscription);
+        const corrected = correctTranscript(cleanedTranscript);
 
         // Generate summary
         let summary = '';
@@ -810,8 +821,18 @@ Transcribe the complete veterinary medical question or query with maximum accura
 
         const transcription = response.data.trim();
 
+        // GPT-4o-mini medical cleanup (before VetCorrector)
+        // Wrap in try-catch to ensure we never fail the entire request if cleanup fails
+        let cleanedTranscript = transcription;
+        try {
+            cleanedTranscript = await runMedicalCleanup(transcription);
+        } catch (cleanupErr) {
+            console.error('Medical cleanup failed, using original transcript:', cleanupErr.message);
+            cleanedTranscript = transcription; // Fallback to original transcript
+        }
+
         // Apply veterinary terminology correction
-        const corrected = correctTranscript(transcription);
+        const corrected = correctTranscript(cleanedTranscript);
 
         res.json({ text: corrected });
     } catch (err) {
@@ -837,6 +858,27 @@ Transcribe the complete veterinary medical question or query with maximum accura
                 console.error('Error cleaning up temp file:', cleanupErr.message);
             }
         }
+    }
+});
+
+// Test endpoint for medical cleanup
+app.post('/api/testCleanup', async (req, res) => {
+    try {
+        const { text } = req.body;
+
+        if (!text || typeof text !== 'string') {
+            return res.status(400).json({ error: 'Text is required' });
+        }
+
+        const cleaned = await runMedicalCleanup(text);
+
+        res.json({
+            original: text,
+            cleaned: cleaned
+        });
+    } catch (err) {
+        console.error('Test cleanup error:', err);
+        res.status(500).json({ error: 'Cleanup failed', detail: err.message });
     }
 });
 
