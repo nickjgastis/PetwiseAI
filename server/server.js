@@ -474,9 +474,13 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
         const duration = await getAudioDuration(convertedFilePath);
         const durationMinutes = duration / 60;
 
+        // Segmentation thresholds
+        // Segment if audio is longer than 20 minutes (file size threshold unlikely to trigger with compressed MP3)
         const SEGMENTATION_THRESHOLD_MB = 20;
-        const SEGMENTATION_THRESHOLD_MINUTES = 3;
+        const SEGMENTATION_THRESHOLD_MINUTES = 20;
         const needsSegmentation = fileSizeMB > SEGMENTATION_THRESHOLD_MB || durationMinutes > SEGMENTATION_THRESHOLD_MINUTES;
+
+        console.log(`[Transcribe] Audio: ${fileSizeMB.toFixed(2)}MB, ${durationMinutes.toFixed(2)} minutes - Segmentation ${needsSegmentation ? 'NEEDED' : 'NOT NEEDED'}`);
 
         let combinedTranscript = '';
         const basePrompt = `This is a veterinary medical dictation. Extract ONLY clinically relevant content.
@@ -606,6 +610,8 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
             // Transcribe first chunk sequentially (needed for context)
             const firstChunkBoostedPrompt = buildBoostedPrompt(basePrompt);
             const firstChunkTranscript = await transcribeChunk(chunkFiles[0], 0, firstChunkBoostedPrompt);
+            console.log(`[Transcribe] Chunk 1/${chunkFiles.length}: ${firstChunkTranscript.length} chars`);
+            console.log(`[Transcribe] Chunk 1 preview: ${firstChunkTranscript.substring(0, 100)}...`);
             combinedTranscript = firstChunkTranscript;
 
             // Transcribe remaining chunks in parallel (with first chunk context for continuity)
@@ -620,13 +626,20 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
 
                 const remainingTranscripts = await Promise.all(remainingChunks);
 
-                // Combine transcripts in order
-                remainingTranscripts.forEach(transcript => {
-                    if (transcript) {
-                        combinedTranscript += ' ' + transcript;
+                // Combine transcripts in order with logging
+                remainingTranscripts.forEach((transcript, idx) => {
+                    const chunkNum = idx + 2;
+                    console.log(`[Transcribe] Chunk ${chunkNum}/${chunkFiles.length}: ${transcript.length} chars`);
+                    console.log(`[Transcribe] Chunk ${chunkNum} preview: ${transcript.substring(0, 100)}...`);
+                    if (transcript && transcript.trim().length > 0) {
+                        combinedTranscript += ' ' + transcript.trim();
+                    } else {
+                        console.warn(`[Transcribe] Chunk ${chunkNum} was empty or whitespace only`);
                     }
                 });
             }
+
+            console.log(`[Transcribe] Combined transcript length: ${combinedTranscript.length} chars`);
         } else {
             // Single file transcription (no segmentation needed)
             console.log('Transcribing single file (no segmentation needed)');
@@ -664,15 +677,31 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
         // Phase 5.5: GPT-4o-mini medical cleanup (before VetCorrector)
         // Wrap in try-catch to ensure we never fail the entire request if cleanup fails
         let cleanedTranscript = cleanTranscription;
+        console.log(`[Transcribe] Clean transcript length: ${cleanTranscription.length} chars`);
+        console.log(`[Transcribe] Clean transcript preview: ${cleanTranscription.substring(0, 200)}...`);
+        console.log(`[Transcribe] Clean transcript end: ...${cleanTranscription.substring(Math.max(0, cleanTranscription.length - 200))}`);
         try {
+            const cleanupStart = Date.now();
             cleanedTranscript = await runMedicalCleanup(cleanTranscription);
+            const cleanupTime = Date.now() - cleanupStart;
+            console.log(`[Transcribe] GPT cleanup completed in ${cleanupTime}ms`);
+            console.log(`[Transcribe] GPT cleaned length: ${cleanedTranscript.length} chars (was ${cleanTranscription.length})`);
+            console.log(`[Transcribe] GPT cleaned preview: ${cleanedTranscript.substring(0, 200)}...`);
+            console.log(`[Transcribe] GPT cleaned end: ...${cleanedTranscript.substring(Math.max(0, cleanedTranscript.length - 200))}`);
+            if (cleanedTranscript.length < cleanTranscription.length * 0.8) {
+                console.warn(`[Transcribe] WARNING: GPT cleanup reduced transcript by ${cleanTranscription.length - cleanedTranscript.length} chars - possible truncation!`);
+            }
         } catch (cleanupErr) {
-            console.error('Medical cleanup failed, using cleaned transcript:', cleanupErr.message);
+            console.error('[Transcribe] Medical cleanup failed, using cleaned transcript:', cleanupErr.message);
             cleanedTranscript = cleanTranscription; // Fallback to cleaned transcript
         }
 
         // Phase 6: Apply veterinary terminology correction
+        console.log(`[Transcribe] Starting VetCorrector on ${cleanedTranscript.length} chars`);
+        const correctorStart = Date.now();
         const corrected = correctTranscript(cleanedTranscript);
+        const correctorTime = Date.now() - correctorStart;
+        console.log(`[Transcribe] VetCorrector completed in ${correctorTime}ms`);
 
         // Generate summary
         let summary = '';
@@ -874,11 +903,69 @@ app.post('/api/testCleanup', async (req, res) => {
 
         res.json({
             original: text,
-            cleaned: cleaned
+            cleaned: cleaned,
+            originalLength: text.length,
+            cleanedLength: cleaned.length
         });
     } catch (err) {
         console.error('Test cleanup error:', err);
         res.status(500).json({ error: 'Cleanup failed', detail: err.message });
+    }
+});
+
+// Test endpoint for long transcript simulation
+app.post('/api/testLongTranscript', async (req, res) => {
+    try {
+        const { durationMinutes = 2 } = req.body;
+
+        // Simulate a long transcript (roughly 100 words per minute)
+        const wordsPerMinute = 100;
+        const wordCount = durationMinutes * wordsPerMinute;
+
+        // Generate a realistic veterinary dictation with drug names and medical terms
+        const samplePhrases = [
+            "We have a patient here presenting with acute vomiting and diarrhea.",
+            "The owner reports that the dog has been lethargic for the past 24 hours.",
+            "On physical examination, we noted mild dehydration and decreased skin turgor.",
+            "We're going to start the patient on rimadyl at 2 milligrams per kilogram twice daily.",
+            "Also prescribing gabapentin for pain management at 10 milligrams per kilogram.",
+            "The patient will need to be monitored closely for any adverse reactions.",
+            "We recommend rechecking in 7 to 10 days to assess response to treatment.",
+            "Blood work shows elevated liver enzymes and mild azotemia.",
+            "We're starting with cerenia for nausea at 1 milligram per kilogram subcutaneously.",
+            "The patient is also on metronidazole for gastrointestinal issues."
+        ];
+
+        let testTranscript = "";
+        for (let i = 0; i < wordCount / 20; i++) {
+            testTranscript += samplePhrases[i % samplePhrases.length] + " ";
+        }
+
+        testTranscript = testTranscript.trim();
+
+        console.log(`Testing long transcript: ${testTranscript.length} chars, ~${wordCount} words`);
+
+        // Test the full pipeline
+        const startTime = Date.now();
+        const cleaned = await runMedicalCleanup(testTranscript);
+        const corrected = correctTranscript(cleaned);
+        const endTime = Date.now();
+
+        res.json({
+            durationMinutes,
+            originalLength: testTranscript.length,
+            cleanedLength: cleaned.length,
+            correctedLength: corrected.length,
+            processingTimeMs: endTime - startTime,
+            sample: {
+                original: testTranscript.substring(0, 200) + "...",
+                cleaned: cleaned.substring(0, 200) + "...",
+                corrected: corrected.substring(0, 200) + "..."
+            }
+        });
+    } catch (err) {
+        console.error('Test long transcript error:', err);
+        res.status(500).json({ error: 'Test failed', detail: err.message });
     }
 });
 

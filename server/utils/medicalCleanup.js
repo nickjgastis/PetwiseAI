@@ -32,9 +32,13 @@ async function runMedicalCleanup(text) {
         return text;
     }
 
-    // Skip cleanup for very long transcripts to avoid timeout
-    if (text.length > 2000) {
-        console.log('Transcript too long for GPT cleanup, skipping');
+    // For very long transcripts, skip GPT cleanup to avoid timeout/cost
+    // Max cleanup limit: 4000 characters
+    // 2-minute dictation ≈ 200-300 words ≈ 1000-1500 chars
+    // 5-minute dictation ≈ 500-750 words ≈ 2500-3750 chars
+    // 4000 chars ≈ roughly 8-10 minutes of dictation
+    if (text.length > 4000) {
+        console.log(`Transcript too long for GPT cleanup (${text.length} chars), skipping (max: 4000)`);
         return text;
     }
 
@@ -50,6 +54,14 @@ TEXT:
         // Use same timeout pattern as other OpenAI calls in server
         const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
 
+        // Calculate max_tokens based on input length (roughly 1 token = 4 chars)
+        // Add generous buffer for response - allow up to input length + 100% for corrections/formatting
+        // GPT-4o-mini can handle up to 16k tokens, so be generous to prevent truncation
+        const estimatedInputTokens = Math.ceil(text.length / 4);
+        // Use at least 2x input tokens to ensure no truncation
+        // For 4000 chars max input: ~1000 tokens input → 2000 tokens output max (well below 16k limit)
+        const maxTokens = Math.ceil(estimatedInputTokens * 2);
+
         // Call GPT-4o-mini matching the pattern used in server.js
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
@@ -59,7 +71,7 @@ TEXT:
                     { role: 'system', content: SYSTEM_PROMPT },
                     { role: 'user', content: userPrompt }
                 ],
-                max_tokens: 300,
+                max_tokens: maxTokens,
                 temperature: 0.1,
                 stream: false
             },
@@ -75,9 +87,26 @@ TEXT:
         );
 
         const cleanedText = response.data.choices?.[0]?.message?.content?.trim();
+        const finishReason = response.data.choices?.[0]?.finish_reason;
+
+        // Check if response was truncated - NEVER return truncated output
+        if (finishReason === 'length') {
+            console.warn(`GPT cleanup was truncated (finish_reason: length). Input: ${text.length} chars, Output: ${cleanedText?.length || 0} chars`);
+            console.warn('Returning original text to avoid data loss');
+            return text; // Return original if truncated
+        }
 
         if (cleanedText && cleanedText.length > 0) {
-            console.log('GPT-4o-mini cleanup applied');
+            // CRITICAL: If output is significantly shorter than input, it's likely truncated
+            // Return original text instead of truncated output to prevent data loss
+            const lengthRatio = cleanedText.length / text.length;
+            if (lengthRatio < 0.85) { // If output is less than 85% of input, likely truncated
+                console.warn(`GPT cleanup output is ${text.length - cleanedText.length} chars shorter than input (${(lengthRatio * 100).toFixed(1)}% of original)`);
+                console.warn('Output appears truncated - returning original text to prevent data loss');
+                return text; // Return original to prevent data loss
+            }
+
+            console.log(`GPT-4o-mini cleanup applied: ${text.length} -> ${cleanedText.length} chars`);
             return cleanedText;
         } else {
             console.warn('GPT cleanup returned empty, using original text');
