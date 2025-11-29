@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile, FaPlus } from 'react-icons/fa';
+import ChunkedRecorder from '../utils/chunkedRecorder';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -258,6 +259,11 @@ const QuickSOAP = () => {
     const [dictationToDelete, setDictationToDelete] = useState(null);
     const [showStartNewModal, setShowStartNewModal] = useState(false);
     const pollingIntervalRef = useRef(null);
+
+    // New chunked recording state
+    const [chunkProgress, setChunkProgress] = useState(null);
+    const [currentChunkTranscript, setCurrentChunkTranscript] = useState('');
+    const chunkedRecorderRef = useRef(null);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -761,7 +767,71 @@ const QuickSOAP = () => {
         animationFrameRef.current = requestAnimationFrame(visualizeAudio);
     };
 
+    // NEW: Chunked recording system (replaces old single-blob recording)
     const startRecording = async () => {
+        try {
+            console.log('[QuickSOAP] Starting chunked recording...');
+            setError('');
+            setChunkProgress({ chunkIndex: 0, status: 'starting', message: 'Starting recording...' });
+            setCurrentChunkTranscript('');
+
+            // Initialize ChunkedRecorder
+            const recorder = new ChunkedRecorder({
+                chunkDuration: 30000, // 30 seconds
+                apiUrl: API_URL,
+                onChunkReady: (blob, chunkIndex) => {
+                    console.log(`Chunk ${chunkIndex + 1} ready, size: ${blob.size} bytes`);
+                },
+                onChunkTranscript: (transcript, chunkIndex) => {
+                    console.log(`Chunk ${chunkIndex + 1} transcribed: ${transcript.substring(0, 50)}...`);
+                    setCurrentChunkTranscript(prev => prev + ' ' + transcript);
+                },
+                onProgress: (progress) => {
+                    setChunkProgress(progress);
+                },
+                onError: (err, chunkIndex) => {
+                    console.error(`Chunk ${chunkIndex !== undefined ? chunkIndex + 1 : 'unknown'} error:`, err);
+                    // Continue recording even if a chunk fails
+                }
+            });
+
+            chunkedRecorderRef.current = recorder;
+
+            // Get stream for visualization first
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            streamRef.current = stream;
+
+            // Set up audio visualization
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.8;
+            microphone.connect(analyser);
+
+            audioContextRef.current = audioContext;
+            analyserRef.current = analyser;
+
+            // Start visualization
+            setAudioLevels(new Array(20).fill(0));
+            visualizeAudio();
+
+            // Start chunked recording with existing stream
+            await recorder.start(stream);
+            setIsRecording(true);
+            setIsPaused(false);  // Ensure pause state is reset
+            setChunkProgress({ chunkIndex: 1, status: 'recording', message: 'Recording chunk 1...' });
+            console.log('[QuickSOAP] Chunked recording started successfully');
+        } catch (err) {
+            console.error('[QuickSOAP] Error starting recording:', err);
+            setError('Failed to access microphone. Please check permissions.');
+            setChunkProgress(null);
+        }
+    };
+
+    /* DEPRECATED — Old single-blob recording system (no longer used)
+    const startRecording_OLD = async () => {
         try {
             setError('');
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -821,30 +891,96 @@ const QuickSOAP = () => {
             setError('Failed to access microphone. Please check permissions.');
         }
     };
+    */
 
+    // Pause/resume for chunked recording
     const pauseRecording = () => {
-        if (mediaRecorderRef.current && isRecording && !isPaused) {
-            try {
-                mediaRecorderRef.current.pause();
-                setIsPaused(true);
-            } catch (err) {
-                console.error('Error pausing recording:', err);
-            }
+        if (chunkedRecorderRef.current && isRecording && !isPaused) {
+            chunkedRecorderRef.current.pause();
+            setIsPaused(true);
+            console.log('[QuickSOAP] Recording paused');
         }
     };
 
     const resumeRecording = () => {
-        if (mediaRecorderRef.current && isRecording && isPaused) {
+        if (chunkedRecorderRef.current && isRecording && isPaused) {
+            chunkedRecorderRef.current.resume();
+            setIsPaused(false);
+            console.log('[QuickSOAP] Recording resumed');
+        }
+    };
+
+    // NEW: Stop chunked recording and process final transcript
+    const stopRecording = async () => {
+        if (chunkedRecorderRef.current && isRecording) {
+            console.log('[QuickSOAP] Stopping chunked recording...');
+            setIsRecording(false);
+            setIsPaused(false);
+            setIsTranscribing(true); // Show transcribing loader immediately
+            setError('');
+
+            // Stop visualization
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                try {
+                    audioContextRef.current.close().catch(() => {
+                        // Already closing or closed
+                    });
+                } catch (err) {
+                    // Already closed
+                }
+                audioContextRef.current = null;
+            }
+            analyserRef.current = null;
+            setAudioLevels([]);
+
+            // DO NOT stop stream tracks here - let chunkedRecorder handle it after tail chunk
+            // The stream will be stopped by chunkedRecorder.finalizeWithTail() after tail chunk completes
+
+            // Stop recorder and get merged transcript from streaming Whisper uploads
+            setChunkProgress({ status: 'processing', message: 'Finishing transcription...' });
             try {
-                mediaRecorderRef.current.resume();
-                setIsPaused(false);
+                // Wait for recorder to stop and all chunk transcripts to complete
+                // Each chunk was sent to Whisper while recording - this just waits for completion
+                const finalTranscript = await chunkedRecorderRef.current.stop();
+
+                // Now safe to clear streamRef after chunkedRecorder has finished
+                if (streamRef.current) {
+                    streamRef.current = null;
+                }
+
+                if (!finalTranscript || finalTranscript.trim().length === 0) {
+                    console.error('[QuickSOAP] No transcript generated');
+                    setError('No speech detected. Please try recording again.');
+                    setChunkProgress(null);
+                    setIsTranscribing(false);
+                    return;
+                }
+
+                console.log(`[QuickSOAP] Recording stopped, transcript: ${finalTranscript.length} chars`);
+
+                // Send merged transcript to backend for cleanup only (Whisper already done)
+                await processFinalTranscript(finalTranscript);
             } catch (err) {
-                console.error('Error resuming recording:', err);
+                console.error('[QuickSOAP] Error stopping recording:', err);
+                setError('Failed to process recording. Please try again.');
+                setChunkProgress(null);
+                setIsTranscribing(false);
+
+                // Clean up stream on error
+                if (streamRef.current) {
+                    streamRef.current.getTracks().forEach(track => track.stop());
+                    streamRef.current = null;
+                }
             }
         }
     };
 
-    const stopRecording = () => {
+    /* DEPRECATED — Old stop recording (no longer used)
+    const stopRecording_OLD = () => {
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
@@ -868,7 +1004,75 @@ const QuickSOAP = () => {
             setAudioLevels([]);
         }
     };
+    */
 
+    // Process merged transcript through backend cleanup pipeline
+    // Client handles: audio recording → Whisper chunk streaming (while recording)
+    // Backend handles: cleanup + VetCorrector + summary generation
+    // SOAP generation happens when user clicks "Generate SOAP" button
+    // Note: isTranscribing is already set to true in stopRecording() before this is called
+    const processFinalTranscript = async (transcript) => {
+        console.log(`[QuickSOAP] Processing final transcript: ${transcript.length} chars`);
+        setError('');
+
+        try {
+            const processStartTime = Date.now();
+            setChunkProgress({ status: 'processing', message: 'Cleaning up transcript...' });
+
+            // Send text-only to backend cleanup endpoint
+            // (Whisper transcription already happened client-side during recording)
+            const response = await axios.post(`${API_URL}/api/cleanup-transcript`, {
+                transcript: transcript
+            }, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const processTime = Date.now() - processStartTime;
+            console.log(`[QuickSOAP] Cleanup completed in ${processTime}ms`);
+
+            if (response.data && response.data.correctedTranscript) {
+                const correctedText = response.data.correctedTranscript;
+
+                // Create dictation entry with generated summary (1-2 sentences) or fallback to first 100 chars
+                const newDictation = {
+                    id: Date.now(),
+                    fullText: correctedText,
+                    summary: response.data.summary || correctedText.substring(0, 100) + (correctedText.length > 100 ? '...' : ''),
+                    expanded: false
+                };
+
+                setDictations(prev => {
+                    const updated = [...prev, newDictation];
+                    // Auto-save draft after transcription
+                    if (isAuthenticated) {
+                        saveDraftDictations(updated, input, correctedText);
+                    }
+                    return updated;
+                });
+                setLastInput(correctedText);
+            } else {
+                const errorMsg = response.data?.error || response.data?.detail || 'No transcript received from server';
+                throw new Error(errorMsg);
+            }
+        } catch (err) {
+            console.error('[QuickSOAP] Cleanup processing error:', err);
+            if (err.response?.data) {
+                const errorMsg = err.response.data.error || err.response.data.detail || 'Unknown error';
+                console.error('[QuickSOAP] Server error details:', err.response.data);
+                setError(`Cleanup failed: ${errorMsg}`);
+            } else {
+                setError('Failed to process transcript. Please try again.');
+            }
+        } finally {
+            setIsTranscribing(false);
+            setChunkProgress(null);
+            setCurrentChunkTranscript('');
+        }
+    };
+
+    /* DEPRECATED — Old transcription endpoint (no longer used with client-side chunking)
     const transcribeAudio = async (audioBlob) => {
         setIsTranscribing(true);
         setError('');
@@ -917,6 +1121,7 @@ const QuickSOAP = () => {
             setNeedsSegmentation(false);
         }
     };
+    */
 
     // Auto-save helper function (extracted from handleSaveRecord)
     const autoSaveRecord = async (generatedReport, extractedPetName = null) => {
@@ -1975,6 +2180,7 @@ const QuickSOAP = () => {
                                         <p className="text-sm font-medium text-gray-600">
                                             {isPaused ? 'Paused' : 'Listening...'}
                                         </p>
+
                                     </div>
                                 )}
 
@@ -2008,6 +2214,36 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
 
+                                {/* Mobile: Send to Desktop and Start New buttons - Show when dictations exist and not recording */}
+                                {isMobile && dictations.length > 0 && !isRecording && !isTranscribing && !hasReport && (
+                                    <div className="w-full max-w-2xl mt-3 space-y-2 flex-shrink-0">
+                                        <button
+                                            onClick={handleSendToDesktopClick}
+                                            disabled={isGenerating || isSendingToDesktop}
+                                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            {isSendingToDesktop ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                                    <span>Sending...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <FaDesktop className="text-base" />
+                                                    {hasBeenSentToDesktop ? 'Send Again' : 'Send to Desktop'}
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => setShowStartNewModal(true)}
+                                            disabled={isGenerating || isSendingToDesktop}
+                                            className="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-xs hover:bg-gray-300 transition-all shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                                        >
+                                            Start New
+                                        </button>
+                                    </div>
+                                )}
+
                                 {/* Generate Button - Show only after dictation is complete (Desktop only) */}
                                 {!isMobile && !hasReport && dictations.length > 0 && !isTranscribing && (
                                     <div className="flex justify-center mt-4">
@@ -2028,35 +2264,6 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
 
-                                {/* Mobile: Send to Desktop Button */}
-                                {isMobile && dictations.length > 0 && !isRecording && (
-                                    <div className="w-full max-w-2xl mt-3 space-y-2 flex-shrink-0">
-                                        <button
-                                            onClick={handleSendToDesktopClick}
-                                            disabled={isTranscribing || isGenerating || isSendingToDesktop}
-                                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                        >
-                                            {isSendingToDesktop ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                                    <span>Sending...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaDesktop className="text-base" />
-                                                    {hasBeenSentToDesktop ? 'Send Again' : 'Send to Desktop'}
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={() => setShowStartNewModal(true)}
-                                            disabled={isTranscribing || isGenerating || isSendingToDesktop}
-                                            className="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-xs hover:bg-gray-300 transition-all shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                                        >
-                                            Start New
-                                        </button>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     ) : (

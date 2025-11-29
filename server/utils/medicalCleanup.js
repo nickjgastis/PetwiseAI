@@ -43,10 +43,21 @@ async function runMedicalCleanup(text) {
     }
 
     try {
-        // Build user prompt
-        const userPrompt = `Clean up the following veterinary medical dictation.
-Correct drug names, diagnoses, clinical terms, dosing formats, and grammar.
-Do not add information. Do not remove details. Do not hallucinate.
+        // Build user prompt with stronger instructions
+        const userPrompt = `You are cleaning up a veterinary medical dictation transcript.
+
+Tasks:
+1. Fix obvious misspellings of medical terms, drug names, and common words.
+2. Add punctuation and sentence breaks.
+3. Do not remove any medically relevant content.
+4. Do not shorten the transcript on purpose.
+5. If you see obvious hallucinated text that is clearly not related to veterinary dictation (random foreign languages, symbol runs, or internet phrases), you may remove only those parts.
+
+Important:
+- Preserve all English clinical content.
+- Keep the meaning and sequence of events.
+- Do not summarize.
+- Do not add new details.
 
 TEXT:
 "${text}"`;
@@ -100,9 +111,8 @@ TEXT:
             // CRITICAL: If output is significantly shorter than input, it's likely truncated
             // Return original text instead of truncated output to prevent data loss
             const lengthRatio = cleanedText.length / text.length;
-            if (lengthRatio < 0.85) { // If output is less than 85% of input, likely truncated
-                console.warn(`GPT cleanup output is ${text.length - cleanedText.length} chars shorter than input (${(lengthRatio * 100).toFixed(1)}% of original)`);
-                console.warn('Output appears truncated - returning original text to prevent data loss');
+            if (lengthRatio < 0.6) { // If output is less than 60% of input, likely truncated
+                console.warn(`[QuickSOAPTranscribe] GPT cleanup output is significantly shorter (${(lengthRatio * 100).toFixed(1)}% of original), returning original text`);
                 return text; // Return original to prevent data loss
             }
 

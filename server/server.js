@@ -14,6 +14,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
+// REMOVED: quicksoapTranscribe - using client-side chunking with /api/whisper-proxy instead
 const { correctTranscript } = require('./utils/vetCorrector');
 const { runMedicalCleanup } = require('./utils/medicalCleanup');
 
@@ -93,6 +94,15 @@ if (!fs.existsSync(tempDir)) {
     fs.mkdirSync(tempDir, { recursive: true });
 }
 
+// Memory storage for whisper-proxy (direct buffer access)
+const uploadMemory = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 25 * 1024 * 1024 // 25MB limit (OpenAI Whisper max)
+    }
+});
+
+// Disk storage for other endpoints (deprecated transcription endpoint)
 const upload = multer({
     storage: multer.diskStorage({
         destination: (req, file, cb) => {
@@ -154,6 +164,7 @@ app.use(cors({
 
 // Mount student routes
 app.use('/student', studentRouter);
+// REMOVED: /api/quicksoap route - using client-side chunking with /api/whisper-proxy instead
 
 // ================ CONSTANTS ================
 const PRICE_IDS = {
@@ -417,6 +428,10 @@ const cleanTranscript = (text) => {
     return cleaned;
 };
 
+// ================ DEPRECATED ENDPOINT ================
+// DEPRECATED — Old Whisper pipeline (no longer used with client-side chunking)
+// This endpoint is kept for reference but is not called by the new QuickSOAP flow.
+// New flow: Client chunks audio → /api/whisper-proxy → Client merges → /api/cleanup-and-soap
 // Transcription endpoint using OpenAI Whisper with segmentation support
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     const tempFiles = [];
@@ -782,6 +797,551 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
     }
 });
 
+// ================ NEW CLIENT-SIDE CHUNKING ENDPOINTS ================
+
+// Whisper proxy endpoint for client-side chunked transcription
+// Accepts audio chunks from frontend and forwards to OpenAI Whisper API
+app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) => {
+    const startTime = Date.now();
+
+    try {
+        console.log('[WhisperProxy] Received chunk request');
+
+        if (!req.file) {
+            console.error('[WhisperProxy] No audio file provided');
+            return res.status(400).json({ error: 'No audio file provided' });
+        }
+
+        const buffer = req.file.buffer; // multer memory storage gives us buffer directly
+
+        // Validate buffer isn't empty
+        if (!buffer || buffer.length === 0) {
+            console.error('[WhisperProxy] Buffer is empty');
+            return res.status(400).json({
+                error: 'Invalid audio received',
+                detail: 'Chunk likely empty or corrupted'
+            });
+        }
+
+        const fileSizeMB = buffer.length / (1024 * 1024);
+        const fileSizeKB = buffer.length / 1024;
+        const mimeType = req.file.mimetype || 'audio/webm';
+        console.log(`[WhisperProxy] Received chunk: ${fileSizeMB.toFixed(2)}MB (${fileSizeKB.toFixed(2)}KB), type: ${mimeType}`);
+
+        // Validate file size (should be at least 1KB - valid WebM chunks are always larger)
+        const MIN_CHUNK_SIZE = 1024; // 1KB minimum
+        if (buffer.length < MIN_CHUNK_SIZE) {
+            console.warn(`[WhisperProxy] Chunk too small (${buffer.length} bytes), likely empty or corrupted`);
+            return res.status(400).json({
+                error: 'Invalid audio received',
+                detail: 'Chunk likely empty or corrupted (too small)'
+            });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY environment variable is not set');
+        }
+
+        // Get optional context from previous chunk for continuity
+        const previousContext = req.body.previousContext || '';
+        const isContinuation = previousContext.length > 0;
+        console.log(`[WhisperProxy] Continuation context: ${isContinuation ? 'YES' : 'NO'} (${previousContext.length} chars)`);
+
+        // Whisper prompt should be example text, NOT instructions
+        // This helps Whisper recognize veterinary terminology and maintain style
+        const basePrompt = `Veterinary medical dictation. Patient is a 5 year old male neutered Labrador Retriever presenting for vomiting and diarrhea. Physical exam: temperature 102.5, heart rate 120, respiratory rate 24. Abdomen is tense on palpation. Recommend CBC, chemistry panel, abdominal radiographs. Differential diagnoses include pancreatitis, gastroenteritis, foreign body obstruction. Started on maropitant 1 mg/kg SQ, metronidazole 15 mg/kg PO BID, and IV fluids with lactated Ringer's solution.`;
+
+        // Add continuation context if provided (helps with sentence continuity)
+        let prompt = basePrompt;
+        if (isContinuation && previousContext.trim()) {
+            // Prepend previous context so Whisper continues naturally
+            prompt = `${previousContext.trim()} ${basePrompt}`;
+        }
+
+        // Build boosted prompt with lexicon
+        const boostedPrompt = buildBoostedPrompt(prompt);
+
+        // Determine file extension based on mimetype (default to WebM)
+        let fileExtension = 'webm';
+        if (mimeType.includes('wav')) {
+            fileExtension = 'wav';
+        } else if (mimeType.includes('mp3')) {
+            fileExtension = 'mp3';
+        }
+
+        // Create FormData and append buffer directly
+        const form = new FormData();
+        form.append('file', buffer, `chunk.${fileExtension}`);
+        form.append('model', 'whisper-1');
+        form.append('response_format', 'text');
+        form.append('language', 'en');  // Force English to prevent hallucinations
+        form.append('temperature', '0'); // Deterministic output
+        form.append('prompt', boostedPrompt);
+
+        // Forward to OpenAI Whisper API with timeout
+        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 120000); // 2 minutes for chunks
+
+        console.log(`[WhisperProxy] Sending chunk to OpenAI Whisper API (timeout: ${OPENAI_TIMEOUT_MS}ms)`);
+        const whisperStartTime = Date.now();
+
+        const whisperRes = await axios.post(
+            'https://api.openai.com/v1/audio/transcriptions',
+            form,
+            {
+                headers: {
+                    ...form.getHeaders(),
+                    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+                },
+                timeout: OPENAI_TIMEOUT_MS
+            }
+        );
+
+        const whisperTime = Date.now() - whisperStartTime;
+        // With response_format: 'text', whisperRes.data is the raw transcript string
+        // (not a JSON object with a .text property)
+        const transcript = typeof whisperRes.data === 'string'
+            ? whisperRes.data
+            : (whisperRes.data?.text || '');
+        console.log(`[WhisperProxy] Whisper API response received in ${whisperTime}ms, transcript length: ${transcript.length} chars`);
+        console.log(`[WhisperProxy] Transcript preview: ${transcript.substring(0, 100)}...`);
+        console.log(`[WhisperProxy] Chunk processing complete: ${fileSizeKB.toFixed(2)}KB ${mimeType} → ${transcript.length} chars in ${whisperTime}ms`);
+
+        const totalTime = Date.now() - startTime;
+        console.log(`[WhisperProxy] Chunk processing complete in ${totalTime}ms total`);
+
+        res.json({ text: transcript });
+    } catch (err) {
+        console.error('[WhisperProxy] Whisper proxy endpoint error:', err);
+
+        // Handle axios errors
+        if (err.response) {
+            const errorText = err.response.data?.error?.message || JSON.stringify(err.response.data) || err.message;
+            const errorStatus = err.response.status;
+            console.error(`[WhisperProxy] OpenAI Whisper API Error ${errorStatus}:`, errorText);
+
+            // Check if it's a format error
+            if (errorStatus === 400 && typeof errorText === 'string' && errorText.includes('Invalid file format')) {
+                return res.status(400).json({
+                    error: 'Invalid audio received',
+                    detail: 'Chunk likely empty or corrupted (format error from Whisper)'
+                });
+            }
+
+            return res.status(errorStatus === 429 ? 429 : 502).json({
+                error: 'Transcription failed',
+                detail: typeof errorText === 'string' ? errorText.slice(0, 500) : errorText
+            });
+        }
+
+        // Handle timeout errors
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+            console.error('[WhisperProxy] Whisper API timeout');
+            return res.status(504).json({ error: 'Transcription timeout (chunk took too long)' });
+        }
+
+        res.status(500).json({ error: 'Whisper proxy error', detail: err.message });
+    }
+});
+
+// Cleanup-only endpoint (no SOAP generation)
+// Accepts transcript text, runs cleanup + VetCorrector only
+app.post('/api/cleanup-transcript', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Connection', 'keep-alive');
+    const startTime = Date.now();
+
+    try {
+        const { transcript } = req.body;
+
+        console.log('[CleanupTranscript] Received transcript for cleanup');
+        console.log(`[CleanupTranscript] Transcript length: ${transcript?.length || 0} chars`);
+
+        if (!transcript || !transcript.trim()) {
+            console.error('[CleanupTranscript] No transcript provided');
+            return res.status(400).json({ error: 'Transcript text is required' });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('OPENAI_API_KEY environment variable is not set');
+            return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
+        }
+
+        // Phase 1: GPT medical cleanup
+        console.log(`[CleanupTranscript] Phase 1: Starting GPT medical cleanup (input: ${transcript.length} chars)`);
+        let cleanedTranscript = transcript;
+        const cleanupStartTime = Date.now();
+        try {
+            cleanedTranscript = await runMedicalCleanup(transcript);
+            const cleanupTime = Date.now() - cleanupStartTime;
+            console.log(`[CleanupTranscript] Phase 1 complete: GPT cleanup in ${cleanupTime}ms (${transcript.length} -> ${cleanedTranscript.length} chars)`);
+        } catch (cleanupErr) {
+            const cleanupTime = Date.now() - cleanupStartTime;
+            console.error(`[CleanupTranscript] Phase 1 failed after ${cleanupTime}ms, using original transcript:`, cleanupErr.message);
+            cleanedTranscript = transcript; // Fallback to original
+        }
+
+        // Phase 2: VetCorrector
+        console.log(`[CleanupTranscript] Phase 2: Starting VetCorrector on ${cleanedTranscript.length} chars`);
+        const correctorStart = Date.now();
+        const correctedTranscript = correctTranscript(cleanedTranscript);
+        const correctorTime = Date.now() - correctorStart;
+        console.log(`[CleanupTranscript] Phase 2 complete: VetCorrector in ${correctorTime}ms (${cleanedTranscript.length} -> ${correctedTranscript.length} chars)`);
+
+        // Phase 3: Generate summary (1-2 sentences)
+        console.log(`[CleanupTranscript] Phase 3: Generating summary`);
+        let summary = '';
+        const summaryStartTime = Date.now();
+        try {
+            const summaryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-4o-mini',
+                    messages: [
+                        {
+                            role: 'user',
+                            content: `Summarize this veterinary dictation in 1-2 short sentences focusing on the main complaint or finding. Include exact drug names, diagnoses, and medical terms as stated:\n\n"${correctedTranscript}"`
+                        }
+                    ],
+                    max_tokens: 150,
+                    temperature: 0.3
+                })
+            });
+
+            if (summaryResponse.ok) {
+                const summaryData = await summaryResponse.json();
+                summary = summaryData.choices?.[0]?.message?.content?.trim() || '';
+                const summaryTime = Date.now() - summaryStartTime;
+                console.log(`[CleanupTranscript] Phase 3 complete: Summary generated in ${summaryTime}ms (${summary.length} chars)`);
+            }
+        } catch (err) {
+            console.error('[CleanupTranscript] Summary generation error:', err);
+            // Fallback to first 100 chars if summary generation fails
+            summary = correctedTranscript.length > 100
+                ? correctedTranscript.substring(0, 100) + '...'
+                : correctedTranscript;
+        }
+
+        const totalTime = Date.now() - startTime;
+        console.log(`[CleanupTranscript] Cleanup complete in ${totalTime}ms total`);
+
+        // Return cleaned and corrected transcript with summary (no SOAP)
+        res.status(200).json({
+            correctedTranscript,
+            summary: summary || correctedTranscript.substring(0, 100) + (correctedTranscript.length > 100 ? '...' : '')
+        });
+    } catch (err) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+            console.error('[CleanupTranscript] OpenAI request timeout');
+            return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
+        }
+
+        const isNetworkError =
+            err?.code === 'ECONNRESET' ||
+            err?.code === 'ECONNREFUSED' ||
+            err?.code === 'ETIMEDOUT' ||
+            err?.code === 'ENOTFOUND' ||
+            err?.errno === 'ECONNRESET' ||
+            err?.message?.includes('socket hang up') ||
+            err?.message?.includes('ECONNRESET') ||
+            err?.message?.includes('ECONNREFUSED') ||
+            err?.message?.includes('Network Error');
+
+        if (isNetworkError) {
+            console.error('[CleanupTranscript] Network error connecting to OpenAI:', {
+                code: err?.code,
+                message: err?.message
+            });
+            return res.status(503).json({
+                error: 'Network error',
+                detail: 'Connection to OpenAI failed. Please try again.'
+            });
+        }
+
+        console.error('[CleanupTranscript] Cleanup endpoint error:', err);
+        console.error('Error stack:', err.stack);
+        return res.status(500).json({
+            error: 'Internal server error',
+            detail: err.message
+        });
+    }
+});
+
+// Cleanup and SOAP generation endpoint
+// Accepts final merged transcript text, runs cleanup + VetCorrector + SOAP generation
+app.post('/api/cleanup-and-soap', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Connection', 'keep-alive');
+    const startTime = Date.now();
+
+    try {
+        const { transcript } = req.body;
+
+        console.log('[CleanupAndSOAP] Received transcript for processing');
+        console.log(`[CleanupAndSOAP] Transcript length: ${transcript?.length || 0} chars`);
+
+        if (!transcript || !transcript.trim()) {
+            console.error('[CleanupAndSOAP] No transcript provided');
+            return res.status(400).json({ error: 'Transcript text is required' });
+        }
+
+        if (!process.env.OPENAI_API_KEY) {
+            console.error('OPENAI_API_KEY environment variable is not set');
+            return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
+        }
+
+        // Phase 1: GPT medical cleanup
+        console.log(`[CleanupAndSOAP] Phase 1: Starting GPT medical cleanup (input: ${transcript.length} chars)`);
+        let cleanedTranscript = transcript;
+        const cleanupStartTime = Date.now();
+        try {
+            cleanedTranscript = await runMedicalCleanup(transcript);
+            const cleanupTime = Date.now() - cleanupStartTime;
+            console.log(`[CleanupAndSOAP] Phase 1 complete: GPT cleanup in ${cleanupTime}ms (${transcript.length} -> ${cleanedTranscript.length} chars)`);
+        } catch (cleanupErr) {
+            const cleanupTime = Date.now() - cleanupStartTime;
+            console.error(`[CleanupAndSOAP] Phase 1 failed after ${cleanupTime}ms, using original transcript:`, cleanupErr.message);
+            cleanedTranscript = transcript; // Fallback to original
+        }
+
+        // Phase 2: VetCorrector
+        console.log(`[CleanupAndSOAP] Phase 2: Starting VetCorrector on ${cleanedTranscript.length} chars`);
+        const correctorStart = Date.now();
+        const correctedTranscript = correctTranscript(cleanedTranscript);
+        const correctorTime = Date.now() - correctorStart;
+        console.log(`[CleanupAndSOAP] Phase 2 complete: VetCorrector in ${correctorTime}ms (${cleanedTranscript.length} -> ${correctedTranscript.length} chars)`);
+
+        // Phase 3: SOAP generation (reuse existing prompt from /api/generate-soap)
+        console.log(`[CleanupAndSOAP] Phase 3: Starting SOAP generation (input: ${correctedTranscript.length} chars)`);
+        const soapStartTime = Date.now();
+        const prompt = `USER INPUT:
+"${correctedTranscript.trim()}"
+
+You are an AI veterinary medical scribe.  
+Your job is to carefully interpret the dictation and generate a complete, detailed SOAP record.
+
+OUTPUT REQUIREMENTS:
+- Use plain text only. No bold, no markdown, no symbols.
+- Every bullet point must be a short, complete clinical sentence.
+- Each SOAP subsection should contain multiple bullets when appropriate, not just one.
+- Extract ALL medically relevant information from the dictation, even if subtle.
+- Do not leave out any meaningful details (exam findings, observations, comments, measurements, impressions).
+- Include normal findings wherever the vet explicitly or implicitly confirmed them.
+- Never invent abnormalities or diagnostics not supported by the dictation.
+- If the veterinarian does not provide a diagnosis, infer the most likely primary diagnosis.
+- Always provide exactly three appropriate differential diagnoses unless the veterinarian states their own.
+- Always place past or future treatment under the Treatment section.
+- Use species-appropriate terminology and realistic veterinary phrasing.
+- If Physical Exam findings or Vital Signs are not mentioned, include them as normal. Do not say "Not Provided".
+- PET NAME USAGE: 
+  * CRITICAL: In the Subjective section (Presenting Complaint, History, Owner Observations), you MUST use the pet's name if it is mentioned anywhere in the dictation. Scan the entire dictation for pet names. If a name is found (e.g., "Joe", "Jasper", "Buddy", "Milo"), use it throughout the Subjective section (e.g., "Joe is a feline domestic shorthair with bladder cancer" NOT "The patient is a feline..."). Only use "the patient" or "the [species]" if NO pet name is mentioned in the dictation at all.
+  * STRICTLY FORBIDDEN: In the Objective, Assessment, and Plan sections, you MUST NEVER use the pet's name. Always use "patient", "the patient", "animal", or species-specific terms (e.g., "cat", "dog", "feline", "canine") instead. Examples: "The patient appears lethargic" NOT "Milo appears lethargic", "Monitor the patient's hydration" NOT "Monitor Milo's hydration". If you see the pet name in these sections, replace it with "patient" or the species.
+
+EXPANSION RULES:
+- If the dictation describes several systems as normal, list them individually (e.g., normal heart sounds, clear lungs, soft abdomen).
+- If the dictation mentions multiple exam observations, create multiple physical exam bullets.
+- If the owner provides several comments, convert each into its own bullet.
+- If vital signs are mentioned, include every one and restate them clearly.
+- Do not compress multiple findings into one bullet.
+- Err on the side of including more detail rather than less.
+- CONDITIONAL SECTIONS: Only include a "Masses:" subsection under Physical Exam if the dictation mentions any masses, lumps, nodules, or similar findings. If no masses are mentioned, omit this section entirely.
+
+TREATMENT SECTION FORMATTING:
+- List medications and treatments in a concise, direct format.
+- Do NOT use phrases like "The patient was prescribed" or "The patient was given".
+- Format as: [Drug name] [dosage] [route] [frequency] [duration/indication].
+- Examples:
+  * "Neopolydex eye drops OU TID for 10 days"
+  * "Pimobendan 0.5 mg/kg PO SID to prevent cardiomegaly"
+  * "Cerenia 1 mg/kg SQ once daily for nausea"
+- Keep each treatment bullet short, clean, and clinically formatted.
+- Include route (PO, SQ, IM, IV, OU, OD, OS, transdermal, etc.) when specified.
+- Include indication or purpose when relevant (e.g., "for nausea", "to prevent cardiomegaly").
+
+SOAP RECORD:
+
+Subjective:
+Presenting Complaint:
+- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION, otherwise use "the patient" or "the [species]"]
+History:
+- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION]
+Owner Observations:
+- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION]
+
+Objective:
+Physical Exam:
+- Weight: (normal or not specified - do not assume values)
+- General: (normal or not specified - do not assume values)
+- Temperature: (normal or not specified - do not assume values)
+- Heart Rate: (normal or not specified - do not assume values)
+- Respiratory Rate:
+- Weight:
+- Body Condition Score: x/9 (x is the body condition score out of 9)
+- Hydration:
+- Mucous membranes:
+- CRT:
+- Cardiovascular:
+- Respiratory:
+- Gastrointestinal:
+- Musculoskeletal:
+- Neurologic:
+- Integumentary:
+- Lymph nodes:
+- Eyes/Ears/Nose/Throat:
+- Masses: (ONLY include this line and subsection if masses are mentioned in the dictation)
+
+Diagnostics:
+-
+
+Assessment:
+Problem List:
+-
+Primary Diagnosis:
+-
+Differential Diagnoses:
+-
+
+Plan:
+Treatment:
+-
+Monitoring:
+-
+Client Communication:
+-
+Follow-up:
+-
+
+---
+
+PET NAME EXTRACTION:
+After the SOAP record above, extract the pet's name from the dictation if mentioned. Look for names mentioned in signalment, owner observations, or throughout the dictation. Scan all dictations provided.
+If a pet name is found, add this line at the very end:
+PET_NAME: [name]
+If no pet name is found or mentioned, add this line at the very end:
+PET_NAME: no name provided
+Always include the PET_NAME line - either with the actual name or "no name provided".
+Example: PET_NAME: Buddy
+Example: PET_NAME: no name provided
+`;
+
+        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
+
+        let response;
+        try {
+            response = await axios.post('https://api.openai.com/v1/chat/completions', {
+                model: 'gpt-4o-mini',
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                max_tokens: 4000,
+                temperature: 0.7
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: OPENAI_TIMEOUT_MS,
+                maxContentLength: Infinity,
+                maxBodyLength: Infinity
+            });
+        } catch (axiosErr) {
+            if (axiosErr.response) {
+                const status = axiosErr.response.status;
+                const errorText = axiosErr.response.data?.error?.message || JSON.stringify(axiosErr.response.data) || axiosErr.message;
+                console.error('OpenAI API Error:', status, errorText);
+                return res.status(status === 429 ? 429 : 502).json({
+                    error: 'SOAP generation failed',
+                    status: status,
+                    detail: typeof errorText === 'string' ? errorText.slice(0, 2000) : errorText
+                });
+            }
+            throw axiosErr;
+        }
+
+        const soapTime = Date.now() - soapStartTime;
+        const data = response.data;
+        const fullResponse = data.choices?.[0]?.message?.content;
+        const finishReason = data.choices?.[0]?.finish_reason;
+
+        console.log(`[CleanupAndSOAP] Phase 3 complete: SOAP generation in ${soapTime}ms (output: ${fullResponse?.length || 0} chars)`);
+
+        if (finishReason === 'length') {
+            console.warn('[CleanupAndSOAP] WARNING: SOAP generation response was truncated due to max_tokens limit');
+        }
+
+        if (!fullResponse) {
+            return res.status(500).json({ error: 'No report generated' });
+        }
+
+        // Extract pet name if present
+        let report = fullResponse;
+        let petName = null;
+
+        const petNameMatch = fullResponse.match(/PET_NAME:\s*(.+?)(?:\n|$)/i);
+        if (petNameMatch && petNameMatch[1]) {
+            const extractedName = petNameMatch[1].trim();
+            if (extractedName.toLowerCase() !== 'no name provided') {
+                petName = extractedName;
+            }
+            report = fullResponse.replace(/PET_NAME:\s*.+?(?:\n|$)/i, '').trim();
+        }
+
+        const totalTime = Date.now() - startTime;
+        console.log(`[CleanupAndSOAP] All phases complete in ${totalTime}ms total`);
+        console.log(`[CleanupAndSOAP] Final report length: ${report.length} chars, petName: ${petName || 'none'}`);
+
+        // Return all stages for debugging/transparency
+        res.status(200).json({
+            cleanedTranscript,
+            correctedTranscript,
+            report,
+            petName
+        });
+    } catch (err) {
+        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+            console.error('OpenAI request timeout');
+            return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
+        }
+
+        const isNetworkError =
+            err?.code === 'ECONNRESET' ||
+            err?.code === 'ECONNREFUSED' ||
+            err?.code === 'ETIMEDOUT' ||
+            err?.code === 'ENOTFOUND' ||
+            err?.errno === 'ECONNRESET' ||
+            err?.message?.includes('socket hang up') ||
+            err?.message?.includes('ECONNRESET') ||
+            err?.message?.includes('ECONNREFUSED') ||
+            err?.message?.includes('Network Error');
+
+        if (isNetworkError) {
+            console.error('Network error connecting to OpenAI:', {
+                code: err?.code,
+                message: err?.message
+            });
+            return res.status(503).json({
+                error: 'Network error',
+                detail: 'Connection to OpenAI failed. Please try again.'
+            });
+        }
+
+        console.error('Cleanup and SOAP endpoint error:', err);
+        console.error('Error stack:', err.stack);
+        return res.status(500).json({
+            error: 'Internal server error',
+            detail: err.message
+        });
+    }
+});
+
+// ================ END NEW CLIENT-SIDE CHUNKING ENDPOINTS ================
+
 // Simplified transcription endpoint for PetQuery (just transcribes, no cleaning)
 app.post('/api/transcribe-simple', upload.single('audio'), async (req, res) => {
     const tempFile = req.file?.path;
@@ -1042,7 +1602,12 @@ Owner Observations:
 
 Objective:
 Physical Exam:
-- General:
+- Weight: (normal or not specified - do not assume values)
+- General: (normal or not specified - do not assume values)
+- Temperature: (normal or not specified - do not assume values)
+- Heart Rate: (normal or not specified - do not assume values)
+- Respiratory Rate:
+- Weight:
 - Body Condition Score: x/9 (x is the body condition score out of 9)
 - Hydration:
 - Mucous membranes:
@@ -1056,11 +1621,7 @@ Physical Exam:
 - Lymph nodes:
 - Eyes/Ears/Nose/Throat:
 - Masses: (ONLY include this line and subsection if masses are mentioned in the dictation)
-Vital Signs:
-- Temperature:
-- Heart Rate:
-- Respiratory Rate:
-- Weight:
+
 Diagnostics:
 -
 

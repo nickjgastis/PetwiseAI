@@ -661,8 +661,8 @@ function correctTranscript(transcript, species = "canine") {
         return transcript;
     }
 
-    // Benchmark logging
-    console.time("VetCorrector");
+    // Benchmark logging - use timestamp instead of console.time to avoid warnings
+    const vetCorrectorStartTime = Date.now();
 
     // Log original transcript before corrections
     console.log('VetCorrector input transcript:', transcript);
@@ -772,7 +772,9 @@ function correctTranscript(transcript, species = "canine") {
         console.log('VetCorrector applied corrections');
     }
 
-    // Log final corrected transcript
+    // Log final corrected transcript and timing
+    const vetCorrectorTime = Date.now() - vetCorrectorStartTime;
+    console.log(`VetCorrector complete in ${vetCorrectorTime}ms`);
     console.log('VetCorrector final transcript:', result);
 
     return result;
