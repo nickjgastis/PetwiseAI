@@ -2764,12 +2764,19 @@ const QuickSOAP = () => {
                                                             <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
                                                                 <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>2</div>
                                                                 <div className="flex-1">
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Avoid Excessive Silence</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Don't leave long silences during recording. Use the <span className="font-semibold text-primary-600">pause button</span> if you need to step away or stop</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
+                                                                <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>3</div>
+                                                                <div className="flex-1">
                                                                     <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Making Corrections</p>
                                                                     <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>If you need to repeat or correct something, say <span className="font-semibold text-primary-600">"Correction"</span> and then provide your update</p>
                                                                 </div>
                                                             </div>
                                                             <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-3'}`}>
-                                                                <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>3</div>
+                                                                <div className={`rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 font-semibold ${isMobileDevice ? 'w-5 h-5 text-[10px]' : 'w-6 h-6 text-xs'}`}>4</div>
                                                                 <div className="flex-1">
                                                                     <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>You Can Always Edit</p>
                                                                     <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Don't worry about perfection - you can always edit the SOAP report after it's generated</p>
@@ -2932,12 +2939,19 @@ const QuickSOAP = () => {
                                                             <div className="flex items-start gap-3">
                                                                 <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">2</div>
                                                                 <div className="flex-1">
+                                                                    <p className="font-semibold text-gray-800 text-sm">Avoid Excessive Silence</p>
+                                                                    <p className="text-gray-600 text-sm">Don't leave long silences during recording. Use the <span className="font-semibold text-primary-600">pause button</span> if you need to step away or stop</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-start gap-3">
+                                                                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">3</div>
+                                                                <div className="flex-1">
                                                                     <p className="font-semibold text-gray-800 text-sm">Making Corrections</p>
                                                                     <p className="text-gray-600 text-sm">If you need to repeat or correct something, say <span className="font-semibold text-primary-600">"Correction"</span> and then provide your update</p>
                                                                 </div>
                                                             </div>
                                                             <div className="flex items-start gap-3">
-                                                                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">3</div>
+                                                                <div className="w-6 h-6 rounded-full bg-primary-500 text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold">4</div>
                                                                 <div className="flex-1">
                                                                     <p className="font-semibold text-gray-800 text-sm">You Can Always Edit</p>
                                                                     <p className="text-gray-600 text-sm">Don't worry about perfection - you can always edit the SOAP report after it's generated</p>
