@@ -33,12 +33,13 @@ async function runMedicalCleanup(text) {
     }
 
     // For very long transcripts, skip GPT cleanup to avoid timeout/cost
-    // Max cleanup limit: 4000 characters
+    // Max cleanup limit: 8000 characters (increased for long dictations with hallucinations)
     // 2-minute dictation ≈ 200-300 words ≈ 1000-1500 chars
     // 5-minute dictation ≈ 500-750 words ≈ 2500-3750 chars
-    // 4000 chars ≈ roughly 8-10 minutes of dictation
-    if (text.length > 4000) {
-        console.log(`Transcript too long for GPT cleanup (${text.length} chars), skipping (max: 4000)`);
+    // 10-minute dictation ≈ 1000-1500 words ≈ 5000-7500 chars
+    // 8000 chars allows cleanup of ~15-20 minute dictations
+    if (text.length > 8000) {
+        console.log(`Transcript too long for GPT cleanup (${text.length} chars), skipping (max: 8000)`);
         return text;
     }
 
@@ -51,13 +52,20 @@ Tasks:
 2. Add punctuation and sentence breaks.
 3. Do not remove any medically relevant content.
 4. Do not shorten the transcript on purpose.
-5. If you see obvious hallucinated text that is clearly not related to veterinary dictation (random foreign languages, symbol runs, or internet phrases), you may remove only those parts.
+5. REMOVE obvious Whisper hallucinations including:
+   - Repeated words/phrases like "etc etc etc etc", "you you you", "the the the"
+   - Random foreign language text (Chinese, Arabic, Korean, etc.)
+   - YouTube-style phrases like "Subscribe", "Thank you for watching", "Like and subscribe"
+   - Symbol spam or emoji runs
+   - Music notation or "[Music]" markers
+   - Any clearly non-medical gibberish that doesn't fit the clinical context
 
 Important:
-- Preserve all English clinical content.
+- Preserve ALL English clinical content - never remove real medical speech.
 - Keep the meaning and sequence of events.
 - Do not summarize.
 - Do not add new details.
+- When in doubt, keep the content rather than remove it.
 
 TEXT:
 "${text}"`;
@@ -66,12 +74,13 @@ TEXT:
         const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
 
         // Calculate max_tokens based on input length (roughly 1 token = 4 chars)
-        // Add generous buffer for response - allow up to input length + 100% for corrections/formatting
-        // GPT-4o-mini can handle up to 16k tokens, so be generous to prevent truncation
+        // GPT-4o-mini can handle up to 16k output tokens
+        // With hallucination removal, output should be SMALLER than input
+        // But we need enough room for the full cleaned transcript
         const estimatedInputTokens = Math.ceil(text.length / 4);
-        // Use at least 2x input tokens to ensure no truncation
-        // For 4000 chars max input: ~1000 tokens input → 2000 tokens output max (well below 16k limit)
-        const maxTokens = Math.ceil(estimatedInputTokens * 2);
+        // Use 1.5x input tokens - enough for full output but not wasteful
+        // For 8000 chars max input: ~2000 tokens input → 3000 tokens output max (well below 16k limit)
+        const maxTokens = Math.min(Math.ceil(estimatedInputTokens * 1.5), 8000);
 
         // Call GPT-4o-mini matching the pattern used in server.js
         const response = await axios.post(

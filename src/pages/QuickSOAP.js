@@ -336,15 +336,8 @@ const QuickSOAP = () => {
         }
     };
 
-    // Adjust input textarea height when input changes
-    useEffect(() => {
-        if (inputTextareaRef.current) {
-            adjustInputTextareaHeight();
-        }
-        if (sidebarInputTextareaRef.current) {
-            adjustSidebarInputTextareaHeight();
-        }
-    }, [input]);
+    // Note: Additional notes textareas now use fixed scrollable heights (maxHeight: 200px)
+    // so we don't auto-resize them anymore
 
     // One-time initial resize when sections are first created (not on every report change)
     useEffect(() => {
@@ -1256,8 +1249,8 @@ const QuickSOAP = () => {
         const allDictations = dictations.map(d => d.fullText).join('\n\n');
         const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
 
-        if (!combinedInput.trim() || dictations.length === 0) {
-            setError('Please record at least one dictation first.');
+        if (!combinedInput.trim()) {
+            setError('Please add at least one dictation or additional notes first.');
             return;
         }
 
@@ -2214,6 +2207,28 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
 
+                                {/* Additional Notes Section - Show in un-generated view */}
+                                {!hasReport && !isMobile && (
+                                    <div className="mb-4 w-full max-w-2xl flex-shrink-0">
+                                        <textarea
+                                            ref={inputTextareaRef}
+                                            value={input}
+                                            onChange={(e) => {
+                                                setInput(e.target.value);
+                                            }}
+                                            placeholder="Add additional notes here (optional)..."
+                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm overflow-y-auto"
+                                            style={{
+                                                whiteSpace: 'pre-wrap',
+                                                wordWrap: 'break-word',
+                                                maxHeight: '200px',
+                                                minHeight: '80px'
+                                            }}
+                                            disabled={isTranscribing || isGenerating}
+                                        />
+                                    </div>
+                                )}
+
                                 {/* Mobile: Send to Desktop and Start New buttons - Show when dictations exist and not recording */}
                                 {isMobile && dictations.length > 0 && !isRecording && !isTranscribing && !hasReport && (
                                     <div className="w-full max-w-2xl mt-3 space-y-2 flex-shrink-0">
@@ -2244,8 +2259,8 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
 
-                                {/* Generate Button - Show only after dictation is complete (Desktop only) */}
-                                {!isMobile && !hasReport && dictations.length > 0 && !isTranscribing && (
+                                {/* Generate Button - Show when dictations or additional notes exist (Desktop only) */}
+                                {!isMobile && !hasReport && (dictations.length > 0 || input.trim()) && !isTranscribing && (
                                     <div className="flex justify-center mt-4">
                                         <button
                                             onClick={handleGenerateSOAP}
@@ -2335,16 +2350,16 @@ const QuickSOAP = () => {
                             )}
 
                             {/* Add More Dictation Button - Show in generated view */}
-                            {!isMobile && !isRecording && dictations.length > 0 && !isTranscribing && hasReport && (
+                            {!isMobile && !isRecording && !isTranscribing && hasReport && (
                                 <div className="mb-4 flex justify-center flex-shrink-0">
                                     <button
                                         onClick={startRecording}
                                         disabled={isGenerating}
                                         className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
-                                        title="Add More Dictation"
+                                        title={dictations.length > 0 ? "Add More Dictation" : "Start Dictation"}
                                     >
                                         <FaMicrophone className="text-xl" />
-                                        <FaPlus className="absolute text-sm bottom-1 right-1 bg-white text-primary-600 rounded-full p-1" />
+                                        {dictations.length > 0 && <FaPlus className="absolute text-sm bottom-1 right-1 bg-white text-primary-600 rounded-full p-1" />}
                                     </button>
                                 </div>
                             )}
@@ -2372,16 +2387,14 @@ const QuickSOAP = () => {
                                         value={input}
                                         onChange={(e) => {
                                             setInput(e.target.value);
-                                            setTimeout(() => adjustSidebarInputTextareaHeight(), 0);
                                         }}
-                                        onInput={() => adjustSidebarInputTextareaHeight()}
                                         placeholder="Add additional notes here (optional)..."
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm"
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm overflow-y-auto"
                                         style={{
                                             whiteSpace: 'pre-wrap',
                                             wordWrap: 'break-word',
-                                            height: 'auto',
-                                            overflow: 'hidden'
+                                            maxHeight: '200px',
+                                            minHeight: '80px'
                                         }}
                                         disabled={isTranscribing || isGenerating}
                                     />
@@ -2433,7 +2446,7 @@ const QuickSOAP = () => {
                                         )}
                                     </div>
                                 )}
-                                {!isMobile && dictations.length > 0 && !isTranscribing && (
+                                {!isMobile && (dictations.length > 0 || input.trim()) && !isTranscribing && (
                                     <>
                                         <button
                                             onClick={handleGenerateSOAP}

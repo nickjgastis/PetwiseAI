@@ -1117,8 +1117,7 @@ app.post('/api/cleanup-and-soap', async (req, res) => {
         // Phase 3: SOAP generation (reuse existing prompt from /api/generate-soap)
         console.log(`[CleanupAndSOAP] Phase 3: Starting SOAP generation (input: ${correctedTranscript.length} chars)`);
         const soapStartTime = Date.now();
-        const prompt = `USER INPUT:
-"${correctedTranscript.trim()}"
+        const prompt = `USER INPUT: "${correctedTranscript.trim()}"
 
 You are an AI veterinary medical scribe.  
 Your job is to carefully interpret the dictation and generate a complete, detailed SOAP record.
@@ -1136,7 +1135,8 @@ OUTPUT REQUIREMENTS:
 - Always place past or future treatment under the Treatment section.
 - Use species-appropriate terminology and realistic veterinary phrasing.
 - If Physical Exam findings or Vital Signs are not mentioned, include them as normal. Do not say "Not Provided".
-- PET NAME USAGE: 
+
+PET NAME USAGE: 
   * CRITICAL: In the Subjective section (Presenting Complaint, History, Owner Observations), you MUST use the pet's name if it is mentioned anywhere in the dictation. Scan the entire dictation for pet names. If a name is found (e.g., "Joe", "Jasper", "Buddy", "Milo"), use it throughout the Subjective section (e.g., "Joe is a feline domestic shorthair with bladder cancer" NOT "The patient is a feline..."). Only use "the patient" or "the [species]" if NO pet name is mentioned in the dictation at all.
   * STRICTLY FORBIDDEN: In the Objective, Assessment, and Plan sections, you MUST NEVER use the pet's name. Always use "patient", "the patient", "animal", or species-specific terms (e.g., "cat", "dog", "feline", "canine") instead. Examples: "The patient appears lethargic" NOT "Milo appears lethargic", "Monitor the patient's hydration" NOT "Monitor Milo's hydration". If you see the pet name in these sections, replace it with "patient" or the species.
 
@@ -1190,7 +1190,10 @@ Physical Exam:
 - Neurologic:
 - Integumentary:
 - Lymph nodes:
-- Eyes/Ears/Nose/Throat:
+- Eyes:
+- Ears:
+- Nose:
+- Throat:
 - Masses: (ONLY include this line and subsection if masses are mentioned in the dictation)
 
 Diagnostics:
@@ -1214,7 +1217,6 @@ Client Communication:
 Follow-up:
 -
 
----
 
 PET NAME EXTRACTION:
 After the SOAP record above, extract the pet's name from the dictation if mentioned. Look for names mentioned in signalment, owner observations, or throughout the dictation. Scan all dictations provided.
@@ -1549,101 +1551,117 @@ app.post('/api/generate-soap', async (req, res) => {
         const prompt = `USER INPUT:
 "${input.trim()}"
 
-You are an AI veterinary medical scribe.  
-Your job is to carefully interpret the dictation and generate a complete, detailed SOAP record.
+You are an AI veterinary medical scribe. Your job is to sort the dictation into a structured SOAP record.
+
+CRITICAL SECTION SORTING RULES (MUST FOLLOW):
+Your primary task is to place each piece of information in the CORRECT section. Follow these rules strictly:
+
+SUBJECTIVE SECTION (Presenting Complaint, History, Owner Observations):
+- ONLY include: Why the pet is here today, symptoms, duration, owner concerns, past medical history, current medications the pet is already on
+- NEVER include: Treatments given today, vaccines administered, diagnostics performed, exam findings
+- Example CORRECT: "Max presented for vomiting for 3 days"
+- Example WRONG: "Max presented for vomiting and received Cerenia" (Cerenia goes in Treatment)
+
+OBJECTIVE SECTION (Physical Exam, Diagnostics):
+- Physical Exam: All exam findings from today's visit
+- Diagnostics: All tests performed or recommended (bloodwork, x-rays, urinalysis, fecal, heartworm test, FeLV/FIV, cytology, etc.)
+
+PLAN SECTION (Treatment):
+- ALL medications prescribed or administered today
+- ALL vaccines given (DHPP, FVRCP, Rabies, Bordetella, Leptospirosis, Lyme, etc.)
+- ALL procedures performed (nail trim, anal gland expression, ear cleaning, microchip, etc.)
+- ALL preventatives dispensed (Heartgard, NexGard, Simparica, Revolution, etc.)
 
 OUTPUT REQUIREMENTS:
 - Use plain text only. No bold, no markdown, no symbols.
 - Every bullet point must be a short, complete clinical sentence.
-- Each SOAP subsection should contain multiple bullets when appropriate, not just one.
-- Extract ALL medically relevant information from the dictation, even if subtle.
-- Do not leave out any meaningful details (exam findings, observations, comments, measurements, impressions).
-- Include normal findings wherever the vet explicitly or implicitly confirmed them.
-- Never invent abnormalities or diagnostics not supported by the dictation.
+- Extract ALL medically relevant information from the dictation.
+- Never invent abnormalities or diagnostics not mentioned.
 - If the veterinarian does not provide a diagnosis, infer the most likely primary diagnosis.
 - Always provide exactly three appropriate differential diagnoses unless the veterinarian states their own.
-- Always place past or future treatment under the Treatment section.
-- Use species-appropriate terminology and realistic veterinary phrasing.
-- If Physical Exam findings or Vital Signs are not mentioned, include them as normal. Do not say "Not Provided".
-- PET NAME USAGE: 
-  * CRITICAL: In the Subjective section (Presenting Complaint, History, Owner Observations), you MUST use the pet's name if it is mentioned anywhere in the dictation. Scan the entire dictation for pet names. If a name is found (e.g., "Joe", "Jasper", "Buddy", "Milo"), use it throughout the Subjective section (e.g., "Joe is a feline domestic shorthair with bladder cancer" NOT "The patient is a feline..."). Only use "the patient" or "the [species]" if NO pet name is mentioned in the dictation at all.
-  * STRICTLY FORBIDDEN: In the Objective, Assessment, and Plan sections, you MUST NEVER use the pet's name. Always use "patient", "the patient", "animal", or species-specific terms (e.g., "cat", "dog", "feline", "canine") instead. Examples: "The patient appears lethargic" NOT "Milo appears lethargic", "Monitor the patient's hydration" NOT "Monitor Milo's hydration". If you see the pet name in these sections, replace it with "patient" or the species.
 
-EXPANSION RULES:
-- If the dictation describes several systems as normal, list them individually (e.g., normal heart sounds, clear lungs, soft abdomen).
-- If the dictation mentions multiple exam observations, create multiple physical exam bullets.
-- If the owner provides several comments, convert each into its own bullet.
-- If vital signs are mentioned, include every one and restate them clearly.
-- Do not compress multiple findings into one bullet.
-- Err on the side of including more detail rather than less.
-- CONDITIONAL SECTIONS: Only include a "Masses:" subsection under Physical Exam if the dictation mentions any masses, lumps, nodules, or similar findings. If no masses are mentioned, omit this section entirely.
+PET NAME USAGE (CRITICAL):
+- Subjective section (Presenting Complaint, History, Owner Observations): You MUST use the pet's name if mentioned ANYWHERE in the dictation. Scan the entire dictation for pet names. NEVER say "the patient" or "the pet" in the Subjective section if a name exists.
+  * CORRECT: "Buddy presented for vomiting for 3 days", "Buddy has been lethargic"
+  * WRONG: "The patient presented for vomiting", "The pet has been lethargic"
+- Objective, Assessment, Plan sections: NEVER use pet name. Use "patient", "the patient", or species terms only.
 
-TREATMENT SECTION FORMATTING:
-- List medications and treatments in a concise, direct format.
-- Do NOT use phrases like "The patient was prescribed" or "The patient was given".
-- Format as: [Drug name] [dosage] [route] [frequency] [duration/indication].
+PHYSICAL EXAM RULES:
+- If a vital or system is NOT mentioned in the dictation, write "Normal" or "No abnormalities detected"
+- If a vital or system IS mentioned, use the exact value or finding from the dictation
+- NEVER write "not specified", "not provided", or "not mentioned"
+- Body Condition Score: Default to "5/9 (normal)" unless a different score is stated
+- For systems without findings, write the normal state (e.g., "Clear lung sounds bilaterally", "Strong synchronous pulses", "Soft non-painful abdomen")
+
+TREATMENT FORMATTING:
+- Format: [Drug/Vaccine/Procedure] [dose if applicable] [route] [frequency] [duration/indication]
 - Examples:
-  * "Neopolydex eye drops OU TID for 10 days"
-  * "Pimobendan 0.5 mg/kg PO SID to prevent cardiomegaly"
-  * "Cerenia 1 mg/kg SQ once daily for nausea"
-- Keep each treatment bullet short, clean, and clinically formatted.
-- Include route (PO, SQ, IM, IV, OU, OD, OS, transdermal, etc.) when specified.
-- Include indication or purpose when relevant (e.g., "for nausea", "to prevent cardiomegaly").
+  * "Cerenia 1 mg/kg SQ once for nausea"
+  * "DHPP vaccine administered SQ"
+  * "Rabies vaccine administered SQ, 1-year"
+  * "NexGard 68mg dispensed, monthly flea/tick preventative"
+  * "Nail trim performed"
 
 SOAP RECORD:
 
 Subjective:
 Presenting Complaint:
-- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION, otherwise use "the patient" or "the [species]"]
+- [USE PET NAME: e.g., "Buddy presented for..." NOT "The patient presented for..."]
+
 History:
-- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION]
+- [USE PET NAME: e.g., "Buddy has a history of..." NOT "The patient has a history of..."]
+
 Owner Observations:
-- [USE THE PET'S NAME HERE IF MENTIONED IN DICTATION]
+- [USE PET NAME: e.g., "Owner reports Buddy has been..." NOT "Owner reports the pet has been..."]
 
 Objective:
 Physical Exam:
-- Weight: (normal or not specified - do not assume values)
-- General: (normal or not specified - do not assume values)
-- Temperature: (normal or not specified - do not assume values)
-- Heart Rate: (normal or not specified - do not assume values)
-- Respiratory Rate:
-- Weight:
-- Body Condition Score: x/9 (x is the body condition score out of 9)
-- Hydration:
-- Mucous membranes:
-- CRT:
-- Cardiovascular:
-- Respiratory:
-- Gastrointestinal:
-- Musculoskeletal:
-- Neurologic:
-- Integumentary:
-- Lymph nodes:
-- Eyes/Ears/Nose/Throat:
-- Masses: (ONLY include this line and subsection if masses are mentioned in the dictation)
+- Weight: [value if stated, otherwise "Normal"]
+- Temperature: [value if stated, otherwise "Normal"]
+- Heart Rate: [value if stated, otherwise "Normal"]
+- Respiratory Rate: [value if stated, otherwise "Normal"]
+- Body Condition Score: [value if stated, otherwise "5/9"]
+- Hydration: [finding if stated, otherwise "Adequate, skin turgor normal"]
+- Mucous Membranes: [finding if stated, otherwise "Pink and moist"]
+- CRT: [value if stated, otherwise "Less than 2 seconds"]
+- Cardiovascular: [finding if stated, otherwise "Normal heart sounds, no murmur"]
+- Respiratory: [finding if stated, otherwise "Clear lung sounds bilaterally"]
+- Gastrointestinal: [finding if stated, otherwise "Soft, non-painful abdomen on palpation"]
+- Musculoskeletal: [finding if stated, otherwise "Ambulatory, no lameness observed"]
+- Neurologic: [finding if stated, otherwise "Appropriate mentation, normal gait"]
+- Integumentary: [finding if stated, otherwise "Coat and skin normal, no lesions"]
+- Lymph Nodes: [finding if stated, otherwise "No lymphadenopathy"]
+- Oral: [finding if stated, otherwise "Normal"]
+- Eyes: [finding if stated, otherwise "Clear, no discharge"]
+- Ears: [finding if stated, otherwise "Clean, no debris or odor"]
+- Nose: [finding if stated, otherwise "No discharge"]
+- Throat: [finding if stated, otherwise "Normal"]
 
 Diagnostics:
--
+- [List all tests performed or recommended. If none mentioned, write "None performed"]
 
 Assessment:
 Problem List:
--
+- [Each distinct problem]
+
 Primary Diagnosis:
--
+- [Most likely diagnosis]
+
 Differential Diagnoses:
--
+- [Three differentials]
 
 Plan:
 Treatment:
--
-Monitoring:
--
-Client Communication:
--
-Follow-up:
--
+- [ALL medications, vaccines, procedures, preventatives go here]
 
----
+Monitoring:
+- [What owner should watch for]
+
+Client Communication:
+- [What was discussed with owner]
+
+Follow-up:
+- [Recheck timeline]
 
 PET NAME EXTRACTION:
 After the SOAP record above, extract the pet's name from the dictation if mentioned. Look for names mentioned in signalment, owner observations, or throughout the dictation. Scan all dictations provided.
