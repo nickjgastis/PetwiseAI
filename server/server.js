@@ -198,7 +198,12 @@ const ACCESS_CODES = {
         plan: 'yearly',
         maxUsers: 10  // Optional: limit users per code
     },
-
+    'PW2M2025': {
+        organization: 'Petwise',
+        validUntil: '2026-02-01',
+        plan: 'yearly',
+        maxUsers: 10 // Optional: limit users per code
+    }
 };
 
 const REVOKED_CODES = new Set([

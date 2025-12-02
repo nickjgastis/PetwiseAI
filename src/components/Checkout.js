@@ -464,10 +464,10 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                 <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto ${embedded ? 'mb-6' : 'mb-8'} px-3 md:px-0`}>
                     <div className="p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
                         <h3 className="text-sm font-semibold text-gray-800 mb-1">
-                            Partner Clinic Access
+                            Have an access code?
                         </h3>
                         <p className="text-gray-500 text-xs mb-3 leading-relaxed">
-                            Enter your clinic's access code for full access.
+                            Enter your full access code here to activate your account.
                         </p>
                         {!showAccessCodeInput ? (
                             <button
@@ -495,7 +495,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                         )}
                     </div>
 
-                    <div className="p-4 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="p-4 rounded-xl bg-purple-50 border border-purple-200 shadow-sm hover:shadow-md transition-all duration-200">
                         <h3 className="text-sm font-semibold text-gray-800 mb-1">
                             Student Access
                         </h3>
