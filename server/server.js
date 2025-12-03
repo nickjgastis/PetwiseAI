@@ -436,7 +436,7 @@ const cleanTranscript = (text) => {
 // ================ DEPRECATED ENDPOINT ================
 // DEPRECATED — Old Whisper pipeline (no longer used with client-side chunking)
 // This endpoint is kept for reference but is not called by the new QuickSOAP flow.
-// New flow: Client chunks audio → /api/whisper-proxy → Client merges → /api/cleanup-and-soap
+// New flow: Client chunks audio → /api/whisper-proxy → Client merges → /api/generate-soap
 // Transcription endpoint using OpenAI Whisper with segmentation support
 app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     const tempFiles = [];
@@ -1075,348 +1075,6 @@ app.post('/api/cleanup-transcript', async (req, res) => {
     }
 });
 
-// Cleanup and SOAP generation endpoint
-// Accepts final merged transcript text, runs cleanup + VetCorrector + SOAP generation
-app.post('/api/cleanup-and-soap', async (req, res) => {
-    res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('Connection', 'keep-alive');
-    const startTime = Date.now();
-
-    try {
-        const { transcript } = req.body;
-
-        console.log('[CleanupAndSOAP] Received transcript for processing');
-        console.log(`[CleanupAndSOAP] Transcript length: ${transcript?.length || 0} chars`);
-
-        if (!transcript || !transcript.trim()) {
-            console.error('[CleanupAndSOAP] No transcript provided');
-            return res.status(400).json({ error: 'Transcript text is required' });
-        }
-
-        if (!process.env.OPENAI_API_KEY) {
-            console.error('OPENAI_API_KEY environment variable is not set');
-            return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
-        }
-
-        // Phase 1: GPT medical cleanup
-        console.log(`[CleanupAndSOAP] Phase 1: Starting GPT medical cleanup (input: ${transcript.length} chars)`);
-        let cleanedTranscript = transcript;
-        const cleanupStartTime = Date.now();
-        try {
-            cleanedTranscript = await runMedicalCleanup(transcript);
-            const cleanupTime = Date.now() - cleanupStartTime;
-            console.log(`[CleanupAndSOAP] Phase 1 complete: GPT cleanup in ${cleanupTime}ms (${transcript.length} -> ${cleanedTranscript.length} chars)`);
-        } catch (cleanupErr) {
-            const cleanupTime = Date.now() - cleanupStartTime;
-            console.error(`[CleanupAndSOAP] Phase 1 failed after ${cleanupTime}ms, using original transcript:`, cleanupErr.message);
-            cleanedTranscript = transcript; // Fallback to original
-        }
-
-        // Phase 2: VetCorrector
-        console.log(`[CleanupAndSOAP] Phase 2: Starting VetCorrector on ${cleanedTranscript.length} chars`);
-        const correctorStart = Date.now();
-        const correctedTranscript = correctTranscript(cleanedTranscript);
-        const correctorTime = Date.now() - correctorStart;
-        console.log(`[CleanupAndSOAP] Phase 2 complete: VetCorrector in ${correctorTime}ms (${cleanedTranscript.length} -> ${correctedTranscript.length} chars)`);
-
-        // Phase 3: SOAP generation (reuse existing prompt from /api/generate-soap)
-        console.log(`[CleanupAndSOAP] Phase 3: Starting SOAP generation (input: ${correctedTranscript.length} chars)`);
-        const soapStartTime = Date.now();
-        const prompt = `USER INPUT: "${correctedTranscript.trim()}"
-
-You are an AI veterinary medical scribe.  
-Your job is to carefully interpret the dictation and generate a complete, detailed SOAP record.
-
-TRANSCRIPTION CORRECTION (CRITICAL - DO FIRST):
-- The dictation may contain speech-to-text errors. Correct any nonsensical words to their intended medical/veterinary terms.
-- Examples:
-  * "blck moth kerr" → "Black Mouth Cur"
-  * "labrador retreiver" → "Labrador Retriever"
-  * "german shepard" → "German Shepherd"
-  * "shih zoo" → "Shih Tzu"
-  * "rotweiller" → "Rottweiler"
-  * "doberman pincher" → "Doberman Pinscher"
-  * "great dane" → "Great Dane"
-  * "cocker spaniel" → "Cocker Spaniel"
-  * "metronidazole" not "metro nida zole"
-  * "carprofen" not "car pro fen"
-  * "prednisone" not "pred ni zone"
-- Use context and phonetic similarity to determine the correct term.
-- Apply this correction to breeds, drug names, medical conditions, and any other veterinary terminology.
-
-OUTPUT REQUIREMENTS:
-- Use plain text only. No bold, no markdown, no symbols.
-- Every bullet point must be a short, complete clinical sentence.
-- Each SOAP subsection should contain multiple bullets when appropriate, not just one.
-- Extract ALL medically relevant information from the dictation, even if subtle.
-- Do not leave out any meaningful details (exam findings, observations, comments, measurements, impressions).
-- Include normal findings wherever the vet explicitly or implicitly confirmed them.
-- Never invent abnormalities or diagnostics not supported by the dictation.
-- If the veterinarian does not provide a diagnosis, infer the most likely primary diagnosis.
-- Always provide exactly three appropriate differential diagnoses unless the veterinarian states their own.
-- Always place past or future treatment under the Treatment section.
-- Use species-appropriate terminology and realistic veterinary phrasing.
-- If Physical Exam findings or Vital Signs are not mentioned, include them as normal. Do not say "Not Provided".
-
-PET NAME USAGE: 
-  * CRITICAL: The pet's name should ONLY appear in the Presenting Complaint section. Use the pet's name there if mentioned in the dictation (e.g., "Medea presented for worsening nasal congestion").
-  * EVERYWHERE ELSE (History, Owner Reports, Objective, Assessment, Plan): Use "the patient" or species terms (e.g., "cat", "dog", "feline", "canine"). NEVER use the pet's name outside of Presenting Complaint.
-  * Examples:
-    - Presenting Complaint: "Medea presented for vomiting" (name OK here)
-    - History: "The patient has a history of allergies" (NOT "Medea has a history...")
-    - Owner Reports: "The patient has been lethargic" (NOT "Medea has been lethargic")
-    - Objective/Assessment/Plan: Always use "patient" or species terms
-
-EXPANSION RULES:
-- If the dictation describes several systems as normal, list them individually (e.g., normal heart sounds, clear lungs, soft abdomen).
-- If the dictation mentions multiple exam observations, create multiple physical exam bullets.
-- If the owner provides several comments, convert each into its own bullet.
-- If vital signs are mentioned, include every one and restate them clearly.
-- Do not compress multiple findings into one bullet.
-- Err on the side of including more detail rather than less.
-- CONDITIONAL SECTIONS: Only include a "Masses:" subsection under Physical Exam if the dictation mentions any masses, lumps, nodules, or similar findings. If no masses are mentioned, omit this section entirely.
-
-TREATMENT SECTION FORMATTING:
-- List medications and treatments in a concise, direct format.
-- Do NOT use phrases like "The patient was prescribed" or "The patient was given".
-- Format as: [Drug name] [dosage] [route] [frequency] [duration/indication].
-- Examples:
-  * "Neopolydex eye drops OU TID for 10 days"
-  * "Pimobendan 0.5 mg/kg PO SID to prevent cardiomegaly"
-  * "Cerenia 1 mg/kg SQ once daily for nausea"
-- Keep each treatment bullet short, clean, and clinically formatted.
-- Include route (PO, SQ, IM, IV, OU, OD, OS, transdermal, etc.) when specified.
-- Include indication or purpose when relevant (e.g., "for nausea", "to prevent cardiomegaly").
-
-SOAP RECORD:
-
-When generating the Subjective section, follow these mandatory rules:
-
-Extract only information that comes directly from the owner’s words, the patient history, or the veterinarian’s verbal questions and the owner’s answers.
-
-Include all owner observations, even casual or emotional statements, rewritten into concise clinical sentences.
-
-Include past treatments, medications, responses to treatment, progression of symptoms, duration, severity changes, and anything the owner reports happening at home.
-
-Convert conversational speech into neutral medical phrasing. Remove filler words, hesitations, and dialogue.
-
-Do not include anything the veterinarian physically examines, palpates, auscultates, inspects, or directly observes. Those belong in Objective.
-
-Do not add interpretation, diagnosis, or speculation. Only document history, symptoms, routines, and the owner’s concerns.
-
-Preserve all timeline information the owner mentions.
-
-Capture every meaningful detail, even if subtle, and write them as short, complete clinical sentences.
-
-Your goal is to produce a Subjective section that fully reflects the owner-reported history and symptoms without mixing in exam findings or medical conclusions.
-
-SUBJECTIVE FORMATTING (CRITICAL):
-- Each distinct finding, symptom, or observation MUST be its own separate bullet point.
-- NEVER combine multiple findings into a single bullet with commas or semicolons.
-- NEVER write paragraph-style bullets. Keep each bullet to ONE clinical finding.
-- Write concisely - do NOT start every bullet with "The patient". Vary sentence structure for natural flow.
-- Example WRONG (too repetitive):
-  "- The patient has cataracts.
-   - The patient has been panting more.
-   - The patient occasionally bumps into things.
-   - The patient used to be perky."
-- Example CORRECT (natural flow):
-  "- Cataracts noted.
-   - Increased panting with deep wheeze, started a few weeks ago.
-   - Occasionally bumps into things and wanders aimlessly.
-   - Previously perky and happy, now less interactive.
-   - Decreased appetite noted."
-
-Subjective:
-Presenting Complaint:
-- [Write a complete, informative sentence with the pet's name, species, breed, age (if known), and primary reason for visit]
-- [Example: "Medea, a 12-year-old female spayed Domestic Shorthair cat, presented for worsening nasal congestion and difficulty breathing."]
-- [Example: "Buddy, a 5-year-old male neutered Labrador Retriever, presented for vomiting and decreased appetite for 3 days."]
-- [Include key context like duration of symptoms if mentioned]
-
-History:
-- [Write concisely - don't always start with "The patient"]
-- [Each treatment, medication, or historical detail gets its own bullet]
-Owner Reports:
-- [Write observations directly and concisely]
-- [WRONG: "The patient has cataracts. The patient has been panting. The patient bumps into things."]
-- [CORRECT: "Cataracts noted. Increased panting with wheeze. Bumps into things occasionally."]
-- [Vary sentence structure - sometimes start with the finding, not "The patient"]
-
-Objective:
-Vital Signs:
-- Temperature: (normal or not specified - do not assume values)
-- Pulse: (normal or not specified - do not assume values)
-- Respiratory Rate:
-
-Physical Exam:
-- Weight: (normal or not specified - do not assume values)
-- General: (normal or not specified - do not assume values)
-- Body Condition Score: x/9 (x is the body condition score out of 9)
-- Hydration:
-- Mucous membranes:
-- CRT:
-- Cardiovascular:
-- Respiratory:
-- Gastrointestinal:
-- Musculoskeletal:
-- Neurologic:
-- Integumentary:
-- Lymph nodes:
-- Eyes:
-- Ears:
-- Nose:
-- Throat:
-- Masses: (ONLY include this line and subsection if masses are mentioned in the dictation)
-
-Diagnostics Performed:
-- [ONLY list tests that were ALREADY RUN with their results. If none performed, write "None performed"]
-
-Assessment:
-Problem List:
--
-Primary Diagnosis:
--
-Differential Diagnoses:
--
-
-Plan:
-Recommended Diagnostics:
-- [List tests recommended or planned for the future. If none recommended, write "None recommended"]
-
-Treatment:
--
-Monitoring:
--
-Client Communication:
--
-Follow-up:
--
-
-
-PET NAME EXTRACTION:
-After the SOAP record above, extract the pet's name from the dictation if mentioned. Look for names mentioned in signalment, owner observations, or throughout the dictation. Scan all dictations provided.
-If a pet name is found, add this line at the very end:
-PET_NAME: [name]
-If no pet name is found or mentioned, add this line at the very end:
-PET_NAME: no name provided
-Always include the PET_NAME line - either with the actual name or "no name provided".
-Example: PET_NAME: Buddy
-Example: PET_NAME: no name provided
-`;
-
-        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
-
-        let response;
-        try {
-            response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                model: 'gpt-4o-mini',
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                max_tokens: 4000,
-                temperature: 0.7
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                timeout: OPENAI_TIMEOUT_MS,
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity
-            });
-        } catch (axiosErr) {
-            if (axiosErr.response) {
-                const status = axiosErr.response.status;
-                const errorText = axiosErr.response.data?.error?.message || JSON.stringify(axiosErr.response.data) || axiosErr.message;
-                console.error('OpenAI API Error:', status, errorText);
-                return res.status(status === 429 ? 429 : 502).json({
-                    error: 'SOAP generation failed',
-                    status: status,
-                    detail: typeof errorText === 'string' ? errorText.slice(0, 2000) : errorText
-                });
-            }
-            throw axiosErr;
-        }
-
-        const soapTime = Date.now() - soapStartTime;
-        const data = response.data;
-        const fullResponse = data.choices?.[0]?.message?.content;
-        const finishReason = data.choices?.[0]?.finish_reason;
-
-        console.log(`[CleanupAndSOAP] Phase 3 complete: SOAP generation in ${soapTime}ms (output: ${fullResponse?.length || 0} chars)`);
-
-        if (finishReason === 'length') {
-            console.warn('[CleanupAndSOAP] WARNING: SOAP generation response was truncated due to max_tokens limit');
-        }
-
-        if (!fullResponse) {
-            return res.status(500).json({ error: 'No report generated' });
-        }
-
-        // Extract pet name if present
-        let report = fullResponse;
-        let petName = null;
-
-        const petNameMatch = fullResponse.match(/PET_NAME:\s*(.+?)(?:\n|$)/i);
-        if (petNameMatch && petNameMatch[1]) {
-            const extractedName = petNameMatch[1].trim();
-            if (extractedName.toLowerCase() !== 'no name provided') {
-                petName = extractedName;
-            }
-            report = fullResponse.replace(/PET_NAME:\s*.+?(?:\n|$)/i, '').trim();
-        }
-
-        const totalTime = Date.now() - startTime;
-        console.log(`[CleanupAndSOAP] All phases complete in ${totalTime}ms total`);
-        console.log(`[CleanupAndSOAP] Final report length: ${report.length} chars, petName: ${petName || 'none'}`);
-
-        // Return all stages for debugging/transparency
-        res.status(200).json({
-            cleanedTranscript,
-            correctedTranscript,
-            report,
-            petName
-        });
-    } catch (err) {
-        if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-            console.error('OpenAI request timeout');
-            return res.status(504).json({ error: 'Upstream timeout (OpenAI took too long)' });
-        }
-
-        const isNetworkError =
-            err?.code === 'ECONNRESET' ||
-            err?.code === 'ECONNREFUSED' ||
-            err?.code === 'ETIMEDOUT' ||
-            err?.code === 'ENOTFOUND' ||
-            err?.errno === 'ECONNRESET' ||
-            err?.message?.includes('socket hang up') ||
-            err?.message?.includes('ECONNRESET') ||
-            err?.message?.includes('ECONNREFUSED') ||
-            err?.message?.includes('Network Error');
-
-        if (isNetworkError) {
-            console.error('Network error connecting to OpenAI:', {
-                code: err?.code,
-                message: err?.message
-            });
-            return res.status(503).json({
-                error: 'Network error',
-                detail: 'Connection to OpenAI failed. Please try again.'
-            });
-        }
-
-        console.error('Cleanup and SOAP endpoint error:', err);
-        console.error('Error stack:', err.stack);
-        return res.status(500).json({
-            error: 'Internal server error',
-            detail: err.message
-        });
-    }
-});
 
 // ================ END NEW CLIENT-SIDE CHUNKING ENDPOINTS ================
 
@@ -1624,228 +1282,111 @@ app.post('/api/generate-soap', async (req, res) => {
             return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
         }
 
-        const prompt = `USER INPUT:
-"${input.trim()}"
+        const prompt = `USER INPUT: "${input.trim()}"
 
-You are an AI veterinary medical scribe. Your job is to sort the dictation into a structured SOAP record.
+You are an AI veterinary medical scribe. Generate a structured SOAP record from the dictation.
 
-TRANSCRIPTION CORRECTION (CRITICAL - DO FIRST):
-- The dictation may contain speech-to-text errors. Correct any nonsensical words to their intended medical/veterinary terms.
-- Examples:
-  * "blck moth kerr" → "Black Mouth Cur"
-  * "labrador retreiver" → "Labrador Retriever"
-  * "german shepard" → "German Shepherd"
-  * "shih zoo" → "Shih Tzu"
-  * "rotweiller" → "Rottweiler"
-  * "metronidazole" not "metro nida zole"
-  * "carprofen" not "car pro fen"
-- Use context and phonetic similarity to determine the correct term.
-- Apply this correction to breeds, drug names, medical conditions, and any other veterinary terminology.
+COMPLETENESS (CRITICAL): Extract and include EVERY medically relevant detail from the transcript. Leave NOTHING out. Every symptom, finding, measurement, medication, observation, timeline, and clinical detail must appear in the appropriate section. Err on the side of including more rather than less. If it's in the dictation and medically relevant, it MUST be in the SOAP.
 
-CRITICAL SECTION SORTING RULES (MUST FOLLOW):
-Your primary task is to place each piece of information in the CORRECT section. Follow these rules strictly:
+TRANSCRIPTION CORRECTION: Fix speech-to-text errors using context (e.g., "german shepard" → "German Shepherd", "metro nida zole" → "metronidazole").
 
-SUBJECTIVE SECTION (Presenting Complaint, History, Owner Observations):
-- ONLY include: Why the pet is here today, symptoms, duration, owner concerns, past medical history, current medications the pet is already on
-- NEVER include: Treatments given today, vaccines administered, diagnostics performed, exam findings
-- Example CORRECT: "Max presented for vomiting for 3 days"
-- Example WRONG: "Max presented for vomiting and received Cerenia" (Cerenia goes in Treatment)
+SECTION SORTING RULES:
+- SUBJECTIVE: Why here today, symptoms, duration, concerns, PAST medical history, current home medications, observations about the pet
+- HISTORY: All relevant background - past events, previous diagnoses, surgeries, chronic conditions, how symptoms developed, timeline of changes, home observations. Write from the vet's perspective, never say "owner reports" or "owner says".
+- OBJECTIVE: Today's exam findings and diagnostics already performed with results
+- PLAN: Recommended diagnostics, ALL treatments/vaccines/procedures/preventatives given today
 
-HISTORY SECTION (CRITICAL - READ CAREFULLY):
-- ONLY include PAST medical history that occurred BEFORE today's visit
-- Include: Previous diagnoses, past surgeries, chronic conditions, medications the pet has been on (not given today), past treatments, previous episodes of similar issues
-- NEVER include:
-  - Today's exam findings (vitals, physical exam findings, etc.)
-  - Treatments given today
-  - Vaccines given today
-  - Diagnostics performed today
-  - Current symptoms (those go in Presenting Complaint)
-  - Anything that happened during or after today's visit
-- Example CORRECT: "History of allergies treated with Apoquel", "Previous surgery for cruciate repair in 2022", "Chronic kidney disease diagnosed 6 months ago"
-- Example WRONG: "Heart rate 120 bpm" (this is today's exam finding, goes in Physical Exam)
-- Example WRONG: "Temperature 102.5F" (this is today's vital, goes in Physical Exam)
-- Example WRONG: "Received DHPP vaccine today" (this is today's treatment, goes in Plan/Treatment)
+SUBJECTIVE SECTION - DETAILED RULES:
+- Extract ALL information from owner's words, patient history, and verbal Q&A between vet and owner
+- Include every owner observation, even casual statements, rewritten as clinical sentences
+- Include: past treatments, medication responses, symptom progression, duration, severity changes, home observations
+- Convert conversational speech to neutral medical phrasing, remove filler words
+- Do NOT include anything the vet physically examines or observes - those go in Objective
+- Do NOT add interpretation or diagnosis - only document history, symptoms, and owner concerns
+- Preserve all timeline information mentioned
+- Each distinct finding, symptom, or observation MUST be its own separate bullet
+- NEVER combine multiple findings into one bullet
+- Write DESCRIPTIVE, IN-DEPTH bullets that capture the full context of each finding
+- Include relevant details like duration, frequency, severity, progression, location, and circumstances
+- Expand abbreviated or vague statements into complete, informative clinical sentences
+- Do NOT invent details - only elaborate on what was actually stated or clearly implied
+- Vary sentence structure for natural flow
 
-OWNER OBSERVATIONS SECTION (CRITICAL - READ CAREFULLY):
-- ONLY include information that the OWNER actually said or reported, in PLAIN, EVERYDAY LANGUAGE that owners would naturally use
-- MUST BE MEDICALLY RELEVANT: Only include observations about the pet's health, symptoms, behavior changes related to health, or medical concerns
-- Include ONLY if:
-  1. The doctor explicitly states "owner reported", "owner says", "owner mentioned", "owner states", "client reports", "client says", etc.
-  2. The transcript clearly indicates the owner is speaking (e.g., direct quotes, conversational context)
-  3. The language sounds like something an owner would say in plain English (not clinical or medical)
-  4. The information is medically relevant (symptoms, health concerns, behavior changes related to health)
-- NEVER include:
-  - Doctor's exam findings or observations
-  - Doctor's clinical notes written after the exam
-  - Information inferred by the doctor
-  - Exact weights, measurements, or vitals (owners don't state "weighs 39.6 pounds" - that's clinical data)
-  - Medical terminology or clinical language (e.g., "skin issues", "history of trauma", "experiences itching")
-  - Anything that sounds like a medical record or clinical note
-  - Non-medical comments, casual conversation, or personal anecdotes (e.g., "is a good boy", "not a tater", "likes to play")
-  - If the dictation is just the doctor recording notes post-exam with no owner interaction
-- SPECIFIC MEASUREMENTS RULE: Do NOT include any specific weights, numbers, measurements, or vitals in Owner Reports UNLESS the doctor explicitly states "owner reported [specific number]" (e.g., "owner reported the dog weighs 40 pounds"). If you see a specific number without explicit attribution to the owner, it belongs in Physical Exam or Diagnostics, not Owner Reports.
-- LANGUAGE RULE: If it sounds clinical, medical, or like something a veterinarian would write, it does NOT belong in Owner Observations
-- MEDICAL RELEVANCE RULE: If it's not related to the pet's health, symptoms, or medical concerns, do NOT include it in Owner Observations
-- If the dictation is purely doctor notes without owner statements, leave Owner Observations empty or write "None reported"
-- Example CORRECT: "Owner says the dog has been throwing up for a couple days", "Owner mentions the dog scratches a lot", "Owner reports the dog seems fine otherwise"
-- Example WRONG: "Owner states Buddy weighs 39.6 pounds" (exact weights are clinical data, not owner language)
-- Example WRONG: "Owner reports Buddy experiences itching" (too clinical - owners say "scratches" or "itchy")
-- Example WRONG: "Owner mentions Buddy's skin issues improve in cooler weather" (too clinical - owners say "skin problems" or "rash")
-- Example WRONG: "Owner adopted a new dog who has a history of trauma" (too clinical - owners say "we got a new dog who's still scared" or "still adjusting")
-- Example WRONG: "Owner reports Buddy is not a 'tater' and is a good boy" (not medically relevant - casual comment)
+HISTORY SECTION:
+- Include all relevant background: timeline, symptom progression, past episodes, home observations, behavioral changes
+- Write everything from the vet's perspective as clinical documentation
+- Never use phrases like "owner reports", "owner says", "client states" - just state the information directly
+- Exam findings (tartar grade, dental disease, etc.) go in OBJECTIVE, not History
 
-OBJECTIVE SECTION (Physical Exam, Diagnostics Performed):
-- Physical Exam: All exam findings from today's visit
-- Diagnostics Performed: ONLY tests that were ALREADY RUN with their RESULTS (e.g., "Bloodwork showed elevated BUN", "X-rays revealed no abnormalities", "Heartworm test negative")
+PET NAME: Use name ONLY in Presenting Complaint. Everywhere else use "the patient" or species terms.
 
-PLAN SECTION (Recommended Diagnostics, Treatment):
-- Recommended Diagnostics: Tests recommended or planned for the future (e.g., "Recommend bloodwork", "Schedule ultrasound", "Consider biopsy")
-- ALL medications prescribed or administered today
-- ALL vaccines given (DHPP, FVRCP, Rabies, Bordetella, Leptospirosis, Lyme, etc.)
-- ALL procedures performed (nail trim, anal gland expression, ear cleaning, microchip, etc.)
-- ALL preventatives dispensed (Heartgard, NexGard, Simparica, Revolution, etc.)
-
-OUTPUT REQUIREMENTS:
-- Use plain text only. No bold, no markdown, no symbols.
-- Every bullet point must be a short, complete clinical sentence.
-- Extract ALL medically relevant information from the dictation.
-- Never invent abnormalities or diagnostics not mentioned.
-- If the veterinarian does not provide a diagnosis, infer the most likely primary diagnosis.
-- Always provide exactly three appropriate differential diagnoses unless the veterinarian states their own.
-
-PET NAME USAGE (CRITICAL):
-- Presenting Complaint ONLY: Use the pet's name if mentioned in the dictation.
-  * CORRECT: "Buddy presented for vomiting for 3 days"
-- EVERYWHERE ELSE (History, Owner Reports, Objective, Assessment, Plan): Use "the patient" or species terms. NEVER use the pet's name.
-  * CORRECT: "The patient has been lethargic", "The patient has a history of allergies"
-  * WRONG: "Buddy has been lethargic", "Buddy has a history of allergies"
-
-PHYSICAL EXAM RULES:
-- If a vital or system is NOT mentioned in the dictation, write "Normal" or "No abnormalities detected"
-- If a vital or system IS mentioned, use the exact value or finding from the dictation
-- NEVER write "not specified", "not provided", or "not mentioned"
-- Body Condition Score: Default to "5/9 (normal)" unless a different score is stated
-- For systems without findings, write the normal state (e.g., "Clear lung sounds bilaterally", "Strong synchronous pulses", "Soft non-painful abdomen")
-
-TREATMENT FORMATTING:
-- Format: [Drug/Vaccine/Procedure] [dose if applicable] [route] [frequency] [duration/indication]
-- Examples:
-  * "Cerenia 1 mg/kg SQ once for nausea"
-  * "DHPP vaccine administered SQ"
-  * "Rabies vaccine administered SQ, 1-year"
-  * "NexGard 68mg dispensed, monthly flea/tick preventative"
-  * "Nail trim performed"
-
-SUBJECTIVE FORMATTING (CRITICAL):
-- Each distinct finding, symptom, or observation MUST be its own separate bullet point.
-- NEVER combine multiple findings into a single bullet with commas or semicolons.
-- NEVER write paragraph-style bullets. Keep each bullet to ONE clinical finding.
-- Write concisely - do NOT start every bullet with "The patient". Vary sentence structure for natural flow.
-- Example WRONG (too repetitive):
-  "- The patient has cataracts.
-   - The patient has been panting.
-   - The patient bumps into things."
-- Example CORRECT (natural flow):
-  "- Buddy presented for decreased activity.
-   - Cataracts noted.
-   - Increased panting with wheeze, started a few weeks ago.
-   - Occasionally bumps into things.
-   - Decreased appetite."
+FORMATTING:
+- Plain text only, no markdown
+- Each piece of information on its own bullet - be thorough and detailed
+- One finding per bullet, vary sentence structure
+- Treatment format: [Drug] [dose] [route] [frequency] [indication]
+- If vitals/systems not mentioned, write normal defaults (e.g., "Normal", "5/9", "Pink and moist")
+- Provide 3 differential diagnoses if vet doesn't state their own
 
 SOAP RECORD:
 
 Subjective:
 Presenting Complaint:
-- [Write a complete, informative sentence with pet's name, species, breed, age (if known), and primary reason for visit]
-- [Example: "Buddy, a 5-year-old male neutered Labrador Retriever, presented for vomiting and decreased appetite for 3 days."]
-- [Include key context like duration of symptoms if mentioned]
+- [1-2 descriptive sentences: pet name, species, breed, age, primary reason for visit with relevant context like duration, severity, or key symptoms. Only include details from the transcript - never write "not specified".]
 
 History:
-- [ONLY include PAST medical history that occurred BEFORE today's visit]
-- [Include: Previous diagnoses, past surgeries, chronic conditions, medications pet has been on (not given today), past treatments]
-- [NEVER include: Today's vitals, today's exam findings, treatments given today, vaccines given today, diagnostics performed today]
-- [Example CORRECT: "History of allergies treated with Apoquel", "Previous cruciate repair in 2022"]
-- [Example WRONG: "Heart rate 120 bpm" (this is today's finding, goes in Physical Exam)]
-
-Owner Reports:
-- [ONLY include what the OWNER actually said in PLAIN, EVERYDAY LANGUAGE that owners would naturally use]
-- [MUST BE MEDICALLY RELEVANT: Only include observations about the pet's health, symptoms, behavior changes related to health, or medical concerns]
-- [ONLY populate if doctor says "owner reported", "owner says", "client reports", etc. OR if transcript shows owner speaking]
-- [If dictation is purely doctor notes post-exam with no owner interaction, write "None reported"]
-- [NEVER include: doctor's exam findings, clinical observations, exact weights/measurements, medical terminology, non-medical comments, casual conversation, or personal anecdotes]
-- [SPECIFIC MEASUREMENTS RULE: Do NOT include any specific weights, numbers, measurements, or vitals UNLESS doctor explicitly says "owner reported [specific number]". If you see a specific number without explicit owner attribution, it belongs in Physical Exam, not Owner Reports]
-- [LANGUAGE RULE: If it sounds clinical or like a medical record, it does NOT belong here - put it in History or Presenting Complaint instead]
-- [MEDICAL RELEVANCE RULE: If it's not related to the pet's health, symptoms, or medical concerns, do NOT include it]
-- [Example CORRECT: "Owner says the dog has been throwing up for a couple days", "Owner mentions the dog scratches a lot"]
-- [Example WRONG: "Owner states Buddy weighs 39.6 pounds" (exact weights are clinical, not owner language - unless doctor explicitly said "owner reported weighs 39.6 pounds")]
-- [Example WRONG: "Owner reports Buddy experiences itching" (too clinical - owners say "scratches" or "itchy")]
-- [Example WRONG: "Owner mentions skin issues" (too clinical - owners say "skin problems" or "rash")]
-- [Example WRONG: "Owner reports Buddy is not a 'tater' and is a good boy" (not medically relevant - casual comment)]
+- [All background info: past diagnoses, surgeries, chronic conditions, symptom timeline, progression, home observations - each on its own bullet, written from vet's perspective]
 
 Objective:
 Vital Signs:
-- Temperature: [value if stated, otherwise "Normal"]
-- Pulse: [value if stated, otherwise "Normal"]
-- Respiratory Rate: [value if stated, otherwise "Normal"]
+- Temperature: [value or "Normal"]
+- Pulse: [value or "Normal"]
+- Respiratory Rate: [value or "Normal"]
 
 Physical Exam:
-- Weight: [value if stated, otherwise "Normal"]
-- General: [finding if stated, otherwise "Bright, alert, responsive"]
-- Body Condition Score: [value if stated, otherwise "5/9"]
-- Hydration: [finding if stated, otherwise "Adequate, skin turgor normal"]
-- Mucous Membranes: [finding if stated, otherwise "Pink and moist"]
-- CRT: [value if stated, otherwise "Less than 2 seconds"]
-- Cardiovascular: [finding if stated, otherwise "Normal heart sounds, no murmur"]
-- Respiratory: [finding if stated, otherwise "Clear lung sounds bilaterally"]
-- Gastrointestinal: [finding if stated, otherwise "Soft, non-painful abdomen on palpation"]
-- Musculoskeletal: [finding if stated, otherwise "Ambulatory, no lameness observed"]
-- Neurologic: [finding if stated, otherwise "Appropriate mentation, normal gait"]
-- Integumentary: [finding if stated, otherwise "Coat and skin normal, no lesions"]
-- Lymph Nodes: [finding if stated, otherwise "No lymphadenopathy"]
-- Oral: [finding if stated, otherwise "Normal"]
-- Eyes: [finding if stated, otherwise "Clear, no discharge"]
-- Ears: [finding if stated, otherwise "Clean, no debris or odor"]
-- Nose: [finding if stated, otherwise "No discharge"]
-- Throat: [finding if stated, otherwise "Normal"]
+- Weight:
+- General: [or "Bright, alert, responsive"]
+- Body Condition Score: [or "5/9"]
+- Hydration: [or "Adequate"]
+- Mucous Membranes: [or "Pink and moist"]
+- CRT: [or "<2 seconds"]
+- Cardiovascular: [or "Normal heart sounds, no murmur"]
+- Respiratory: [or "Clear lung sounds bilaterally"]
+- Gastrointestinal: [or "Soft, non-painful abdomen"]
+- Musculoskeletal: [or "Ambulatory, no lameness"]
+- Neurologic: [or "Appropriate mentation"]
+- Integumentary: [or "Normal coat and skin"]
+- Lymph Nodes: [or "No lymphadenopathy"]
+- Eyes: [or "Clear, no discharge"]
+- Ears: [or "Clean, no debris"]
+- Oral/Nose/Throat: [or "Normal"]
 
 Diagnostics Performed:
-- [ONLY list tests that were ALREADY RUN with their results. If none performed, write "None performed"]
+- [Tests run with results, or "None performed"]
 
 Assessment:
 Problem List:
-- [Each distinct problem]
-
+-
 Primary Diagnosis:
-- [Most likely diagnosis]
-
+-
 Differential Diagnoses:
 - [Three differentials]
 
 Plan:
 Recommended Diagnostics:
-- [List tests recommended or planned for the future. If none recommended, write "None recommended"]
+- Future tests, or "None recommended"
 
 Treatment:
-- [ALL medications, vaccines, procedures, preventatives go here]
+- All meds, vaccines, procedures, preventatives
 
 Monitoring:
-- [What owner should watch for]
-
+-
 Client Communication:
-- [What was discussed with owner]
-
+-
 Follow-up:
-- [Recheck timeline]
+-
 
-PET NAME EXTRACTION:
-After the SOAP record above, extract the pet's name from the dictation if mentioned. Look for names mentioned in signalment, owner observations, or throughout the dictation. Scan all dictations provided.
-If a pet name is found, add this line at the very end:
-PET_NAME: [name]
-If no pet name is found or mentioned, add this line at the very end:
-PET_NAME: no name provided
-Always include the PET_NAME line - either with the actual name or "no name provided".
-Example: PET_NAME: Buddy
-Example: PET_NAME: no name provided
+PET_NAME: [extracted name or "no name provided"]
 `;
 
         // Use axios instead of node-fetch for better reliability
