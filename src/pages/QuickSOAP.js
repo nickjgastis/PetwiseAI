@@ -1989,8 +1989,8 @@ const QuickSOAP = () => {
                                 <div className={`${dictations.length > 0 && isMobile ? 'mb-4' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full`}>
                                     {dictations.length === 0 || !isMobile ? (
                                         <>
-                                            {/* Disclaimer */}
-                                            {!isMobile && (
+                                            {/* Disclaimer - hide after first dictation on desktop */}
+                                            {!isMobile && dictations.length === 0 && (
                                                 <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
                                                     <p className="text-sm text-blue-800">
                                                         🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
@@ -2055,7 +2055,7 @@ const QuickSOAP = () => {
 
                             {/* Dictation Bubbles - Above center */}
                             {dictations.length > 0 && (!isRecording || !isMobile) && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-6 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-40' : 'overflow-y-auto max-h-80'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
+                                <div className={`${dictations.length > 0 && isMobile ? 'mb-6 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-44' : 'overflow-y-auto max-h-64'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
                                     WebkitOverflowScrolling: 'touch',
                                     overflowY: 'auto'
                                 } : {}}>
@@ -2235,7 +2235,7 @@ const QuickSOAP = () => {
                                         <button
                                             onClick={handleSendToDesktopClick}
                                             disabled={isGenerating || isSendingToDesktop}
-                                            className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-semibold text-sm hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                            className="w-full px-4 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-bold text-base hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                         >
                                             {isSendingToDesktop ? (
                                                 <>
@@ -2252,7 +2252,7 @@ const QuickSOAP = () => {
                                         <button
                                             onClick={() => setShowStartNewModal(true)}
                                             disabled={isGenerating || isSendingToDesktop}
-                                            className="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-xs hover:bg-gray-300 transition-all shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                                            className="w-full px-3 py-3 bg-green-500 text-white rounded-lg font-semibold text-sm hover:bg-green-600 transition-all shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                                         >
                                             Start New
                                         </button>
@@ -2711,6 +2711,20 @@ const QuickSOAP = () => {
                                                 </div>
                                             );
                                         })}
+                                        
+                                        {/* Copy All Button at Bottom */}
+                                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                                            <button
+                                                onClick={copyAll}
+                                                className={`px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer ${copiedSection === 'all'
+                                                    ? 'bg-[#5cccf0] text-white'
+                                                    : 'bg-[#3369bd] text-white hover:bg-[#2c5aa3]'
+                                                    }`}
+                                                style={{ fontSize: '0.9rem' }}
+                                            >
+                                                {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
