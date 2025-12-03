@@ -1327,8 +1327,12 @@ FORMATTING:
 - Each piece of information on its own bullet - be thorough and detailed
 - One finding per bullet, vary sentence structure
 - Treatment format: [Drug] [dose] [route] [frequency] [indication]
-- If vitals/systems not mentioned, write normal defaults (e.g., "Normal", "5/9", "Pink and moist")
 - Provide 3 differential diagnoses if vet doesn't state their own
+
+PHYSICAL EXAM DEFAULTS (CRITICAL):
+- NEVER write "not specified", "not mentioned", "not provided", or "N/A"
+- If a vital or system is not mentioned, USE THE NORMAL DEFAULT shown in the template
+- Always fill in every field with either the stated value OR the normal default
 
 SOAP RECORD:
 
@@ -1341,27 +1345,29 @@ History:
 
 Objective:
 Vital Signs:
-- Temperature: [value or "Normal"]
-- Pulse: [value or "Normal"]
-- Respiratory Rate: [value or "Normal"]
+- Temperature: Normal
+- Pulse: Normal
+- Respiratory Rate: Normal
 
-Physical Exam:
+Physical Exam (use stated findings or these normal defaults - NEVER say "not specified"):
 - Weight:
-- General: [or "Bright, alert, responsive"]
-- Body Condition Score: [or "5/9"]
-- Hydration: [or "Adequate"]
-- Mucous Membranes: [or "Pink and moist"]
-- CRT: [or "<2 seconds"]
-- Cardiovascular: [or "Normal heart sounds, no murmur"]
-- Respiratory: [or "Clear lung sounds bilaterally"]
-- Gastrointestinal: [or "Soft, non-painful abdomen"]
-- Musculoskeletal: [or "Ambulatory, no lameness"]
-- Neurologic: [or "Appropriate mentation"]
-- Integumentary: [or "Normal coat and skin"]
-- Lymph Nodes: [or "No lymphadenopathy"]
-- Eyes: [or "Clear, no discharge"]
-- Ears: [or "Clean, no debris"]
-- Oral/Nose/Throat: [or "Normal"]
+- General: Bright, alert, responsive
+- Body Condition Score: 5/9
+- Hydration: Adequate, skin turgor normal
+- Mucous Membranes: Pink and moist
+- CRT: <2 seconds
+- Cardiovascular: Normal heart sounds, no murmur detected
+- Respiratory: Clear lung sounds bilaterally
+- Gastrointestinal: Soft, non-painful abdomen on palpation
+- Musculoskeletal: Ambulatory, no lameness observed
+- Neurologic: Appropriate mentation, normal gait
+- Integumentary: Coat and skin normal, no lesions
+- Lymph Nodes: No lymphadenopathy
+- Eyes: Clear, no discharge
+- Ears: Clean, no debris or odor
+- Oral: Normal
+- Nose: No discharge
+- Throat: Normal
 
 Diagnostics Performed:
 - [Tests run with results, or "None performed"]
