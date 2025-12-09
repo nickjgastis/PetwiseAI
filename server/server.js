@@ -1282,29 +1282,59 @@ app.post('/api/generate-soap', async (req, res) => {
             return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
         }
 
+        // Check if input mentions masses
+        const inputLower = input.trim().toLowerCase();
+        const hasMasses = /\b(mass|masses|lump|lumps|tumor|tumors|growth|growths|nodule|nodules|lesion|lesions)\b/i.test(inputLower);
+
         const prompt = `USER INPUT: "${input.trim()}"
 
 You are an AI veterinary medical scribe. Generate a structured SOAP record from the dictation.
 
-ABSOLUTE RULE - HISTORY vs OBJECTIVE:
-Temperature, heart rate, respiratory rate, weight, BCS, periodontal grade, ANY physical exam finding = OBJECTIVE. NEVER put these in History.
-History is ONLY for: past conditions, home medications, symptom timeline, behavioral changes. NO measurements. NO exam findings. NO vitals.
+CRITICAL RULE - HISTORY vs PHYSICAL EXAM (MANDATORY SEPARATION):
+
+HISTORY SECTION CONTAINS ONLY:
+- Owner-described symptoms, observations, or concerns (what the owner tells the vet)
+- Previous visit information dictated by the doctor (past diagnoses, past treatments, past surgeries)
+- Home medications and their effects
+- Timeline of symptoms as described by owner or from past records
+- Behavioral changes reported by owner
+- Past conditions mentioned by owner or from previous visits
+- ANYTHING that happened BEFORE today's physical examination
+
+PHYSICAL EXAM SECTION CONTAINS ONLY:
+- Everything the vet observes, measures, or examines TODAY during the physical exam
+- Temperature, heart rate, respiratory rate, weight, BCS, periodontal grade
+- ANY physical finding discovered during today's examination
+- Visual observations made by the vet
+- Palpation findings
+- Auscultation findings
+- Any measurement or assessment performed during the exam
+- ANYTHING discovered through physical examination TODAY
+
+STRICT ENFORCEMENT:
+- If the vet says "I see", "I feel", "I hear", "I observe", "on exam", "palpation reveals", "auscultation shows" these go to PHYSICAL EXAM
+- If the owner says "he has been", "she started", "we noticed", "at home" these go to HISTORY
+- If the vet says "previous visit", "last time", "history of" these go to HISTORY
+- If the vet describes what they are finding RIGHT NOW these go to PHYSICAL EXAM
+- NEVER put physical exam findings in History
+- NEVER put owner-reported history or past visit info in Physical Exam
 
 COMPLETENESS: Extract every medically relevant detail. Leave nothing out.
 
 TRANSCRIPTION CORRECTION: Fix speech-to-text errors (e.g., "german shepard" → "German Shepherd").
 
-SECTION SORTING:
-- SUBJECTIVE (History): Past conditions, home meds, symptom progression, behavioral changes. NO vitals, NO exam findings, NO measurements.
-- OBJECTIVE: ALL vitals, ALL exam findings, ALL measurements, diagnostics with results. If the vet stated a number or physical finding, it goes here.
+SECTION SORTING (STRICT):
+- SUBJECTIVE (History): ONLY owner-reported information and previous visit information dictated by doctor. NO vitals, NO exam findings, NO measurements, NO current physical observations.
+- OBJECTIVE - Physical Exam: ONLY what the vet observes, measures, or examines TODAY. ALL vitals, ALL exam findings, ALL measurements from today's exam. If the vet stated a number or physical finding from TODAY'S exam, it goes here.
 - PLAN: Recommended diagnostics, treatments/vaccines/procedures given today
 
 SUBJECTIVE SECTION - DETAILED RULES:
-- Extract ALL information from owner's words, patient history, and verbal Q&A between vet and owner
-- Include every owner observation, even casual statements, rewritten as clinical sentences
+- Extract ONLY information from owner's words, previous visit records, and verbal Q&A between vet and owner about PAST events
+- Include every owner observation about what happened at home or in the past, rewritten as clinical sentences
 - Include: past treatments, medication responses, symptom progression, duration, severity changes, home observations
+- Include: previous visit information when the vet says "previous visit", "last time", "history shows", "past records indicate"
 - Convert conversational speech to neutral medical phrasing, remove filler words
-- Do NOT include anything the vet physically examines or observes - those go in Objective
+- CRITICAL: Do NOT include ANYTHING the vet physically examines, observes, measures, or discovers TODAY - ALL of that goes in Physical Exam section
 - Do NOT add interpretation or diagnosis - only document history, symptoms, and owner concerns
 - Preserve all timeline information mentioned
 - Each distinct finding, symptom, or observation MUST be its own separate bullet
@@ -1315,10 +1345,11 @@ SUBJECTIVE SECTION - DETAILED RULES:
 - Do NOT invent details - only elaborate on what was actually stated or clearly implied
 - Vary sentence structure for natural flow
 
-HISTORY = NO NUMBERS, NO MEASUREMENTS, NO EXAM FINDINGS:
-- YES: Past conditions, home medications, symptom timeline, behavioral changes, lifestyle context
-- NO: Temperature, heart rate, weight, BCS, periodontal grade, any physical finding → these ALL go in OBJECTIVE
+HISTORY SECTION - STRICT CATEGORIZATION:
+- YES - PUT IN HISTORY: Owner-reported symptoms, past conditions, home medications, symptom timeline, behavioral changes, lifestyle context, previous visit diagnoses, previous visit treatments, previous visit findings
+- NO - NEVER PUT IN HISTORY: Temperature, heart rate, weight, BCS, periodontal grade, ANY physical finding from TODAY'S exam, ANY measurement taken TODAY, ANY observation made TODAY → these ALL go in PHYSICAL EXAM section
 - Write from vet's perspective - never say "owner reports"
+- If unsure whether something is history or physical exam: Ask "Did this happen BEFORE today's exam or DURING today's exam?" If BEFORE → History. If DURING → Physical Exam.
 
 PET NAME: Use name ONLY in Presenting Complaint. Everywhere else use "the patient" or species terms.
 
@@ -1341,44 +1372,59 @@ Presenting Complaint:
 - [1-2 descriptive sentences: pet name, species, breed, age, primary reason for visit with relevant context like duration, severity, or key symptoms. Only include details from the transcript - never write "not specified".]
 
 History:
-- [All background info: past diagnoses, surgeries, chronic conditions, symptom timeline, progression, home observations - each on its own bullet, written from vet's perspective]
+- [ONLY owner-reported information and previous visit information: past diagnoses, surgeries, chronic conditions, symptom timeline, progression, home observations, previous visit findings - each on its own bullet, written from vet's perspective. NEVER include anything from today's physical examination.]
 
 Objective:
 Vital Signs:
-- Temperature: Normal
-- Pulse: Normal
-- Respiratory Rate: Normal
+- Temperature: WNL
+- Pulse: WNL
+- Respiratory Rate: WNL
 
-Physical Exam (use stated findings or these normal defaults - NEVER say "not specified"):
+Physical Exam (MANDATORY: Include ALL findings from TODAY'S examination. Use stated findings or these normal defaults - NEVER say "not specified"):
+- CRITICAL: This section must contain EVERYTHING the vet observed, measured, palpated, auscultated, or examined TODAY
+- If the vet mentions ANY physical finding, measurement, or observation from the current exam, it MUST be documented here
+- Owner-reported symptoms or past visit information should NEVER appear in this section - those belong in History
 - Weight:
 - General: Bright, alert, responsive
 - Body Condition Score: 5/9
-- Hydration: Adequate, skin turgor normal
-- Mucous Membranes: Pink and moist
+- Hydration: Euhydrated
+- Mucous Membranes: Pink, moist
 - CRT: <2 seconds
-- Cardiovascular: Normal heart sounds, no murmur detected
-- Respiratory: Clear lung sounds bilaterally
+- Cardiovascular: Heart sounds normal, no murmurs detected, regular sinus rhythm
+- Respiratory: Normal bronchovesicular sounds
 - Gastrointestinal: Soft, non-painful abdomen on palpation
 - Musculoskeletal: Ambulatory, no lameness observed
 - Neurologic: Appropriate mentation, normal gait
-- Integumentary: Coat and skin normal, no lesions
+- Integumentary: No lesions, normal coat condition, no ectoparasites observed
 - Lymph Nodes: No lymphadenopathy
 - Eyes: Clear, no discharge
 - Ears: Clean, no debris or odor
-- Oral: Normal
-- Nose: No discharge
-- Throat: Normal
+- Oral: Oral exam normal: All teeth present, gingiva healthy, Gd. 1 tartar
+- Nose: No abnormal findings
+- Throat: No abnormal findings
+
+${hasMasses ? `
+Masses:
+- [Location, size, consistency, mobility, and other relevant details for each mass mentioned]
+` : ''}
 
 Diagnostics Performed:
 - [Tests run with results, or "None performed"]
 
+ASSESSMENT SECTION - VETERINARY MEDICAL TERMINOLOGY (CRITICAL):
+- Problem List, Primary Diagnosis, and Differential Diagnoses MUST use ONLY proper veterinary medical terminology
+- Use standard veterinary diagnostic terms (e.g., "Acute gastroenteritis", "Otitis externa", "Periodontal disease Grade 2")
+- Avoid layman's terms, owner language, or casual descriptions
+- Use accepted veterinary nomenclature and diagnostic codes where applicable
+- Each diagnosis should be a formal veterinary medical term
+
 Assessment:
 Problem List:
--
+- [Use ONLY veterinary medical terms - formal diagnostic names]
 Primary Diagnosis:
--
+- [Use ONLY veterinary medical terms - formal diagnostic name]
 Differential Diagnoses:
-- [Three differentials]
+- [Three differentials using ONLY veterinary medical terms]
 
 Plan:
 Recommended Diagnostics:

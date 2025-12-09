@@ -94,7 +94,7 @@ const Dashboard = () => {
         const hasActiveSubscription = ['active', 'past_due'].includes(userData?.subscription_status);
 
         // Check for trial - trial has subscription_status='active' and subscription_interval='trial'
-        const hasTrial = userData?.subscription_status === 'active' && 
+        const hasTrial = userData?.subscription_status === 'active' &&
             userData?.subscription_interval === 'trial';
 
         return hasActiveSubscription || hasTrial;
@@ -181,7 +181,7 @@ const Dashboard = () => {
                 const formData = draft.form_data;
                 const dictations = formData.dictations || [];
                 const input = formData.input || '';
-                
+
                 // Combine all dictations and manual input
                 const allDictations = dictations.map(d => d.fullText || d.summary || '').join('\n\n');
                 const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
@@ -208,10 +208,10 @@ const Dashboard = () => {
 
                 const generatedReport = response.data.report;
                 const extractedPetName = response.data.petName;
-                
+
                 const dateStr = new Date().toLocaleString();
                 // Handle empty strings, null, undefined - only use pet name if it's a valid non-empty string
-                const reportName = (extractedPetName && extractedPetName.trim && extractedPetName.trim()) 
+                const reportName = (extractedPetName && extractedPetName.trim && extractedPetName.trim())
                     ? `${extractedPetName.trim()} - ${dateStr}`
                     : `QuickSOAP Mobile - ${dateStr}`;
 
@@ -264,15 +264,15 @@ const Dashboard = () => {
                     console.error('No report returned after update:', draftId);
                     return false;
                 }
-                
+
                 // Set notification flag for Saved Records tab
                 setHasNewMobileSOAP(true);
                 localStorage.setItem('hasNewMobileSOAP', 'true');
                 localStorage.setItem('newMobileSOAPId', savedReport.id);
 
                 // Dispatch custom event to notify Saved Reports component and update count
-                window.dispatchEvent(new CustomEvent('newMobileSOAPGenerated', { 
-                    detail: { reportId: savedReport.id } 
+                window.dispatchEvent(new CustomEvent('newMobileSOAPGenerated', {
+                    detail: { reportId: savedReport.id }
                 }));
 
                 console.log('Successfully processed mobile dictation:', draftId, 'Report ID:', savedReport.id);
@@ -315,8 +315,8 @@ const Dashboard = () => {
                 }
 
                 // Filter to only drafts with sent_to_desktop: true and no report_text
-                const sentDrafts = allDrafts.filter(d => 
-                    d.form_data?.sent_to_desktop === true && 
+                const sentDrafts = allDrafts.filter(d =>
+                    d.form_data?.sent_to_desktop === true &&
                     !d.report_text
                 );
                 return sentDrafts.length;
@@ -361,8 +361,8 @@ const Dashboard = () => {
                 }
 
                 // Filter to only drafts with sent_to_desktop: true and no report_text
-                const sentDrafts = allDrafts.filter(d => 
-                    d.form_data?.sent_to_desktop === true && 
+                const sentDrafts = allDrafts.filter(d =>
+                    d.form_data?.sent_to_desktop === true &&
                     !d.report_text
                 );
 
@@ -376,15 +376,15 @@ const Dashboard = () => {
 
                 // Process queue sequentially - one at a time
                 isProcessingQueueRef.current = true;
-                
+
                 for (let i = 0; i < sentDrafts.length; i++) {
                     const draft = sentDrafts[i];
                     // Update count before processing (remaining count)
                     const remaining = sentDrafts.length - i;
                     setMobileReportsGenerating(remaining);
-                    
+
                     const success = await processMobileDictation(draft);
-                    
+
                     // Small delay between processing to avoid overwhelming the API
                     if (i < sentDrafts.length - 1) {
                         await new Promise(resolve => setTimeout(resolve, 500));
@@ -399,8 +399,8 @@ const Dashboard = () => {
                     .eq('record_type', 'quicksoap')
                     .is('report_text', null);
 
-                const remainingSentDrafts = remainingDrafts?.filter(d => 
-                    d.form_data?.sent_to_desktop === true && 
+                const remainingSentDrafts = remainingDrafts?.filter(d =>
+                    d.form_data?.sent_to_desktop === true &&
                     !d.report_text
                 ) || [];
 
@@ -489,7 +489,7 @@ const Dashboard = () => {
         const checkPendingDictation = async (forceSupabaseCheck = false) => {
             const pendingSentAt = localStorage.getItem('pendingMobileDictation');
             const pendingId = localStorage.getItem('pendingMobileDictationId');
-            
+
             // Quick localStorage check first
             if (!pendingSentAt || !pendingId) {
                 setHasPendingDictation(false);
@@ -573,7 +573,7 @@ const Dashboard = () => {
         window.addEventListener('storage', handleStorageChange);
         window.addEventListener('pendingDictationChanged', handlePendingDictationChange);
         document.addEventListener('visibilitychange', handleVisibilityChange);
-        
+
         // Check periodically (optimized - only when tab is active, less frequent)
         const interval = setInterval(() => {
             if (!document.hidden) {
@@ -813,9 +813,8 @@ const Dashboard = () => {
                             {hasActivePlan() && (
                                 <Link
                                     to="/dashboard/quicksoap"
-                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${
-                                        location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
-                                    }`}
+                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
+                                        }`}
                                 >
                                     <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
                                     <span className="text-xs font-medium">
@@ -826,9 +825,8 @@ const Dashboard = () => {
                             )}
                             <Link
                                 to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${
-                                    location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
-                                }`}
+                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
+                                    }`}
                             >
                                 <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">Profile</span>
@@ -873,9 +871,8 @@ const Dashboard = () => {
                             {hasActivePlan() && (
                                 <Link
                                     to="/dashboard/quicksoap"
-                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${
-                                        location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
-                                    }`}
+                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
+                                        }`}
                                 >
                                     <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
                                     <span className="text-xs font-medium">
@@ -886,9 +883,8 @@ const Dashboard = () => {
                             )}
                             <Link
                                 to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${
-                                    location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
-                                }`}
+                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
+                                    }`}
                             >
                                 <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">Profile</span>
@@ -929,7 +925,8 @@ const Dashboard = () => {
                 }
             `}</style>
             {/* Tooltip styles for collapsed sidebar */}
-            <style dangerouslySetInnerHTML={{__html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @keyframes slideDown {
                     from {
                         opacity: 0;
@@ -1115,7 +1112,7 @@ const Dashboard = () => {
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
                                             <FaSearch className="text-sm" />
                                         </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetQuery</span>
+                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetQUERY</span>
                                     </Link>
                                 </li>
                                 <li className="mx-2 my-1 relative">
@@ -1229,7 +1226,7 @@ const Dashboard = () => {
                 <main className={`flex-1 bg-white transition-all duration-300 min-h-screen ${isSidebarCollapsed ? 'ml-20' : 'ml-56'}`} style={{ width: isSidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 224px)' }}>
                     {/* Mobile padding for header */}
                     <div className="md:hidden h-16"></div>
-                    
+
                     {/* Mobile Reports Generating Banner */}
                     {mobileReportsGenerating > 0 && !isMobile && (
                         <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
@@ -1239,8 +1236,8 @@ const Dashboard = () => {
                                 </div>
                                 <div>
                                     <p className="font-semibold text-base">
-                                        {mobileReportsGenerating === 1 
-                                            ? '1 report generating from mobile' 
+                                        {mobileReportsGenerating === 1
+                                            ? '1 report generating from mobile'
                                             : `${mobileReportsGenerating} reports generating from mobile`
                                         }
                                     </p>
@@ -1257,8 +1254,8 @@ const Dashboard = () => {
                                 <FaMobile className="text-xl flex-shrink-0" />
                                 <div>
                                     <p className="font-semibold text-base">
-                                        {mobileSOAPCount === 1 
-                                            ? 'New record saved from mobile' 
+                                        {mobileSOAPCount === 1
+                                            ? 'New record saved from mobile'
                                             : `${mobileSOAPCount} new records saved from mobile`
                                         }
                                     </p>
@@ -1289,14 +1286,14 @@ const Dashboard = () => {
                             </div>
                         </div>
                     )}
-                    
+
                     <Routes>
                         <Route
                             path="/"
                             element={
                                 <Navigate to={
-                                    isMobile 
-                                        ? "/dashboard/profile" 
+                                    isMobile
+                                        ? "/dashboard/profile"
                                         : (hasActivePlan() ? "/dashboard/quicksoap" : "/dashboard/profile")
                                 } replace />
                             }

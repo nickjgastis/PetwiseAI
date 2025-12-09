@@ -2020,10 +2020,15 @@ const QuickSOAP = () => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <p className="text-gray-500 text-sm">
+                                            <p className={isMobile ? "text-gray-500 text-sm" : "text-gray-500 text-lg"}>
                                                 {isMobile
-                                                    ? 'Record dictations to generate SOAP reports, then send to your desktop'
-                                                    : 'Record dictations to generate SOAP reports'
+                                                    ? 'For best dictation accuracy say section name then list findings.'
+                                                    : (
+                                                        <>
+                                                            For best dictation accuracy say section name then list findings.<br />
+                                                            <span className="block mt-1">Example: “Physical Exam” before giving exam findings.</span>
+                                                        </>
+                                                    )
                                                 }
                                             </p>
                                         </>
