@@ -1993,7 +1993,7 @@ const QuickSOAP = () => {
                                             {!isMobile && dictations.length === 0 && (
                                                 <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
                                                     <p className="text-sm text-blue-800">
-                                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bear with us as we continue to improve it, and we'd love to hear your feedback at{' '}
+                                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bare with us as we continue to improve it, and we'd love to hear your feedback at{' '}
                                                         <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
                                                     </p>
                                                 </div>
@@ -2711,7 +2711,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             );
                                         })}
-                                        
+
                                         {/* Copy All Button at Bottom */}
                                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
                                             <button
