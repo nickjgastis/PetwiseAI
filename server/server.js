@@ -1282,109 +1282,120 @@ app.post('/api/generate-soap', async (req, res) => {
             return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
         }
 
-        // Check if input mentions masses
-        const inputLower = input.trim().toLowerCase();
-        const hasMasses = /\b(mass|masses|lump|lumps|tumor|tumors|growth|growths|nodule|nodules|lesion|lesions)\b/i.test(inputLower);
+        // Dynamic import for ESM module
+        const { Agent, Runner } = await import('@openai/agents');
 
-        const prompt = `USER INPUT: "${input.trim()}"
+        // Agent 1: Extract information from transcript
+        const transcriptionExtractor = new Agent({
+            name: "Transcription Extractor",
+            instructions: `Extract all of the important information from this veterinary transcript so it can be formatted into a SOAP later.
+        
+        Your job:
+        - Carefully capture every clinically relevant detail.
+        - Organize information under the headings below.
+        - Do NOT interpret, diagnose, summarize, or add recommendations.
+        - Do NOT upgrade or strengthen what was said (no extra certainty).
+        
+        Use exactly these headings:
+        - OWNER_COMMENTS
+        - VET_COMMENTS_AND_EXAM
+        - MEDICATIONS_AND_TREATMENTS
+        - DIAGNOSTIC_TESTS_AND_RESULTS
+        - DIAGNOSTIC_IMPRESSIONS_AND_DIAGNOSES
+        - RECOMMENDATIONS_AND_PLAN
+        - OTHER_NOTES
+        
+        Within each heading:
+        - Use bullet points starting with "- ".
+        - Each bullet should reflect a single fact or statement from the transcript.
+        - Clearly tag who said it when relevant:
+          - Start owner statements with "Owner reports:".
+          - Start veterinarian statements with "Vet notes:", "Vet says:", or "Vet asks:" as appropriate.
+        
+        STRICT RULES ABOUT ACCURACY AND CERTAINTY:
+        - Do NOT invent anything that was not clearly stated.
+          - No new diagnoses.
+          - No new recommendations.
+          - No “consistent with”, “indicating”, “suggesting”, or similar interpretive language that was not spoken.
+        - If someone mentions a disease name (for example, "lymphoma"):
+          - Only put it under DIAGNOSTIC_IMPRESSIONS_AND_DIAGNOSES as a vet impression if the VET clearly states it as their impression or diagnosis.
+          - If it is not absolutely clear that the veterinarian is the speaker, treat it as an owner comment and place it under OWNER_COMMENTS or OTHER_NOTES, tagged as owner language (for example, "Owner uses the word 'lymphoma' to describe the mass on the left side.").
+        - Do NOT convert owner words into vet suspicions. For example:
+          - If the owner says "I think it is lymphoma", you should NOT write "Vet suspects lymphoma".
+        - Preserve uncertainty exactly as spoken:
+          - If someone says "maybe", "probably", "I think", or "not sure", include those words in the bullet.
+          - Do NOT rewrite a "maybe" into a firm statement.
+          - Only state that the OWNER used a disease term (for example, "lymphoma") if it is clearly spoken by the owner.
+  - If you are not certain who said the word, do NOT say "Owner uses the word ...".
+  - In that case, you may write a neutral note such as "The term 'lymphoma' is used to describe the mass." without assigning it to the owner.
+  - Whenever species, breed, coat color, or age seems ambiguous or distorted (for example, "Moth Kerr"), mark as “unclear” or “not specified.” Never treat unclear hallucinated words as factual breed descriptors.
 
-You are an AI veterinary medical scribe. Generate a structured SOAP record from the dictation.
+        
+        MASSES AND FINDINGS:
+        - For each mass mentioned, capture:
+          - Location.
+          - Size if given.
+          - How it feels if described (for example, "feels like a fatty lump").
+          - Who described it (owner or vet).
+        - Do NOT label a mass as a tumor, cancer, or lymphoma unless those exact words were used, and respect who said them.
+        
+        DIAGNOSTIC_IMPRESSIONS_AND_DIAGNOSES:
+        - Only include items here if:
+          - The veterinarian clearly expresses an impression, suspicion, or diagnosis.
+        - You may use phrases such as:
+          - "Vet suspects: ..."
+          - "Vet is concerned about: ..."
+          - "Vet impression: ..."
+        - Do NOT create new impressions that were not explicitly stated.
+        
+        RECOMMENDATIONS_AND_PLAN:
+        - Only include recommendations or plans that were clearly spoken (for example, "We will give a supplement for his joints", "We will monitor the lumps").
+        - Do NOT add your own suggestions (for example, "Consider dental examination") unless those words or very close equivalents were spoken in the transcript.
+        
+        GENERAL BEHAVIOR:
+        - This is NOT a conversation. Do not add any commentary, explanation, or reasoning.
+        - Do NOT summarize; list the specific statements.
+        - Do NOT leave out anything medically relevant.
+        - If something important is mentioned but unclear, capture it as it was said and mark it as unclear (for example, "Owner reports: 'he used to do seven' (unclear context)").`,
+            model: "gpt-4o-mini"
+        });
 
-CRITICAL RULE - HISTORY vs PHYSICAL EXAM (MANDATORY SEPARATION):
 
-HISTORY SECTION CONTAINS ONLY:
-- Owner-described symptoms, observations, or concerns (what the owner tells the vet)
-- Previous visit information dictated by the doctor (past diagnoses, past treatments, past surgeries)
-- Home medications and their effects
-- Timeline of symptoms as described by owner or from past records
-- Behavioral changes reported by owner
-- Past conditions mentioned by owner or from previous visits
-- ANYTHING that happened BEFORE today's physical examination
 
-PHYSICAL EXAM SECTION CONTAINS ONLY:
-- Everything the vet observes, measures, or examines TODAY during the physical exam
-- Temperature, heart rate, respiratory rate, weight, BCS, periodontal grade
-- ANY physical finding discovered during today's examination
-- Visual observations made by the vet
-- Palpation findings
-- Auscultation findings
-- Any measurement or assessment performed during the exam
-- ANYTHING discovered through physical examination TODAY
+        // Agent 2: Format into SOAP
+        const soapFormatter = new Agent({
+            name: "SOAP Formatter",
+            instructions: `Take the SOAP information given to you and slot it into a properly formatted SOAP.
 
-STRICT ENFORCEMENT:
-- If the vet says "I see", "I feel", "I hear", "I observe", "on exam", "palpation reveals", "auscultation shows" these go to PHYSICAL EXAM
-- If the owner says "he has been", "she started", "we noticed", "at home" these go to HISTORY
-- If the vet says "previous visit", "last time", "history of" these go to HISTORY
-- If the vet describes what they are finding RIGHT NOW these go to PHYSICAL EXAM
-- NEVER put physical exam findings in History
-- NEVER put owner-reported history or past visit info in Physical Exam
+CRITICAL RULES:
+- Be THOROUGH - every single piece of information from the transcript MUST be included
+- NOTHING should be left out - if it was mentioned, it goes in the SOAP
+- Use BULLET POINTS (- ) for each distinct finding, symptom, or piece of information
+- ONE point per line - never combine multiple findings into a single bullet
+- Each bullet should be a complete, descriptive sentence
+- Use the defaults shown below ONLY if that system/vital was not mentioned
+- DO NOT include Weight in Physical Exam unless weight was specifically mentioned in the transcript
 
-COMPLETENESS: Extract every medically relevant detail. Leave nothing out.
+Here is the output format:
 
-TRANSCRIPTION CORRECTION: Fix speech-to-text errors (e.g., "german shepard" → "German Shepherd").
-
-SECTION SORTING (STRICT):
-- SUBJECTIVE (History): ONLY owner-reported information and previous visit information dictated by doctor. NO vitals, NO exam findings, NO measurements, NO current physical observations.
-- OBJECTIVE - Physical Exam: ONLY what the vet observes, measures, or examines TODAY. ALL vitals, ALL exam findings, ALL measurements from today's exam. If the vet stated a number or physical finding from TODAY'S exam, it goes here.
-- PLAN: Recommended diagnostics, treatments/vaccines/procedures given today
-
-SUBJECTIVE SECTION - DETAILED RULES:
-- Extract ONLY information from owner's words, previous visit records, and verbal Q&A between vet and owner about PAST events
-- Include every owner observation about what happened at home or in the past, rewritten as clinical sentences
-- Include: past treatments, medication responses, symptom progression, duration, severity changes, home observations
-- Include: previous visit information when the vet says "previous visit", "last time", "history shows", "past records indicate"
-- Convert conversational speech to neutral medical phrasing, remove filler words
-- CRITICAL: Do NOT include ANYTHING the vet physically examines, observes, measures, or discovers TODAY - ALL of that goes in Physical Exam section
-- Do NOT add interpretation or diagnosis - only document history, symptoms, and owner concerns
-- Preserve all timeline information mentioned
-- Each distinct finding, symptom, or observation MUST be its own separate bullet
-- NEVER combine multiple findings into one bullet
-- Write DESCRIPTIVE, IN-DEPTH bullets that capture the full context of each finding
-- Include relevant details like duration, frequency, severity, progression, location, and circumstances
-- Expand abbreviated or vague statements into complete, informative clinical sentences
-- Do NOT invent details - only elaborate on what was actually stated or clearly implied
-- Vary sentence structure for natural flow
-
-HISTORY SECTION - STRICT CATEGORIZATION:
-- YES - PUT IN HISTORY: Owner-reported symptoms, past conditions, home medications, symptom timeline, behavioral changes, lifestyle context, previous visit diagnoses, previous visit treatments, previous visit findings
-- NO - NEVER PUT IN HISTORY: Temperature, heart rate, weight, BCS, periodontal grade, ANY physical finding from TODAY'S exam, ANY measurement taken TODAY, ANY observation made TODAY → these ALL go in PHYSICAL EXAM section
-- Write from vet's perspective - never say "owner reports"
-- If unsure whether something is history or physical exam: Ask "Did this happen BEFORE today's exam or DURING today's exam?" If BEFORE → History. If DURING → Physical Exam.
-
-PET NAME: Use name ONLY in Presenting Complaint. Everywhere else use "the patient" or species terms.
-
-FORMATTING:
-- Plain text only, no markdown
-- Each piece of information on its own bullet - be thorough and detailed
-- One finding per bullet, vary sentence structure
-- Treatment format: [Drug] [dose] [route] [frequency] [indication]
-- Provide 3 differential diagnoses if vet doesn't state their own
-
-PHYSICAL EXAM DEFAULTS (CRITICAL):
-- NEVER write "not specified", "not mentioned", "not provided", or "N/A"
-- If a vital or system is not mentioned, USE THE NORMAL DEFAULT shown in the template
-- Always fill in every field with either the stated value OR the normal default
-
-SOAP RECORD:
-
-Subjective:
+Subjective
 Presenting Complaint:
-- [1-2 descriptive sentences: pet name, species, breed, age, primary reason for visit with relevant context like duration, severity, or key symptoms. Only include details from the transcript - never write "not specified".]
+- [Pet name, species, breed, age, and primary reason for visit - be detailed]
 
 History:
-- [ONLY owner-reported information and previous visit information: past diagnoses, surgeries, chronic conditions, symptom timeline, progression, home observations, previous visit findings - each on its own bullet, written from vet's perspective. NEVER include anything from today's physical examination.]
+- [Each owner-reported symptom or observation on its own bullet]
+- [Each timeline detail on its own bullet]
+- [Each past condition or treatment on its own bullet]
+- [Include EVERYTHING the owner mentioned]
 
-Objective:
+Objective
 Vital Signs:
 - Temperature: WNL
 - Pulse: WNL
 - Respiratory Rate: WNL
 
-Physical Exam (MANDATORY: Include ALL findings from TODAY'S examination. Use stated findings or these normal defaults - NEVER say "not specified"):
-- CRITICAL: This section must contain EVERYTHING the vet observed, measured, palpated, auscultated, or examined TODAY
-- If the vet mentions ANY physical finding, measurement, or observation from the current exam, it MUST be documented here
-- Owner-reported symptoms or past visit information should NEVER appear in this section - those belong in History
-- Weight:
+Physical Exam
+- [ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
 - General: Bright, alert, responsive
 - Body Condition Score: 5/9
 - Hydration: Euhydrated
@@ -1392,107 +1403,91 @@ Physical Exam (MANDATORY: Include ALL findings from TODAY'S examination. Use sta
 - CRT: <2 seconds
 - Cardiovascular: Heart sounds normal, no murmurs detected, regular sinus rhythm
 - Respiratory: Normal bronchovesicular sounds
-- Gastrointestinal: Soft, non-painful abdomen on palpation
+- Abdomen: Soft, non-painful abdomen on palpation
 - Musculoskeletal: Ambulatory, no lameness observed
 - Neurologic: Appropriate mentation, normal gait
 - Integumentary: No lesions, normal coat condition, no ectoparasites observed
 - Lymph Nodes: No lymphadenopathy
 - Eyes: Clear, no discharge
 - Ears: Clean, no debris or odor
-- Oral: Oral exam normal: All teeth present, gingiva healthy, Gd. 1 tartar
+- Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
 - Nose: No abnormal findings
 - Throat: No abnormal findings
 
-${hasMasses ? `
 Masses:
-- [Location, size, consistency, mobility, and other relevant details for each mass mentioned]
-` : ''}
+- [Only include this section if masses/lumps mentioned - each mass on its own bullet with location, size, consistency]
 
 Diagnostics Performed:
-- [Tests run with results, or "None performed"]
+- [Each test and its results on its own bullet, or "None performed"]
 
-ASSESSMENT SECTION - VETERINARY MEDICAL TERMINOLOGY (CRITICAL):
-- Problem List, Primary Diagnosis, and Differential Diagnoses MUST use ONLY proper veterinary medical terminology
-- Use standard veterinary diagnostic terms (e.g., "Acute gastroenteritis", "Otitis externa", "Periodontal disease Grade 2")
-- Avoid layman's terms, owner language, or casual descriptions
-- Use accepted veterinary nomenclature and diagnostic codes where applicable
-- Each diagnosis should be a formal veterinary medical term
+Assessment
 
 Assessment:
+- Summarize the clinician’s medical reasoning and the most relevant abnormal and normal findings from the history, physical exam, and diagnostics.
+- State the veterinarian’s assessment and clinical impressions in clear, declarative medical statements.
+- Include differential diagnoses only if they are directly supported by the documented findings; do not speculate or broaden beyond the provided information.
+- Explicitly rule out conditions only when the SOAP data supports exclusion.
+- Do not restate the Plan, propose actions, or reference future intent.
+
 Problem List:
-- [Use ONLY veterinary medical terms - formal diagnostic names]
+- [Each problem on its own bullet - use veterinary medical terms]
+
 Primary Diagnosis:
-- [Use ONLY veterinary medical terms - formal diagnostic name]
+- [Formal veterinary diagnostic term]
+
 Differential Diagnoses:
-- [Three differentials using ONLY veterinary medical terms]
+- [First differential]
+- [Second differential]
+- [Third differential]
 
 Plan:
-Recommended Diagnostics:
-- Future tests, or "None recommended"
 
 Treatment:
-- All meds, vaccines, procedures, preventatives
+- [Each medication on its own bullet with dose, route, frequency]
+- [Each vaccine on its own bullet]
+- [Each procedure on its own bullet]
 
 Monitoring:
--
+- [Each monitoring instruction on its own bullet]
+
 Client Communication:
--
+- [Each discussion point on its own bullet]
+
+Recommended Diagnostics:
+- [Each recommended test on its own bullet, or "None recommended"]
+
 Follow-up:
--
+- [Follow-up instructions]
 
-PET_NAME: [extracted name or "no name provided"]
-`;
+PET_NAME: [extracted name or "no name provided"]`,
+            model: "gpt-4o-mini"
+        });
 
-        // Use axios instead of node-fetch for better reliability
-        const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
+        const runner = new Runner();
 
-        let response;
-        try {
-            response = await axios.post('https://api.openai.com/v1/chat/completions', {
-                model: 'gpt-4o-mini',
-                messages: [
-                    {
-                        role: 'user',
-                        content: prompt
-                    }
-                ],
-                max_tokens: 4000,
-                temperature: 0.7
-            }, {
-                headers: {
-                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                timeout: OPENAI_TIMEOUT_MS,
-                maxContentLength: Infinity,
-                maxBodyLength: Infinity
-            });
-        } catch (axiosErr) {
-            // Handle axios errors
-            if (axiosErr.response) {
-                const status = axiosErr.response.status;
-                const errorText = axiosErr.response.data?.error?.message || JSON.stringify(axiosErr.response.data) || axiosErr.message;
-                console.error('OpenAI API Error:', status, errorText);
-                return res.status(status === 429 ? 429 : 502).json({
-                    error: 'SOAP generation failed',
-                    status: status,
-                    detail: typeof errorText === 'string' ? errorText.slice(0, 2000) : errorText
-                });
-            }
-            // Re-throw network/timeout errors to be handled by outer catch
-            throw axiosErr;
+        // Run Agent 1: Extract information
+        console.log('[SOAP Agent] Running transcription extractor...');
+        const extractorResult = await runner.run(transcriptionExtractor, input.trim());
+
+        if (!extractorResult.finalOutput) {
+            throw new Error("Transcription extraction failed - no output");
         }
+        console.log('[SOAP Agent] Extractor output:', extractorResult.finalOutput);
+        console.log('[SOAP Agent] Extraction complete, running formatter...');
 
-        const data = response.data;
-        const fullResponse = data.choices?.[0]?.message?.content;
-        const finishReason = data.choices?.[0]?.finish_reason;
+        // Run Agent 2: Format SOAP - pass the extracted info directly
+        const formatterInput = extractorResult.finalOutput + "\n\nNow format this into the SOAP template.";
+        const formatterResult = await runner.run(soapFormatter, formatterInput);
 
-        // Log if response was truncated
-        if (finishReason === 'length') {
-            console.warn('SOAP generation response was truncated due to max_tokens limit');
+        if (!formatterResult.finalOutput) {
+            throw new Error("SOAP formatting failed - no output");
         }
+        console.log('[SOAP Agent] SOAP generation complete');
+
+        const fullResponse = formatterResult.finalOutput;
 
         if (!fullResponse) {
+            console.error('No response from SOAP agents');
             return res.status(500).json({ error: 'No report generated' });
         }
 
@@ -1502,7 +1497,9 @@ PET_NAME: [extracted name or "no name provided"]
 
         const petNameMatch = fullResponse.match(/PET_NAME:\s*(.+?)(?:\n|$)/i);
         if (petNameMatch && petNameMatch[1]) {
-            const extractedName = petNameMatch[1].trim();
+            let extractedName = petNameMatch[1].trim();
+            // Remove markdown formatting (**, *, etc.)
+            extractedName = extractedName.replace(/\*\*/g, '').replace(/\*/g, '').trim();
             // Only set petName if it's not "no name provided"
             if (extractedName.toLowerCase() !== 'no name provided') {
                 petName = extractedName;
