@@ -1381,6 +1381,7 @@ Here is the output format:
 Subjective
 Presenting Complaint:
 - [Pet name, species, breed, age, and primary reason for visit - be detailed]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 History:
 - [Each owner-reported symptom or observation on its own bullet]
@@ -1393,6 +1394,7 @@ Vital Signs:
 - Temperature: WNL
 - Pulse: WNL
 - Respiratory Rate: WNL
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Physical Exam
 - [ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
@@ -1413,32 +1415,39 @@ Physical Exam
 - Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
 - Nose: No abnormal findings
 - Throat: No abnormal findings
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Masses:
 - [Only include this section if masses/lumps mentioned - each mass on its own bullet with location, size, consistency]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Diagnostics Performed:
 - [Each test and its results on its own bullet, or "None performed"]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Assessment
 
 Assessment:
-- Summarize the clinician’s medical reasoning and the most relevant abnormal and normal findings from the history, physical exam, and diagnostics.
-- State the veterinarian’s assessment and clinical impressions in clear, declarative medical statements.
+- Summarize the clinician's medical reasoning and the most relevant abnormal and normal findings from the history, physical exam, and diagnostics.
+- State the veterinarian's assessment and clinical impressions in clear, declarative medical statements.
 - Include differential diagnoses only if they are directly supported by the documented findings; do not speculate or broaden beyond the provided information.
 - Explicitly rule out conditions only when the SOAP data supports exclusion.
 - Do not restate the Plan, propose actions, or reference future intent.
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Problem List:
 - [Each problem on its own bullet - use veterinary medical terms]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Primary Diagnosis:
 - [Formal veterinary diagnostic term]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Differential Diagnoses:
 - [First differential]
 - [Second differential]
 - [Third differential]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Plan:
 
@@ -1446,18 +1455,23 @@ Treatment:
 - [Each medication on its own bullet with dose, route, frequency]
 - [Each vaccine on its own bullet]
 - [Each procedure on its own bullet]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Monitoring:
 - [Each monitoring instruction on its own bullet]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Client Communication:
 - [Each discussion point on its own bullet]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Recommended Diagnostics:
 - [Each recommended test on its own bullet, or "None recommended"]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 Follow-up:
 - [Follow-up instructions]
+- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 PET_NAME: [extracted name or "no name provided"]`,
             model: "gpt-4o-mini"
