@@ -458,6 +458,31 @@ const QuickSOAP = () => {
         // No need to reload here - state is already initialized correctly
     }, []);
 
+    // Helper to clear all QuickSOAP state and localStorage (for fresh starts)
+    const clearAllQuickSOAPData = useCallback(() => {
+        // Clear state
+        setDictations([]);
+        setInput('');
+        setLastInput('');
+        setReport('');
+        setParsedReport({ sections: [], rawText: '' });
+        setHasReport(false);
+        setReportName('');
+        setPetName(null);
+        setHasBeenSentToDesktop(false);
+        setDraftRecordId(null);
+        draftRecordIdRef.current = null;
+        setLastDictationCount(0);
+        
+        // Clear localStorage
+        localStorage.removeItem('quickSOAP_dictations');
+        localStorage.removeItem('quickSOAP_input');
+        localStorage.removeItem('quickSOAP_report');
+        localStorage.removeItem('quickSOAP_lastInput');
+        localStorage.removeItem('currentQuickSOAPReportId');
+        localStorage.removeItem('quickSOAP_reportName');
+    }, []);
+
     // Helper to load draft data into component state
     const loadDraftData = useCallback((draftData, skipIfSameDraft = false) => {
         if (!draftData.form_data) return;
@@ -466,6 +491,15 @@ const QuickSOAP = () => {
         if (skipIfSameDraft && draftRecordIdRef.current === draftData.id) {
             return;
         }
+
+        // IMPORTANT: Clear existing data before loading new draft to prevent contamination
+        // This ensures old dictations don't mix with new ones
+        setDictations([]);
+        setInput('');
+        setLastInput('');
+        localStorage.removeItem('quickSOAP_dictations');
+        localStorage.removeItem('quickSOAP_input');
+        localStorage.removeItem('quickSOAP_lastInput');
 
         const formData = draftData.form_data;
         if (formData.dictations) {
@@ -1291,6 +1325,11 @@ const QuickSOAP = () => {
                         }
                         // Auto-save after generation with pet name
                         await autoSaveRecord(generatedReport, extractedPetName);
+                        
+                        // NOTE: Do NOT clear dictations here - user may want to regenerate
+                        // with additional dictations or edited notes. Clearing only happens
+                        // on explicit "Clear"/"Start New" or when loading a different record.
+                        
                         setTimeout(() => {
                             setIsReportTransitioning(false);
                         }, 100);
@@ -1339,6 +1378,11 @@ const QuickSOAP = () => {
                         }
                         // Auto-save after generation with pet name
                         autoSaveRecord(generatedReport, extractedPetName);
+                        
+                        // NOTE: Do NOT clear dictations here - user may want to regenerate
+                        // with additional dictations or edited notes. Clearing only happens
+                        // on explicit "Clear"/"Start New" or when loading a different record.
+                        
                         // Fade in sidebar and report after a delay to allow center to fade out first
                         setTimeout(() => {
                             setIsTransitioning(false);
@@ -1709,14 +1753,23 @@ const QuickSOAP = () => {
                 console.error('Error creating draft for desktop:', insertError);
                 setIsSendingToDesktop(false);
             } else if (newDraft) {
-                // Update draftRecordId to the new record so mobile knows about it
-                // But don't prevent future sends from creating new records
-                draftRecordIdRef.current = newDraft.id;
-                setDraftRecordId(newDraft.id);
-                localStorage.setItem('currentQuickSOAPReportId', newDraft.id);
+                // Show success modal first
                 setIsSendingToDesktop(false);
-                setHasBeenSentToDesktop(true);
                 setShowSendSuccessModal(true);
+                
+                // AUTO-CLEAR: Clear mobile state after successful send to desktop
+                // This ensures the next dictation session starts fresh
+                setDictations([]);
+                setInput('');
+                setLastInput('');
+                setHasBeenSentToDesktop(false); // Reset for next session
+                draftRecordIdRef.current = null;
+                setDraftRecordId(null);
+                localStorage.removeItem('quickSOAP_dictations');
+                localStorage.removeItem('quickSOAP_input');
+                localStorage.removeItem('quickSOAP_lastInput');
+                localStorage.removeItem('currentQuickSOAPReportId');
+                
                 setTimeout(() => setShowSendSuccessModal(false), 3000);
             }
         } catch (err) {
@@ -1925,27 +1978,7 @@ const QuickSOAP = () => {
                             </button>
                             <button
                                 onClick={() => {
-                                    // Clear all state
-                                    setDictations([]);
-                                    setInput('');
-                                    setLastInput('');
-                                    setHasBeenSentToDesktop(false);
-                                    setPetName(null);
-                                    setReport('');
-                                    setParsedReport({ sections: [], rawText: '' });
-                                    setHasReport(false);
-                                    setReportName('');
-                                    setIsEditingReportName(false);
-                                    // Clear draft record ID to prevent replacing old records
-                                    setDraftRecordId(null);
-                                    draftRecordIdRef.current = null;
-                                    // Clear localStorage
-                                    localStorage.removeItem('quickSOAP_dictations');
-                                    localStorage.removeItem('quickSOAP_input');
-                                    localStorage.removeItem('quickSOAP_report');
-                                    localStorage.removeItem('quickSOAP_lastInput');
-                                    localStorage.removeItem('currentQuickSOAPReportId');
-                                    localStorage.removeItem('quickSOAP_reportName');
+                                    clearAllQuickSOAPData();
                                     setShowStartNewModal(false);
                                 }}
                                 className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-all"
