@@ -1753,24 +1753,17 @@ const QuickSOAP = () => {
                 console.error('Error creating draft for desktop:', insertError);
                 setIsSendingToDesktop(false);
             } else if (newDraft) {
-                // Show success modal first
+                // Update draftRecordId to the new record so mobile knows about it
+                // But don't prevent future sends from creating new records
+                draftRecordIdRef.current = newDraft.id;
+                setDraftRecordId(newDraft.id);
+                localStorage.setItem('currentQuickSOAPReportId', newDraft.id);
                 setIsSendingToDesktop(false);
+                setHasBeenSentToDesktop(true);
                 setShowSendSuccessModal(true);
-                
-                // AUTO-CLEAR: Clear mobile state after successful send to desktop
-                // This ensures the next dictation session starts fresh
-                setDictations([]);
-                setInput('');
-                setLastInput('');
-                setHasBeenSentToDesktop(false); // Reset for next session
-                draftRecordIdRef.current = null;
-                setDraftRecordId(null);
-                localStorage.removeItem('quickSOAP_dictations');
-                localStorage.removeItem('quickSOAP_input');
-                localStorage.removeItem('quickSOAP_lastInput');
-                localStorage.removeItem('currentQuickSOAPReportId');
-                
                 setTimeout(() => setShowSendSuccessModal(false), 3000);
+                // NOTE: Do NOT clear here - user may need to re-send if something fails
+                // Clearing happens when SOAP generation starts (on desktop)
             }
         } catch (err) {
             console.error('Error sending to desktop:', err);
