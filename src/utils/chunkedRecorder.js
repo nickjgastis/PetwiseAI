@@ -66,6 +66,9 @@ class ChunkedRecorder {
             this.uploadsInFlight = 0;
             this.recordingStopped = false;
 
+            // Attach listeners to detect track death (mobile backgrounding)
+            this.attachTrackListeners();
+
             // Start first chunk
             this.startNextChunk();
 
@@ -87,6 +90,15 @@ class ChunkedRecorder {
      */
     startNextChunk() {
         if (!this.stream || this.isStopping || this.isPaused) return;
+
+        // Verify stream is still healthy before creating new recorder
+        if (!this.isStreamHealthy()) {
+            console.error('[ChunkedRecorder] Cannot start chunk - stream tracks are dead');
+            if (this.onError) {
+                this.onError(new Error('Microphone connection lost. Please stop and start a new recording.'));
+            }
+            return;
+        }
 
         // Preflight codec support
         const codec = 'audio/webm;codecs=opus';
@@ -334,6 +346,7 @@ class ChunkedRecorder {
      */
     pause() {
         if (!this.isRecording || this.isPaused || this.isStopping) {
+            console.log('[ChunkedRecorder] pause() - invalid state, returning');
             return;
         }
 
@@ -348,24 +361,118 @@ class ChunkedRecorder {
 
         // Stop current recorder - onstop will save the partial chunk but won't start new one
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-            this.mediaRecorder.stop();
+            try {
+                this.mediaRecorder.stop();
+            } catch (err) {
+                // MediaRecorder might already be in an invalid state (mobile backgrounding)
+                console.warn('[ChunkedRecorder] Error stopping MediaRecorder on pause:', err);
+            }
         }
+
+        // Log stream health for debugging
+        console.log('[ChunkedRecorder] Stream healthy after pause:', this.isStreamHealthy());
     }
 
     /**
      * Resume recording - starts a new chunk with existing stream
+     * On mobile, stream tracks may have died while paused - re-acquire if needed
      */
-    resume() {
-        if (!this.isRecording || !this.isPaused || this.isStopping || !this.stream) {
-            return;
+    async resume() {
+        if (!this.isRecording || !this.isPaused || this.isStopping) {
+            console.log('[ChunkedRecorder] resume() - invalid state, returning');
+            return false;
+        }
+
+        console.log('[ChunkedRecorder] resume() called');
+
+        // Check if stream is still healthy
+        const streamHealthy = this.isStreamHealthy();
+        console.log('[ChunkedRecorder] Stream healthy:', streamHealthy);
+
+        if (!streamHealthy) {
+            console.log('[ChunkedRecorder] Stream dead or tracks ended - re-acquiring...');
+            try {
+                // Clean up old stream if exists
+                if (this.stream) {
+                    this.stream.getTracks().forEach(track => {
+                        track.onended = null;
+                        track.stop();
+                    });
+                }
+
+                // Get new stream with same settings
+                this.stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                // Attach onended listener to new tracks
+                this.attachTrackListeners();
+
+                console.log('[ChunkedRecorder] New stream acquired successfully');
+            } catch (err) {
+                console.error('[ChunkedRecorder] Failed to re-acquire stream on resume:', err);
+                if (this.onError) {
+                    this.onError(new Error('Microphone access lost. Please stop and start a new recording.'));
+                }
+                return false;
+            }
         }
 
         this.isPaused = false;
-        console.log('[ChunkedRecorder] resume() called');
 
         // Increment chunk index and start new chunk
         this.chunkIndex += 1;
         this.startNextChunk();
+
+        return true;
+    }
+
+    /**
+     * Check if the current stream and its tracks are still healthy
+     * On mobile, tracks can become 'ended' when the app backgrounds
+     */
+    isStreamHealthy() {
+        if (!this.stream) {
+            return false;
+        }
+
+        const audioTracks = this.stream.getAudioTracks();
+        if (audioTracks.length === 0) {
+            return false;
+        }
+
+        // Check if any track is still live and enabled
+        const hasLiveTrack = audioTracks.some(track => 
+            track.readyState === 'live' && track.enabled
+        );
+
+        return hasLiveTrack;
+    }
+
+    /**
+     * Attach onended listeners to detect when tracks die (mobile background, etc)
+     */
+    attachTrackListeners() {
+        if (!this.stream) return;
+
+        this.stream.getAudioTracks().forEach(track => {
+            track.onended = () => {
+                console.warn('[ChunkedRecorder] Audio track ended unexpectedly');
+                // If we're paused, this is somewhat expected on mobile
+                // If we're actively recording, this is a problem
+                if (this.isRecording && !this.isPaused && !this.isStopping) {
+                    console.error('[ChunkedRecorder] Track died while recording!');
+                    if (this.onError) {
+                        this.onError(new Error('Microphone disconnected. Audio may be incomplete.'));
+                    }
+                }
+            };
+        });
     }
 
     /**
@@ -373,6 +480,13 @@ class ChunkedRecorder {
      */
     getIsPaused() {
         return this.isPaused;
+    }
+
+    /**
+     * Get current stream (useful for reconnecting visualizers after stream re-acquisition)
+     */
+    getStream() {
+        return this.stream;
     }
 
     /**

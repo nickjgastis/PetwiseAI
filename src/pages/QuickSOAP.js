@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
-import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile, FaPlus } from 'react-icons/fa';
+import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile } from 'react-icons/fa';
 import ChunkedRecorder from '../utils/chunkedRecorder';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -360,6 +360,46 @@ const QuickSOAP = () => {
         window.addEventListener('resize', checkMobile);
         return () => window.removeEventListener('resize', checkMobile);
     }, []);
+
+    // Handle visibility change (iOS/mobile backgrounding kills mic access)
+    useEffect(() => {
+        const handleVisibilityChange = async () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[QuickSOAP] App became visible');
+                
+                // If we're recording (paused or active), check stream health
+                if (isRecording && chunkedRecorderRef.current) {
+                    const streamHealthy = chunkedRecorderRef.current.isStreamHealthy();
+                    console.log('[QuickSOAP] Stream healthy after visibility change:', streamHealthy);
+                    
+                    if (!streamHealthy && !isPaused) {
+                        // Stream died while actively recording - warn user
+                        console.warn('[QuickSOAP] Stream died while recording in background!');
+                        setError('Recording may have been interrupted. Please stop and review your audio.');
+                    }
+                    
+                    // iOS: Resume audio context if suspended
+                    if (audioContextRef.current?.state === 'suspended') {
+                        try {
+                            await audioContextRef.current.resume();
+                            console.log('[QuickSOAP] AudioContext resumed after visibility change');
+                        } catch (err) {
+                            console.error('[QuickSOAP] Failed to resume AudioContext:', err);
+                        }
+                    }
+                }
+            } else {
+                console.log('[QuickSOAP] App going to background');
+                // On mobile, if recording, warn that mic may be interrupted
+                if (isMobile && isRecording && !isPaused) {
+                    console.warn('[QuickSOAP] Recording while going to background - mic may be interrupted');
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [isRecording, isPaused, isMobile]);
 
     // Watch for sidebar collapse state changes (desktop only)
     useEffect(() => {
@@ -925,15 +965,80 @@ const QuickSOAP = () => {
         if (chunkedRecorderRef.current && isRecording && !isPaused) {
             chunkedRecorderRef.current.pause();
             setIsPaused(true);
+            
+            // Stop visualization to save battery on mobile
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+                animationFrameRef.current = null;
+            }
+            setAudioLevels([]);
+            
             console.log('[QuickSOAP] Recording paused');
         }
     };
 
-    const resumeRecording = () => {
+    const resumeRecording = async () => {
         if (chunkedRecorderRef.current && isRecording && isPaused) {
-            chunkedRecorderRef.current.resume();
-            setIsPaused(false);
-            console.log('[QuickSOAP] Recording resumed');
+            console.log('[QuickSOAP] Resuming recording...');
+            
+            try {
+                const success = await chunkedRecorderRef.current.resume();
+                
+                if (success) {
+                    // Check if stream was re-acquired (mobile scenario)
+                    // Reconnect visualizer to new stream if needed
+                    const newStream = chunkedRecorderRef.current.getStream();
+                    if (newStream && newStream !== streamRef.current) {
+                        console.log('[QuickSOAP] Stream was re-acquired, reconnecting visualizer...');
+                        
+                        // Clean up old audio context
+                        if (audioContextRef.current) {
+                            try {
+                                await audioContextRef.current.close();
+                            } catch (err) {
+                                // Already closed
+                            }
+                        }
+                        
+                        // Set up new visualization with new stream
+                        streamRef.current = newStream;
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const analyser = audioContext.createAnalyser();
+                        const microphone = audioContext.createMediaStreamSource(newStream);
+                        
+                        analyser.fftSize = 256;
+                        microphone.connect(analyser);
+                        
+                        audioContextRef.current = audioContext;
+                        analyserRef.current = analyser;
+                        
+                        // iOS: Resume audio context if suspended
+                        if (audioContext.state === 'suspended') {
+                            await audioContext.resume();
+                        }
+                        
+                        // Restart visualization
+                        visualizeAudio();
+                    } else {
+                        // Stream wasn't re-acquired, but visualization was stopped on pause
+                        // Resume AudioContext if suspended (iOS) and restart visualization
+                        if (audioContextRef.current?.state === 'suspended') {
+                            await audioContextRef.current.resume();
+                        }
+                        // Restart visualization (was stopped on pause)
+                        visualizeAudio();
+                    }
+                    
+                    setIsPaused(false);
+                    console.log('[QuickSOAP] Recording resumed successfully');
+                } else {
+                    console.error('[QuickSOAP] Resume failed');
+                    setError('Failed to resume recording. Please stop and start a new recording.');
+                }
+            } catch (err) {
+                console.error('[QuickSOAP] Error resuming recording:', err);
+                setError('Failed to resume recording. Please stop and start a new recording.');
+            }
         }
     };
 
@@ -2225,7 +2330,7 @@ const QuickSOAP = () => {
 
                                 {/* Add More Dictation Button - Show after transcription completes */}
                                 {!isRecording && dictations.length > 0 && !isTranscribing && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex justify-center ${dictations.length > 0 && isMobile ? 'mt-4 mb-2 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')}`}>
+                                    <div className={`flex flex-col items-center ${dictations.length > 0 && isMobile ? 'mt-4 mb-2 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')}`}>
                                         <button
                                             onClick={startRecording}
                                             disabled={isGenerating}
@@ -2233,7 +2338,7 @@ const QuickSOAP = () => {
                                             title="Add More Dictation"
                                         >
                                             <FaMicrophone className={isMobile ? 'text-3xl' : 'text-4xl'} />
-                                            <FaPlus className={`absolute ${isMobile ? 'text-lg' : 'text-xl'} bottom-1 right-1 bg-white text-primary-600 rounded-full p-1`} />
+                                            <span className={`absolute ${isMobile ? 'text-[10px]' : 'text-xs'} bottom-0 right-0 bg-white text-primary-600 rounded-full px-1.5 py-0.5 font-semibold shadow-sm`}>Add more +</span>
                                         </button>
                                     </div>
                                 )}
@@ -2382,7 +2487,7 @@ const QuickSOAP = () => {
 
                             {/* Add More Dictation Button - Show in generated view */}
                             {!isMobile && !isRecording && !isTranscribing && hasReport && (
-                                <div className="mb-4 flex justify-center flex-shrink-0">
+                                <div className="mb-4 flex flex-col items-center flex-shrink-0">
                                     <button
                                         onClick={startRecording}
                                         disabled={isGenerating}
@@ -2390,7 +2495,7 @@ const QuickSOAP = () => {
                                         title={dictations.length > 0 ? "Add More Dictation" : "Start Dictation"}
                                     >
                                         <FaMicrophone className="text-xl" />
-                                        {dictations.length > 0 && <FaPlus className="absolute text-sm bottom-1 right-1 bg-white text-primary-600 rounded-full p-1" />}
+                                        {dictations.length > 0 && <span className="absolute text-[10px] bottom-0 right-0 bg-white text-primary-600 rounded-full px-1.5 py-0.5 font-semibold shadow-sm">Add more +</span>}
                                     </button>
                                 </div>
                             )}

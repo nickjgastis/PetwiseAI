@@ -1,3 +1,7 @@
+otitis
+otitis externa
+otitis media
+otitis interna
 pancreatitis
 pyometra
 hemangiosarcoma

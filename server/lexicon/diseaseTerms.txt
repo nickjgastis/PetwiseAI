@@ -50,8 +50,10 @@ immune mediated thrombocytopenia
 imt
 thrombocytopenia
 pancytopenia
+otitis
 otitis externa
 otitis media
+otitis interna
 keratitis
 corneal ulcer
 uveitis

@@ -512,7 +512,7 @@ You must transcribe veterinary medical language with EXTREME PRECISION. Pay spec
 - Medication names (e.g., enrofloxacin, metronidazole, prednisolone, cephalexin, amoxicillin-clavulanate, furosemide, atenolol, gabapentin, tramadol, buprenorphine, maropitant, ondansetron)
 - Diagnostic terms (e.g., echocardiogram, electrocardiogram, radiographs, ultrasonography, cytology, histopathology, biochemistry, hematology)
 - Anatomical terms (e.g., gastrointestinal, cardiovascular, respiratory, musculoskeletal, integumentary, neurological, urogenital)
-- Disease names (e.g., diabetes mellitus, hyperadrenocorticism, hypothyroidism, chronic kidney disease, inflammatory bowel disease, atopic dermatitis)
+- Disease names (e.g., diabetes mellitus, hyperadrenocorticism, hypothyroidism, chronic kidney disease, inflammatory bowel disease, atopic dermatitis, otitis externa, otitis media, otitis interna)
 - Veterinary acronyms (e.g., CBC, CPL, TLI, BUN, CREA, ALT, AST, ALP, GGT, PT, PTT, ACTH, TSH, T4, FNA, BCS, MCS, IV, IM, SQ, PO, SID, BID, TID, QID, PRN)
 - Breed names and species-specific terminology
 - Dosage units (mg/kg, mL/kg, units/kg, mcg/kg)
@@ -854,7 +854,7 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
 
         // Whisper prompt should be example text, NOT instructions
         // This helps Whisper recognize veterinary terminology and maintain style
-        const basePrompt = `Veterinary medical dictation. Patient is a 5 year old male neutered Labrador Retriever presenting for vomiting and diarrhea. Physical exam: temperature 102.5, heart rate 120, respiratory rate 24. Abdomen is tense on palpation. Recommend CBC, chemistry panel, abdominal radiographs. Differential diagnoses include pancreatitis, gastroenteritis, foreign body obstruction. Started on maropitant 1 mg/kg SQ, metronidazole 15 mg/kg PO BID, and IV fluids with lactated Ringer's solution.`;
+        const basePrompt = `Veterinary medical dictation. Patient is a 5 year old male neutered Labrador Retriever presenting for vomiting and diarrhea. Physical exam: temperature 102.5, heart rate 120, respiratory rate 24. Abdomen is tense on palpation. Recommend CBC, chemistry panel, abdominal radiographs. Differential diagnoses include pancreatitis, gastroenteritis, foreign body obstruction. Started on maropitant 1 mg/kg SQ, metronidazole 15 mg/kg PO BID, and IV fluids with lactated Ringer's solution. Also treating for otitis externa with otic drops, suspect otitis media involvement.`;
 
         // Add continuation context if provided (helps with sentence continuity)
         let prompt = basePrompt;
@@ -1111,7 +1111,7 @@ You must transcribe veterinary medical language with EXTREME PRECISION. Pay spec
 - Medication names (e.g., enrofloxacin, metronidazole, prednisolone, cephalexin, amoxicillin-clavulanate, furosemide, atenolol, gabapentin, tramadol, buprenorphine, maropitant, ondansetron)
 - Diagnostic terms (e.g., echocardiogram, electrocardiogram, radiographs, ultrasonography, cytology, histopathology, biochemistry, hematology)
 - Anatomical terms (e.g., gastrointestinal, cardiovascular, respiratory, musculoskeletal, integumentary, neurological, urogenital)
-- Disease names (e.g., diabetes mellitus, hyperadrenocorticism, hypothyroidism, chronic kidney disease, inflammatory bowel disease, atopic dermatitis)
+- Disease names (e.g., diabetes mellitus, hyperadrenocorticism, hypothyroidism, chronic kidney disease, inflammatory bowel disease, atopic dermatitis, otitis externa, otitis media, otitis interna)
 - Veterinary acronyms (e.g., CBC, CPL, TLI, BUN, CREA, ALT, AST, ALP, GGT, PT, PTT, ACTH, TSH, T4, FNA, BCS, MCS, IV, IM, SQ, PO, SID, BID, TID, QID, PRN)
 - Breed names and species-specific terminology
 - Dosage units (mg/kg, mL/kg, units/kg, mcg/kg)
@@ -1370,108 +1370,132 @@ app.post('/api/generate-soap', async (req, res) => {
 CRITICAL RULES:
 - Be THOROUGH - every single piece of information from the transcript MUST be included
 - NOTHING should be left out - if it was mentioned, it goes in the SOAP
-- Use BULLET POINTS (- ) for each distinct finding, symptom, or piece of information
-- ONE point per line - never combine multiple findings into a single bullet
-- Each bullet should be a complete, descriptive sentence
+- DO NOT use dashes or bullet points - each line should be indented with spaces below headers
+- ONE point per line - never combine multiple findings into a single line
+- Each line should be a complete, descriptive sentence
+- All section headers must be bolded using **Header** markdown syntax
 - Use the defaults shown below ONLY if that system/vital was not mentioned
 - DO NOT include Weight in Physical Exam unless weight was specifically mentioned in the transcript
 
+ABSOLUTELY NO REPETITION - THIS IS CRITICAL:
+- NEVER repeat the same information in multiple sections
+- Each piece of information appears ONCE and ONLY ONCE in the entire SOAP
+- Presenting Complaint vs History: Presenting Complaint is ONLY the reason for visit (chief complaint). History is everything else the owner reported (symptoms, timeline, past conditions). If something is in Presenting Complaint, it CANNOT appear in History.
+- History vs Physical Exam: History contains what the OWNER reported/observed at home. Physical Exam contains what the VET found during examination. Owner observations go in History, vet findings go in Physical Exam - never both.
+- If you mention a finding in one section, DO NOT mention it again anywhere else in the SOAP
+
+PHYSICAL EXAM DEFAULTS - REPLACEMENT RULE:
+- The defaults shown (e.g., "Eyes: Clear, no discharge") are ONLY used when that body system was NOT mentioned at all
+- If the vet mentioned ANY finding for a body system, COMPLETELY REPLACE the default with the actual finding
+- NEVER keep the default AND add the actual finding - it's one or the other
+- Example: If vet says "eyes are red", write "Eyes: Erythema observed" - NOT "Eyes: Clear, no discharge. Erythema observed."
+
 Here is the output format:
 
-Subjective
-Presenting Complaint:
-- [Pet name, species, breed, age, and primary reason for visit - be detailed]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Subjective**
 
-History:
-- [Each owner-reported symptom or observation on its own bullet]
-- [Each timeline detail on its own bullet]
-- [Each past condition or treatment on its own bullet]
-- [Include EVERYTHING the owner mentioned]
+**Presenting Complaint:**
+  [Pet name, species, breed, age, and THE SINGLE PRIMARY REASON for visit - this is ONLY the chief complaint]
+  DO NOT include symptoms, history, or details here - just the main reason they came in
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
 
-Objective
-Vital Signs:
-- Temperature: WNL
-- Pulse: WNL
-- Respiratory Rate: WNL
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**History:**
+  [Write as professional clinical statements - DO NOT prefix with "Owner reports" or "Owner states"]
+  [Just state the facts: "Vomiting for 3 days" NOT "Owner reports vomiting for 3 days"]
+  [Timeline details - when things started, progression]
+  [Past medical conditions and treatments]
+  [Diet, medications, current home care]
+  DO NOT repeat the presenting complaint here
 
-Physical Exam
-- [ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
-- General: Bright, alert, responsive
-- Body Condition Score: 5/9
-- Hydration: Euhydrated
-- Mucous Membranes: Pink, moist
-- CRT: <2 seconds
-- Cardiovascular: Heart sounds normal, no murmurs detected, regular sinus rhythm
-- Respiratory: Normal bronchovesicular sounds
-- Abdomen: Soft, non-painful abdomen on palpation
-- Musculoskeletal: Ambulatory, no lameness observed
-- Neurologic: Appropriate mentation, normal gait
-- Integumentary: No lesions, normal coat condition, no ectoparasites observed
-- Lymph Nodes: No lymphadenopathy
-- Eyes: Clear, no discharge
-- Ears: Clean, no debris or odor
-- Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
-- Nose: No abnormal findings
-- Throat: No abnormal findings
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Objective**
 
+**Vital Signs:**
+  Temperature: WNL
+  Pulse: WNL
+  Respiratory Rate: WNL
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+
+**Physical Exam**
+  NOTE: This section is ONLY for what the VET observed/found during examination - NOT owner reports
+  DO NOT repeat anything already mentioned in History - if owner reported it, it stays in History only
+  IMPORTANT: If vet mentioned a finding for any system below, REPLACE the default entirely - never keep both
+  [ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
+  General: Bright, alert, responsive
+  Body Condition Score: 5/9
+  Hydration: Euhydrated
+  Mucous Membranes: Pink, moist
+  CRT: <2 seconds
+  Cardiovascular: Heart sounds normal, no murmurs detected, regular sinus rhythm
+  Respiratory: Normal bronchovesicular sounds
+  Abdomen: Soft, non-painful abdomen on palpation
+  Musculoskeletal: Ambulatory, no lameness observed
+  Neurologic: Appropriate mentation, normal gait
+  Integumentary: No lesions, normal coat condition, no ectoparasites observed
+  Lymph Nodes: No lymphadenopathy
+  Eyes: Clear, no discharge
+  Ears: Clean, no debris or odor
+  Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
+  Nose: No abnormal findings
+  Throat: No abnormal findings
+  Urogenital: Normal
+  
 Masses:
-- [Only include this section if masses/lumps mentioned - each mass on its own bullet with location, size, consistency]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+  [Only include masses the VET examined - with location, size, consistency from vet's exam]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
 
-Diagnostics Performed:
-- [Each test and its results on its own bullet, or "None performed"]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Diagnostics Performed:**
+  [Each test and its results on its own line, or "None performed"]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-Assessment
+**Assessment**
 
-Assessment:
-- Summarize the clinician's medical reasoning and the most relevant abnormal and normal findings from the history, physical exam, and diagnostics.
-- State the veterinarian's assessment and clinical impressions in clear, declarative medical statements.
-- Include differential diagnoses only if they are directly supported by the documented findings; do not speculate or broaden beyond the provided information.
-- Explicitly rule out conditions only when the SOAP data supports exclusion.
-- Do not restate the Plan, propose actions, or reference future intent.
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Assessment:**
+  [Each statement on its own line - concise professional medical sentences]
+  [Use formal veterinary medical terminology exclusively - no layman terms]
+  [Summarize key clinical findings and their significance]
+  [State clinical impressions as declarative medical statements]
+  [Include differentials only if directly supported by findings]
+  [Do NOT restate the Plan or reference future actions here]
+  Example format:
+    Patient presents with acute onset emesis and hyporexia of 72 hours duration.
+    Physical examination reveals mild dehydration and epigastric discomfort on palpation.
+    Clinical presentation consistent with acute gastroenteritis.
 
-Problem List:
-- [Each problem on its own bullet - use veterinary medical terms]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-Primary Diagnosis:
-- [Formal veterinary diagnostic term]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Diagnosis:**
+  [Each diagnosis on its own line with DDx directly underneath]
+  [Format: Diagnosis name, then DDx: comma-separated differentials for that specific diagnosis]
+  [Use formal veterinary medical terminology only]
+  Example format:
+    Acute Gastroenteritis
+    DDx: Dietary indiscretion, Infectious enteritis (viral/bacterial), Parasitic infections (e.g., giardiasis)
 
-Differential Diagnoses:
-- [First differential]
-- [Second differential]
-- [Third differential]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+    Dehydration due to Vomiting and Diarrhea
+    DDx: Acute kidney injury secondary to dehydration, Electrolyte imbalances
 
-Plan:
+**Plan:**
 
-Treatment:
-- [Each medication on its own bullet with dose, route, frequency]
-- [Each vaccine on its own bullet]
-- [Each procedure on its own bullet]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Treatment:**
+  [Each medication on its own line with dose, route, frequency]
+  [Each vaccine on its own line]
+  [Each procedure on its own line]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-Monitoring:
-- [Each monitoring instruction on its own bullet]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Monitoring:**
+  [Each monitoring instruction on its own line]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-Client Communication:
-- [Each discussion point on its own bullet]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Client Communication:**
+  [Each discussion point on its own line]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-Recommended Diagnostics:
-- [Each recommended test on its own bullet, or "None recommended"]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Recommended Diagnostics:**
+  [Each recommended test on its own line, or "None recommended"]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-Follow-up:
-- [Follow-up instructions]
-- USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+**Follow-up:**
+  [Follow-up instructions]
+  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 PET_NAME: [extracted name or "no name provided"]`,
             model: "gpt-4o-mini"
