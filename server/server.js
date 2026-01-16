@@ -1297,6 +1297,7 @@ app.post('/api/generate-soap', async (req, res) => {
         - Do NOT upgrade or strengthen what was said (no extra certainty).
         
         Use exactly these headings:
+        - PATIENT_IDENTIFICATION
         - OWNER_COMMENTS
         - VET_COMMENTS_AND_EXAM
         - MEDICATIONS_AND_TREATMENTS
@@ -1304,6 +1305,20 @@ app.post('/api/generate-soap', async (req, res) => {
         - DIAGNOSTIC_IMPRESSIONS_AND_DIAGNOSES
         - RECOMMENDATIONS_AND_PLAN
         - OTHER_NOTES
+        
+        PATIENT_IDENTIFICATION RULES (CRITICAL - DO THIS FIRST):
+        - This section MUST always be included, even if some info is missing
+        - Extract and list: Pet Name, Species, Breed, Age, Sex/Neuter status, Weight
+        - The pet's name is often said early in the recording (e.g., "This is Bella", "Fluffy is here for...", "Max came in because...")
+        - Listen for possessive forms too (e.g., "Bella's owner reports..." means the pet is named Bella)
+        - If a name is mentioned ANYWHERE in the transcript, capture it here
+        - Format as:
+          - Pet Name: [name or "not mentioned"]
+          - Species: [species or "not mentioned"]
+          - Breed: [breed or "not mentioned"]
+          - Age: [age or "not mentioned"]
+          - Sex: [sex/neuter status or "not mentioned"]
+          - Weight: [weight or "not mentioned"]
         
         Within each heading:
         - Use bullet points starting with "- ".
@@ -1366,6 +1381,13 @@ app.post('/api/generate-soap', async (req, res) => {
         const soapFormatter = new Agent({
             name: "SOAP Formatter",
             instructions: `Take the SOAP information given to you and slot it into a properly formatted SOAP.
+
+CRITICAL - PET NAME EXTRACTION (DO THIS FIRST):
+- Look for "Pet Name:" in the PATIENT_IDENTIFICATION section
+- At the VERY END of your output, you MUST include: PET_NAME: [the pet's name]
+- If a name was provided (anything other than "not mentioned"), use that exact name
+- If no name was found, output: PET_NAME: no name provided
+- This line MUST appear as the last line of your response, after all SOAP content
 
 CRITICAL RULES:
 - Be THOROUGH - every single piece of information from the transcript MUST be included
@@ -1497,7 +1519,8 @@ Masses:
   [Follow-up instructions]
   USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
-PET_NAME: [extracted name or "no name provided"]`,
+REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
+PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,
             model: "gpt-4o-mini"
         });
 
