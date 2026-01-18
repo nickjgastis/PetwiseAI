@@ -71,7 +71,7 @@ const ProductPage = () => {
                         <div className="pricing-card">
                             <div className="pricing-header">
                                 <h3>Monthly</h3>
-                                <p className="price">$129<span> USD/Vet/Month</span></p>
+                                <p className="price">$79<span> USD/Vet/Month</span></p>
                             </div>
                             <ul className="pricing-features">
                                 <li>Unlimited SOAP reports</li>
@@ -112,7 +112,7 @@ const ProductPage = () => {
                         <div className="pricing-card">
                             <div className="pricing-header">
                                 <h3>Yearly</h3>
-                                <p className="price">$89<span> USD/Vet/Month</span></p>
+                                <p className="price">$69<span> USD/Vet/Month</span></p>
                                 <p className="savings">Save 31%</p>
                             </div>
                             <ul className="pricing-features">

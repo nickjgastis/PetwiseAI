@@ -28,14 +28,14 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
 
     const PRICES = {
         usd: {
-            monthly: 129,
-            yearly: 89,
+            monthly: 79,
+            yearly: 69,  // $828/year = $69/month
             symbol: '$',
             code: 'USD'
         },
         cad: {
-            monthly: 179,
-            yearly: 126,
+            monthly: 109,
+            yearly: 96,  // $1152/year = $96/month
             symbol: '$',
             code: 'CAD'
         }

@@ -169,17 +169,17 @@ app.use('/student', studentRouter);
 // ================ CONSTANTS ================
 const PRICE_IDS = {
     monthly_usd: process.env.NODE_ENV === 'production'
-        ? 'price_1QdhwtFpF2XskoMK2RjFj916'  // Live monthly USD
-        : 'price_1QcwX5FpF2XskoMKrTsq1kHc',  // Test monthly USD
+        ? 'price_1SqkmIFpF2XskoMKmFkWtTn1'  // Live monthly USD - $79/mo
+        : 'price_1QcwX5FpF2XskoMKrTsq1kHc',  // Test monthly USD (old test price - update if needed)
     yearly_usd: process.env.NODE_ENV === 'production'
-        ? 'price_1Qdhz7FpF2XskoMK7O7GjJTn'   // Live yearly USD
-        : 'price_1QcwYWFpF2XskoMKH9MJisoy',   // Test yearly USD
+        ? 'price_1SqkpJFpF2XskoMKoJN7r7ia'   // Live yearly USD - $828/yr
+        : 'price_1QcwYWFpF2XskoMKH9MJisoy',   // Test yearly USD (old test price - update if needed)
     monthly_cad: process.env.NODE_ENV === 'production'
-        ? 'price_1QvnroFpF2XskoMKrXzdKYw7'    // Live monthly CAD
-        : 'price_1QvoD2FpF2XskoMKsTtPM7mg',   // Test monthly CAD
+        ? 'price_1SqkriFpF2XskoMK9fpoWAHy'    // Live monthly CAD - $109/mo
+        : 'price_1QvoD2FpF2XskoMKsTtPM7mg',   // Test monthly CAD (old test price - update if needed)
     yearly_cad: process.env.NODE_ENV === 'production'
-        ? 'price_1Qvno7FpF2XskoMKbAXkVZzh'    // Live yearly CAD
-        : 'price_1QvoCfFpF2XskoMKfLelrbhT',   // Test yearly CAD
+        ? 'price_1SqkvbFpF2XskoMK4qShTokL'    // Live yearly CAD - $1152/yr
+        : 'price_1QvoCfFpF2XskoMKfLelrbhT',   // Test yearly CAD (old test price - update if needed)
     test: process.env.NODE_ENV === 'production'
         ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
         : 'price_1QcwYWFpF2XskoMKH9MJisoy'
