@@ -1,23 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
-import Checkout from './Checkout';
 import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import ManageSubscription from './ManageSubscription';
-import { loadStripe } from '@stripe/stripe-js';
+import { FaGraduationCap } from 'react-icons/fa';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
-
-const stripePromise = loadStripe(
-    process.env.NODE_ENV === 'production'
-        ? process.env.REACT_APP_STRIPE_PUBLIC_KEY_LIVE
-        : process.env.REACT_APP_STRIPE_PUBLIC_KEY
-);
 
 const Profile = ({ isMobileSignup = false }) => {
     const { user, isAuthenticated, isLoading: auth0Loading, logout } = useAuth0();
@@ -295,28 +288,31 @@ const Profile = ({ isMobileSignup = false }) => {
                                 !isStudentMode() &&
                                 (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
                                     <div className="py-12 bg-white">
-                                        <div className="max-w-4xl mx-auto px-6">
-                                            <div className="text-center mb-8">
-                                                <h2 className="text-3xl font-bold text-primary-400 mb-3">Get Started with PetWise</h2>
-                                                <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+                                        <div className="max-w-lg mx-auto px-6">
+                                            <div className="bg-gradient-to-br from-[#3468bd] to-[#2a5298] rounded-2xl p-8 text-center text-white shadow-xl">
+                                                <h2 className="text-2xl font-bold mb-3">Get Started with PetWise</h2>
+                                                <p className="text-white/80 mb-6">
                                                     {isMobileSignup
                                                         ? "Start with a free trial. No credit card required."
-                                                        : "Choose the perfect plan for your veterinary practice. Start with a free trial or select a subscription that fits your needs."
+                                                        : "Choose the perfect plan for your veterinary practice."
                                                     }
                                                 </p>
+                                                <div className="flex flex-col gap-3">
+                                                    <button
+                                                        onClick={() => setShowCheckout(true)}
+                                                        className="w-full py-3 px-6 bg-white text-[#3468bd] font-semibold rounded-xl hover:bg-gray-100 transition-all shadow-lg"
+                                                    >
+                                                        View Plans & Start Free Trial
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setShowStudentRedeem(true)}
+                                                        className="w-full py-3 px-6 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <FaGraduationCap />
+                                                        Student Access
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <Checkout
-                                                user={{
-                                                    ...user,
-                                                    ...userData,
-                                                    cancel_at_period_end: cancelAtPeriodEnd
-                                                }}
-                                                subscriptionStatus={subscriptionStatus}
-                                                onBack={null}
-                                                embedded={true}
-                                                isMobileSignup={isMobileSignup}
-                                                onSubscriptionChange={checkSubscription}
-                                            />
                                         </div>
                                     </div>
                                 )}

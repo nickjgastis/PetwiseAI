@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { FaCheck, FaCrown } from 'react-icons/fa';
+import { FaCheck, FaCrown, FaGraduationCap } from 'react-icons/fa';
+import StudentRedeem from './StudentRedeem';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -15,6 +16,7 @@ const API_URL = process.env.NODE_ENV === 'production'
 const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
     const [isLoading, setIsLoading] = useState(null); // Track which button is loading
     const [currency, setCurrency] = useState('usd');
+    const [showStudentRedeem, setShowStudentRedeem] = useState(false);
 
     const PRICES = {
         usd: {
@@ -101,6 +103,16 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
         }
     };
 
+    const handleStudentRedeemSuccess = () => {
+        setShowStudentRedeem(false);
+        // Dispatch event to notify Dashboard and other components
+        window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+        // Notify parent that plan was selected (similar to trial activation)
+        if (onTrialActivated) {
+            onTrialActivated();
+        }
+    };
+
     const features = [
         'Unlimited SOAP reports',
         'QuickSOAP voice dictation',
@@ -112,6 +124,17 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center justify-center p-4 sm:p-8">
+            {/* Student Redeem Modal */}
+            {showStudentRedeem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <StudentRedeem
+                        onSuccess={handleStudentRedeemSuccess}
+                        onCancel={() => setShowStudentRedeem(false)}
+                        userData={user}
+                    />
+                </div>
+            )}
+
             {/* Header */}
             <div className="text-center mb-8 sm:mb-12">
                 <div className="flex items-center justify-center gap-3 mb-4">
@@ -248,6 +271,21 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                         {isLoading === 'yearly' ? 'Processing...' : 'Get Yearly'}
                     </button>
                 </div>
+            </div>
+
+            {/* Student Access Button */}
+            <div className="mt-8 flex flex-col items-center">
+                <button
+                    onClick={() => setShowStudentRedeem(true)}
+                    disabled={isLoading !== null}
+                    className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                    <FaGraduationCap />
+                    Student Access
+                </button>
+                <p className="text-white/70 text-xs mt-2 text-center">
+                    Vet students get free access with school credentials
+                </p>
             </div>
 
             {/* Footer note */}

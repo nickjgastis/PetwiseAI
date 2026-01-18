@@ -2423,6 +2423,51 @@ app.post('/delete-account', async (req, res) => {
     }
 });
 
+// ================ PASSWORD CHANGE ENDPOINT ================
+app.post('/request-password-change', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email is required' });
+        }
+
+        // Call Auth0's change password endpoint
+        const auth0Domain = process.env.REACT_APP_AUTH0_DOMAIN;
+        const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
+
+        if (!auth0Domain || !clientId) {
+            console.error('Auth0 configuration missing');
+            return res.status(500).json({ error: 'Auth0 configuration error' });
+        }
+
+        const response = await fetch(`https://${auth0Domain}/dbconnections/change_password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                client_id: clientId,
+                email: email,
+                connection: 'Username-Password-Authentication'
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Auth0 password change error:', errorText);
+            throw new Error('Failed to send password reset email');
+        }
+
+        console.log('Password reset email sent to:', email);
+        res.json({ success: true, message: 'Password reset email sent' });
+
+    } catch (error) {
+        console.error('Password change request error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Add new endpoint to handle access code activation
 app.post('/activate-access-code', async (req, res) => {
     try {

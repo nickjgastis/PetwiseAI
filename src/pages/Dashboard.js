@@ -687,7 +687,7 @@ const Dashboard = () => {
         }
     }, [isAuthenticated, user]);
 
-    // Listen for subscription updates from Checkout component
+    // Listen for subscription updates from PlanSelection/ManageSubscription components
     useEffect(() => {
         const handleSubscriptionUpdate = () => {
             // Small delay to ensure database has updated

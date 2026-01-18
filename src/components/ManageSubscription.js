@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { FaCheck, FaCrown, FaArrowLeft, FaCreditCard } from 'react-icons/fa';
+import { FaCheck, FaCrown, FaArrowLeft, FaCreditCard, FaGraduationCap } from 'react-icons/fa';
+import StudentRedeem from './StudentRedeem';
+import { useNavigate } from 'react-router-dom';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -13,8 +15,10 @@ const API_URL = process.env.NODE_ENV === 'production'
     : 'http://localhost:3001';
 
 const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, onBack, onSubscriptionChange }) => {
+    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(null);
     const [currency, setCurrency] = useState('usd');
+    const [showStudentRedeem, setShowStudentRedeem] = useState(false);
 
     const PRICES = {
         usd: {
@@ -134,6 +138,24 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         }
     };
 
+    const handleStudentRedeemSuccess = () => {
+        setShowStudentRedeem(false);
+        // Refresh subscription data in parent component if callback provided
+        if (onSubscriptionChange) {
+            setTimeout(() => {
+                onSubscriptionChange();
+            }, 300);
+        }
+        // Dispatch event to notify Dashboard and other components
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+        }, 300);
+        // Small delay to ensure database has updated, then navigate to QuickSOAP
+        setTimeout(() => {
+            navigate('/dashboard/quicksoap');
+        }, 500);
+    };
+
     const features = [
         'Unlimited SOAP reports',
         'QuickSOAP voice dictation',
@@ -159,6 +181,17 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
     return (
         <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center p-4 sm:p-8 overflow-y-auto">
+            {/* Student Redeem Modal */}
+            {showStudentRedeem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                    <StudentRedeem
+                        onSuccess={handleStudentRedeemSuccess}
+                        onCancel={() => setShowStudentRedeem(false)}
+                        userData={user}
+                    />
+                </div>
+            )}
+
             {/* Header with back button */}
             <div className="w-full max-w-5xl mb-6">
                 <button
@@ -346,8 +379,19 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                 </div>
             </div>
 
-            {/* Billing Settings Button */}
-            <div className="w-full max-w-5xl flex justify-center">
+            {/* Action Buttons - Student Access & Billing Settings */}
+            <div className="w-full max-w-5xl flex justify-center gap-4 flex-wrap">
+                {/* Student Access Button - Always visible */}
+                <button
+                    onClick={() => setShowStudentRedeem(true)}
+                    disabled={isLoading !== null}
+                    className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                    <FaGraduationCap />
+                    Student Access
+                </button>
+                
+                {/* Billing Settings - Only for Stripe customers */}
                 {hasStripeCustomer && (
                     <button
                         onClick={handleBillingPortal}
