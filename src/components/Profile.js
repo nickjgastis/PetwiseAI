@@ -6,6 +6,7 @@ import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
+import ManageSubscription from './ManageSubscription';
 import { loadStripe } from '@stripe/stripe-js';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -264,15 +265,15 @@ const Profile = ({ isMobileSignup = false }) => {
                     {/* Removed mobile banner and subscription header for cleaner mobile experience */}
 
                     {showCheckout ? (
-                        <Checkout
+                        <ManageSubscription
                             user={{
                                 ...user,
                                 ...userData,
                                 cancel_at_period_end: cancelAtPeriodEnd
                             }}
-                            onBack={() => setShowCheckout(false)}
                             subscriptionStatus={subscriptionStatus}
-                            isMobileSignup={isMobileSignup}
+                            subscriptionInterval={userData?.subscription_interval}
+                            onBack={() => setShowCheckout(false)}
                             onSubscriptionChange={checkSubscription}
                         />
                     ) : showManageAccount ? (
@@ -388,14 +389,6 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 Upgrade to Paid Plan
                                             </button>
                                         )}
-                                        {userData?.stripe_customer_id && (
-                                            <button
-                                                className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-                                                onClick={handleBillingPortal}
-                                            >
-                                                Billing Management
-                                            </button>
-                                        )}
                                         {canRedeemStudentAccess() && (
                                             <button
                                                 className="px-7 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
@@ -461,90 +454,137 @@ const Profile = ({ isMobileSignup = false }) => {
                                 </>
                             )}
 
-                            {/* Add mobile subscription management for subscribed users */}
-                            {isMobileSignup && isSubscribed && (
-                                <>
-                                    {/* Mobile Past Due Warning Banner */}
+                            {/* Mobile Profile Page - Modern Design */}
+                            {isMobileSignup && (
+                                <div className="px-4 py-6 space-y-4">
+                                    {/* Profile Header Card */}
+                                    <div className="bg-gradient-to-br from-[#3468bd] to-[#2a5298] rounded-2xl p-5 text-white shadow-lg">
+                                        <div className="flex items-center gap-4">
+                                            <img
+                                                src={getOptimizedImageUrl(user?.picture)}
+                                                alt="Profile"
+                                                className="w-16 h-16 rounded-full border-3 border-white/30 shadow-md object-cover"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <h2 className="text-xl font-bold truncate">
+                                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name || 'Welcome'}
+                                                </h2>
+                                                <p className="text-white/80 text-sm truncate">{user?.email}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Past Due Warning */}
                                     {subscriptionStatus === 'past_due' && (
-                                        <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 p-4 w-full">
-                                            <div className="flex flex-col items-center gap-3 text-center">
-                                                <div className="text-2xl">⚠️</div>
-                                                <div>
-                                                    <h3 className="text-red-800 text-lg font-bold mb-1">Payment Past Due</h3>
-                                                    <p className="text-red-700 font-medium text-sm leading-relaxed">
-                                                        Your payment is past due.
-                                                        {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
-                                                            ` Service will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless resolved.`
-                                                        )}
-                                                        {getGracePeriodDays() === 0 && (
-                                                            ` Grace period expired. Update payment immediately.`
-                                                        )}
-                                                        {getGracePeriodDays() === null && (
-                                                            ` Please update your payment method to continue service.`
-                                                        )}
+                                        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                                            <div className="flex items-start gap-3">
+                                                <span className="text-xl">⚠️</span>
+                                                <div className="flex-1">
+                                                    <h3 className="text-red-800 font-bold mb-1">Payment Past Due</h3>
+                                                    <p className="text-red-700 text-sm mb-3">
+                                                        {getGracePeriodDays() !== null && getGracePeriodDays() > 0
+                                                            ? `Service will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'}.`
+                                                            : 'Please update your payment method.'}
                                                     </p>
+                                                    {userData?.stripe_customer_id && (
+                                                        <button
+                                                            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm w-full"
+                                                            onClick={handleBillingPortal}
+                                                        >
+                                                            Fix Payment Issue
+                                                        </button>
+                                                    )}
                                                 </div>
-                                                {userData?.stripe_customer_id && (
-                                                    <button
-                                                        className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full max-w-xs min-h-[44px]"
-                                                        onClick={handleBillingPortal}
-                                                    >
-                                                        Fix Payment Issue
-                                                    </button>
-                                                )}
                                             </div>
                                         </div>
                                     )}
 
-                                    <div className="bg-white p-4 border-t border-b border-gray-200 mb-5">
-                                        <h3 className="text-gray-800 text-lg font-semibold mb-3 text-center">Your Subscription</h3>
-                                        <div className="bg-primary-50 p-3 rounded-lg border-l-4 border-primary-600 mb-4">
-                                            <p className="text-sm text-gray-700 font-medium mb-1"><strong>Status:</strong> {getSubscriptionStatus()}</p>
-                                            <p className="text-sm text-gray-700 font-medium"><strong>Plan:</strong> {getSubscriptionDisplay()}</p>
-                                        </div>
-                                        <div className="flex flex-col gap-2">
-                                            <button
-                                                className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
-                                                onClick={handleBillingClick}
-                                            >
-                                                Manage Subscription
-                                            </button>
-                                            {userData?.stripe_customer_id && (
+                                    {/* Subscription Card */}
+                                    {isSubscribed && (
+                                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                            <div className="p-4 border-b border-gray-100">
+                                                <h3 className="text-gray-800 font-semibold flex items-center gap-2">
+                                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                                    Your Subscription
+                                                </h3>
+                                            </div>
+                                            <div className="p-4 space-y-3">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-500 text-sm">Status</span>
+                                                    <span className="text-gray-800 font-medium text-sm">{getSubscriptionStatus()}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-gray-500 text-sm">Plan</span>
+                                                    <span className="text-gray-800 font-medium text-sm">{getSubscriptionDisplay()}</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-4 bg-gray-50">
                                                 <button
-                                                    className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
-                                                    onClick={handleBillingPortal}
+                                                    className="w-full bg-[#3468bd] text-white py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform"
+                                                    onClick={handleBillingClick}
                                                 >
-                                                    Billing Management
+                                                    Manage Subscription
                                                 </button>
-                                            )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Quick Actions */}
+                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                                        <div className="p-4 border-b border-gray-100">
+                                            <h3 className="text-gray-800 font-semibold">Account</h3>
+                                        </div>
+                                        <div className="divide-y divide-gray-100">
+                                            <button
+                                                className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                                                onClick={() => setShowManageAccount(true)}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                                                        <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-800 font-medium">Account Settings</p>
+                                                        <p className="text-gray-500 text-xs">Manage your account details</p>
+                                                    </div>
+                                                </div>
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
+                                            <button
+                                                className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                                                onClick={() => logout({
+                                                    logoutParams: {
+                                                        returnTo: 'https://petwise.vet'
+                                                    }
+                                                })}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                                                        <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                        </svg>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-red-600 font-medium">Log Out</p>
+                                                        <p className="text-gray-500 text-xs">Sign out of your account</p>
+                                                    </div>
+                                                </div>
+                                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            </button>
                                         </div>
                                     </div>
-                                </>
-                            )}
 
-                            {/* Add mobile account management for all mobile users */}
-                            {isMobileSignup && (
-                                <div className="bg-white p-4 border-t border-b border-gray-200 mb-5">
-                                    <h3 className="text-gray-800 text-lg font-semibold mb-3 text-center">Account Management</h3>
-                                    <p className="text-gray-600 text-sm text-center mb-4">View and manage your account settings, or delete your account.</p>
-                                    <div className="flex flex-col gap-2">
-                                        <button
-                                            className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
-                                            onClick={() => setShowManageAccount(true)}
-                                        >
-                                            Manage Account
-                                        </button>
-                                        <button
-                                            className="bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-lg font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg w-full min-h-[44px]"
-                                            onClick={() => logout({
-                                                logoutParams: {
-                                                    returnTo: 'https://petwise.vet'
-                                                }
-                                            })}
-                                        >
-                                            Log Out
-                                        </button>
-                                    </div>
+                                    {/* App Version */}
+                                    <p className="text-center text-gray-400 text-xs pt-4">
+                                        Petwise.vet • Version 1.0
+                                    </p>
                                 </div>
                             )}
                         </>

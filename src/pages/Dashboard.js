@@ -12,6 +12,8 @@ import QuickSOAP from '../pages/QuickSOAP';
 import Help from '../components/Help';
 import Welcome from '../components/Welcome';
 import Templates from '../components/Templates';
+import PlanSelection from '../components/PlanSelection';
+import WelcomeToPetwise from '../components/WelcomeToPetwise';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile } from 'react-icons/fa';
@@ -69,6 +71,8 @@ const Dashboard = () => {
     const [showMobileProfile, setShowMobileProfile] = useState(false);
     const [hasPendingDictation, setHasPendingDictation] = useState(false);
     const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
+    const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default true for existing users
+    const [showWelcomePage, setShowWelcomePage] = useState(false); // Show welcome after plan selection
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
     const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
@@ -596,7 +600,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding')
                 .eq('auth0_user_id', user.sub)
                 .single();
 
@@ -662,6 +666,7 @@ const Dashboard = () => {
 
                 setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
                 setUserData(data);
+                setHasCompletedOnboarding(data.has_completed_onboarding !== false); // Treat null/true as completed
 
                 if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
                     setNeedsWelcome(true);
@@ -772,6 +777,42 @@ const Dashboard = () => {
             setNeedsWelcome(false);
             setUserData(updatedData);
         }} />;
+    }
+
+    // Check if user needs to complete onboarding (select plan + see welcome page)
+    if (!hasCompletedOnboarding) {
+        // If they haven't selected a plan yet, show plan selection
+        if (!subscriptionStatus || subscriptionStatus === 'inactive') {
+            return <PlanSelection 
+                user={{ ...user, sub: user.sub }} 
+                onTrialActivated={() => {
+                    // Trial was activated, show welcome page
+                    setShowWelcomePage(true);
+                    setSubscriptionStatus('active');
+                    checkSubscription(); // Refresh data
+                }}
+            />;
+        }
+        
+        // They have a plan but haven't completed onboarding - show welcome page
+        return <WelcomeToPetwise 
+            user={user}
+            onComplete={() => {
+                setHasCompletedOnboarding(true);
+                setShowWelcomePage(false);
+            }}
+        />;
+    }
+
+    // If showWelcomePage is true (just activated trial), show welcome
+    if (showWelcomePage) {
+        return <WelcomeToPetwise 
+            user={user}
+            onComplete={() => {
+                setHasCompletedOnboarding(true);
+                setShowWelcomePage(false);
+            }}
+        />;
     }
 
     // After onboarding, check if on mobile
