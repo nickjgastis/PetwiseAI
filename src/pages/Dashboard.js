@@ -34,6 +34,17 @@ const slideDownStyle = `
             transform: translateY(0);
         }
     }
+    @keyframes pwaFadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+    .pwa-fade-in {
+        animation: pwaFadeIn 0.4s ease-out forwards;
+    }
     @keyframes fadeUp {
         from {
             opacity: 0;
@@ -70,6 +81,7 @@ const Dashboard = () => {
     const [isMobile, setIsMobile] = useState(false);
     const [showMobileProfile, setShowMobileProfile] = useState(false);
     const [hasPendingDictation, setHasPendingDictation] = useState(false);
+    const [mobileAppVisible, setMobileAppVisible] = useState(false); // For PWA fade-in animation
     const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default true for existing users
     const [showWelcomePage, setShowWelcomePage] = useState(false); // Show welcome after plan selection
@@ -137,6 +149,24 @@ const Dashboard = () => {
             window.removeEventListener('resize', checkMobile);
         };
     }, []);
+
+    // ================ PWA FADE-IN ANIMATION ================
+    useEffect(() => {
+        // Only trigger fade-in for PWA after loading completes
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        if (isStandalone && !isLoading && isMobile) {
+            // Small delay to ensure DOM is ready, then fade in
+            const timer = setTimeout(() => {
+                setMobileAppVisible(true);
+            }, 50);
+            return () => clearTimeout(timer);
+        } else if (!isStandalone || !isMobile) {
+            // On desktop or browser, show immediately
+            setMobileAppVisible(true);
+        }
+    }, [isLoading, isMobile]);
 
     // ================ FETCH NEW MOBILE DICTATIONS (Background polling with queue) ================
     // This runs continuously even when QuickSOAP tab is not active, so sidebar can show alerts
@@ -842,7 +872,8 @@ const Dashboard = () => {
             }
             // Render QuickSOAP with mobile header and bottom nav
             return (
-                <>
+                <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
+                    <style>{slideDownStyle}</style>
                     {/* Mobile Header */}
                     <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
@@ -867,6 +898,7 @@ const Dashboard = () => {
                                 <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">QuickSOAP</span>
                             </Link>
+                            {/* PetQuery hidden for now - keeping code
                             <Link
                                 to="/dashboard/quick-query"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -874,6 +906,7 @@ const Dashboard = () => {
                                 <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">PetQuery</span>
                             </Link>
+                            */}
                             <Link
                                 to="/dashboard/profile"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -883,7 +916,7 @@ const Dashboard = () => {
                             </Link>
                         </div>
                     </nav>
-                </>
+                </div>
             );
         }
 
@@ -896,7 +929,8 @@ const Dashboard = () => {
             }
             // Render PetQuery with mobile header and bottom nav
             return (
-                <>
+                <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
+                    <style>{slideDownStyle}</style>
                     {/* Mobile Header */}
                     <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
@@ -921,6 +955,7 @@ const Dashboard = () => {
                                 <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">QuickSOAP</span>
                             </Link>
+                            {/* PetQuery hidden for now - keeping code
                             <Link
                                 to="/dashboard/quick-query"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -928,6 +963,7 @@ const Dashboard = () => {
                                 <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">PetQuery</span>
                             </Link>
+                            */}
                             <Link
                                 to="/dashboard/profile"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -937,7 +973,7 @@ const Dashboard = () => {
                             </Link>
                         </div>
                     </nav>
-                </>
+                </div>
             );
         }
 
@@ -955,7 +991,8 @@ const Dashboard = () => {
         // If on profile route, allow it but hide sidebar and only show profile with bottom nav
         if (window.location.pathname.includes('/profile')) {
             return (
-                <>
+                <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
+                    <style>{slideDownStyle}</style>
                     {/* Mobile Header */}
                     <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
@@ -981,6 +1018,7 @@ const Dashboard = () => {
                                         <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
                                         <span className="text-xs font-medium">QuickSOAP</span>
                                     </Link>
+                                    {/* PetQuery hidden for now - keeping code
                                     <Link
                                         to="/dashboard/quick-query"
                                         className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -988,6 +1026,7 @@ const Dashboard = () => {
                                         <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
                                         <span className="text-xs font-medium">PetQuery</span>
                                     </Link>
+                                    */}
                                 </>
                             )}
                             <Link
@@ -999,7 +1038,7 @@ const Dashboard = () => {
                             </Link>
                         </div>
                     </nav>
-                </>
+                </div>
             );
         }
 
