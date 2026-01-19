@@ -2088,12 +2088,12 @@ const QuickSOAP = () => {
                 </div>
             )}
 
-            <div className={`${isMobile ? 'h-screen overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full`} style={isMobile ? { overflowY: 'hidden', height: '100vh', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 } : {}}>
+            <div className={`${isMobile ? 'h-full' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full`} style={isMobile ? { height: '100%', minHeight: '100%' } : {}}>
                 {/* Left Side - Input Area */}
                 <div
-                    className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed top-0 bottom-0 z-40'}
+                    className={isMobile ? 'relative w-full h-full z-40' : 'fixed top-0 bottom-0 z-40'}
                     style={{
-                        ...(isMobile ? { overflowY: 'hidden', height: '100vh' } : {}),
+                        ...(isMobile ? { height: '100%' } : {}),
                         ...(hasReport ? {
                             left: isMobile ? '0' : (isSidebarCollapsed ? '80px' : '224px'),
                             width: isMobile ? '100%' : '25%',
@@ -2114,10 +2114,10 @@ const QuickSOAP = () => {
                 >
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className={`h-full flex flex-col items-center ${dictations.length > 0 && isMobile && !isRecording ? 'justify-start pt-4' : 'justify-center'} ${isMobile ? 'px-4 overflow-hidden' : 'px-8'}`} style={dictations.length > 0 && isMobile && !isRecording ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh' } : (isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh' } : {})}>
+                        <div className={`h-full flex flex-col items-center ${isMobile && isRecording ? 'justify-center px-4' : (isMobile ? 'justify-start px-4 overflow-y-auto pt-6 pb-6' : 'justify-center px-8')}`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-3' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
+                                <div className={`${isMobile ? 'mb-4 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
                                     {dictations.length === 0 || !isMobile ? (
                                         <>
                                             {/* Disclaimer - hide after first dictation on desktop */}
@@ -2173,7 +2173,7 @@ const QuickSOAP = () => {
 
                             {/* Error Message */}
                             {error && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-2' : (isMobile ? 'mb-4' : 'mb-6')} w-full max-w-2xl bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm flex-shrink-0`}>
+                                <div className={`${isMobile ? 'mb-3' : 'mb-6'} w-full max-w-2xl bg-red-50 border border-red-200 rounded-xl p-4 shadow-sm flex-shrink-0`}>
                                     <p className="text-red-600 text-sm text-center">{error}</p>
                                 </div>
                             )}
@@ -2191,9 +2191,8 @@ const QuickSOAP = () => {
 
                             {/* Dictation Bubbles - Above center */}
                             {dictations.length > 0 && (!isRecording || !isMobile) && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-4 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'} ${isMobile ? 'overflow-y-auto max-h-40' : 'overflow-y-auto max-h-64'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
-                                    WebkitOverflowScrolling: 'touch',
-                                    overflowY: 'auto'
+                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'} overflow-y-auto ${isMobile ? 'max-h-[30vh] space-y-2' : 'max-h-64 space-y-3'}`} style={isMobile ? {
+                                    WebkitOverflowScrolling: 'touch'
                                 } : {}}>
                                     {(isMobile ? [...dictations].reverse() : dictations).map((dictation) => (
                                         <div
@@ -2265,7 +2264,7 @@ const QuickSOAP = () => {
                                 {/* Desktop: Only show when no dictations exist (one dictation before generating) */}
                                 {/* Mobile: Only show when no dictations exist (one dictation at a time) */}
                                 {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex justify-center ${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'}`}>
+                                    <div className={`flex justify-center ${isMobile ? 'mb-6' : 'mb-6'}`}>
                                         <button
                                             onClick={startRecording}
                                             disabled={isTranscribing || isGenerating}
@@ -2279,7 +2278,7 @@ const QuickSOAP = () => {
 
                                 {/* Recording Controls */}
                                 {isRecording && (
-                                    <div className={`flex flex-col items-center gap-4 ${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'}`}>
+                                    <div className={`flex flex-col items-center gap-4 ${isMobile ? 'mb-6' : 'mb-6'}`}>
                                         <div className="flex items-center gap-4">
                                             {!isPaused ? (
                                                 <button

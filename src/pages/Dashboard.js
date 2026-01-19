@@ -885,8 +885,10 @@ const Dashboard = () => {
                         </div>
                     </div>
                     {/* QuickSOAP Component */}
-                    <div className="bg-[#3369bd] min-h-screen" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
-                        <QuickSOAP />
+                    <div className="bg-[#3369bd]" style={{ paddingTop: '64px', paddingBottom: '80px', minHeight: '100vh', height: '100vh', overflow: 'hidden' }}>
+                        <div style={{ height: 'calc(100vh - 144px)', overflow: 'auto' }}>
+                            <QuickSOAP />
+                        </div>
                     </div>
                     {/* Bottom Navigation Bar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
