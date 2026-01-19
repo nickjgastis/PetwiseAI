@@ -7,6 +7,7 @@ import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import ManageSubscription from './ManageSubscription';
 import { FaGraduationCap } from 'react-icons/fa';
+import { clearAppLocalStorage } from '../utils/clearUserData';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -556,6 +557,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 onClick={() => {
                                                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                                                                         window.navigator.standalone === true;
+                                                    clearAppLocalStorage();
                                                     localStorage.removeItem('auth0.is.authenticated');
                                                     logout({
                                                         logoutParams: {

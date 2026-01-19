@@ -17,6 +17,7 @@ import WelcomeToPetwise from '../components/WelcomeToPetwise';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical } from 'react-icons/fa';
+import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -116,6 +117,14 @@ const Dashboard = () => {
         return hasActiveSubscription || hasTrial;
     };
 
+    // ================ USER CHANGE DETECTION ================
+    // Clear localStorage if a different user logs in on the same device
+    useEffect(() => {
+        if (isAuthenticated && user?.sub) {
+            checkAndClearForUserChange(user.sub);
+        }
+    }, [isAuthenticated, user?.sub]);
+
     // ================ EVENT HANDLERS ================
     const handleLogout = () => {
         // Check if running as installed PWA
@@ -126,7 +135,8 @@ const Dashboard = () => {
             ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
             : 'http://localhost:3000';
         
-        // Clear local storage to prevent auto-login
+        // Clear all app data from localStorage
+        clearAppLocalStorage();
         localStorage.removeItem('auth0.is.authenticated');
         
         logout({
@@ -643,7 +653,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial')
                 .eq('auth0_user_id', user.sub)
                 .single();
 
@@ -709,7 +719,12 @@ const Dashboard = () => {
 
                 setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
                 setUserData(data);
-                setHasCompletedOnboarding(data.has_completed_onboarding !== false); // Treat null/true as completed
+                
+                // Onboarding is complete if:
+                // 1. has_completed_onboarding is explicitly true, OR
+                // 2. User has previously used trial (they went through flow before, just expired/canceled)
+                const hasCompletedOnboardingBefore = data.has_completed_onboarding === true || data.has_used_trial === true;
+                setHasCompletedOnboarding(hasCompletedOnboardingBefore);
 
                 if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
                     setNeedsWelcome(true);
@@ -795,7 +810,7 @@ const Dashboard = () => {
 
     // ================ LOADING STATE ================
     if (isLoading) {
-        return <div>Loading...</div>;
+        return null;
     }
 
     // Check terms first
@@ -805,20 +820,11 @@ const Dashboard = () => {
 
     // Then check if they need to set their DVM name
     if (needsWelcome || !userData?.dvm_name) {
-        // On mobile, skip welcome page and go to profile
-        if (isMobile) {
-            // Still show welcome for DVM name setup, but navigate to profile after
-            return <Welcome onComplete={(updatedData) => {
-                setNeedsWelcome(false);
-                setUserData(updatedData);
-                // Navigate to profile on mobile after DVM name is set
-                navigate('/dashboard/profile');
-            }} />;
-        }
-        // On desktop, show welcome normally
+        // Show welcome for DVM name setup - onboarding checks will handle next step
         return <Welcome onComplete={(updatedData) => {
             setNeedsWelcome(false);
             setUserData(updatedData);
+            // Don't navigate - let the onboarding flow control where to go next
         }} />;
     }
 

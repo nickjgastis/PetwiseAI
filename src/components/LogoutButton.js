@@ -1,5 +1,6 @@
 import React from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { clearAppLocalStorage } from '../utils/clearUserData';
 
 const LogoutButton = () => {
     const { logout } = useAuth0();
@@ -12,6 +13,7 @@ const LogoutButton = () => {
             ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
             : 'http://localhost:3000';
         
+        clearAppLocalStorage();
         localStorage.removeItem('auth0.is.authenticated');
         
         logout({

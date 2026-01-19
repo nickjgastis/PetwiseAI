@@ -2848,8 +2848,8 @@ app.post('/create-customer-portal', async (req, res) => {
         const session = await stripe.billingPortal.sessions.create({
             customer: userData.stripe_customer_id,
             return_url: process.env.NODE_ENV === 'production'
-                ? 'https://app.petwise.vet/profile'
-                : 'http://localhost:3000/profile',
+                ? 'https://app.petwise.vet/dashboard/profile'
+                : 'http://localhost:3000/dashboard/profile',
         });
 
         res.json({ url: session.url });

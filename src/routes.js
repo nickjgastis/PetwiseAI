@@ -9,7 +9,6 @@ import Blog from './pages/Blog';
 import PrivateRoute from './components/PrivateRoute';
 import AboutPage from './pages/AboutPage';
 import ProductPage from './pages/ProductPage';
-import Profile from './components/Profile';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import Terms from './components/Terms';
 import Help from './components/Help';
@@ -88,11 +87,7 @@ const AppRoutes = () => {
             />
             <Route
                 path="/profile"
-                element={
-                    <PrivateRoute>
-                        <Profile />
-                    </PrivateRoute>
-                }
+                element={<Navigate to="/dashboard/profile" replace />}
             />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />

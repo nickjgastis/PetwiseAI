@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../supabaseClient';
 import { FaArrowLeft, FaLock, FaTrash, FaUser, FaEnvelope, FaCalendar, FaCreditCard } from 'react-icons/fa';
+import { clearAppLocalStorage } from '../utils/clearUserData';
 
 const getOptimizedImageUrl = (url) => {
     if (!url) return null;
@@ -117,6 +118,9 @@ const ManageAccount = ({ user, onBack }) => {
                 const error = await response.json();
                 throw new Error(error.message || 'Failed to delete account');
             }
+
+            // Clear all app data
+            clearAppLocalStorage();
 
             // First logout from Auth0 without returnTo
             await logout({
