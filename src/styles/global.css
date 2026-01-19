@@ -35,9 +35,37 @@ img {
     height: auto;
 }
 
-/* Basic form reset */
+/* Basic form reset - prevent iOS zoom on input focus */
 input,
 textarea,
 select {
     font-family: inherit;
+    font-size: 16px !important; /* Prevents iOS zoom on focus */
+}
+
+/* Prevent zoom on any focusable element */
+@media screen and (max-width: 768px) {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="tel"],
+    input[type="url"],
+    input[type="search"],
+    textarea,
+    select {
+        font-size: 16px !important;
+    }
+    
+    /* Touch action to prevent double-tap zoom */
+    button, a, input, textarea, select {
+        touch-action: manipulation;
+    }
+}
+
+/* PWA standalone mode - match primary brand color */
+@media all and (display-mode: standalone) {
+    body {
+        background-color: #3db6fd;
+    }
 }

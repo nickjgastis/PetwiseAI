@@ -841,7 +841,7 @@ const Dashboard = () => {
             return (
                 <>
                     {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-600 items-center justify-between px-4 z-50 shadow-md">
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-500 items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
                             <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
                             <span>
@@ -851,22 +851,21 @@ const Dashboard = () => {
                         </div>
                     </div>
                     {/* QuickSOAP Component */}
-                    <div style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                    <div className="bg-primary-500 min-h-screen" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
                         <QuickSOAP />
                     </div>
                     {/* Bottom Navigation Bar */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
-                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-20`}>
                             {hasActivePlan() && (
                                 <Link
                                     to="/dashboard/quicksoap"
                                     className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
                                         }`}
                                 >
-                                    <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                    <span className="text-xs font-medium">
+                                    <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                    <span className="text-sm font-medium">
                                         QuickSOAP
-                                        <span className="ml-0.5 text-[8px] font-semibold text-yellow-400 uppercase tracking-wide">beta</span>
                                     </span>
                                 </Link>
                             )}
@@ -875,8 +874,8 @@ const Dashboard = () => {
                                 className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
                                     }`}
                             >
-                                <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">Profile</span>
+                                <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-sm font-medium">Profile</span>
                             </Link>
                         </div>
                     </nav>
@@ -900,7 +899,7 @@ const Dashboard = () => {
             return (
                 <>
                     {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-600 items-center justify-between px-4 z-50 shadow-md">
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-500 items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
                             <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
                             <span>
@@ -909,22 +908,21 @@ const Dashboard = () => {
                             </span>
                         </div>
                     </div>
-                    <div className="min-h-screen bg-white p-0" style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                    <div className="min-h-screen bg-primary-500 p-0" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
                         <Profile isMobileSignup={true} />
                     </div>
                     {/* Bottom Navigation Bar */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
-                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-20`}>
                             {hasActivePlan() && (
                                 <Link
                                     to="/dashboard/quicksoap"
                                     className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
                                         }`}
                                 >
-                                    <FaMicrophone className={`text-xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                    <span className="text-xs font-medium">
+                                    <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                    <span className="text-sm font-medium">
                                         QuickSOAP
-                                        <span className="ml-0.5 text-[8px] font-semibold text-yellow-400 uppercase tracking-wide">beta</span>
                                     </span>
                                 </Link>
                             )}
@@ -933,8 +931,8 @@ const Dashboard = () => {
                                 className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
                                     }`}
                             >
-                                <FaUser className={`text-xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">Profile</span>
+                                <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-sm font-medium">Profile</span>
                             </Link>
                         </div>
                     </nav>
