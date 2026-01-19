@@ -124,8 +124,10 @@ const ManageAccount = ({ user, onBack }) => {
                 federated: true
             });
 
-            // Then force redirect to the production URL
-            window.location.href = 'https://petwise.vet';
+            // Then force redirect - PWA stays on app domain
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone === true;
+            window.location.href = isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet';
 
         } catch (error) {
             console.error('Delete error:', error);

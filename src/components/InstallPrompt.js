@@ -1,44 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/InstallPrompt.css';
 
+// Check conditions synchronously to avoid flash
+const getInitialGateState = () => {
+  // Detect mobile vs desktop
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                        (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+  
+  // If not mobile, never show gate
+  if (!isMobileDevice) return false;
+  
+  // Check if already running as installed PWA
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone === true;
+  
+  // If installed, don't show gate
+  if (isStandalone) return false;
+  
+  // Mobile + not installed = show gate
+  return true;
+};
+
 const InstallPrompt = () => {
-  const [showGate, setShowGate] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
+  // Initialize state synchronously to avoid flash
+  const [showGate, setShowGate] = useState(getInitialGateState);
+  const [isIOS, setIsIOS] = useState(() => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
-    // Detect mobile vs desktop
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                          (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
-    
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                         window.navigator.standalone === true;
-    
-    // Debug logging - remove after testing
-    console.log('[PWA Gate] Mobile:', isMobileDevice, 'Standalone:', isStandalone, 'UserAgent:', navigator.userAgent.substring(0, 50));
-    
-    // If not mobile, never show anything
-    if (!isMobileDevice) {
-      console.log('[PWA Gate] Not mobile, hiding gate');
-      setShowGate(false);
-      return;
-    }
-
-    // Check if already running as installed PWA
-    // If installed, don't show gate
-    if (isStandalone) {
-      console.log('[PWA Gate] Already standalone, hiding gate');
-      setShowGate(false);
-      return;
-    }
-
-    // Mobile + not installed = show gate
-    console.log('[PWA Gate] Showing gate');
-    setShowGate(true);
-
-    // Detect iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    setIsIOS(iOS);
+    // If gate shouldn't show, nothing to do
+    if (!showGate) return;
 
     // For Android/Chrome, capture the install prompt
     const handleBeforeInstall = (e) => {
@@ -49,15 +40,18 @@ const InstallPrompt = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     // Listen for successful install
-    window.addEventListener('appinstalled', () => {
+    const handleInstalled = () => {
       setShowGate(false);
       setDeferredPrompt(null);
-    });
+    };
+    
+    window.addEventListener('appinstalled', handleInstalled);
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleInstalled);
     };
-  }, []);
+  }, [showGate]);
 
   const handleAndroidInstall = async () => {
     if (!deferredPrompt) return;

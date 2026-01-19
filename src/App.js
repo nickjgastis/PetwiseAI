@@ -135,13 +135,30 @@ const AppContent = () => {
   );
 };
 
+// Check if we should block the app with install gate
+const shouldShowInstallGate = () => {
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                        (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+  if (!isMobileDevice) return false;
+  
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                       window.navigator.standalone === true;
+  if (isStandalone) return false;
+  
+  return true;
+};
+
 const App = () => {
   const navigate = useNavigate();
+  
+  // If on mobile and not installed, only show the install gate
+  // Don't initialize Auth0 at all to prevent redirects
+  if (shouldShowInstallGate()) {
+    return <InstallPrompt />;
+  }
 
   return (
-    <>
-      <InstallPrompt />
-      <Auth0Provider
+    <Auth0Provider
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
@@ -157,9 +174,8 @@ const App = () => {
       cacheLocation="localstorage"
       useRefreshTokens={true}
     >
-        <AppContent />
-      </Auth0Provider>
-    </>
+      <AppContent />
+    </Auth0Provider>
   );
 };
 

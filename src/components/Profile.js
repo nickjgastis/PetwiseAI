@@ -553,11 +553,15 @@ const Profile = ({ isMobileSignup = false }) => {
                                             </button>
                                             <button
                                                 className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
-                                                onClick={() => logout({
-                                                    logoutParams: {
-                                                        returnTo: 'https://petwise.vet'
-                                                    }
-                                                })}
+                                                onClick={() => {
+                                                    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                                                        window.navigator.standalone === true;
+                                                    logout({
+                                                        logoutParams: {
+                                                            returnTo: isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet'
+                                                        }
+                                                    });
+                                                }}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">

@@ -4,14 +4,23 @@ import { useAuth0 } from "@auth0/auth0-react";
 const LogoutButton = () => {
     const { logout } = useAuth0();
 
+    const handleLogout = () => {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                            window.navigator.standalone === true;
+        
+        const returnUrl = process.env.NODE_ENV === 'production'
+            ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
+            : 'http://localhost:3000';
+        
+        logout({
+            logoutParams: {
+                returnTo: returnUrl
+            }
+        });
+    };
+
     return (
-        <button onClick={() => logout({
-            clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
-            returnTo: process.env.NODE_ENV === 'production'
-                ? 'https://petwise.vet'
-                : 'http://localhost:3000',
-            federated: true
-        })}>
+        <button onClick={handleLogout}>
             Log Out
         </button>
     );
