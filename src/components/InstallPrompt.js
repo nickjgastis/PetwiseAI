@@ -3,35 +3,27 @@ import '../styles/InstallPrompt.css';
 
 // Check conditions synchronously to avoid flash
 const getInitialGateState = () => {
-  // Detect mobile vs desktop
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                         (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
   
-  // If not mobile, never show gate
   if (!isMobileDevice) return false;
   
-  // Check if already running as installed PWA
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                        window.navigator.standalone === true;
   
-  // If installed, don't show gate
   if (isStandalone) return false;
   
-  // Mobile + not installed = show gate
   return true;
 };
 
 const InstallPrompt = () => {
-  // Initialize state synchronously to avoid flash
   const [showGate, setShowGate] = useState(getInitialGateState);
   const [isIOS, setIsIOS] = useState(() => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
-    // If gate shouldn't show, nothing to do
     if (!showGate) return;
 
-    // For Android/Chrome, capture the install prompt
     const handleBeforeInstall = (e) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -39,7 +31,6 @@ const InstallPrompt = () => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
-    // Listen for successful install
     const handleInstalled = () => {
       setShowGate(false);
       setDeferredPrompt(null);
@@ -66,56 +57,68 @@ const InstallPrompt = () => {
     setDeferredPrompt(null);
   };
 
-  // Don't render anything on desktop or if already installed
   if (!showGate) return null;
 
   return (
     <div className="install-gate">
       <div className="install-gate-content">
         <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
-        <h1>Install PetWise</h1>
-        <p>For the best experience, please install PetWise to your home screen.</p>
+        <h1>Get the PetWise App</h1>
+        <p>Install PetWise on your device for the best experience</p>
         
         {isIOS ? (
-          // iOS Instructions
-          <div className="ios-install-instructions">
-            <p className="instruction-label">To install:</p>
-            <ol className="ios-steps">
-              <li>
-                Tap the <strong>Share</strong> button 
-                <span className="share-icon">⬆</span>
-                in Safari's toolbar
-              </li>
-              <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-              <li>Tap <strong>"Add"</strong> in the top right</li>
-              <li>Open PetWise from your home screen</li>
-            </ol>
+          <div className="install-steps">
+            <div className="install-step">
+              <span className="step-number">1</span>
+              <span className="step-text">
+                Tap the share button
+                <span className="share-icon-inline">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                  </svg>
+                </span>
+                below
+              </span>
+            </div>
+            <div className="install-step">
+              <span className="step-number">2</span>
+              <span className="step-text">Tap <strong>"Add to Home Screen"</strong></span>
+            </div>
+            <div className="install-step">
+              <span className="step-number">3</span>
+              <span className="step-text">Open PetWise from your home screen</span>
+            </div>
           </div>
         ) : (
-          // Android - show install button if prompt available
-          <div className="android-install">
+          <div className="install-steps">
             {deferredPrompt ? (
               <button onClick={handleAndroidInstall} className="install-gate-btn">
-                Install Now
+                Install App
               </button>
             ) : (
-              <div className="android-fallback">
-                <p className="instruction-label">To install:</p>
-                <ol className="ios-steps">
-                  <li>Tap the <strong>menu</strong> (⋮) in Chrome</li>
-                  <li>Tap <strong>"Add to Home screen"</strong></li>
-                  <li>Tap <strong>"Add"</strong> to confirm</li>
-                  <li>Open PetWise from your home screen</li>
-                </ol>
-              </div>
+              <>
+                <div className="install-step">
+                  <span className="step-number">1</span>
+                  <span className="step-text">
+                    Tap the menu
+                    <span className="menu-icon-inline">⋮</span>
+                    in your browser
+                  </span>
+                </div>
+                <div className="install-step">
+                  <span className="step-number">2</span>
+                  <span className="step-text">Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></span>
+                </div>
+                <div className="install-step">
+                  <span className="step-number">3</span>
+                  <span className="step-text">Open PetWise from your home screen</span>
+                </div>
+              </>
             )}
           </div>
         )}
 
-        <div className="install-gate-footer">
-          <img src="/web-app-manifest-192x192.png" alt="" className="footer-icon" />
-          <span>PetWise works best as an installed app</span>
-        </div>
+        <p className="install-gate-footer">Works offline • Fast • Secure</p>
       </div>
     </div>
   );

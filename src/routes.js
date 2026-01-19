@@ -60,7 +60,7 @@ const AppRoutes = () => {
             />
             <Route path="/login" element={<AutoLogin />} />
             <Route path="/signup" element={<AutoLogin mode="signup" />} />
-            <Route path="/callback" element={null} />
+            <Route path="/callback" element={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#3cb6fd'}}>Loading...</div>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />
