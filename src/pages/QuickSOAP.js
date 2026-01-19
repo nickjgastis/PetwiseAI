@@ -2114,7 +2114,13 @@ const QuickSOAP = () => {
                 >
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className={`h-full flex flex-col items-center ${isMobile && isRecording ? 'justify-center px-4' : (isMobile ? 'justify-start px-4 overflow-y-auto pt-6 pb-6' : 'justify-center px-8')}`}>
+                        <div className={`h-full flex flex-col items-center ${
+                            isMobile 
+                                ? (dictations.length === 0 || isRecording 
+                                    ? 'justify-center px-4' 
+                                    : 'justify-start px-4 overflow-y-auto pt-6 pb-6')
+                                : 'justify-center px-8'
+                        }`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
                                 <div className={`${isMobile ? 'mb-4 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
