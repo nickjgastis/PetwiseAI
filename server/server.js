@@ -2068,6 +2068,51 @@ app.post('/cancel-trial', async (req, res) => {
     }
 });
 
+// Cancel student plan endpoint
+app.post('/cancel-student', async (req, res) => {
+    try {
+        const { user_id } = req.body;
+
+        if (!user_id) {
+            return res.status(400).json({ error: 'user_id is required' });
+        }
+
+        // Verify user has a student plan
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('plan_label')
+            .eq('auth0_user_id', user_id)
+            .single();
+
+        if (userError || !userData) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (userData.plan_label !== 'student') {
+            return res.status(400).json({ error: 'User is not on a student plan' });
+        }
+
+        // Deactivate student plan
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                subscription_status: 'inactive',
+                subscription_end_date: new Date().toISOString(),
+                plan_label: null
+                // Note: We preserve student_grad_year and student_school_email for records
+            })
+            .eq('auth0_user_id', user_id);
+
+        if (updateError) throw updateError;
+
+        console.log(`Student plan deactivated for user ${user_id}`);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Cancel student error:', error);
+        res.status(400).json({ error: error.message });
+    }
+});
+
 // Add this function before the server startup section
 // NOTE: Commented out since you have a Supabase function handling expiration checks
 // async function checkTrialExpirations() {

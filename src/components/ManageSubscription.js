@@ -20,6 +20,10 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
     const [currency, setCurrency] = useState('usd');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
 
+    const isStudentPlan = user?.plan_label === 'student' && 
+        user?.subscription_end_date && 
+        new Date(user.subscription_end_date) > new Date();
+
     const PRICES = {
         usd: {
             monthly: 79,
@@ -156,6 +160,48 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         }, 500);
     };
 
+    const handleCancelStudent = async () => {
+        if (!window.confirm('Are you sure you want to deactivate your student access? This will end your access immediately.')) {
+            return;
+        }
+
+        setIsLoading('cancelStudent');
+        try {
+            const response = await fetch(`${API_URL}/cancel-student`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    user_id: user.sub
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to deactivate student access');
+            }
+
+            // Refresh subscription data
+            if (onSubscriptionChange) {
+                onSubscriptionChange();
+            }
+            
+            // Dispatch event to notify other components
+            window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+            
+            alert('Student access has been deactivated.');
+            window.location.reload();
+        } catch (error) {
+            console.error('Cancel student error:', error);
+            alert(error.message);
+        } finally {
+            setIsLoading(null);
+        }
+    };
+
     const features = [
         'Unlimited SOAP reports',
         'QuickSOAP voice dictation',
@@ -166,6 +212,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
     ];
 
     const getCurrentPlanLabel = () => {
+        if (isStudentPlan) return '🎓 Student Access';
         if (subscriptionInterval === 'trial') return 'Free Trial';
         if (subscriptionInterval === 'monthly') return 'Monthly Plan';
         if (subscriptionInterval === 'yearly') return 'Yearly Plan';
@@ -381,15 +428,29 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
             {/* Action Buttons - Student Access & Billing Settings */}
             <div className="w-full max-w-5xl flex justify-center gap-4 flex-wrap">
-                {/* Student Access Button - Always visible */}
-                <button
-                    onClick={() => setShowStudentRedeem(true)}
-                    disabled={isLoading !== null}
-                    className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                    <FaGraduationCap />
-                    Student Access
-                </button>
+                {/* Student Access Button - Show if not already on student plan */}
+                {!isStudentPlan && (
+                    <button
+                        onClick={() => setShowStudentRedeem(true)}
+                        disabled={isLoading !== null}
+                        className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                        <FaGraduationCap />
+                        Student Access
+                    </button>
+                )}
+
+                {/* Deactivate Student Access - Only for student plan users */}
+                {isStudentPlan && (
+                    <button
+                        onClick={handleCancelStudent}
+                        disabled={isLoading !== null}
+                        className="flex items-center justify-center gap-2 px-8 py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    >
+                        <FaGraduationCap />
+                        {isLoading === 'cancelStudent' ? 'Deactivating...' : 'Deactivate Student Access'}
+                    </button>
+                )}
                 
                 {/* Billing Settings - Only for Stripe customers */}
                 {hasStripeCustomer && (
