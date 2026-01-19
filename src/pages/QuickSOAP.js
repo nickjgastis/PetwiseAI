@@ -2114,10 +2114,10 @@ const QuickSOAP = () => {
                 >
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className={`h-full flex flex-col ${dictations.length > 0 && isMobile && !isRecording ? 'items-center justify-start' : 'items-center justify-center'} px-8 ${isMobile ? 'overflow-hidden' : ''}`} style={dictations.length > 0 && isMobile && !isRecording ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-start', paddingTop: '6rem' } : (isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' } : {})}>
+                        <div className={`h-full flex flex-col items-center ${dictations.length > 0 && isMobile && !isRecording ? 'justify-start pt-4' : 'justify-center'} ${isMobile ? 'px-4 overflow-hidden' : 'px-8'}`} style={dictations.length > 0 && isMobile && !isRecording ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh' } : (isMobile ? { maxHeight: '100vh', overflowY: 'hidden', height: '100vh' } : {})}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-4' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full`}>
+                                <div className={`${dictations.length > 0 && isMobile ? 'mb-3' : (isMobile ? 'mb-4' : 'mb-8')} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
                                     {dictations.length === 0 || !isMobile ? (
                                         <>
                                             {/* Disclaimer - hide after first dictation on desktop */}
@@ -2191,7 +2191,7 @@ const QuickSOAP = () => {
 
                             {/* Dictation Bubbles - Above center */}
                             {dictations.length > 0 && (!isRecording || !isMobile) && (
-                                <div className={`${dictations.length > 0 && isMobile ? 'mb-6 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full max-w-2xl ${isMobile ? 'overflow-y-auto max-h-44' : 'overflow-y-auto max-h-64'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
+                                <div className={`${dictations.length > 0 && isMobile ? 'mb-4 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')} w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'} ${isMobile ? 'overflow-y-auto max-h-40' : 'overflow-y-auto max-h-64'} ${isMobile ? 'space-y-2' : 'space-y-3'}`} style={isMobile ? {
                                     WebkitOverflowScrolling: 'touch',
                                     overflowY: 'auto'
                                 } : {}}>
@@ -2260,7 +2260,7 @@ const QuickSOAP = () => {
                             )}
 
                             {/* Main Input Container - ChatGPT style */}
-                            <div className="w-full max-w-2xl">
+                            <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
                                 {/* Large Microphone Button - Front and Center */}
                                 {/* Desktop: Only show when no dictations exist (one dictation before generating) */}
                                 {/* Mobile: Only show when no dictations exist (one dictation at a time) */}
@@ -2367,7 +2367,7 @@ const QuickSOAP = () => {
 
                                 {/* Mobile: Send to Desktop and Start New buttons - Show when dictations exist and not recording */}
                                 {isMobile && dictations.length > 0 && !isRecording && !isTranscribing && !hasReport && (
-                                    <div className="w-full max-w-2xl mt-3 space-y-2 flex-shrink-0">
+                                    <div className="w-full max-w-full mt-3 space-y-2 flex-shrink-0 px-2">
                                         <button
                                             onClick={handleSendToDesktopClick}
                                             disabled={isGenerating || isSendingToDesktop}

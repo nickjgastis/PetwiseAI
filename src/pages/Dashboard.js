@@ -16,7 +16,7 @@ import PlanSelection from '../components/PlanSelection';
 import WelcomeToPetwise from '../components/WelcomeToPetwise';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical } from 'react-icons/fa';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -859,26 +859,81 @@ const Dashboard = () => {
                     </div>
                     {/* Bottom Navigation Bar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-20`}>
-                            {hasActivePlan() && (
-                                <Link
-                                    to="/dashboard/quicksoap"
-                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
-                                        }`}
-                                >
-                                    <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                    <span className="text-sm font-medium">
-                                        QuickSOAP
-                                    </span>
-                                </Link>
-                            )}
+                        <div className="flex items-center justify-around h-20">
+                            <Link
+                                to="/dashboard/quicksoap"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">QuickSOAP</span>
+                            </Link>
+                            <Link
+                                to="/dashboard/quick-query"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">PetQuery</span>
+                            </Link>
                             <Link
                                 to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
-                                    }`}
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
                             >
                                 <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-sm font-medium">Profile</span>
+                                <span className="text-xs font-medium">Profile</span>
+                            </Link>
+                        </div>
+                    </nav>
+                </>
+            );
+        }
+
+        // Check PetQuery route - only allow if user has active plan
+        const isPetQueryRoute = window.location.pathname.includes('/quick-query');
+        if (isPetQueryRoute) {
+            // Don't render if no active plan - useEffect will handle redirect
+            if (!hasActivePlan()) {
+                return null;
+            }
+            // Render PetQuery with mobile header and bottom nav
+            return (
+                <>
+                    {/* Mobile Header */}
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
+                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
+                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
+                            <span>
+                                <span className="font-bold text-white">Petwise</span>
+                                <span className="font-normal text-white">.vet</span>
+                            </span>
+                        </div>
+                    </div>
+                    {/* PetQuery Component */}
+                    <div className="bg-white min-h-screen flex flex-col" style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                        <QuickQuery isMobile={true} />
+                    </div>
+                    {/* Bottom Navigation Bar */}
+                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+                        <div className="flex items-center justify-around h-20">
+                            <Link
+                                to="/dashboard/quicksoap"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">QuickSOAP</span>
+                            </Link>
+                            <Link
+                                to="/dashboard/quick-query"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">PetQuery</span>
+                            </Link>
+                            <Link
+                                to="/dashboard/profile"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">Profile</span>
                             </Link>
                         </div>
                     </nav>
@@ -887,7 +942,7 @@ const Dashboard = () => {
         }
 
         // Redirect based on subscription status if not on a specific route
-        if (!window.location.pathname.includes('/profile') && !window.location.pathname.includes('/quicksoap')) {
+        if (!window.location.pathname.includes('/profile') && !window.location.pathname.includes('/quicksoap') && !window.location.pathname.includes('/quick-query')) {
             // Route to QuickSOAP if user has active plan, otherwise route to Profile
             if (hasActivePlan()) {
                 navigate('/dashboard/quicksoap', { replace: true });
@@ -918,24 +973,29 @@ const Dashboard = () => {
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
                         <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-20`}>
                             {hasActivePlan() && (
-                                <Link
-                                    to="/dashboard/quicksoap"
-                                    className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'
-                                        }`}
-                                >
-                                    <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                    <span className="text-sm font-medium">
-                                        QuickSOAP
-                                    </span>
-                                </Link>
+                                <>
+                                    <Link
+                                        to="/dashboard/quicksoap"
+                                        className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
+                                    >
+                                        <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                        <span className="text-xs font-medium">QuickSOAP</span>
+                                    </Link>
+                                    <Link
+                                        to="/dashboard/quick-query"
+                                        className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
+                                    >
+                                        <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                        <span className="text-xs font-medium">PetQuery</span>
+                                    </Link>
+                                </>
                             )}
                             <Link
                                 to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'
-                                    }`}
+                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
                             >
                                 <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-sm font-medium">Profile</span>
+                                <span className="text-xs font-medium">Profile</span>
                             </Link>
                         </div>
                     </nav>

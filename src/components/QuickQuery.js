@@ -342,7 +342,7 @@ const SUGGESTIONS = [
     }
 ];
 
-const QuickQuery = () => {
+const QuickQuery = ({ isMobile = false }) => {
     const { user } = useAuth0();
     const [userData, setUserData] = useState(null);
     const [messages, setMessages] = useState(() => {
@@ -1142,18 +1142,30 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     display: none; /* Chrome, Safari, Opera */
                 }
             `}} />
-            <div className="min-h-screen bg-white flex flex-col">
-                <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-3xl font-bold text-primary-600">PetQuery</h2>
+            <div className={`${isMobile ? 'h-full' : 'min-h-screen'} bg-white flex flex-col`}>
+                {!isMobile && (
+                    <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
+                        <div className="flex items-center gap-3">
+                            <h2 className="text-3xl font-bold text-primary-600">PetQuery</h2>
+                        </div>
                     </div>
-                </div>
+                )}
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className="flex-1 overflow-y-auto px-4 py-6 pb-32 space-y-6">
-                        {messages.length === 0 && (
+                    <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-3 py-3 pb-36' : 'px-4 py-6 pb-32'} space-y-4`}>
+                        {/* Mobile empty state - minimal */}
+                        {messages.length === 0 && isMobile && (
+                            <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
+                                <div className="w-14 h-14 mb-3 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <FaSearch className="text-xl text-primary-500" />
+                                </div>
+                                <p className="text-gray-400 text-sm">Ask any veterinary question</p>
+                            </div>
+                        )}
+                        {/* Desktop empty state with suggestions */}
+                        {messages.length === 0 && !isMobile && (
                             <>
                                 <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
-                                    <strong className="block mb-2 text-sm font-semibold text-gray-700">Disclaimer:</strong>
+                                    <strong className="block mb-1 text-sm font-semibold text-gray-700">Disclaimer:</strong>
                                     <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only.
                                         These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
                                         Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
@@ -1162,7 +1174,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     {randomSuggestions.map((suggestion, index) => (
                                         <div
                                             key={index}
-                                            className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 hover:-translate-y-1"
+                                            className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98]"
                                             onClick={() => handleSuggestionClick(suggestion.question)}
                                         >
                                             <h4 className="text-primary-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
@@ -1187,7 +1199,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             const userMessage = msg.role === 'assistant' ? getUserMessage(index) : '';
 
                             return (
-                                <div key={index} className={`flex mb-6 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none ${msg.role === 'assistant'
+                                <div key={index} className={`flex ${isMobile ? 'mb-3' : 'mb-6'} ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none ${msg.role === 'assistant'
                                     ? animateNewMessage === index
                                         ? 'animate-fade-in-up'
                                         : index === messages.length - 1
@@ -1195,9 +1207,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                             : ''
                                     : ''
                                     }`}>
-                                    <div className={`max-w-4xl w-full ${msg.role === 'user'
-                                        ? 'bg-primary-500 text-white rounded-2xl rounded-br-md px-5 py-4 ml-auto'
-                                        : 'bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400 message-content'
+                                    <div className={`${isMobile ? 'max-w-[88%]' : 'max-w-4xl'} w-full ${msg.role === 'user'
+                                        ? `bg-primary-500 text-white ${isMobile ? 'rounded-2xl rounded-br-sm px-3 py-2 text-sm' : 'rounded-2xl rounded-br-md px-5 py-4'} ml-auto`
+                                        : `${isMobile ? 'bg-gray-100 text-gray-800 rounded-2xl rounded-bl-sm px-3 py-2.5 text-sm' : 'bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400'} message-content`
                                         }`}>
                                         {msg.role === 'assistant' ? (
                                             <div dangerouslySetInnerHTML={{ __html: formatMessage(getContentWithoutSources(msg.content, userMessage)) }} />
@@ -1205,50 +1217,52 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                             <div className="whitespace-pre-wrap">{msg.content}</div>
                                         )}
                                         {msg.role === 'assistant' && (
-                                            <div className="flex items-center gap-2 mt-3">
+                                            <div className={`flex items-center gap-1.5 ${isMobile ? 'mt-2' : 'mt-3'}`}>
                                                 <button
-                                                    className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${copiedIndex === index
+                                                    className={`inline-flex items-center gap-1 ${isMobile ? 'p-1.5' : 'px-2 py-1'} text-xs border rounded transition-all duration-200 ${copiedIndex === index
                                                         ? 'bg-primary-500 text-white border-primary-500'
-                                                        : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
+                                                        : 'bg-transparent text-gray-500 border-gray-200 active:bg-gray-100'
                                                         }`}
                                                     onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
                                                     aria-label="Copy message"
                                                 >
                                                     {copiedIndex === index ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"}>
                                                             <path fillRule="evenodd" d="M19.916 4.626a.75.75 0 01.208 1.04l-9 13.5a.75.75 0 01-1.154.114l-6-6a.75.75 0 011.06-1.06l5.353 5.353 8.493-12.739a.75.75 0 011.04-.208z" clipRule="evenodd" />
                                                         </svg>
                                                     ) : (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"}>
                                                             <path d="M7.5 3.375c0-1.036.84-1.875 1.875-1.875h.375a3.75 3.75 0 013.75 3.75v1.875C13.5 8.161 14.34 9 15.375 9h1.875A3.75 3.75 0 0121 12.75v3.375C21 17.16 20.16 18 19.125 18h-9.75A1.875 1.875 0 017.5 16.125V3.375z" />
                                                             <path d="M15 5.25a5.23 5.23 0 00-1.279-3.434 9.768 9.768 0 016.963 6.963A5.23 5.23 0 0017.25 7.5h-1.875A.375.375 0 0115 7.125V5.25zM4.875 6H6v10.125A3.375 3.375 0 009.375 19.5H16.5v1.125c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 013 20.625V7.875C3 6.839 3.84 6 4.875 6z" />
                                                         </svg>
                                                     )}
                                                 </button>
-                                                <button
-                                                    className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 hover:-translate-y-0.5"
-                                                    onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
-                                                    aria-label="Print message"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-                                                        <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
-                                                    </svg>
-                                                </button>
+                                                {!isMobile && (
+                                                    <button
+                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 hover:-translate-y-0.5"
+                                                        onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
+                                                        aria-label="Print message"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                            <path fillRule="evenodd" d="M7.875 1.5C6.839 1.5 6 2.34 6 3.375v2.99c-.426.053-.851.11-1.274.174-1.454.218-2.476 1.483-2.476 2.917v6.294a3 3 0 003 3h.27l-.155 1.705A1.875 1.875 0 007.232 22.5h9.536a1.875 1.875 0 001.867-2.045l-.155-1.705h.27a3 3 0 003-3V9.456c0-1.434-1.022-2.7-2.476-2.917A48.716 48.716 0 0018 6.366V3.375c0-1.036-.84-1.875-1.875-1.875h-8.25zM16.5 6.205v-2.83A.375.375 0 0016.125 3h-8.25a.375.375 0 00-.375.375v2.83a49.353 49.353 0 019 0zm-.217 8.265c.178.018.317.16.333.337l.526 5.784a.375.375 0 01-.374.409H7.232a.375.375 0 01-.374-.409l.526-5.784a.373.373 0 01.333-.337 41.741 41.741 0 018.566 0zm.967-3.97a.75.75 0 01.75-.75h.008a.75.75 0 01.75.75v.008a.75.75 0 01-.75.75H18a.75.75 0 01-.75-.75V10.5zM15 9.75a.75.75 0 00-.75.75v.008c0 .414.336.75.75.75h.008a.75.75 0 00.75-.75V10.5a.75.75 0 00-.75-.75H15z" clipRule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                )}
                                                 {extractSources(msg.content, userMessage) && (
                                                     <button
-                                                        className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${showSources[index]
+                                                        className={`inline-flex items-center gap-1 ${isMobile ? 'p-1.5' : 'px-2 py-1'} text-xs border rounded transition-all duration-200 ${showSources[index]
                                                             ? 'bg-primary-100 text-primary-700 border-primary-300'
-                                                            : 'bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:text-primary-600 hover:-translate-y-0.5'
+                                                            : 'bg-transparent text-gray-500 border-gray-200 active:bg-gray-100'
                                                             }`}
                                                         onClick={() => toggleSources(index)}
                                                         aria-label="Show sources"
                                                     >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width={isMobile ? "14" : "16"} height={isMobile ? "14" : "16"}>
                                                             <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
                                                         </svg>
                                                     </button>
                                                 )}
-                                                <span className="text-xs text-gray-500 ml-auto">{formatTimestamp()}</span>
+                                                {!isMobile && <span className="text-xs text-gray-500 ml-auto">{formatTimestamp()}</span>}
                                             </div>
                                         )}
                                         {msg.role === 'assistant' && showSources[index] && extractSources(msg.content, userMessage) && (
@@ -1256,7 +1270,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 <div dangerouslySetInnerHTML={{ __html: formatMessage(extractSources(msg.content, userMessage)) }} />
                                             </div>
                                         )}
-                                        {msg.role === 'user' && (
+                                        {msg.role === 'user' && !isMobile && (
                                             <div className="text-xs text-white/70 mt-2 text-right">{formatTimestamp()}</div>
                                         )}
                                     </div>
@@ -1272,30 +1286,31 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         )}
                         <div ref={messagesEndRef} />
                     </div>
-                    <div className="fixed bottom-0 bg-white border-t border-gray-200 shadow-lg transition-all duration-300" style={{ left: '224px', width: 'calc(100% - 224px)' }}>
-                        <div className="max-w-4xl mx-auto p-4" style={{ marginLeft: 'auto', marginRight: 'auto' }}>
-                            <div className="flex justify-center items-center gap-3 mb-3">
-                                <div className="inline-flex bg-gray-100 rounded-lg p-1">
+                    <div className={`fixed bg-white border-t border-gray-200 shadow-lg transition-all duration-300 ${isMobile ? 'bottom-20 left-0 right-0' : 'bottom-0'}`} style={isMobile ? {} : { left: '224px', width: 'calc(100% - 224px)' }}>
+                        <div className={`mx-auto ${isMobile ? 'px-3 py-2' : 'p-4 max-w-4xl'}`} style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+                            {/* Mode toggle and tutorial - smaller on mobile */}
+                            <div className={`flex justify-center items-center gap-2 ${isMobile ? 'mb-2' : 'mb-3'}`}>
+                                <div className={`inline-flex bg-gray-100 rounded-full ${isMobile ? 'p-0.5' : 'p-1'}`}>
                                     <button
                                         onClick={() => setIsLongAnswerMode(false)}
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${!isLongAnswerMode
-                                            ? 'bg-primary-400 text-white shadow-sm'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        className={`${isMobile ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${!isLongAnswerMode
+                                            ? 'bg-primary-500 text-white shadow-sm'
+                                            : 'text-gray-500'
                                             }`}
                                     >
-                                        Standard
+                                        Short
                                     </button>
                                     <button
                                         onClick={() => setIsLongAnswerMode(true)}
-                                        className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${isLongAnswerMode
-                                            ? 'bg-primary-400 text-white shadow-sm'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        className={`${isMobile ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${isLongAnswerMode
+                                            ? 'bg-primary-500 text-white shadow-sm'
+                                            : 'text-gray-500'
                                             }`}
                                     >
                                         Long
                                     </button>
                                 </div>
-                                {messages.length === 0 && (
+                                {messages.length === 0 && !isMobile && (
                                     <div className="relative group">
                                         <button
                                             onClick={() => {
@@ -1312,112 +1327,201 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         </span>
                                     </div>
                                 )}
+                                {/* Mobile clear button - compact */}
+                                {messages.length > 0 && isMobile && (
+                                    <button
+                                        onClick={handleClear}
+                                        type="button"
+                                        className="px-2.5 py-1 text-xs bg-gray-100 text-gray-500 rounded-full font-medium"
+                                    >
+                                        Clear
+                                    </button>
+                                )}
                             </div>
-                            <form onSubmit={handleSubmit} className="flex gap-3 items-center">
-                                <div className="relative flex-1">
-                                    <textarea
-                                        ref={textareaRef}
-                                        value={inputMessage}
-                                        onChange={(e) => {
-                                            setInputMessage(e.target.value);
-                                            if (!e.target.value.trim()) {
-                                                e.target.style.height = '52px';
-                                            } else {
-                                                e.target.style.height = '52px';
-                                                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                            }
-                                        }}
-                                        onClick={(e) => {
-                                            if (inputMessage.trim()) {
-                                                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-                                            }
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                if (inputMessage.trim() && !isLoading) {
-                                                    e.target.style.height = '52px';
-                                                    handleSubmit(e);
+                            {/* Input form - ChatGPT style on mobile */}
+                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-end'}`}>
+                                {isMobile ? (
+                                    /* Mobile input - ChatGPT style, same height as send button (32px) */
+                                    <div className="relative flex-1 bg-gray-100 rounded-full h-8 px-3 overflow-hidden flex items-center justify-center">
+                                        <textarea
+                                            ref={textareaRef}
+                                            value={inputMessage}
+                                            onChange={(e) => {
+                                                setInputMessage(e.target.value);
+                                                // Reset height to auto to get accurate scrollHeight
+                                                e.target.style.height = 'auto';
+                                                // Calculate new height (min 20px for single line, max 80px before scroll)
+                                                const newHeight = Math.min(Math.max(e.target.scrollHeight, 20), 80);
+                                                e.target.style.height = `${newHeight}px`;
+                                                // Expand wrapper when multiline
+                                                if (newHeight > 20) {
+                                                    e.target.parentElement.style.height = `${newHeight + 12}px`;
+                                                    e.target.parentElement.style.borderRadius = '16px';
+                                                    e.target.parentElement.style.alignItems = 'flex-start';
+                                                    e.target.parentElement.style.paddingTop = '6px';
+                                                } else {
+                                                    e.target.parentElement.style.height = '32px';
+                                                    e.target.parentElement.style.borderRadius = '9999px';
+                                                    e.target.parentElement.style.alignItems = 'center';
+                                                    e.target.parentElement.style.paddingTop = '0px';
                                                 }
-                                            }
-                                        }}
-                                        placeholder="Ask me anything about veterinary medicine..."
-                                        className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white resize-none transition-all duration-200 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed shadow-sm hide-scrollbar overflow-y-auto"
-                                        disabled={isLoading || isRecording}
-                                        rows="1"
-                                    />
-                                    <div className="absolute top-3 right-3 flex items-center gap-2">
-                                        {!isRecording && !isTranscribing && (
-                                            <button
-                                                type="button"
-                                                onClick={startRecording}
-                                                className="p-1.5 text-primary-500 hover:text-primary-600 transition-colors duration-200 rounded-full hover:bg-primary-50"
-                                                aria-label="Start dictation"
-                                                title="Start dictation"
-                                            >
-                                                <FaMicrophone className="text-lg" />
-                                            </button>
-                                        )}
-                                        {isRecording && (
-                                            <button
-                                                type="button"
-                                                onClick={stopRecording}
-                                                className="p-1.5 text-red-500 hover:text-red-600 transition-colors duration-200 rounded-full hover:bg-red-50 animate-pulse"
-                                                aria-label="Stop recording"
-                                                title="Stop recording"
-                                            >
-                                                <FaStop className="text-lg" />
-                                            </button>
-                                        )}
-                                        {isTranscribing && (
-                                            <div className="p-1.5 text-primary-500">
-                                                <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            </div>
-                                        )}
-                                        {inputMessage && !isRecording && !isTranscribing && (
-                                            <button
-                                                type="button"
-                                                className="p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
-                                                onClick={() => {
-                                                    if (textareaRef.current) {
-                                                        textareaRef.current.style.height = '52px';
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    if (inputMessage.trim() && !isLoading) {
+                                                        handleSubmit(e);
+                                                        // Reset height after send
+                                                        e.target.style.height = '20px';
+                                                        e.target.parentElement.style.height = '32px';
+                                                        e.target.parentElement.style.borderRadius = '9999px';
+                                                        e.target.parentElement.style.alignItems = 'center';
+                                                        e.target.parentElement.style.paddingTop = '0px';
                                                     }
-                                                }}
-                                                aria-label="Collapse input"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="m18 15-6-6-6 6" />
-                                                </svg>
-                                            </button>
-                                        )}
+                                                }
+                                            }}
+                                            placeholder="Ask a question..."
+                                            className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-5 placeholder-gray-400 overflow-hidden pr-8 m-0 p-0"
+                                            style={{ height: '20px', maxHeight: '80px', verticalAlign: 'middle' }}
+                                            disabled={isLoading || isRecording}
+                                            rows="1"
+                                        />
+                                        {/* Mic button - absolute positioned */}
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                                            {!isRecording && !isTranscribing && (
+                                                <button
+                                                    type="button"
+                                                    onClick={startRecording}
+                                                    className="text-gray-400 active:text-primary-500"
+                                                    aria-label="Start dictation"
+                                                >
+                                                    <FaMicrophone className="text-sm" />
+                                                </button>
+                                            )}
+                                            {isRecording && (
+                                                <button
+                                                    type="button"
+                                                    onClick={stopRecording}
+                                                    className="text-red-500 animate-pulse"
+                                                    aria-label="Stop recording"
+                                                >
+                                                    <FaStop className="text-sm" />
+                                                </button>
+                                            )}
+                                            {isTranscribing && (
+                                                <div className="text-primary-500">
+                                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    /* Desktop input */
+                                    <div className="relative flex-1">
+                                        <textarea
+                                            ref={textareaRef}
+                                            value={inputMessage}
+                                            onChange={(e) => {
+                                                setInputMessage(e.target.value);
+                                                if (!e.target.value.trim()) {
+                                                    e.target.style.height = '52px';
+                                                } else {
+                                                    e.target.style.height = '52px';
+                                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                                }
+                                            }}
+                                            onClick={(e) => {
+                                                if (inputMessage.trim()) {
+                                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    if (inputMessage.trim() && !isLoading) {
+                                                        e.target.style.height = '52px';
+                                                        handleSubmit(e);
+                                                    }
+                                                }
+                                            }}
+                                            placeholder="Ask me anything about veterinary medicine..."
+                                            className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none shadow-sm resize-none transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hide-scrollbar overflow-y-auto"
+                                            disabled={isLoading || isRecording}
+                                            rows="1"
+                                        />
+                                        {/* Desktop mic and collapse buttons */}
+                                        <div className="absolute top-3 right-3 flex items-center gap-2">
+                                            {!isRecording && !isTranscribing && (
+                                                <button
+                                                    type="button"
+                                                    onClick={startRecording}
+                                                    className="p-1.5 text-primary-500 hover:text-primary-600 transition-colors duration-200 rounded-full hover:bg-primary-50"
+                                                    aria-label="Start dictation"
+                                                    title="Start dictation"
+                                                >
+                                                    <FaMicrophone className="text-lg" />
+                                                </button>
+                                            )}
+                                            {isRecording && (
+                                                <button
+                                                    type="button"
+                                                    onClick={stopRecording}
+                                                    className="p-1.5 text-red-500 hover:text-red-600 transition-colors duration-200 rounded-full hover:bg-red-50 animate-pulse"
+                                                    aria-label="Stop recording"
+                                                    title="Stop recording"
+                                                >
+                                                    <FaStop className="text-lg" />
+                                                </button>
+                                            )}
+                                            {isTranscribing && (
+                                                <div className="p-1.5 text-primary-500">
+                                                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                </div>
+                                            )}
+                                            {inputMessage && !isRecording && !isTranscribing && (
+                                                <button
+                                                    type="button"
+                                                    className="p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
+                                                    onClick={() => {
+                                                        if (textareaRef.current) {
+                                                            textareaRef.current.style.height = '52px';
+                                                        }
+                                                    }}
+                                                    aria-label="Collapse input"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="m18 15-6-6-6 6" />
+                                                    </svg>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {/* Send button - smaller on mobile */}
                                 <button
                                     type="submit"
-                                    className="w-12 h-12 bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-md flex items-center justify-center flex-shrink-0 group"
+                                    className={`${isMobile ? 'w-8 h-8' : 'w-12 h-12'} bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0`}
                                     disabled={isLoading || !inputMessage.trim() || isRecording}
                                     aria-label="Send message"
                                 >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        width="18"
-                                        height="18"
-                                        className="transform group-hover:translate-x-0.5 transition-transform duration-200"
+                                        fill="currentColor"
+                                        width={isMobile ? "12" : "18"}
+                                        height={isMobile ? "12" : "18"}
                                     >
-                                        <path d="m3 3 3 9-3 9 19-9Z" />
-                                        <path d="m6 12 13 0" />
+                                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
                                     </svg>
                                 </button>
-                                {messages.length > 0 && (
+                                {/* Desktop clear button */}
+                                {messages.length > 0 && !isMobile && (
                                     <button
                                         onClick={handleClear}
                                         type="button"
@@ -1443,10 +1547,10 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
                     onClick={() => setShowTutorial(false)}
                     style={{
-                        left: '224px',
+                        left: isMobile ? '0' : '224px',
                         right: '0',
                         top: '0',
-                        bottom: '0',
+                        bottom: isMobile ? '80px' : '0',
                         animation: 'fadeIn 0.3s ease-out'
                     }}
                 >
