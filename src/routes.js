@@ -16,7 +16,6 @@ import Help from './components/Help';
 import AdminDashboard from './components/AdminDashboard';
 import AutoLogin from './components/AutoLogin';
 import PWALogin from './components/PWALogin';
-import '../styles/PWALogin.css';
 
 // Check if running as installed PWA
 const isStandalone = () => {
