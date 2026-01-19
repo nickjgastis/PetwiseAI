@@ -236,9 +236,12 @@ const QuickSOAP = () => {
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(0);
     const [isMobile, setIsMobile] = useState(() => {
-        // Check on initial render to avoid layout shift
+        // Check on initial render - use device detection, not just width
         if (typeof window !== 'undefined') {
-            return window.innerWidth <= 768;
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            return (isTouchDevice && isMobileUserAgent) || (isStandalone && window.innerWidth <= 1024);
         }
         return false;
     });
@@ -351,14 +354,16 @@ const QuickSOAP = () => {
         }
     }, [parsedReport.sections.length]);
 
-    // Mobile detection
+    // Mobile detection - device-based, not width-based (won't change on rotation)
     useEffect(() => {
         const checkMobile = () => {
-            setIsMobile(window.innerWidth <= 768);
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            setIsMobile((isTouchDevice && isMobileUserAgent) || (isStandalone && window.innerWidth <= 1024));
         };
         checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+        // Don't listen to resize - we want device type, not window size
     }, []);
 
     // Handle visibility change (iOS/mobile backgrounding kills mic access)
@@ -2088,12 +2093,12 @@ const QuickSOAP = () => {
                 </div>
             )}
 
-            <div className={`${isMobile ? 'h-full' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full`} style={isMobile ? { height: '100%', minHeight: '100%' } : {}}>
+            <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>
                 {/* Left Side - Input Area */}
                 <div
-                    className={isMobile ? 'relative w-full h-full z-40' : 'fixed top-0 bottom-0 z-40'}
+                    className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed top-0 bottom-0 z-40'}
                     style={{
-                        ...(isMobile ? { height: '100%' } : {}),
+                        ...(isMobile ? { height: '100%', overflow: 'hidden' } : {}),
                         ...(hasReport ? {
                             left: isMobile ? '0' : (isSidebarCollapsed ? '80px' : '224px'),
                             width: isMobile ? '100%' : '25%',
@@ -2118,7 +2123,7 @@ const QuickSOAP = () => {
                             isMobile 
                                 ? (dictations.length === 0 || isRecording 
                                     ? 'justify-center px-4' 
-                                    : 'justify-start px-4 overflow-y-auto pt-6 pb-6')
+                                    : 'justify-start px-4 pt-6 pb-6 overflow-hidden')
                                 : 'justify-center px-8'
                         }`}>
                             {/* Header */}

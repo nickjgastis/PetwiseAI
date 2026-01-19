@@ -139,15 +139,19 @@ const Dashboard = () => {
     // ================ MOBILE DETECTION ================
     useEffect(() => {
         const checkMobile = () => {
-            setIsMobile(window.innerWidth <= 768);
+            // Check if device is mobile/tablet by touch capability and user agent
+            // This won't change when rotating the device
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+            
+            // Consider mobile if: touch device + mobile user agent, OR running as PWA on small-ish screen
+            const isMobileDevice = (isTouchDevice && isMobileUserAgent) || (isStandalone && window.innerWidth <= 1024);
+            setIsMobile(isMobileDevice);
         };
 
         checkMobile(); // Check on initial load
-        window.addEventListener('resize', checkMobile);
-
-        return () => {
-            window.removeEventListener('resize', checkMobile);
-        };
+        // Don't listen to resize - we want device type, not window size
     }, []);
 
     // ================ PWA FADE-IN ANIMATION ================
@@ -885,14 +889,14 @@ const Dashboard = () => {
                         </div>
                     </div>
                     {/* QuickSOAP Component */}
-                    <div className="bg-[#3369bd]" style={{ paddingTop: '64px', paddingBottom: '80px', minHeight: '100vh', height: '100vh', overflow: 'hidden' }}>
-                        <div style={{ height: 'calc(100vh - 144px)', overflow: 'auto' }}>
+                    <div className="bg-[#3369bd]" style={{ paddingTop: '64px', paddingBottom: '64px', minHeight: '100vh', height: '100vh', overflow: 'hidden' }}>
+                        <div style={{ height: 'calc(100vh - 128px)', overflow: 'hidden' }}>
                             <QuickSOAP />
                         </div>
                     </div>
                     {/* Bottom Navigation Bar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex items-center justify-around h-20">
+                        <div className="flex items-center justify-around h-16">
                             <Link
                                 to="/dashboard/quicksoap"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -944,12 +948,12 @@ const Dashboard = () => {
                         </div>
                     </div>
                     {/* PetQuery Component */}
-                    <div className="bg-white min-h-screen flex flex-col" style={{ paddingTop: '64px', paddingBottom: '80px' }}>
+                    <div className="bg-white min-h-screen flex flex-col" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
                         <QuickQuery isMobile={true} />
                     </div>
                     {/* Bottom Navigation Bar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex items-center justify-around h-20">
+                        <div className="flex items-center justify-around h-16">
                             <Link
                                 to="/dashboard/quicksoap"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
@@ -1005,12 +1009,12 @@ const Dashboard = () => {
                             </span>
                         </div>
                     </div>
-                    <div className="min-h-screen bg-[#3369bd] p-0" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
+                    <div className="min-h-screen bg-[#3369bd] p-0" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
                         <Profile isMobileSignup={true} />
                     </div>
                     {/* Bottom Navigation Bar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-20`}>
+                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
                             {hasActivePlan() && (
                                 <>
                                     <Link
