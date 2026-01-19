@@ -11,6 +11,13 @@ body {
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
+/* PWA safe area support for notched devices */
+#root {
+    min-height: 100%;
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+}
+
 /* Basic link reset */
 a {
     text-decoration: none;

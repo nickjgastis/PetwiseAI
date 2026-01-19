@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
 import Navbar from './components/Navbar';
+import InstallPrompt from './components/InstallPrompt';
 import { supabase } from './supabaseClient';
 import "./styles/global.css";
 
@@ -138,7 +139,9 @@ const App = () => {
   const navigate = useNavigate();
 
   return (
-    <Auth0Provider
+    <>
+      <InstallPrompt />
+      <Auth0Provider
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
@@ -154,8 +157,9 @@ const App = () => {
       cacheLocation="localstorage"
       useRefreshTokens={true}
     >
-      <AppContent />
-    </Auth0Provider>
+        <AppContent />
+      </Auth0Provider>
+    </>
   );
 };
 
