@@ -12,6 +12,8 @@ const LogoutButton = () => {
             ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
             : 'http://localhost:3000';
         
+        localStorage.removeItem('auth0.is.authenticated');
+        
         logout({
             logoutParams: {
                 returnTo: returnUrl

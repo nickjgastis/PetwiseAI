@@ -1,0 +1,89 @@
+.pwa-login {
+    min-height: 100vh;
+    background: #3369bd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+}
+
+.pwa-login-content {
+    text-align: center;
+    width: 100%;
+    max-width: 320px;
+}
+
+.pwa-login-logo {
+    width: 100px;
+    height: 100px;
+    border-radius: 22px;
+    margin: 0 auto 24px auto;
+    display: block;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.pwa-login-content h1 {
+    color: white;
+    font-size: 32px;
+    margin: 0 0 8px 0;
+    font-family: 'Inter', 'Helvetica', sans-serif;
+    letter-spacing: 0.035em;
+}
+
+.pwa-login-content .logo-bold {
+    font-weight: 700;
+}
+
+.pwa-login-content .logo-regular {
+    font-weight: 400;
+}
+
+.pwa-login-content > p {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 16px;
+    margin: 0 0 48px 0;
+}
+
+.pwa-login-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.pwa-login-btn {
+    width: 100%;
+    padding: 16px 24px;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.pwa-login-btn.primary {
+    background: white;
+    color: #3369bd;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.pwa-login-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.pwa-login-btn.secondary {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.pwa-login-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.pwa-login-btn:active {
+    transform: translateY(0);
+}

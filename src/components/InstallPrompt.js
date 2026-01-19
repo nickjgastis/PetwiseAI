@@ -4,22 +4,22 @@ import '../styles/InstallPrompt.css';
 // Check conditions synchronously to avoid flash
 const getInitialGateState = () => {
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                        (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
-  
+    (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+
   if (!isMobileDevice) return false;
-  
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                       window.navigator.standalone === true;
-  
+
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+
   if (isStandalone) return false;
-  
+
   return true;
 };
 
 const InstallPrompt = () => {
   const [showGate] = useState(getInitialGateState);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  
+
   // Detect platform
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isIOSSafari = isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
@@ -41,7 +41,7 @@ const InstallPrompt = () => {
       setDeferredPrompt(null);
       window.location.reload(); // Reload to exit gate
     };
-    
+
     window.addEventListener('appinstalled', handleInstalled);
 
     return () => {
@@ -55,11 +55,11 @@ const InstallPrompt = () => {
 
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    
+
     if (outcome === 'accepted') {
       window.location.reload();
     }
-    
+
     setDeferredPrompt(null);
   };
 
@@ -73,7 +73,7 @@ const InstallPrompt = () => {
           <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
           <h1>Open in Safari</h1>
           <p>To install PetWise, you need to open this page in Safari</p>
-          
+
           <div className="install-steps">
             <div className="install-step">
               <span className="step-number">1</span>
@@ -103,7 +103,7 @@ const InstallPrompt = () => {
           <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
           <h1>Get the PetWise App</h1>
           <p>Install PetWise on your device for the best experience</p>
-          
+
           <div className="install-steps">
             <div className="install-step">
               <span className="step-number">1</span>
@@ -111,7 +111,7 @@ const InstallPrompt = () => {
                 Tap the share button
                 <span className="share-icon-inline">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13"/>
+                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
                   </svg>
                 </span>
                 below
@@ -141,7 +141,7 @@ const InstallPrompt = () => {
           <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
           <h1>Get the PetWise App</h1>
           <p>Install PetWise on your device for the best experience</p>
-          
+
           <div className="install-steps">
             {deferredPrompt ? (
               <button onClick={handleAndroidInstall} className="install-gate-btn">
@@ -182,7 +182,7 @@ const InstallPrompt = () => {
         <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
         <h1>Get the PetWise App</h1>
         <p>Install PetWise on your device for the best experience</p>
-        
+
         <div className="install-steps">
           <div className="install-step">
             <span className="step-number">1</span>

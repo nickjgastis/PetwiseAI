@@ -556,6 +556,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 onClick={() => {
                                                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                                                                         window.navigator.standalone === true;
+                                                    localStorage.removeItem('auth0.is.authenticated');
                                                     logout({
                                                         logoutParams: {
                                                             returnTo: isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet'

@@ -15,10 +15,21 @@ import Terms from './components/Terms';
 import Help from './components/Help';
 import AdminDashboard from './components/AdminDashboard';
 import AutoLogin from './components/AutoLogin';
+import PWALogin from './components/PWALogin';
+import '../styles/PWALogin.css';
+
+// Check if running as installed PWA
+const isStandalone = () => {
+    return window.matchMedia('(display-mode: standalone)').matches || 
+           window.navigator.standalone === true;
+};
 
 const AppRoutes = () => {
     const { isLoading, isAuthenticated, user } = useAuth0();
     const location = useLocation();
+    
+    // Check if running as PWA
+    const isPWA = isStandalone();
 
     // Check if the current user is an admin (you)
     const isAdmin = user?.sub === process.env.REACT_APP_ADMIN_USER_ID;
@@ -58,12 +69,12 @@ const AppRoutes = () => {
                     isAuthenticated ? (
                         <Navigate to="/dashboard" replace />
                     ) : (
-                        <AutoLogin />
+                        isPWA ? <PWALogin /> : <AutoLogin />
                     )
                 }
             />
-            <Route path="/login" element={<AutoLogin />} />
-            <Route path="/signup" element={<AutoLogin mode="signup" />} />
+            <Route path="/login" element={isPWA ? <PWALogin /> : <AutoLogin />} />
+            <Route path="/signup" element={isPWA ? <PWALogin /> : <AutoLogin mode="signup" />} />
             <Route path="/callback" element={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#3cb6fd' }}>Loading...</div>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />

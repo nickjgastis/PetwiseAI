@@ -114,6 +114,9 @@ const Dashboard = () => {
             ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
             : 'http://localhost:3000';
         
+        // Clear local storage to prevent auto-login
+        localStorage.removeItem('auth0.is.authenticated');
+        
         logout({
             logoutParams: {
                 returnTo: returnUrl
