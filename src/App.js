@@ -151,11 +151,13 @@ const shouldShowInstallGate = () => {
 const App = () => {
   const navigate = useNavigate();
 
+  // Block everything when gate should show - don't even load Auth0
+  if (shouldShowInstallGate()) {
+    return <InstallPrompt />;
+  }
+
   return (
-    <>
-      {/* Show install gate as overlay on mobile */}
-      {shouldShowInstallGate() && <InstallPrompt />}
-      <Auth0Provider
+    <Auth0Provider
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
@@ -170,10 +172,9 @@ const App = () => {
       }}
       cacheLocation="localstorage"
       useRefreshTokens={true}
-      >
-        <AppContent />
-      </Auth0Provider>
-    </>
+    >
+      <AppContent />
+    </Auth0Provider>
   );
 };
 

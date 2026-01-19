@@ -17,12 +17,18 @@ const getInitialGateState = () => {
 };
 
 const InstallPrompt = () => {
-  const [showGate, setShowGate] = useState(getInitialGateState);
-  const [isIOS, setIsIOS] = useState(() => /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream);
+  const [showGate] = useState(getInitialGateState);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  
+  // Detect platform
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isIOSSafari = isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
+  const isIOSChrome = isIOS && /CriOS/.test(navigator.userAgent);
+  const isIOSOtherBrowser = isIOS && !isIOSSafari && !isIOSChrome;
+  const isAndroid = /Android/.test(navigator.userAgent);
 
   useEffect(() => {
-    if (!showGate) return;
+    if (!showGate || isIOS) return;
 
     const handleBeforeInstall = (e) => {
       e.preventDefault();
@@ -32,8 +38,8 @@ const InstallPrompt = () => {
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
 
     const handleInstalled = () => {
-      setShowGate(false);
       setDeferredPrompt(null);
+      window.location.reload(); // Reload to exit gate
     };
     
     window.addEventListener('appinstalled', handleInstalled);
@@ -42,7 +48,7 @@ const InstallPrompt = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleInstalled);
     };
-  }, [showGate]);
+  }, [showGate, isIOS]);
 
   const handleAndroidInstall = async () => {
     if (!deferredPrompt) return;
@@ -51,7 +57,7 @@ const InstallPrompt = () => {
     const { outcome } = await deferredPrompt.userChoice;
     
     if (outcome === 'accepted') {
-      setShowGate(false);
+      window.location.reload();
     }
     
     setDeferredPrompt(null);
@@ -59,14 +65,45 @@ const InstallPrompt = () => {
 
   if (!showGate) return null;
 
-  return (
-    <div className="install-gate">
-      <div className="install-gate-content">
-        <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
-        <h1>Get the PetWise App</h1>
-        <p>Install PetWise on your device for the best experience</p>
-        
-        {isIOS ? (
+  // iOS but NOT Safari - tell them to open in Safari
+  if (isIOSChrome || isIOSOtherBrowser) {
+    return (
+      <div className="install-gate">
+        <div className="install-gate-content">
+          <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
+          <h1>Open in Safari</h1>
+          <p>To install PetWise, you need to open this page in Safari</p>
+          
+          <div className="install-steps">
+            <div className="install-step">
+              <span className="step-number">1</span>
+              <span className="step-text">Copy this URL: <strong>app.petwise.vet</strong></span>
+            </div>
+            <div className="install-step">
+              <span className="step-number">2</span>
+              <span className="step-text">Open <strong>Safari</strong> and paste the URL</span>
+            </div>
+            <div className="install-step">
+              <span className="step-number">3</span>
+              <span className="step-text">Follow the install instructions there</span>
+            </div>
+          </div>
+
+          <p className="install-gate-footer">Only Safari supports app installation on iOS</p>
+        </div>
+      </div>
+    );
+  }
+
+  // iOS Safari - show Add to Home Screen instructions
+  if (isIOSSafari || isIOS) {
+    return (
+      <div className="install-gate">
+        <div className="install-gate-content">
+          <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
+          <h1>Get the PetWise App</h1>
+          <p>Install PetWise on your device for the best experience</p>
+          
           <div className="install-steps">
             <div className="install-step">
               <span className="step-number">1</span>
@@ -89,7 +126,22 @@ const InstallPrompt = () => {
               <span className="step-text">Open PetWise from your home screen</span>
             </div>
           </div>
-        ) : (
+
+          <p className="install-gate-footer">Works offline • Fast • Secure</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Android
+  if (isAndroid) {
+    return (
+      <div className="install-gate">
+        <div className="install-gate-content">
+          <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
+          <h1>Get the PetWise App</h1>
+          <p>Install PetWise on your device for the best experience</p>
+          
           <div className="install-steps">
             {deferredPrompt ? (
               <button onClick={handleAndroidInstall} className="install-gate-btn">
@@ -107,7 +159,7 @@ const InstallPrompt = () => {
                 </div>
                 <div className="install-step">
                   <span className="step-number">2</span>
-                  <span className="step-text">Tap <strong>"Add to Home Screen"</strong> or <strong>"Install App"</strong></span>
+                  <span className="step-text">Tap <strong>"Add to Home screen"</strong> or <strong>"Install App"</strong></span>
                 </div>
                 <div className="install-step">
                   <span className="step-number">3</span>
@@ -116,17 +168,37 @@ const InstallPrompt = () => {
               </>
             )}
           </div>
-        )}
+
+          <p className="install-gate-footer">Works offline • Fast • Secure</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback for other mobile browsers
+  return (
+    <div className="install-gate">
+      <div className="install-gate-content">
+        <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
+        <h1>Get the PetWise App</h1>
+        <p>Install PetWise on your device for the best experience</p>
+        
+        <div className="install-steps">
+          <div className="install-step">
+            <span className="step-number">1</span>
+            <span className="step-text">Open your browser menu</span>
+          </div>
+          <div className="install-step">
+            <span className="step-number">2</span>
+            <span className="step-text">Tap <strong>"Add to Home Screen"</strong> or <strong>"Install"</strong></span>
+          </div>
+          <div className="install-step">
+            <span className="step-number">3</span>
+            <span className="step-text">Open PetWise from your home screen</span>
+          </div>
+        </div>
 
         <p className="install-gate-footer">Works offline • Fast • Secure</p>
-        
-        {/* Dev bypass - remove before production */}
-        <button 
-          onClick={() => setShowGate(false)} 
-          className="install-skip-btn"
-        >
-          Skip for now
-        </button>
       </div>
     </div>
   );
