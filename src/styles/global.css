@@ -63,9 +63,9 @@ select {
     }
 }
 
-/* PWA standalone mode - match primary brand color */
+/* PWA standalone mode - match sidebar blue */
 @media all and (display-mode: standalone) {
     body {
-        background-color: #3db6fd;
+        background-color: #3369bd;
     }
 }

@@ -119,6 +119,14 @@ const InstallPrompt = () => {
         )}
 
         <p className="install-gate-footer">Works offline • Fast • Secure</p>
+        
+        {/* Dev bypass - remove before production */}
+        <button 
+          onClick={() => setShowGate(false)} 
+          className="install-skip-btn"
+        >
+          Skip for now
+        </button>
       </div>
     </div>
   );

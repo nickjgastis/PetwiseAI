@@ -5,7 +5,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: #3cb6fd;
+  background: #3369bd;
   z-index: 99999;
   display: flex;
   flex-direction: column;
@@ -72,7 +72,7 @@
   width: 32px;
   height: 32px;
   background: white;
-  color: #3cb6fd;
+  color: #3369bd;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -123,7 +123,7 @@
 /* Android Install Button */
 .install-gate-btn {
   background: white;
-  color: #3cb6fd;
+  color: #3369bd;
   border: none;
   padding: 16px 40px;
   border-radius: 12px;
@@ -149,6 +149,24 @@
   margin-top: 32px;
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
+}
+
+/* Dev skip button - remove before production */
+.install-skip-btn {
+  margin-top: 24px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.6);
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.install-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Small phones */

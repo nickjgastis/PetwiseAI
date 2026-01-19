@@ -841,7 +841,7 @@ const Dashboard = () => {
             return (
                 <>
                     {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-500 items-center justify-between px-4 z-50 shadow-md">
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
                             <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
                             <span>
@@ -851,7 +851,7 @@ const Dashboard = () => {
                         </div>
                     </div>
                     {/* QuickSOAP Component */}
-                    <div className="bg-primary-500 min-h-screen" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
+                    <div className="bg-[#3369bd] min-h-screen" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
                         <QuickSOAP />
                     </div>
                     {/* Bottom Navigation Bar */}
@@ -899,7 +899,7 @@ const Dashboard = () => {
             return (
                 <>
                     {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-500 items-center justify-between px-4 z-50 shadow-md">
+                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                         <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
                             <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
                             <span>
@@ -908,7 +908,7 @@ const Dashboard = () => {
                             </span>
                         </div>
                     </div>
-                    <div className="min-h-screen bg-primary-500 p-0" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
+                    <div className="min-h-screen bg-[#3369bd] p-0" style={{ paddingTop: '64px', paddingBottom: '100px' }}>
                         <Profile isMobileSignup={true} />
                     </div>
                     {/* Bottom Navigation Bar */}
@@ -1030,7 +1030,7 @@ const Dashboard = () => {
                 {/* Mobile Header */}
                 {window.innerWidth <= 768 && (
                     <>
-                        <div className="flex fixed top-0 left-0 right-0 h-16 bg-primary-500 items-center justify-between px-4 z-50 shadow-md">
+                        <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                             <button
                                 className="flex flex-col justify-around w-8 h-6 bg-transparent border-none cursor-pointer p-0 z-50"
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

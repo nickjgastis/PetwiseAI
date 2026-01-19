@@ -135,7 +135,7 @@ const AppContent = () => {
   );
 };
 
-// Check if we should block the app with install gate
+// Check if we should show install gate
 const shouldShowInstallGate = () => {
   const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
                         (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
@@ -150,15 +150,12 @@ const shouldShowInstallGate = () => {
 
 const App = () => {
   const navigate = useNavigate();
-  
-  // If on mobile and not installed, only show the install gate
-  // Don't initialize Auth0 at all to prevent redirects
-  if (shouldShowInstallGate()) {
-    return <InstallPrompt />;
-  }
 
   return (
-    <Auth0Provider
+    <>
+      {/* Show install gate as overlay on mobile */}
+      {shouldShowInstallGate() && <InstallPrompt />}
+      <Auth0Provider
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
@@ -173,9 +170,10 @@ const App = () => {
       }}
       cacheLocation="localstorage"
       useRefreshTokens={true}
-    >
-      <AppContent />
-    </Auth0Provider>
+      >
+        <AppContent />
+      </Auth0Provider>
+    </>
   );
 };
 

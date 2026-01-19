@@ -43,7 +43,11 @@ const AppRoutes = () => {
     }, [location]);
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="min-h-screen bg-[#3369bd] flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
+            </div>
+        );
     }
 
     return (
@@ -60,7 +64,7 @@ const AppRoutes = () => {
             />
             <Route path="/login" element={<AutoLogin />} />
             <Route path="/signup" element={<AutoLogin mode="signup" />} />
-            <Route path="/callback" element={<div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',color:'#3cb6fd'}}>Loading...</div>} />
+            <Route path="/callback" element={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#3cb6fd' }}>Loading...</div>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />
