@@ -6,7 +6,11 @@
   "scripts": {
     "start": "node server.js"
   },
+  "overrides": {
+    "gopd": "1.2.0"
+  },
   "dependencies": {
+    "gopd": "1.2.0",
     "@openai/agents": "^0.3.4",
     "@supabase/supabase-js": "^2.45.6",
     "axios": "^1.9.0",
