@@ -199,3 +199,40 @@
     padding-top: 16px;
   }
 }
+
+/* Android-specific sizing - larger text and elements */
+html.android .install-gate-content {
+  max-width: 360px;
+}
+
+html.android .install-gate-icon {
+  width: 100px;
+  height: 100px;
+}
+
+html.android .install-gate-content h1 {
+  font-size: 32px;
+}
+
+html.android .install-gate-content > p {
+  font-size: 18px;
+}
+
+html.android .install-step {
+  font-size: 18px;
+}
+
+html.android .step-number {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+}
+
+html.android .install-gate-btn {
+  font-size: 19px;
+  padding: 18px 40px;
+}
+
+html.android .install-gate-footer {
+  font-size: 16px;
+}

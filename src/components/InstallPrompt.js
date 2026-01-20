@@ -18,7 +18,8 @@ const getInitialGateState = () => {
 
 const InstallPrompt = () => {
   const [showGate] = useState(getInitialGateState);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  // Check for early-captured prompt from index.html
+  const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredInstallPrompt || null);
 
   // Detect platform
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -30,8 +31,14 @@ const InstallPrompt = () => {
   useEffect(() => {
     if (!showGate || isIOS) return;
 
+    // Check again for early-captured prompt (in case it was captured after initial state)
+    if (window.deferredInstallPrompt && !deferredPrompt) {
+      setDeferredPrompt(window.deferredInstallPrompt);
+    }
+
     const handleBeforeInstall = (e) => {
       e.preventDefault();
+      window.deferredInstallPrompt = e; // Store globally too
       setDeferredPrompt(e);
     };
 
@@ -39,6 +46,7 @@ const InstallPrompt = () => {
 
     const handleInstalled = () => {
       setDeferredPrompt(null);
+      window.deferredInstallPrompt = null;
       window.location.reload(); // Reload to exit gate
     };
 
@@ -48,7 +56,7 @@ const InstallPrompt = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleInstalled);
     };
-  }, [showGate, isIOS]);
+  }, [showGate, isIOS, deferredPrompt]);
 
   const handleAndroidInstall = async () => {
     if (!deferredPrompt) return;
@@ -61,6 +69,7 @@ const InstallPrompt = () => {
     }
 
     setDeferredPrompt(null);
+    window.deferredInstallPrompt = null;
   };
 
   if (!showGate) return null;

@@ -9,6 +9,18 @@
   <meta name="theme-color" content="#3369bd" />
   <meta name="description" content="PetWise - AI-Powered Pet Health Analysis" />
   
+  <!-- Android detection - runs immediately to prevent flash -->
+  <script>
+    if (/Android/i.test(navigator.userAgent)) {
+      document.documentElement.classList.add('android');
+    }
+    // Capture beforeinstallprompt early - before React loads
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window.deferredInstallPrompt = e;
+    });
+  </script>
+  
   <!-- PWA / iOS -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />

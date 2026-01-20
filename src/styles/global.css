@@ -9,6 +9,19 @@ html,
 body {
     height: 100%;
     font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Android-specific scaling - Android devices often render smaller due to DPI differences */
+html.android {
+    font-size: 18px;
+}
+
+html.android body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* PWA safe area support for notched devices */
