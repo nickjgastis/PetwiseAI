@@ -358,10 +358,10 @@ const QuickSOAP = () => {
     // Mobile detection - device-based, not width-based (won't change on rotation)
     useEffect(() => {
         const checkMobile = () => {
-            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            // Only use user agent to avoid triggering on split-screen desktops
+            // Don't use touch or width checks as touchscreen laptops would be falsely detected
             const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-            setIsMobile((isTouchDevice && isMobileUserAgent) || (isStandalone && window.innerWidth <= 1024));
+            setIsMobile(isMobileUserAgent);
         };
         checkMobile();
         // Don't listen to resize - we want device type, not window size

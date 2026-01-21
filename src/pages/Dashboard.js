@@ -149,15 +149,10 @@ const Dashboard = () => {
     // ================ MOBILE DETECTION ================
     useEffect(() => {
         const checkMobile = () => {
-            // Check if device is mobile/tablet by touch capability and user agent
-            // This won't change when rotating the device
-            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            // Only use user agent to avoid triggering on split-screen desktops
+            // Don't use touch or width checks as touchscreen laptops would be falsely detected
             const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-            
-            // Consider mobile if: touch device + mobile user agent, OR running as PWA on small-ish screen
-            const isMobileDevice = (isTouchDevice && isMobileUserAgent) || (isStandalone && window.innerWidth <= 1024);
-            setIsMobile(isMobileDevice);
+            setIsMobile(isMobileUserAgent);
         };
 
         checkMobile(); // Check on initial load

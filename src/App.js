@@ -137,8 +137,8 @@ const AppContent = () => {
 
 // Check if we should show install gate
 const shouldShowInstallGate = () => {
-  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                        (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+  // Only check user agent - don't use width to avoid triggering on split-screen desktops
+  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (!isMobileDevice) return false;
   
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
