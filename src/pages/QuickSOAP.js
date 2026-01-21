@@ -235,6 +235,7 @@ const QuickSOAP = () => {
     const [isEditingReportName, setIsEditingReportName] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [tutorialStep, setTutorialStep] = useState(0);
+    const [showQRModal, setShowQRModal] = useState(false);
     const [isMobile, setIsMobile] = useState(() => {
         // Check on initial render - use device detection, not just width
         if (typeof window !== 'undefined') {
@@ -371,18 +372,18 @@ const QuickSOAP = () => {
         const handleVisibilityChange = async () => {
             if (document.visibilityState === 'visible') {
                 console.log('[QuickSOAP] App became visible');
-                
+
                 // If we're recording (paused or active), check stream health
                 if (isRecording && chunkedRecorderRef.current) {
                     const streamHealthy = chunkedRecorderRef.current.isStreamHealthy();
                     console.log('[QuickSOAP] Stream healthy after visibility change:', streamHealthy);
-                    
+
                     if (!streamHealthy && !isPaused) {
                         // Stream died while actively recording - warn user
                         console.warn('[QuickSOAP] Stream died while recording in background!');
                         setError('Recording may have been interrupted. Please stop and review your audio.');
                     }
-                    
+
                     // iOS: Resume audio context if suspended
                     if (audioContextRef.current?.state === 'suspended') {
                         try {
@@ -518,7 +519,7 @@ const QuickSOAP = () => {
         setDraftRecordId(null);
         draftRecordIdRef.current = null;
         setLastDictationCount(0);
-        
+
         // Clear localStorage
         localStorage.removeItem('quickSOAP_dictations');
         localStorage.removeItem('quickSOAP_input');
@@ -970,14 +971,14 @@ const QuickSOAP = () => {
         if (chunkedRecorderRef.current && isRecording && !isPaused) {
             chunkedRecorderRef.current.pause();
             setIsPaused(true);
-            
+
             // Stop visualization to save battery on mobile
             if (animationFrameRef.current) {
                 cancelAnimationFrame(animationFrameRef.current);
                 animationFrameRef.current = null;
             }
             setAudioLevels([]);
-            
+
             console.log('[QuickSOAP] Recording paused');
         }
     };
@@ -985,17 +986,17 @@ const QuickSOAP = () => {
     const resumeRecording = async () => {
         if (chunkedRecorderRef.current && isRecording && isPaused) {
             console.log('[QuickSOAP] Resuming recording...');
-            
+
             try {
                 const success = await chunkedRecorderRef.current.resume();
-                
+
                 if (success) {
                     // Check if stream was re-acquired (mobile scenario)
                     // Reconnect visualizer to new stream if needed
                     const newStream = chunkedRecorderRef.current.getStream();
                     if (newStream && newStream !== streamRef.current) {
                         console.log('[QuickSOAP] Stream was re-acquired, reconnecting visualizer...');
-                        
+
                         // Clean up old audio context
                         if (audioContextRef.current) {
                             try {
@@ -1004,24 +1005,24 @@ const QuickSOAP = () => {
                                 // Already closed
                             }
                         }
-                        
+
                         // Set up new visualization with new stream
                         streamRef.current = newStream;
                         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                         const analyser = audioContext.createAnalyser();
                         const microphone = audioContext.createMediaStreamSource(newStream);
-                        
+
                         analyser.fftSize = 256;
                         microphone.connect(analyser);
-                        
+
                         audioContextRef.current = audioContext;
                         analyserRef.current = analyser;
-                        
+
                         // iOS: Resume audio context if suspended
                         if (audioContext.state === 'suspended') {
                             await audioContext.resume();
                         }
-                        
+
                         // Restart visualization
                         visualizeAudio();
                     } else {
@@ -1033,7 +1034,7 @@ const QuickSOAP = () => {
                         // Restart visualization (was stopped on pause)
                         visualizeAudio();
                     }
-                    
+
                     setIsPaused(false);
                     console.log('[QuickSOAP] Recording resumed successfully');
                 } else {
@@ -1390,11 +1391,19 @@ const QuickSOAP = () => {
 
     const handleGenerateSOAP = async () => {
         // Combine all dictations and manual input
-        const allDictations = dictations.map(d => d.fullText).join('\n\n');
+        const allDictations = dictations.map(d => d.fullText || '').filter(text => text.trim()).join('\n\n');
         const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
+
+        console.log('[QuickSOAP] Generate clicked:', {
+            dictationsCount: dictations.length,
+            allDictationsLength: allDictations.length,
+            inputLength: input.length,
+            combinedInputLength: combinedInput.length
+        });
 
         if (!combinedInput.trim()) {
             setError('Please add at least one dictation or additional notes first.');
+            console.log('[QuickSOAP] Rejected - empty combined input');
             return;
         }
 
@@ -1409,6 +1418,12 @@ const QuickSOAP = () => {
                 try {
                     const response = await axios.post(`${API_URL}/api/generate-soap`, {
                         input: combinedInput.trim()
+                    });
+
+                    console.log('[QuickSOAP] Server response:', {
+                        hasReport: !!response.data.report,
+                        reportLength: response.data.report?.length || 0,
+                        hasPetName: !!response.data.petName
                     });
 
                     if (response.data.report) {
@@ -1435,11 +1450,11 @@ const QuickSOAP = () => {
                         }
                         // Auto-save after generation with pet name
                         await autoSaveRecord(generatedReport, extractedPetName);
-                        
+
                         // NOTE: Do NOT clear dictations here - user may want to regenerate
                         // with additional dictations or edited notes. Clearing only happens
                         // on explicit "Clear"/"Start New" or when loading a different record.
-                        
+
                         setTimeout(() => {
                             setIsReportTransitioning(false);
                         }, 100);
@@ -1488,11 +1503,11 @@ const QuickSOAP = () => {
                         }
                         // Auto-save after generation with pet name
                         autoSaveRecord(generatedReport, extractedPetName);
-                        
+
                         // NOTE: Do NOT clear dictations here - user may want to regenerate
                         // with additional dictations or edited notes. Clearing only happens
                         // on explicit "Clear"/"Start New" or when loading a different record.
-                        
+
                         // Fade in sidebar and report after a delay to allow center to fade out first
                         setTimeout(() => {
                             setIsTransitioning(false);
@@ -1504,6 +1519,7 @@ const QuickSOAP = () => {
             } catch (err) {
                 console.error('SOAP generation error:', err);
                 setError(err.response?.data?.error || 'Failed to generate SOAP report. Please try again.');
+                setIsTransitioning(false); // Reset transition state on error
             } finally {
                 setIsGenerating(false);
             }
@@ -2119,31 +2135,20 @@ const QuickSOAP = () => {
                 >
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className={`h-full flex flex-col items-center ${
-                            isMobile 
-                                ? (dictations.length === 0 || isRecording 
-                                    ? 'justify-center px-4' 
-                                    : 'justify-start px-4 pt-6 pb-6 overflow-hidden')
-                                : 'justify-center px-8'
-                        }`}>
+                        <div className={`h-full flex flex-col items-center ${isMobile
+                            ? (dictations.length === 0 || isRecording
+                                ? 'justify-center px-4'
+                                : 'justify-start px-4 pt-6 pb-6 overflow-hidden')
+                            : 'justify-center px-8'
+                            }`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
                                 <div className={`${isMobile ? 'mb-4 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
-                                    {dictations.length === 0 || !isMobile ? (
+                                    {dictations.length === 0 ? (
                                         <>
-                                            {/* Disclaimer - hide after first dictation on desktop */}
-                                            {!isMobile && dictations.length === 0 && (
-                                                <div className="mb-12 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg max-w-2xl mx-auto">
-                                                    <p className="text-sm text-blue-800">
-                                                        🎉 QuickSOAP is a new feature we're excited to share with you! Please bare with us as we continue to improve it, and we'd love to hear your feedback at{' '}
-                                                        <a href="mailto:support@petwise.vet" className="font-semibold underline hover:text-blue-900">support@petwise.vet</a>
-                                                    </p>
-                                                </div>
-                                            )}
                                             <div className="flex items-center justify-center gap-3">
                                                 <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
                                                     QuickSOAP
-                                                    <span className="text-sm font-semibold text-yellow-500 uppercase tracking-wide">beta</span>
                                                 </h1>
                                                 <div className="relative group mb-2">
                                                     <button
@@ -2161,6 +2166,21 @@ const QuickSOAP = () => {
                                                         <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
                                                     </div>
                                                 </div>
+                                                {!isMobile && (
+                                                    <div className="relative group mb-2">
+                                                        <button
+                                                            onClick={() => setShowQRModal(true)}
+                                                            className="w-6 h-6 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-all cursor-pointer"
+                                                            title="Mobile App"
+                                                        >
+                                                            <FaMobile className="text-white text-xs" />
+                                                        </button>
+                                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                                            Mobile App
+                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                             <p className={isMobile ? "text-gray-500 text-sm" : "text-gray-500 text-lg"}>
                                                 {isMobile
@@ -2409,6 +2429,7 @@ const QuickSOAP = () => {
                                 {!isMobile && !hasReport && (dictations.length > 0 || input.trim()) && !isTranscribing && (
                                     <div className="flex justify-center mt-4">
                                         <button
+                                            type="button"
                                             onClick={handleGenerateSOAP}
                                             disabled={isGenerating}
                                             className="px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-base transition-all duration-200 shadow-md hover:shadow-lg disabled:shadow-none"
@@ -2595,6 +2616,7 @@ const QuickSOAP = () => {
                                 {!isMobile && (dictations.length > 0 || input.trim()) && !isTranscribing && (
                                     <>
                                         <button
+                                            type="button"
                                             onClick={handleGenerateSOAP}
                                             disabled={isGenerating}
                                             className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
@@ -2874,6 +2896,41 @@ const QuickSOAP = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* QR Code Modal */}
+                {showQRModal && (
+                    <div
+                        className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowQRModal(false)}
+                        style={{
+                            left: isSidebarCollapsed ? '80px' : '224px',
+                            right: '0',
+                            top: '0',
+                            bottom: '0'
+                        }}
+                    >
+                        <div
+                            className="bg-gradient-to-b from-primary-600 to-primary-700 rounded-2xl shadow-2xl p-8 max-w-md w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold text-white">Mobile App</h2>
+                                <button
+                                    onClick={() => setShowQRModal(false)}
+                                    className="text-white hover:text-gray-200 transition-colors"
+                                >
+                                    <FaTimes className="text-xl" />
+                                </button>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-white mb-6">Scan this QR code or go to <span className="font-semibold text-accent-300">petwise.vet</span> on your phone and click log in</p>
+                                <div className="flex justify-center mb-4">
+                                    <img src="/PW QR CODE.png" alt="QuickSOAP Mobile App QR Code" className="w-64 h-64 border-4 border-white rounded-lg shadow-lg" />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}

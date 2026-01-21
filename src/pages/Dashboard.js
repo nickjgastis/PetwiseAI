@@ -1236,7 +1236,6 @@ const Dashboard = () => {
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'} relative`}>
                                             QuickSOAP
-                                            <span className="ml-1.5 text-[10px] font-semibold text-yellow-300 uppercase tracking-wide">beta</span>
                                             {/* Notification dot next to text when expanded */}
                                             {hasPendingDictation && !isMobile && !isSidebarCollapsed && (
                                                 <FaCircle className="inline-block ml-2 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />

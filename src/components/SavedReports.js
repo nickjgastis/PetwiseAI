@@ -1071,8 +1071,8 @@ const SavedReports = () => {
         localStorage.setItem('previewVisible', 'true');
         localStorage.setItem('patientInfoSubmitted', 'true');
 
-        // Navigate to the report form
-        navigate('/report');
+        // Navigate to the report form (PetSOAP Generator)
+        navigate('/dashboard/report-form');
     };
 
     const handleLoadQuickSOAP = (report) => {

@@ -6,7 +6,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import ManageSubscription from './ManageSubscription';
-import { FaGraduationCap } from 'react-icons/fa';
+import { FaGraduationCap, FaMobile, FaTimes } from 'react-icons/fa';
 import { clearAppLocalStorage } from '../utils/clearUserData';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -25,6 +25,7 @@ const Profile = ({ isMobileSignup = false }) => {
     const [userData, setUserData] = useState(null);
     const [showManageAccount, setShowManageAccount] = useState(false);
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
+    const [showQRModal, setShowQRModal] = useState(false);
 
     const getOptimizedImageUrl = (url) => {
         if (!url) return null;
@@ -400,6 +401,12 @@ const Profile = ({ isMobileSignup = false }) => {
                                         >
                                             Manage Account
                                         </button>
+                                        <button
+                                            className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg flex items-center gap-2"
+                                            onClick={() => setShowQRModal(true)}
+                                        >
+                                            <FaMobile /> Mobile App
+                                        </button>
                                     </div>
                                     <div className="bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm">
                                         <h3 className="text-primary-600 text-xl font-semibold border-b-2 border-primary-100 pb-2 mb-4">Profile Information</h3>
@@ -593,6 +600,35 @@ const Profile = ({ isMobileSignup = false }) => {
                         </>
                     )}
                 </div>
+
+                {/* QR Code Modal */}
+                {showQRModal && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowQRModal(false)}
+                    >
+                        <div
+                            className="bg-gradient-to-b from-primary-600 to-primary-700 rounded-2xl shadow-2xl p-8 max-w-md w-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-2xl font-bold text-white">Mobile App</h2>
+                                <button
+                                    onClick={() => setShowQRModal(false)}
+                                    className="text-white hover:text-gray-200 transition-colors"
+                                >
+                                    <FaTimes className="text-xl" />
+                                </button>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-white mb-6">Scan this QR code or go to <span className="font-semibold text-accent-300">petwise.vet</span> on your phone and click log in</p>
+                                <div className="flex justify-center mb-4">
+                                    <img src="/PW QR CODE.png" alt="QuickSOAP Mobile App QR Code" className="w-64 h-64 border-4 border-white rounded-lg shadow-lg" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         )
     );

@@ -1273,8 +1273,11 @@ app.post('/api/generate-soap', async (req, res) => {
     try {
         const { input } = req.body;
 
+        console.log('[SOAP] Received request, input length:', input?.length || 0);
+
         if (!input || !input.trim()) {
-            return res.status(400).json({ error: 'Input text is required' });
+            console.log('[SOAP] Rejected - empty input');
+            return res.status(400).json({ error: 'Input text is required. Please add dictation or additional notes.' });
         }
 
         if (!process.env.OPENAI_API_KEY) {
@@ -1288,13 +1291,16 @@ app.post('/api/generate-soap', async (req, res) => {
         // Agent 1: Extract information from transcript
         const transcriptionExtractor = new Agent({
             name: "Transcription Extractor",
-            instructions: `Extract all of the important information from this veterinary transcript so it can be formatted into a SOAP later.
+            instructions: `Extract all of the important information from this veterinary input so it can be formatted into a SOAP later.
+
+        CRITICAL: You MUST process ANY input provided, even if it's just a few words or a short note. NEVER refuse to process input or ask for more information. Work with whatever is given.
         
         Your job:
-        - Carefully capture every clinically relevant detail.
+        - Carefully capture every clinically relevant detail from the input (whether it's a full transcript, short notes, or just keywords).
         - Organize information under the headings below.
         - Do NOT interpret, diagnose, summarize, or add recommendations.
         - Do NOT upgrade or strengthen what was said (no extra certainty).
+        - If the input is brief (e.g., "pancreatitis patient"), still extract it and categorize it appropriately.
         
         Use exactly these headings:
         - PATIENT_IDENTIFICATION
@@ -1534,6 +1540,31 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             throw new Error("Transcription extraction failed - no output");
         }
         console.log('[SOAP Agent] Extractor output:', extractorResult.finalOutput);
+
+        // Check if agent refused to process (common phrases in refusals)
+        const refusalPhrases = [
+            'please provide',
+            'i need',
+            "i'm sorry",
+            "i'm unable",
+            'could you please',
+            'unfortunately',
+            'i cannot'
+        ];
+        const outputLower = extractorResult.finalOutput.toLowerCase();
+        const isRefusal = refusalPhrases.some(phrase => outputLower.includes(phrase));
+
+        if (isRefusal) {
+            console.log('[SOAP Agent] WARNING: Agent appears to have refused processing. Attempting to force extraction...');
+            // Try again with a more forceful prompt
+            const forcedInput = `You MUST extract information from this input, even if brief: "${input.trim()}"\n\nExtract ANYTHING mentioned and categorize it. Do not refuse.`;
+            const retryResult = await runner.run(transcriptionExtractor, forcedInput);
+            if (retryResult.finalOutput) {
+                console.log('[SOAP Agent] Retry successful');
+                extractorResult.finalOutput = retryResult.finalOutput;
+            }
+        }
+
         console.log('[SOAP Agent] Extraction complete, running formatter...');
 
         // Run Agent 2: Format SOAP - pass the extracted info directly
