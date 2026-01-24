@@ -2,8 +2,81 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
-import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile } from 'react-icons/fa';
+import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile, FaPrint } from 'react-icons/fa';
 import ChunkedRecorder from '../utils/chunkedRecorder';
+import { pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
+
+// PDF Document component for print/export
+const QuickSOAPPDFDocument = ({ reportText, title }) => {
+    const styles = StyleSheet.create({
+        page: {
+            padding: 40,
+            fontSize: 12,
+            fontFamily: 'Helvetica',
+            lineHeight: 1.2
+        },
+        title: {
+            fontSize: 16,
+            fontFamily: 'Helvetica-Bold',
+            marginBottom: 20
+        },
+        text: {
+            marginBottom: 0,
+            whiteSpace: 'pre-wrap',
+            fontFamily: 'Helvetica'
+        },
+        strongText: {
+            fontFamily: 'Helvetica-Bold',
+            marginBottom: 0,
+            fontSize: 12
+        },
+        lineBreak: {
+            height: 8
+        }
+    });
+
+    const renderContent = (content) => {
+        if (!content) return null;
+        const lines = content.split('\n');
+        return lines.map((line, index) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) {
+                return <Text key={`break-${index}`} style={styles.lineBreak}>{'\n'}</Text>;
+            }
+            // Check for bold markers or section headers (lines ending with colon that are headers)
+            const isBold = (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) ||
+                (trimmedLine.endsWith(':') && /^(Subjective|Objective|Assessment|Plan|Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Monitoring|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Owner Observations|Physical Exam|Vital Signs|Diagnostics):$/i.test(trimmedLine));
+            
+            if (isBold) {
+                const cleanText = trimmedLine.replace(/^\*\*|\*\*$/g, '');
+                return (
+                    <Text key={index} style={styles.strongText}>
+                        {cleanText}
+                        {'\n'}
+                    </Text>
+                );
+            }
+            // Clean any remaining markdown from the line
+            const cleanLine = line.replace(/\*\*/g, '').replace(/#{1,6}\s*/g, '');
+            return (
+                <Text key={index} style={styles.text}>
+                    {cleanLine}
+                    {'\n'}
+                </Text>
+            );
+        });
+    };
+
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                <Text style={styles.title}>{title}</Text>
+                {renderContent(reportText)}
+            </Page>
+        </Document>
+    );
+};
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -1925,6 +1998,28 @@ const QuickSOAP = () => {
         }
     };
 
+    const handlePrint = async () => {
+        try {
+            const title = reportName || 'SOAP Report';
+            const doc = <QuickSOAPPDFDocument reportText={report} title={title} />;
+            const blob = await pdf(doc).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            // Open PDF in new window and print
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = () => {
+                printWindow.print();
+                // Cleanup after print dialog is closed
+                printWindow.onafterprint = () => {
+                    printWindow.close();
+                    URL.revokeObjectURL(url);
+                };
+            };
+        } catch (error) {
+            console.error('Print error:', error);
+        }
+    };
+
     const getSectionColor = (sectionName) => {
         const name = sectionName.toLowerCase();
         if (name.includes('subjective')) return {
@@ -2761,6 +2856,15 @@ const QuickSOAP = () => {
                                     >
                                         {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
                                     </button>
+                                    <button
+                                        onClick={handlePrint}
+                                        className="px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer bg-[#3369bd] text-white hover:bg-[#2c5aa3] flex items-center gap-1.5"
+                                        style={{ fontSize: '0.9rem' }}
+                                        title="Print report"
+                                    >
+                                        <FaPrint className="text-xs" />
+                                        Print
+                                    </button>
                                     {isAuthenticated && hasReport && (
                                         <button
                                             onClick={handleSaveAndClear}
@@ -2888,8 +2992,8 @@ const QuickSOAP = () => {
                                             );
                                         })}
 
-                                        {/* Copy All Button at Bottom */}
-                                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
+                                        {/* Copy All & Print Buttons at Bottom */}
+                                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
                                             <button
                                                 onClick={copyAll}
                                                 className={`px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer ${copiedSection === 'all'
@@ -2899,6 +3003,15 @@ const QuickSOAP = () => {
                                                 style={{ fontSize: '0.9rem' }}
                                             >
                                                 {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
+                                            </button>
+                                            <button
+                                                onClick={handlePrint}
+                                                className="px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer bg-[#3369bd] text-white hover:bg-[#2c5aa3] flex items-center gap-1.5"
+                                                style={{ fontSize: '0.9rem' }}
+                                                title="Print report"
+                                            >
+                                                <FaPrint className="text-xs" />
+                                                Print
                                             </button>
                                         </div>
                                     </div>
