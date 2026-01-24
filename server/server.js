@@ -804,16 +804,25 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
 
 // ================ NEW CLIENT-SIDE CHUNKING ENDPOINTS ================
 
-// Whisper proxy endpoint for client-side chunked transcription
-// Accepts audio chunks from frontend and forwards to OpenAI Whisper API
+// Transcription model configuration
+// Options: 'whisper-1', 'gpt-4o-mini-transcribe', 'gpt-4o-mini-transcribe-2025-12-15', 'gpt-4o-mini-transcribe-2025-03-20'
+const TRANSCRIPTION_MODEL = process.env.TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
+const IS_GPT4O_TRANSCRIBE = TRANSCRIPTION_MODEL.startsWith('gpt-4o');
+
+console.log(`[Transcription] Using model: ${TRANSCRIPTION_MODEL} (isGPT4o: ${IS_GPT4O_TRANSCRIBE})`);
+
+// Transcription proxy endpoint for client-side chunked transcription
+// Accepts audio chunks from frontend and forwards to OpenAI Transcription API
 app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) => {
     const startTime = Date.now();
 
     try {
-        console.log('[WhisperProxy] Received chunk request');
+        console.log('[Transcribe] ========== NEW CHUNK REQUEST ==========');
+        console.log(`[Transcribe] Model: ${TRANSCRIPTION_MODEL}`);
+        console.log(`[Transcribe] Timestamp: ${new Date().toISOString()}`);
 
         if (!req.file) {
-            console.error('[WhisperProxy] No audio file provided');
+            console.error('[Transcribe] No audio file provided');
             return res.status(400).json({ error: 'No audio file provided' });
         }
 
@@ -821,7 +830,7 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
 
         // Validate buffer isn't empty
         if (!buffer || buffer.length === 0) {
-            console.error('[WhisperProxy] Buffer is empty');
+            console.error('[Transcribe] Buffer is empty');
             return res.status(400).json({
                 error: 'Invalid audio received',
                 detail: 'Chunk likely empty or corrupted'
@@ -831,12 +840,12 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
         const fileSizeMB = buffer.length / (1024 * 1024);
         const fileSizeKB = buffer.length / 1024;
         const mimeType = req.file.mimetype || 'audio/webm';
-        console.log(`[WhisperProxy] Received chunk: ${fileSizeMB.toFixed(2)}MB (${fileSizeKB.toFixed(2)}KB), type: ${mimeType}`);
+        console.log(`[Transcribe] Input: ${fileSizeMB.toFixed(2)}MB (${fileSizeKB.toFixed(2)}KB), type: ${mimeType}`);
 
         // Validate file size (should be at least 1KB - valid WebM chunks are always larger)
         const MIN_CHUNK_SIZE = 1024; // 1KB minimum
         if (buffer.length < MIN_CHUNK_SIZE) {
-            console.warn(`[WhisperProxy] Chunk too small (${buffer.length} bytes), likely empty or corrupted`);
+            console.warn(`[Transcribe] Chunk too small (${buffer.length} bytes), likely empty or corrupted`);
             return res.status(400).json({
                 error: 'Invalid audio received',
                 detail: 'Chunk likely empty or corrupted (too small)'
@@ -850,21 +859,7 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
         // Get optional context from previous chunk for continuity
         const previousContext = req.body.previousContext || '';
         const isContinuation = previousContext.length > 0;
-        console.log(`[WhisperProxy] Continuation context: ${isContinuation ? 'YES' : 'NO'} (${previousContext.length} chars)`);
-
-        // Whisper prompt should be example text, NOT instructions
-        // This helps Whisper recognize veterinary terminology and maintain style
-        const basePrompt = `Veterinary medical dictation. Patient is a 5 year old male neutered Labrador Retriever presenting for vomiting and diarrhea. Physical exam: temperature 102.5, heart rate 120, respiratory rate 24. Abdomen is tense on palpation. Recommend CBC, chemistry panel, abdominal radiographs. Differential diagnoses include pancreatitis, gastroenteritis, foreign body obstruction. Started on maropitant 1 mg/kg SQ, metronidazole 15 mg/kg PO BID, and IV fluids with lactated Ringer's solution. Also treating for otitis externa with otic drops, suspect otitis media involvement.`;
-
-        // Add continuation context if provided (helps with sentence continuity)
-        let prompt = basePrompt;
-        if (isContinuation && previousContext.trim()) {
-            // Prepend previous context so Whisper continues naturally
-            prompt = `${previousContext.trim()} ${basePrompt}`;
-        }
-
-        // Build boosted prompt with lexicon
-        const boostedPrompt = buildBoostedPrompt(prompt);
+        console.log(`[Transcribe] Continuation: ${isContinuation ? 'YES' : 'NO'} (${previousContext.length} chars)`);
 
         // Determine file extension based on mimetype (default to WebM)
         let fileExtension = 'webm';
@@ -877,19 +872,40 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
         // Create FormData and append buffer directly
         const form = new FormData();
         form.append('file', buffer, `chunk.${fileExtension}`);
-        form.append('model', 'whisper-1');
+        form.append('model', TRANSCRIPTION_MODEL);
         form.append('response_format', 'text');
         form.append('language', 'en');  // Force English to prevent hallucinations
-        form.append('temperature', '0'); // Deterministic output
-        form.append('prompt', boostedPrompt);
 
-        // Forward to OpenAI Whisper API with timeout
+        // GPT-4o transcribe models don't support prompt/temperature the same way as whisper-1
+        // Only add these for whisper-1
+        if (!IS_GPT4O_TRANSCRIBE) {
+            // Whisper prompt should be example text, NOT instructions
+            // This helps Whisper recognize veterinary terminology and maintain style
+            const basePrompt = `Veterinary medical dictation. Patient is a 5 year old male neutered Labrador Retriever presenting for vomiting and diarrhea. Physical exam: temperature 102.5, heart rate 120, respiratory rate 24. Abdomen is tense on palpation. Recommend CBC, chemistry panel, abdominal radiographs. Differential diagnoses include pancreatitis, gastroenteritis, foreign body obstruction. Started on maropitant 1 mg/kg SQ, metronidazole 15 mg/kg PO BID, and IV fluids with lactated Ringer's solution. Also treating for otitis externa with otic drops, suspect otitis media involvement.`;
+
+            // Add continuation context if provided (helps with sentence continuity)
+            let prompt = basePrompt;
+            if (isContinuation && previousContext.trim()) {
+                // Prepend previous context so Whisper continues naturally
+                prompt = `${previousContext.trim()} ${basePrompt}`;
+            }
+
+            // Build boosted prompt with lexicon
+            const boostedPrompt = buildBoostedPrompt(prompt);
+            form.append('prompt', boostedPrompt);
+            form.append('temperature', '0'); // Deterministic output
+            console.log(`[Transcribe] Using Whisper-1 with prompt (${boostedPrompt.length} chars) and temperature=0`);
+        } else {
+            console.log(`[Transcribe] Using GPT-4o transcribe (no prompt/temperature params)`);
+        }
+
+        // Forward to OpenAI Transcription API with timeout
         const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 120000); // 2 minutes for chunks
 
-        console.log(`[WhisperProxy] Sending chunk to OpenAI Whisper API (timeout: ${OPENAI_TIMEOUT_MS}ms)`);
-        const whisperStartTime = Date.now();
+        console.log(`[Transcribe] Sending to OpenAI (timeout: ${OPENAI_TIMEOUT_MS}ms)...`);
+        const apiStartTime = Date.now();
 
-        const whisperRes = await axios.post(
+        const transcribeRes = await axios.post(
             'https://api.openai.com/v1/audio/transcriptions',
             form,
             {
@@ -901,34 +917,48 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
             }
         );
 
-        const whisperTime = Date.now() - whisperStartTime;
-        // With response_format: 'text', whisperRes.data is the raw transcript string
+        const apiTime = Date.now() - apiStartTime;
+        // With response_format: 'text', transcribeRes.data is the raw transcript string
         // (not a JSON object with a .text property)
-        const transcript = typeof whisperRes.data === 'string'
-            ? whisperRes.data
-            : (whisperRes.data?.text || '');
-        console.log(`[WhisperProxy] Whisper API response received in ${whisperTime}ms, transcript length: ${transcript.length} chars`);
-        console.log(`[WhisperProxy] Transcript preview: ${transcript.substring(0, 100)}...`);
-        console.log(`[WhisperProxy] Chunk processing complete: ${fileSizeKB.toFixed(2)}KB ${mimeType} → ${transcript.length} chars in ${whisperTime}ms`);
+        const transcript = typeof transcribeRes.data === 'string'
+            ? transcribeRes.data
+            : (transcribeRes.data?.text || '');
 
         const totalTime = Date.now() - startTime;
-        console.log(`[WhisperProxy] Chunk processing complete in ${totalTime}ms total`);
 
-        res.json({ text: transcript });
+        // DEV LOGGING: Detailed output for testing/comparison
+        console.log(`[Transcribe] ========== RESPONSE ==========`);
+        console.log(`[Transcribe] Model: ${TRANSCRIPTION_MODEL}`);
+        console.log(`[Transcribe] API latency: ${apiTime}ms`);
+        console.log(`[Transcribe] Total time: ${totalTime}ms`);
+        console.log(`[Transcribe] Input size: ${fileSizeKB.toFixed(2)}KB`);
+        console.log(`[Transcribe] Output length: ${transcript.length} chars`);
+        console.log(`[Transcribe] Chars/sec: ${(transcript.length / (apiTime / 1000)).toFixed(1)}`);
+        console.log(`[Transcribe] Preview (first 200 chars):`);
+        console.log(`[Transcribe] >>> ${transcript.substring(0, 200)}`);
+        if (transcript.length > 200) {
+            console.log(`[Transcribe] Preview (last 100 chars):`);
+            console.log(`[Transcribe] >>> ...${transcript.substring(transcript.length - 100)}`);
+        }
+        console.log(`[Transcribe] ================================`);
+
+        res.json({ text: transcript, model: TRANSCRIPTION_MODEL, latencyMs: apiTime });
     } catch (err) {
-        console.error('[WhisperProxy] Whisper proxy endpoint error:', err);
+        console.error('[Transcribe] ========== ERROR ==========');
+        console.error(`[Transcribe] Model: ${TRANSCRIPTION_MODEL}`);
+        console.error('[Transcribe] Error:', err.message);
 
         // Handle axios errors
         if (err.response) {
             const errorText = err.response.data?.error?.message || JSON.stringify(err.response.data) || err.message;
             const errorStatus = err.response.status;
-            console.error(`[WhisperProxy] OpenAI Whisper API Error ${errorStatus}:`, errorText);
+            console.error(`[Transcribe] OpenAI API Error ${errorStatus}:`, errorText);
 
             // Check if it's a format error
             if (errorStatus === 400 && typeof errorText === 'string' && errorText.includes('Invalid file format')) {
                 return res.status(400).json({
                     error: 'Invalid audio received',
-                    detail: 'Chunk likely empty or corrupted (format error from Whisper)'
+                    detail: 'Chunk likely empty or corrupted (format error from API)'
                 });
             }
 
@@ -940,11 +970,11 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
 
         // Handle timeout errors
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-            console.error('[WhisperProxy] Whisper API timeout');
+            console.error('[Transcribe] API timeout');
             return res.status(504).json({ error: 'Transcription timeout (chunk took too long)' });
         }
 
-        res.status(500).json({ error: 'Whisper proxy error', detail: err.message });
+        res.status(500).json({ error: 'Transcription proxy error', detail: err.message });
     }
 });
 
@@ -1428,11 +1458,17 @@ Here is the output format:
   USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
 
 **History:**
-  [Write as professional clinical statements - DO NOT prefix with "Owner reports" or "Owner states"]
-  [Just state the facts: "Vomiting for 3 days" NOT "Owner reports vomiting for 3 days"]
-  [Timeline details - when things started, progression]
-  [Past medical conditions and treatments]
-  [Diet, medications, current home care]
+  [Each history item on its own line - one fact per line]
+  [Write as direct clinical statements using professional medical terminology]
+  [NEVER use phrases like "Owner reports", "Owner states", "Stated by owner", "Per owner", "Client reports"]
+  [Just state the medical facts directly:]
+  Example format:
+    Vomiting for 3 days
+    Decreased appetite since onset
+    No diarrhea noted
+    Previously treated for similar episode 6 months ago
+    Currently on Hill's i/d diet
+    No current medications
   DO NOT repeat the presenting complaint here
 
 **Objective**
