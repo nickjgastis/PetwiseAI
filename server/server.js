@@ -1271,7 +1271,7 @@ app.post('/api/generate-soap', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     try {
-        const { input } = req.body;
+        const { input, user } = req.body;
 
         console.log('[SOAP] Received request, input length:', input?.length || 0);
 
@@ -1598,6 +1598,48 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             }
             // Remove the PET_NAME line from the report
             report = fullResponse.replace(/PET_NAME:\s*.+?(?:\n|$)/i, '').trim();
+        }
+
+        // Increment QuickSOAP usage counter for the user
+        console.log('[SOAP] User object received:', user);
+        if (user?.sub) {
+            console.log('[SOAP] Attempting to increment quicksoap_count for user:', user.sub);
+            try {
+                // First, get the current count
+                const { data: userData, error: fetchError } = await supabase
+                    .from('users')
+                    .select('quicksoap_count')
+                    .eq('auth0_user_id', user.sub)
+                    .single();
+
+                console.log('[SOAP] Fetch result:', { userData, fetchError });
+
+                if (!fetchError && userData) {
+                    // Increment the count
+                    const newCount = (userData.quicksoap_count || 0) + 1;
+                    console.log('[SOAP] Incrementing count from', userData.quicksoap_count, 'to', newCount);
+
+                    const { error: updateError } = await supabase
+                        .from('users')
+                        .update({
+                            quicksoap_count: newCount
+                        })
+                        .eq('auth0_user_id', user.sub);
+
+                    if (updateError) {
+                        console.error('[SOAP] Update error:', updateError);
+                    } else {
+                        console.log('[SOAP] Successfully updated quicksoap_count to', newCount);
+                    }
+                } else {
+                    console.log('[SOAP] Could not fetch user or error occurred:', fetchError);
+                }
+            } catch (updateError) {
+                console.error('[SOAP] Failed to increment quicksoap_count:', updateError);
+                // Don't fail the request if counter update fails
+            }
+        } else {
+            console.log('[SOAP] No user.sub provided, skipping counter increment');
         }
 
         return res.status(200).json({ report, petName });
@@ -2803,6 +2845,12 @@ app.get('/admin-metrics', async (req, res) => {
             0
         );
 
+        // QuickSOAP metrics (sum from user counts)
+        const totalQuickSOAPs = users.reduce(
+            (sum, user) => sum + (user.quicksoap_count || 0),
+            0
+        );
+
         // Metrics by month
         const last6Months = Array.from({ length: 6 }, (_, i) => {
             const date = new Date();
@@ -2844,6 +2892,7 @@ app.get('/admin-metrics', async (req, res) => {
             totalReports,
             reportsThisMonth,
             totalQuickQueries,
+            totalQuickSOAPs,
             monthlyMetrics,
             lastUpdated: new Date().toISOString()
         });

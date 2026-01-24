@@ -76,22 +76,50 @@
 }
 
 /* Message content styling for QuickQuery compatibility */
+.message-content {
+    line-height: 1.7;
+}
+
 .message-content h3 {
-    color: #3369bd;
+    color: #1e40af;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 20px 0 12px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.message-content h3:first-child {
+    margin-top: 0;
     font-size: 1.1rem;
-    font-weight: 600;
-    margin: 12px 0 8px 0;
+    color: #1e3a8a;
+    border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+    padding-bottom: 8px;
+    margin-bottom: 16px;
 }
 
 .message-content .section-header {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: 8px;
-    margin: 16px 0 8px 0;
+    margin: 28px 0 2px 0;
+    /* Big space above, tiny space below */
+    padding-top: 0;
+}
+
+.message-content .section-header:first-of-type {
+    margin-top: 12px;
+    /* Less space for first section after title */
+}
+
+.message-content .section-header h3 {
+    margin: 0;
+    padding: 0;
+    border: none;
 }
 
 .message-content .section-number {
-    color: #3369bd;
+    color: #1e40af;
     font-weight: 700;
     font-size: 1rem;
 }
@@ -100,49 +128,115 @@
     font-weight: 700;
     color: #1e293b;
     font-size: 1rem;
-    margin: 12px 0 8px 0;
+    margin: 28px 0 2px 0;
+    /* Same as section-header */
 }
 
 .message-content .medication-item {
     font-weight: 600;
     color: #1565c0;
-    margin: 8px 0 4px 0;
+    margin: 4px 0 2px 0;
+    /* Tight spacing */
+}
+
+.message-content .section-header+.medication-item {
+    margin-top: 2px;
+    /* Tight after section header */
+}
+
+.message-content .medication-item+.line-item {
+    margin-top: 2px;
 }
 
 .message-content .line-item {
-    margin: 4px 0;
+    margin: 2px 0;
+    /* Tight vertical spacing */
+    padding-left: 16px;
     color: #374151;
+    line-height: 1.6;
+}
+
+.message-content .line-item+.line-item {
+    margin-top: 2px;
+}
+
+/* Content right after section header - tight */
+.message-content .section-header+.line-item,
+.message-content .section-header+.text-line,
+.message-content .section-header+div:not(.section-header) {
+    margin-top: 2px;
 }
 
 .message-content .list-item {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    margin: 4px 0;
+    margin: 2px 0;
+    /* Tight spacing */
+    line-height: 1.6;
 }
 
 .message-content .list-item .number {
     color: #1565c0;
     font-weight: 600;
-    min-width: 20px;
+    min-width: 24px;
+    flex-shrink: 0;
+}
+
+.message-content>div {
+    margin: 2px 0;
+    /* Tight default */
+    line-height: 1.7;
+}
+
+/* Big space before section headers */
+.message-content>div+.section-header,
+.message-content .line-item+.section-header,
+.message-content .text-line+.section-header,
+.message-content .list-item+.section-header,
+.message-content .medication-item+.section-header {
+    margin-top: 28px;
+}
+
+.message-content>div+h3 {
+    margin-top: 24px;
 }
 
 .message-content .additional-notes {
-    background: #f0f9ff;
-    border-left: 4px solid #1565c0;
-    padding: 12px 16px;
-    margin: 12px 0;
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 14px 18px;
+    margin: 20px 0;
     border-radius: 0 8px 8px 0;
     font-weight: 500;
     color: #1e293b;
+    line-height: 1.6;
 }
 
 .message-content .recommendation {
     background: #f0fdf4;
-    border-left: 4px solid #16a34a;
-    padding: 12px 16px;
-    margin: 12px 0;
+    border-left: 4px solid #22c55e;
+    padding: 14px 18px;
+    margin: 20px 0;
     border-radius: 0 8px 8px 0;
     font-weight: 600;
     color: #166534;
+    line-height: 1.6;
+}
+
+/* Space before sources section */
+.message-content .section-header:last-of-type {
+    margin-top: 28px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Regular text lines */
+.message-content .text-line {
+    margin: 8px 0;
+    line-height: 1.7;
+}
+
+.message-content .text-line+.text-line {
+    margin-top: 6px;
 }

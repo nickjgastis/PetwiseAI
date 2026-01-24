@@ -149,9 +149,12 @@ const Dashboard = () => {
     // ================ MOBILE DETECTION ================
     useEffect(() => {
         const checkMobile = () => {
+            // DEV ONLY: Allow forcing mobile view via localStorage
+            const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
+            
             // Only use user agent to avoid triggering on split-screen desktops
             // Don't use touch or width checks as touchscreen laptops would be falsely detected
-            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isMobileUserAgent = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             setIsMobile(isMobileUserAgent);
         };
 
@@ -250,7 +253,8 @@ const Dashboard = () => {
 
                 // Generate SOAP report
                 const response = await axios.post(`${API_URL}/api/generate-soap`, {
-                    input: combinedInput.trim()
+                    input: combinedInput.trim(),
+                    user: user ? { sub: user.sub } : null
                 });
 
                 if (!response.data || !response.data.report) {
@@ -949,7 +953,7 @@ const Dashboard = () => {
                         </div>
                     </div>
                     {/* PetQuery Component */}
-                    <div className="bg-white min-h-screen flex flex-col" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
+                    <div className="bg-white flex flex-col overflow-hidden" style={{ paddingTop: '64px', paddingBottom: '64px', height: '100vh', touchAction: 'pan-y' }}>
                         <QuickQuery isMobile={true} />
                     </div>
                     {/* Bottom Navigation Bar */}

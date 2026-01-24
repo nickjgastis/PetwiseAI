@@ -239,8 +239,11 @@ const QuickSOAP = () => {
     const [isMobile, setIsMobile] = useState(() => {
         // Check on initial render - use device detection, not just width
         if (typeof window !== 'undefined') {
+            // DEV ONLY: Allow forcing mobile view via localStorage
+            const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
+            
             const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isMobileUserAgent = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
             return (isTouchDevice && isMobileUserAgent) || (isStandalone && window.innerWidth <= 1024);
         }
@@ -358,9 +361,12 @@ const QuickSOAP = () => {
     // Mobile detection - device-based, not width-based (won't change on rotation)
     useEffect(() => {
         const checkMobile = () => {
+            // DEV ONLY: Allow forcing mobile view via localStorage
+            const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
+            
             // Only use user agent to avoid triggering on split-screen desktops
             // Don't use touch or width checks as touchscreen laptops would be falsely detected
-            const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isMobileUserAgent = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             setIsMobile(isMobileUserAgent);
         };
         checkMobile();
@@ -1417,7 +1423,8 @@ const QuickSOAP = () => {
             setTimeout(async () => {
                 try {
                     const response = await axios.post(`${API_URL}/api/generate-soap`, {
-                        input: combinedInput.trim()
+                        input: combinedInput.trim(),
+                        user: user ? { sub: user.sub } : null
                     });
 
                     console.log('[QuickSOAP] Server response:', {
@@ -1473,7 +1480,8 @@ const QuickSOAP = () => {
             // First time generation - transition from center to sidebar
             try {
                 const response = await axios.post(`${API_URL}/api/generate-soap`, {
-                    input: combinedInput.trim()
+                    input: combinedInput.trim(),
+                    user: user ? { sub: user.sub } : null
                 });
 
                 if (response.data.report) {

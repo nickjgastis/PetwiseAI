@@ -137,8 +137,14 @@ const AppContent = () => {
 
 // Check if we should show install gate
 const shouldShowInstallGate = () => {
+  // DEV ONLY: Skip gate in development
+  if (process.env.NODE_ENV === 'development') return false;
+  
+  // DEV ONLY: Allow forcing mobile view via localStorage
+  const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
+  
   // Only check user agent - don't use width to avoid triggering on split-screen desktops
-  const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isMobileDevice = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   if (!isMobileDevice) return false;
   
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 

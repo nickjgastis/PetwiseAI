@@ -67,13 +67,17 @@ const formatMessage = (content) => {
 
     // Join lines with newlines, but use a string method to avoid extra whitespace
     let htmlContent = '';
+    let lastElementType = null; // Track last element for smart spacing
 
     // Process line by line to have more control over the output
     for (let i = 0; i < condensedLines.length; i++) {
         const line = condensedLines[i].trim();
 
-        // Skip empty lines
-        if (line === '') continue;
+        // Skip empty lines but mark spacing opportunity
+        if (line === '') {
+            lastElementType = 'empty';
+            continue;
+        }
 
         // Process remaining mathematical expressions and LaTeX formatting
         let processedLine = line;
@@ -100,6 +104,7 @@ const formatMessage = (content) => {
         if (i === firstNonEmptyLineIndex) {
             // Title (already handled)
             htmlContent += `<h3>${processedLine.replace(/^<h3>(.*)<\/h3>$/, '$1')}</h3>`;
+            lastElementType = 'title';
         }
         else if (/^(\d+)\.\s+(.*?):$/.test(processedLine)) {
             // Numbered section headers
@@ -108,6 +113,7 @@ const formatMessage = (content) => {
                 const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
                 return `<div class="section-header"><span class="section-number">${num}.</span><h3>${cleanText}</h3></div>`;
             });
+            lastElementType = 'section-header';
         }
         else if (/^####\s+(.*)$/.test(processedLine)) {
             // #### Headers
@@ -116,6 +122,7 @@ const formatMessage = (content) => {
                 const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
                 return `<h3>${cleanText}</h3>`;
             });
+            lastElementType = 'header';
         }
         else if (/^###\s+(.*)$/.test(processedLine)) {
             // ### Headers
@@ -124,6 +131,7 @@ const formatMessage = (content) => {
                 const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
                 return `<h3>${cleanText}</h3>`;
             });
+            lastElementType = 'header';
         }
         else if (/^##\s+(.*)$/.test(processedLine)) {
             // ## Headers - convert to div with bold-header class
@@ -132,35 +140,43 @@ const formatMessage = (content) => {
                 const cleanText = text.replace(/\*\*(.*?)\*\*/g, '$1');
                 return `<div class="bold-header">${cleanText}</div>`;
             });
+            lastElementType = 'header';
         }
         else if (/^\*\*(.*?):\*\*$/.test(processedLine)) {
             // **Header:** format
             htmlContent += processedLine.replace(/^\*\*(.*?):\*\*$/, '<h3>$1</h3>');
+            lastElementType = 'header';
         }
         else if (/^\s*-\s+(.*?):\s*$/.test(processedLine)) {
             // Bullet points with nested info (medication headers) - no bullets
             htmlContent += processedLine.replace(/^\s*-\s+(.*?):\s*$/, '<div class="medication-item"><strong>$1:</strong></div>');
+            lastElementType = 'medication';
         }
         else if (/^\s*-\s+(.*)$/.test(processedLine)) {
             // Regular bullet points - convert to plain text without bullets
             const contentWithoutBullet = processedLine.replace(/^\s*-\s+/, '');
             htmlContent += `<div class="line-item">${contentWithoutBullet}</div>`;
+            lastElementType = 'line-item';
         }
         else if (/^(\d+)\.\s+(.*)$/.test(processedLine)) {
             // Numbered list items
             htmlContent += processedLine.replace(/^(\d+)\.\s+(.*)$/, '<div class="list-item"><span class="number">$1.</span><span>$2</span></div>');
+            lastElementType = 'list-item';
         }
         else {
             // Special handling for additional notes and recommendations
-            if (processedLine.includes("Additional Notes:")) {
+            if (processedLine.includes("Additional Notes:") || processedLine.startsWith("**Additional Notes")) {
                 htmlContent += `<div class="additional-notes">${processedLine}</div>`;
+                lastElementType = 'notes';
             }
-            else if (processedLine.includes("Recommendation:")) {
+            else if (processedLine.includes("Recommendation:") || processedLine.includes("Recommendation**") || processedLine.startsWith("**Recommendation")) {
                 htmlContent += `<div class="recommendation">${processedLine}</div>`;
+                lastElementType = 'recommendation';
             }
             // Regular text - preserve as is
             else {
-                htmlContent += `<div>${processedLine}</div>`;
+                htmlContent += `<div class="text-line">${processedLine}</div>`;
+                lastElementType = 'text';
             }
         }
     }
@@ -354,6 +370,7 @@ const QuickQuery = ({ isMobile = false }) => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const scrollContainerRef = useRef(null);
     const textareaRef = useRef(null);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [fadeOutLoader, setFadeOutLoader] = useState(false);
@@ -400,17 +417,28 @@ const QuickQuery = ({ isMobile = false }) => {
         if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
             if (lastMessage.role === 'assistant') {
-                // For assistant messages, scroll first, then animate
-                scrollToBottom();
+                // For assistant messages, scroll multiple times to ensure it works
+                scrollToBottom(50);
+                scrollToBottom(200);
+                scrollToBottom(500); // Longer delay for full content render
                 setTimeout(() => {
                     setAnimateNewMessage(messages.length - 1);
-                }, 300); // Delay animation until scroll completes
+                }, 300);
             } else {
-                // For user messages, just scroll
-                scrollToBottom();
+                // For user messages, scroll immediately and again after a delay
+                scrollToBottom(0);
+                scrollToBottom(100);
             }
         }
     }, [messages]);
+
+    // Scroll when loader appears
+    useEffect(() => {
+        if (isLoading) {
+            scrollToBottom(0);
+            scrollToBottom(100);
+        }
+    }, [isLoading]);
 
     useEffect(() => {
         localStorage.setItem('quickQueryMessages', JSON.stringify(messages));
@@ -458,8 +486,18 @@ const QuickQuery = ({ isMobile = false }) => {
         fetchUserData();
     }, [user]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (delay = 50) => {
+        // Use direct scroll on the container instead of scrollIntoView
+        // This ensures we scroll to the actual bottom, accounting for the fixed footer
+        // Small delay ensures DOM has updated before scrolling
+        setTimeout(() => {
+            if (scrollContainerRef.current) {
+                scrollContainerRef.current.scrollTo({
+                    top: scrollContainerRef.current.scrollHeight,
+                    behavior: "smooth"
+                });
+            }
+        }, delay);
     };
 
     const formatTimestamp = () => {
@@ -710,12 +748,12 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
-            
+
             // Ensure all audio tracks are enabled and active
             stream.getAudioTracks().forEach(track => {
                 track.enabled = true;
             });
-            
+
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
@@ -734,7 +772,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             // Set recording state immediately so UI updates right away
             setIsRecording(true);
-            
+
             // Start recording immediately with a small timeslice (50ms) for continuous capture
             // The timeslice ensures data is captured in frequent chunks, minimizing loss at the start
             mediaRecorder.start(50);
@@ -1141,8 +1179,22 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 .hide-scrollbar::-webkit-scrollbar {
                     display: none; /* Chrome, Safari, Opera */
                 }
+                .mobile-scroll-container {
+                    -webkit-overflow-scrolling: touch;
+                    overscroll-behavior-y: contain;
+                }
+                textarea {
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                    appearance: none;
+                }
+                textarea::placeholder {
+                    line-height: 18px !important;
+                    opacity: 1;
+                    color: #9ca3af;
+                }
             `}} />
-            <div className={`${isMobile ? 'h-full' : 'min-h-screen'} bg-white flex flex-col`}>
+            <div className={`${isMobile ? 'h-full overflow-hidden' : 'h-screen overflow-hidden'} bg-white flex flex-col`}>
                 {!isMobile && (
                     <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
                         <div className="flex items-center gap-3">
@@ -1151,7 +1203,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     </div>
                 )}
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <div className={`flex-1 overflow-y-auto ${isMobile ? 'px-3 py-3 pb-36' : 'px-4 py-6 pb-32'} space-y-4`}>
+                    <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'px-3 py-3 pb-24 mobile-scroll-container' : 'px-4 py-6 pb-40'} space-y-4`}>
                         {/* Mobile empty state - minimal */}
                         {messages.length === 0 && isMobile && (
                             <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
@@ -1219,7 +1271,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         {msg.role === 'assistant' && (
                                             <div className={`flex items-center gap-1.5 ${isMobile ? 'mt-2' : 'mt-3'}`}>
                                                 <button
-                                                    className={`inline-flex items-center gap-1 ${isMobile ? 'p-1.5' : 'px-2 py-1'} text-xs border rounded transition-all duration-200 ${copiedIndex === index
+                                                    className={`inline-flex items-center gap-1 ${isMobile ? 'p-1.5 active:scale-95 touch-manipulation' : 'px-2 py-1'} text-xs border rounded transition-all duration-200 ${copiedIndex === index
                                                         ? 'bg-primary-500 text-white border-primary-500'
                                                         : 'bg-transparent text-gray-500 border-gray-200 active:bg-gray-100'
                                                         }`}
@@ -1286,14 +1338,14 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         )}
                         <div ref={messagesEndRef} />
                     </div>
-                    <div className={`fixed bg-white border-t border-gray-200 shadow-lg transition-all duration-300 ${isMobile ? 'bottom-20 left-0 right-0' : 'bottom-0'}`} style={isMobile ? {} : { left: '224px', width: 'calc(100% - 224px)' }}>
-                        <div className={`mx-auto ${isMobile ? 'px-3 py-2' : 'p-4 max-w-4xl'}`} style={{ marginLeft: 'auto', marginRight: 'auto' }}>
+                    <div className={`fixed bg-white border-t border-gray-200 shadow-lg transition-all duration-300 ${isMobile ? 'bottom-16 left-0 right-0' : 'bottom-0'}`} style={isMobile ? {} : { left: '224px', width: 'calc(100% - 224px)' }}>
+                        <div className={`mx-auto ${isMobile ? 'px-3 pt-2 pb-2' : 'p-4 max-w-4xl'}`} style={{ marginLeft: 'auto', marginRight: 'auto' }}>
                             {/* Mode toggle and tutorial - smaller on mobile */}
                             <div className={`flex justify-center items-center gap-2 ${isMobile ? 'mb-2' : 'mb-3'}`}>
                                 <div className={`inline-flex bg-gray-100 rounded-full ${isMobile ? 'p-0.5' : 'p-1'}`}>
                                     <button
                                         onClick={() => setIsLongAnswerMode(false)}
-                                        className={`${isMobile ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${!isLongAnswerMode
+                                        className={`${isMobile ? 'px-2.5 py-1 text-xs active:scale-95 touch-manipulation' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${!isLongAnswerMode
                                             ? 'bg-primary-500 text-white shadow-sm'
                                             : 'text-gray-500'
                                             }`}
@@ -1302,7 +1354,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     </button>
                                     <button
                                         onClick={() => setIsLongAnswerMode(true)}
-                                        className={`${isMobile ? 'px-2.5 py-1 text-xs' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${isLongAnswerMode
+                                        className={`${isMobile ? 'px-2.5 py-1 text-xs active:scale-95 touch-manipulation' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${isLongAnswerMode
                                             ? 'bg-primary-500 text-white shadow-sm'
                                             : 'text-gray-500'
                                             }`}
@@ -1332,7 +1384,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     <button
                                         onClick={handleClear}
                                         type="button"
-                                        className="px-2.5 py-1 text-xs bg-gray-100 text-gray-500 rounded-full font-medium"
+                                        className="px-2.5 py-1 text-xs bg-gray-100 text-gray-500 rounded-full font-medium active:scale-95 transition-transform touch-manipulation"
                                     >
                                         Clear
                                     </button>
@@ -1342,47 +1394,54 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-end'}`}>
                                 {isMobile ? (
                                     /* Mobile input - ChatGPT style, same height as send button (32px) */
-                                    <div className="relative flex-1 bg-gray-100 rounded-full h-8 px-3 overflow-hidden flex items-center justify-center">
+                                    <div className="relative flex-1 bg-gray-100 rounded-full px-3 flex items-center justify-center" style={{ minHeight: '32px', maxHeight: '92px', overflow: 'hidden', paddingTop: '7px', paddingBottom: '7px' }}>
                                         <textarea
                                             ref={textareaRef}
                                             value={inputMessage}
                                             onChange={(e) => {
                                                 setInputMessage(e.target.value);
-                                                // Reset height to auto to get accurate scrollHeight
                                                 e.target.style.height = 'auto';
-                                                // Calculate new height (min 20px for single line, max 80px before scroll)
-                                                const newHeight = Math.min(Math.max(e.target.scrollHeight, 20), 80);
+                                                const newHeight = Math.min(Math.max(e.target.scrollHeight, 18), 74);
                                                 e.target.style.height = `${newHeight}px`;
-                                                // Expand wrapper when multiline
-                                                if (newHeight > 20) {
-                                                    e.target.parentElement.style.height = `${newHeight + 12}px`;
+
+                                                if (newHeight > 18) {
                                                     e.target.parentElement.style.borderRadius = '16px';
                                                     e.target.parentElement.style.alignItems = 'flex-start';
-                                                    e.target.parentElement.style.paddingTop = '6px';
                                                 } else {
-                                                    e.target.parentElement.style.height = '32px';
                                                     e.target.parentElement.style.borderRadius = '9999px';
                                                     e.target.parentElement.style.alignItems = 'center';
-                                                    e.target.parentElement.style.paddingTop = '0px';
                                                 }
+                                            }}
+                                            onFocus={(e) => {
+                                                setTimeout(() => {
+                                                    e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }, 300);
                                             }}
                                             onKeyDown={(e) => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
                                                     if (inputMessage.trim() && !isLoading) {
                                                         handleSubmit(e);
-                                                        // Reset height after send
-                                                        e.target.style.height = '20px';
-                                                        e.target.parentElement.style.height = '32px';
+                                                        e.target.style.height = '18px';
                                                         e.target.parentElement.style.borderRadius = '9999px';
                                                         e.target.parentElement.style.alignItems = 'center';
-                                                        e.target.parentElement.style.paddingTop = '0px';
                                                     }
                                                 }
                                             }}
                                             placeholder="Ask a question..."
-                                            className="w-full bg-transparent border-none outline-none resize-none text-[14px] leading-5 placeholder-gray-400 overflow-hidden pr-8 m-0 p-0"
-                                            style={{ height: '20px', maxHeight: '80px', verticalAlign: 'middle' }}
+                                            className="w-full bg-transparent border-0 outline-none resize-none placeholder-gray-400 pr-8"
+                                            style={{
+                                                height: '18px',
+                                                maxHeight: '74px',
+                                                padding: '0',
+                                                margin: '0',
+                                                fontSize: '14px',
+                                                lineHeight: '18px',
+                                                fontFamily: 'inherit',
+                                                verticalAlign: 'middle',
+                                                WebkitAppearance: 'none',
+                                                MozAppearance: 'none'
+                                            }}
                                             disabled={isLoading || isRecording}
                                             rows="1"
                                         />
@@ -1392,7 +1451,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 <button
                                                     type="button"
                                                     onClick={startRecording}
-                                                    className="text-gray-400 active:text-primary-500"
+                                                    className="text-gray-400 active:text-primary-500 active:scale-95 transition-transform touch-manipulation"
                                                     aria-label="Start dictation"
                                                 >
                                                     <FaMicrophone className="text-sm" />
@@ -1402,7 +1461,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 <button
                                                     type="button"
                                                     onClick={stopRecording}
-                                                    className="text-red-500 animate-pulse"
+                                                    className="text-red-500 animate-pulse active:scale-95 transition-transform touch-manipulation"
                                                     aria-label="Stop recording"
                                                 >
                                                     <FaStop className="text-sm" />
@@ -1506,7 +1565,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 {/* Send button - smaller on mobile */}
                                 <button
                                     type="submit"
-                                    className={`${isMobile ? 'w-8 h-8' : 'w-12 h-12'} bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0`}
+                                    className={`${isMobile ? 'w-8 h-8 active:scale-95' : 'w-12 h-12'} bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0 touch-manipulation`}
                                     disabled={isLoading || !inputMessage.trim() || isRecording}
                                     aria-label="Send message"
                                 >
