@@ -717,11 +717,13 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
         }
 
         // Phase 6: Apply veterinary terminology correction
-        console.log(`[Transcribe] Starting VetCorrector on ${cleanedTranscript.length} chars`);
-        const correctorStart = Date.now();
-        const corrected = correctTranscript(cleanedTranscript);
-        const correctorTime = Date.now() - correctorStart;
-        console.log(`[Transcribe] VetCorrector completed in ${correctorTime}ms`);
+        // DISABLED: VetCorrector was causing false positives (e.g. "leukemia" -> "uremia")
+        // GPT-4o-mini cleanup handles medical terminology well enough on its own
+        // const correctorStart = Date.now();
+        // const corrected = correctTranscript(cleanedTranscript);
+        // const correctorTime = Date.now() - correctorStart;
+        // console.log(`[Transcribe] VetCorrector completed in ${correctorTime}ms`);
+        const corrected = cleanedTranscript; // Skip VetCorrector, use GPT-cleaned transcript directly
 
         // Generate summary
         let summary = '';
@@ -1016,11 +1018,14 @@ app.post('/api/cleanup-transcript', async (req, res) => {
         }
 
         // Phase 2: VetCorrector
-        console.log(`[CleanupTranscript] Phase 2: Starting VetCorrector on ${cleanedTranscript.length} chars`);
-        const correctorStart = Date.now();
-        const correctedTranscript = correctTranscript(cleanedTranscript);
-        const correctorTime = Date.now() - correctorStart;
-        console.log(`[CleanupTranscript] Phase 2 complete: VetCorrector in ${correctorTime}ms (${cleanedTranscript.length} -> ${correctedTranscript.length} chars)`);
+        // DISABLED: VetCorrector was causing false positives (e.g. "leukemia" -> "uremia")
+        // GPT-4o-mini cleanup handles medical terminology well enough on its own
+        // const correctorStart = Date.now();
+        // const correctedTranscript = correctTranscript(cleanedTranscript);
+        // const correctorTime = Date.now() - correctorStart;
+        // console.log(`[CleanupTranscript] Phase 2 complete: VetCorrector in ${correctorTime}ms (${cleanedTranscript.length} -> ${correctedTranscript.length} chars)`);
+        const correctedTranscript = cleanedTranscript; // Skip VetCorrector, use GPT-cleaned transcript directly
+        console.log(`[CleanupTranscript] Phase 2: VetCorrector SKIPPED (disabled)`);
 
         // Phase 3: Generate summary (1-2 sentences)
         console.log(`[CleanupTranscript] Phase 3: Generating summary`);
