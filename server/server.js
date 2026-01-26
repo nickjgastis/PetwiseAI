@@ -1719,8 +1719,31 @@ Masses:
   USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Client Communication:**
-  [Each discussion point on its own line]
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+  REFERENCE THE TREATMENT SECTION ABOVE - pull the exact medications/doses/routes from there and incorporate into client communication.
+  
+  FORMAT EACH LINE AS: "Discussed [specific treatment/finding] - [clinical rationale/what was explained]"
+  
+  MANDATORY - For EACH treatment given, document what was explained to client:
+  - Injections given: "Discussed Maropitant (Cerenia) 1 mg/kg SQ administered for antiemetic effect, duration of action 24 hours"
+  - IV/SQ fluids: "Discussed administration of 150 mL LRS SQ for rehydration support, expect subcutaneous swelling to absorb over 6-8 hours"
+  - Oral medications sent home: "Discussed Metronidazole 15 mg/kg PO BID x 7 days for GI bacterial overgrowth, give with food to reduce GI upset"
+  - Pain management: "Discussed Meloxicam 0.1 mg/kg PO SID administered for analgesia and anti-inflammatory effect"
+  - Antibiotics: "Discussed Convenia 8 mg/kg SQ injection providing 14 days antibiotic coverage for skin infection"
+  
+  ALSO INCLUDE when discussed:
+  - Specific diagnostic findings explained: "Reviewed radiographs with owner showing intestinal gas pattern consistent with ileus"
+  - Lab result discussions: "Discussed elevated ALT (245 U/L) indicating hepatocellular injury, recommended recheck in 2 weeks"
+  - Prognosis with specifics: "Discussed guarded prognosis given BUN 85 mg/dL and creatinine 4.2 mg/dL indicating Stage 3 CKD"
+  - Declined treatments: "Owner declined recommended abdominal ultrasound due to financial constraints"
+  - Cost estimates discussed: "Discussed estimate for dental prophylaxis with extractions ($800-1200)"
+  
+  NEVER write vague statements like:
+  - "Discussed treatment plan" ❌
+  - "Explained medications" ❌  
+  - "Reviewed findings with owner" ❌
+  - "Discussed prognosis" ❌
+  
+  ALWAYS specify the WHAT, the DOSE/AMOUNT, and the WHY.
 
 **Recommended Diagnostics:**
   [Each recommended test on its own line, or "None recommended"]
