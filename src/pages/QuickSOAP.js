@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
-import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile, FaPrint } from 'react-icons/fa';
+import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaSave, FaQuestionCircle, FaArrowRight, FaArrowLeft, FaDesktop, FaCheckCircle, FaMobile, FaPrint, FaClipboardList, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
 import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
@@ -280,7 +280,13 @@ const QuickSOAP = () => {
         // Initialize hasReport synchronously based on report existence
         if (typeof window !== 'undefined') {
             const loadedReport = localStorage.getItem('quickSOAP_report');
+            const loadedRecordType = localStorage.getItem('quickSOAP_recordType') || 'soap';
             if (loadedReport) {
+                // For Summary/Callback, just check if report has content
+                if (loadedRecordType !== 'soap') {
+                    return loadedReport.trim().length > 0;
+                }
+                // For SOAP, check if sections were parsed
                 const parsed = parseSOAPReport(loadedReport);
                 return parsed.sections.length > 0;
             }
@@ -338,6 +344,14 @@ const QuickSOAP = () => {
     const [showDeleteDictationModal, setShowDeleteDictationModal] = useState(false);
     const [dictationToDelete, setDictationToDelete] = useState(null);
     const [showStartNewModal, setShowStartNewModal] = useState(false);
+    const [recordType, setRecordType] = useState(() => {
+        // Initialize recordType synchronously from localStorage
+        if (typeof window !== 'undefined') {
+            const savedRecordType = localStorage.getItem('quickSOAP_recordType');
+            return savedRecordType || 'soap';
+        }
+        return 'soap';
+    });
     const pollingIntervalRef = useRef(null);
 
     // New chunked recording state
@@ -538,6 +552,12 @@ const QuickSOAP = () => {
             const loadedReport = localStorage.getItem('quickSOAP_report');
             const loadedLastInput = localStorage.getItem('quickSOAP_lastInput');
             const savedReportName = localStorage.getItem('quickSOAP_reportName');
+            const savedRecordType = localStorage.getItem('quickSOAP_recordType');
+
+            // Load record type - important for Summary/Callback records
+            if (savedRecordType && savedRecordType !== recordType) {
+                setRecordType(savedRecordType);
+            }
 
             // Only update if values are different (avoid unnecessary re-renders)
             if (loadedDictations) {
@@ -562,8 +582,16 @@ const QuickSOAP = () => {
                 if (JSON.stringify(parsedReport) !== JSON.stringify(parsed)) {
                     setParsedReport(parsed);
                 }
-                if (!hasReport && parsed.sections.length > 0) {
-                    setHasReport(true);
+                // For Summary/Callback, check if report has content (not sections)
+                // For SOAP, check if sections were parsed
+                const loadedType = savedRecordType || 'soap';
+                if (!hasReport) {
+                    if (loadedType !== 'soap') {
+                        // Summary/Callback - just check if report has content
+                        setHasReport(loadedReport.trim().length > 0);
+                    } else if (parsed.sections.length > 0) {
+                        setHasReport(true);
+                    }
                 }
             }
             if (savedReportName && reportName !== savedReportName) {
@@ -639,6 +667,15 @@ const QuickSOAP = () => {
         }
         if (formData.reportName !== undefined) {
             setReportName(formData.reportName);
+        }
+        // Load record type from draft (soap, summary, callback)
+        // Also check the top-level record_type from the database
+        const draftRecordType = formData.record_type || draftData.record_type;
+        if (draftRecordType) {
+            // Normalize 'quicksoap' to 'soap' for the UI
+            const normalizedType = draftRecordType === 'quicksoap' ? 'soap' : draftRecordType;
+            setRecordType(normalizedType);
+            localStorage.setItem('quickSOAP_recordType', normalizedType);
         }
         // Check if dictations have been sent to desktop (mobile only)
         if (isMobile && formData.sent_to_desktop === true) {
@@ -751,12 +788,12 @@ const QuickSOAP = () => {
                 }
             }
 
-            // If no saved draft ID, try to find most recent mobile draft
+            // If no saved draft ID, try to find most recent mobile draft (any record type)
             const { data: allDrafts } = await supabase
                 .from('saved_reports')
-                .select('id, report_name, form_data, created_at')
+                .select('id, report_name, form_data, created_at, record_type')
                 .eq('user_id', userId)
-                .eq('record_type', 'quicksoap')
+                .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
                 .is('report_text', null)
                 .order('created_at', { ascending: false })
                 .limit(5);
@@ -836,6 +873,11 @@ const QuickSOAP = () => {
         }
     }, [lastInput]);
 
+    // Save recordType to localStorage
+    useEffect(() => {
+        localStorage.setItem('quickSOAP_recordType', recordType);
+    }, [recordType]);
+
     // Parse report when it changes (but skip if manually editing)
     useEffect(() => {
         if (isManualEditRef.current) {
@@ -846,11 +888,13 @@ const QuickSOAP = () => {
         if (report) {
             const parsed = parseSOAPReport(report);
             setParsedReport(parsed);
-            setHasReport(parsed.sections.length > 0);
+            // For Summary/Callback, hasReport should be true if report has content
+            // For SOAP, check if sections were parsed
+            setHasReport(recordType !== 'soap' ? report.trim().length > 0 : parsed.sections.length > 0);
         } else {
             setHasReport(false);
         }
-    }, [report]);
+    }, [report, recordType]);
 
 
     // Prevent body scrolling on mobile QuickSOAP
@@ -1341,8 +1385,11 @@ const QuickSOAP = () => {
     */
 
     // Auto-save helper function (extracted from handleSaveRecord)
-    const autoSaveRecord = async (generatedReport, extractedPetName = null) => {
+    const autoSaveRecord = async (generatedReport, extractedPetName = null, saveRecordType = null) => {
         if (!isAuthenticated || !user) return;
+
+        // Use provided recordType or fall back to current state
+        const typeToSave = saveRecordType || recordType || 'soap';
 
         try {
             // Get user's UUID from users table
@@ -1364,9 +1411,9 @@ const QuickSOAP = () => {
             // Handle empty strings by checking truthiness and trimming
             const petNameToUse = (extractedPetName && extractedPetName.trim()) || (petName && petName.trim()) || null;
 
-            // Prepare form_data with QuickSOAP structure
+            // Prepare form_data with record structure
             const formData = {
-                record_type: 'quicksoap',
+                record_type: typeToSave,
                 dictations: dictations,
                 input: input,
                 report: generatedReport,
@@ -1380,20 +1427,21 @@ const QuickSOAP = () => {
             const dateStr = new Date().toLocaleString();
             let finalReportName;
             const trimmedReportName = reportName.trim();
+            const typeLabel = typeToSave === 'soap' ? 'QuickSOAP' : typeToSave === 'summary' ? 'Summary' : 'Callback';
 
             // Always prioritize pet name when available (from parameter, not state)
             // This ensures we use the pet name even if reportName state hasn't updated yet
             if (petNameToUse) {
-                finalReportName = `${petNameToUse} - ${dateStr}`;
-            } else if (trimmedReportName && !trimmedReportName.match(/^QuickSOAP/i)) {
-                // If reportName is set and doesn't start with generic "QuickSOAP", use it
+                finalReportName = `${petNameToUse} - ${typeLabel} - ${dateStr}`;
+            } else if (trimmedReportName && !trimmedReportName.match(/^(QuickSOAP|Summary|Callback)/i)) {
+                // If reportName is set and doesn't start with generic labels, use it
                 finalReportName = trimmedReportName;
             } else if (trimmedReportName) {
                 // If reportName is set but is generic, use it (user may have customized it)
                 finalReportName = trimmedReportName;
             } else {
                 // Default fallback
-                finalReportName = `QuickSOAP - ${dateStr}`;
+                finalReportName = `${typeLabel} - ${dateStr}`;
             }
 
             const reportIdToUse = loadedReportId || draftRecordId;
@@ -1406,7 +1454,7 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: generatedReport,
                         form_data: formData,
-                        record_type: 'quicksoap'
+                        record_type: typeToSave
                     })
                     .eq('id', reportIdToUse)
                     .eq('user_id', userId);
@@ -1439,7 +1487,7 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: generatedReport,
                         form_data: formData,
-                        record_type: 'quicksoap'
+                        record_type: typeToSave
                     }])
                     .select()
                     .single();
@@ -1497,13 +1545,15 @@ const QuickSOAP = () => {
                 try {
                     const response = await axios.post(`${API_URL}/api/generate-soap`, {
                         input: combinedInput.trim(),
-                        user: user ? { sub: user.sub } : null
+                        user: user ? { sub: user.sub } : null,
+                        recordType
                     });
 
                     console.log('[QuickSOAP] Server response:', {
                         hasReport: !!response.data.report,
                         reportLength: response.data.report?.length || 0,
-                        hasPetName: !!response.data.petName
+                        hasPetName: !!response.data.petName,
+                        recordType: response.data.recordType
                     });
 
                     if (response.data.report) {
@@ -1515,21 +1565,22 @@ const QuickSOAP = () => {
                             setPetName(extractedPetName);
                         }
                         // Set report name with pet name if available, otherwise use default
+                        const typeLabel = recordType === 'soap' ? 'QuickSOAP' : recordType === 'summary' ? 'Summary' : 'Callback';
                         if (!reportName) {
                             const dateStr = new Date().toLocaleString();
                             if (extractedPetName) {
-                                setReportName(`${extractedPetName} - ${dateStr}`);
+                                setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             } else {
-                                setReportName(`QuickSOAP - ${dateStr}`);
+                                setReportName(`${typeLabel} - ${dateStr}`);
                             }
                         } else if (extractedPetName && !reportName.includes(extractedPetName)) {
                             // Update existing report name if pet name was extracted and not already included
                             const dateStr = new Date().toLocaleString();
-                            setReportName(`${extractedPetName} - ${dateStr}`);
+                            setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             setPetName(extractedPetName);
                         }
-                        // Auto-save after generation with pet name
-                        await autoSaveRecord(generatedReport, extractedPetName);
+                        // Auto-save after generation with pet name and record type
+                        await autoSaveRecord(generatedReport, extractedPetName, recordType);
 
                         // NOTE: Do NOT clear dictations here - user may want to regenerate
                         // with additional dictations or edited notes. Clearing only happens
@@ -1554,14 +1605,17 @@ const QuickSOAP = () => {
             try {
                 const response = await axios.post(`${API_URL}/api/generate-soap`, {
                     input: combinedInput.trim(),
-                    user: user ? { sub: user.sub } : null
+                    user: user ? { sub: user.sub } : null,
+                    recordType
                 });
 
                 if (response.data.report) {
                     const generatedReport = response.data.report;
                     const extractedPetName = response.data.petName;
-                    // Start transition - fade out center input
+                    // Start transition - fade out loader smoothly
                     setIsTransitioning(true);
+                    
+                    // Delay before showing report to allow loader fade
                     setTimeout(() => {
                         setReport(generatedReport);
                         // Store pet name if extracted
@@ -1569,39 +1623,42 @@ const QuickSOAP = () => {
                             setPetName(extractedPetName);
                         }
                         // Set report name with pet name if available, otherwise use default
+                        const typeLabel = recordType === 'soap' ? 'QuickSOAP' : recordType === 'summary' ? 'Summary' : 'Callback';
                         if (!reportName) {
                             const dateStr = new Date().toLocaleString();
                             if (extractedPetName) {
-                                setReportName(`${extractedPetName} - ${dateStr}`);
+                                setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             } else {
-                                setReportName(`QuickSOAP - ${dateStr}`);
+                                setReportName(`${typeLabel} - ${dateStr}`);
                             }
                         } else if (extractedPetName && !reportName.includes(extractedPetName)) {
                             // Update existing report name if pet name was extracted and not already included
                             const dateStr = new Date().toLocaleString();
-                            setReportName(`${extractedPetName} - ${dateStr}`);
+                            setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             setPetName(extractedPetName);
                         }
-                        // Auto-save after generation with pet name
-                        autoSaveRecord(generatedReport, extractedPetName);
+                        // Auto-save after generation with pet name and record type
+                        autoSaveRecord(generatedReport, extractedPetName, recordType);
 
                         // NOTE: Do NOT clear dictations here - user may want to regenerate
                         // with additional dictations or edited notes. Clearing only happens
                         // on explicit "Clear"/"Start New" or when loading a different record.
 
-                        // Fade in sidebar and report after a delay to allow center to fade out first
+                        // Hide loader and fade in report smoothly
+                        setIsGenerating(false);
+                        
+                        // Fade in sidebar and report after a short delay
                         setTimeout(() => {
                             setIsTransitioning(false);
                         }, 100);
-                    }, 400);
+                    }, 300);
                 } else {
                     throw new Error('No report generated');
                 }
             } catch (err) {
                 console.error('SOAP generation error:', err);
                 setError(err.response?.data?.error || 'Failed to generate SOAP report. Please try again.');
-                setIsTransitioning(false); // Reset transition state on error
-            } finally {
+                setIsTransitioning(false);
                 setIsGenerating(false);
             }
         }
@@ -1703,10 +1760,14 @@ const QuickSOAP = () => {
             const userId = userData.id;
             const loadedReportId = localStorage.getItem('currentQuickSOAPReportId');
 
-            // Prepare form_data with QuickSOAP structure
+            // Get the current record type (soap, summary, or callback)
+            const typeToSave = recordType || 'soap';
+            const typeLabel = typeToSave === 'soap' ? 'QuickSOAP' : typeToSave === 'summary' ? 'Summary' : 'Callback';
+
+            // Prepare form_data with record structure
             // Desktop saves don't include sent_to_desktop flag (desktop origin)
             const formData = {
-                record_type: 'quicksoap',
+                record_type: typeToSave,
                 dictations: dictations,
                 input: input,
                 report: report,
@@ -1723,16 +1784,16 @@ const QuickSOAP = () => {
 
             // If pet name exists and reportName doesn't include it, use pet name
             if (petName && (!trimmedReportName || !trimmedReportName.includes(petName))) {
-                finalReportName = `${petName} - ${dateStr}`;
+                finalReportName = `${petName} - ${typeLabel} - ${dateStr}`;
             } else if (trimmedReportName) {
                 // If reportName is set (and may already include pet name), use it
                 finalReportName = trimmedReportName;
             } else if (petName) {
                 // If pet name exists but no reportName, use pet name
-                finalReportName = `${petName} - ${dateStr}`;
+                finalReportName = `${petName} - ${typeLabel} - ${dateStr}`;
             } else {
                 // Default fallback
-                finalReportName = `QuickSOAP - ${dateStr}`;
+                finalReportName = `${typeLabel} - ${dateStr}`;
             }
 
             const reportIdToUse = loadedReportId || draftRecordId;
@@ -1746,7 +1807,7 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: report, // Now has report - no longer a draft
                         form_data: formData,
-                        record_type: 'quicksoap'
+                        record_type: typeToSave
                     })
                     .eq('id', reportIdToUse)
                     .eq('user_id', userId);
@@ -1765,7 +1826,7 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: report,
                         form_data: formData,
-                        record_type: 'quicksoap'
+                        record_type: typeToSave
                     }])
                     .select()
                     .single();
@@ -1928,11 +1989,12 @@ const QuickSOAP = () => {
             }
 
             const userId = userData.id;
-            const draftName = `QuickSOAP Draft - ${new Date().toLocaleDateString()}`;
+            const typeLabel = recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback';
+            const draftName = `${typeLabel} Draft - ${new Date().toLocaleDateString()}`;
 
             // Prepare form_data with sent_to_desktop flag
             const formData = {
-                record_type: 'quicksoap',
+                record_type: recordType,
                 dictations: dictations,
                 input: input,
                 report: null,
@@ -1951,7 +2013,7 @@ const QuickSOAP = () => {
                     report_name: draftName,
                     report_text: null,
                     form_data: formData,
-                    record_type: 'quicksoap'
+                    record_type: recordType
                 }])
                 .select()
                 .single();
@@ -2212,7 +2274,90 @@ const QuickSOAP = () => {
                 </div>
             )}
 
-            <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>
+            {/* Fullscreen Animated Loader - Desktop Only */}
+            {isGenerating && !isMobile && !hasReport && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden transition-opacity duration-500" 
+                    style={{ left: isSidebarCollapsed ? '80px' : '224px' }}
+                >
+                    {/* Animated background with blurred orbs - SOAP colors */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white">
+                        {/* Subjective - Blue */}
+                        <div className="absolute w-32 h-32 rounded-full opacity-70 blur-2xl" 
+                            style={{ 
+                                background: '#3b82f6', 
+                                animation: 'float1 20s ease-in-out infinite'
+                            }} 
+                        />
+                        {/* Objective - Green */}
+                        <div className="absolute w-28 h-28 rounded-full opacity-70 blur-2xl" 
+                            style={{ 
+                                background: '#10b981', 
+                                animation: 'float2 25s ease-in-out infinite'
+                            }} 
+                        />
+                        {/* Assessment - Amber */}
+                        <div className="absolute w-36 h-36 rounded-full opacity-60 blur-2xl" 
+                            style={{ 
+                                background: '#f59e0b', 
+                                animation: 'float3 22s ease-in-out infinite'
+                            }} 
+                        />
+                        {/* Plan - Red */}
+                        <div className="absolute w-24 h-24 rounded-full opacity-60 blur-2xl" 
+                            style={{ 
+                                background: '#ef4444', 
+                                animation: 'float4 28s ease-in-out infinite'
+                            }} 
+                        />
+                    </div>
+                    {/* Content */}
+                    <div className="relative z-10 text-center">
+                        <div className="mb-6">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm shadow-lg">
+                                {recordType === 'soap' && <FaClipboardList className="text-blue-600" />}
+                                {recordType === 'summary' && <FaFileAlt className="text-emerald-600" />}
+                                {recordType === 'callback' && <FaPhoneAlt className="text-amber-600" />}
+                                <span className="font-semibold text-primary-700">
+                                    {recordType === 'soap' ? 'SOAP Record' : recordType === 'summary' ? 'Summary' : 'Callback'}
+                                </span>
+                            </div>
+                        </div>
+                        <h2 className="text-3xl font-bold text-primary-700 mb-3">
+                            Generating your {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...
+                        </h2>
+                        <p className="text-primary-600/70 text-lg">This will be automatically saved to your records</p>
+                    </div>
+                    <style>{`
+                        @keyframes float1 {
+                            0%, 100% { top: 15%; left: 20%; transform: scale(1); }
+                            25% { top: 60%; left: 70%; transform: scale(1.2); }
+                            50% { top: 75%; left: 25%; transform: scale(0.8); }
+                            75% { top: 30%; left: 65%; transform: scale(1.1); }
+                        }
+                        @keyframes float2 {
+                            0%, 100% { top: 70%; left: 60%; transform: scale(1); }
+                            25% { top: 20%; left: 15%; transform: scale(0.9); }
+                            50% { top: 40%; left: 75%; transform: scale(1.3); }
+                            75% { top: 80%; left: 35%; transform: scale(1); }
+                        }
+                        @keyframes float3 {
+                            0%, 100% { top: 40%; left: 80%; transform: scale(1); }
+                            25% { top: 75%; left: 40%; transform: scale(1.1); }
+                            50% { top: 10%; left: 55%; transform: scale(0.9); }
+                            75% { top: 55%; left: 10%; transform: scale(1.2); }
+                        }
+                        @keyframes float4 {
+                            0%, 100% { top: 85%; left: 15%; transform: scale(1); }
+                            25% { top: 25%; left: 50%; transform: scale(1.2); }
+                            50% { top: 65%; left: 85%; transform: scale(0.85); }
+                            75% { top: 10%; left: 30%; transform: scale(1.1); }
+                        }
+                    `}</style>
+                </div>
+            )}
+
+            <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full ${isGenerating && !isMobile && !hasReport ? 'invisible' : ''}`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>
                 {/* Left Side - Input Area */}
                 <div
                     className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed top-0 bottom-0 z-40'}
@@ -2312,13 +2457,23 @@ const QuickSOAP = () => {
                                 </div>
                             )}
 
-                            {/* Generation Banner - Desktop Only */}
-                            {isGenerating && !isMobile && !hasReport && (
-                                <div className="mb-6 w-full max-w-2xl bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 flex-shrink-0">
-                                    <FaSave className="text-xl flex-shrink-0" />
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-base">Generating your SOAP report...</p>
-                                        <p className="text-sm opacity-90">This report will be automatically saved to your records. Feel free to name it and edit it once it's generated.</p>
+
+                            {/* Record Type Indicator - Show after dictation starts */}
+                            {dictations.length > 0 && (!isRecording || !isMobile) && !hasReport && (
+                                <div className={`flex justify-center ${isMobile ? 'mb-2' : 'mb-3'}`}>
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+                                        recordType === 'soap' 
+                                            ? 'bg-blue-100 text-blue-700' 
+                                            : recordType === 'summary' 
+                                                ? 'bg-emerald-100 text-emerald-700' 
+                                                : 'bg-amber-100 text-amber-700'
+                                    }`}>
+                                        {recordType === 'soap' && <FaClipboardList className="text-xs" />}
+                                        {recordType === 'summary' && <FaFileAlt className="text-xs" />}
+                                        {recordType === 'callback' && <FaPhoneAlt className="text-xs" />}
+                                        <span className="text-xs font-semibold">
+                                            {recordType === 'soap' ? 'SOAP Record' : recordType === 'summary' ? 'Summary' : 'Callback'}
+                                        </span>
                                     </div>
                                 </div>
                             )}
@@ -2394,6 +2549,49 @@ const QuickSOAP = () => {
 
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
+                                {/* Record Type Selector - Show before first dictation */}
+                                {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
+                                    <div className={`flex justify-center ${isMobile ? 'mb-4' : 'mb-5'}`}>
+                                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                            <button
+                                                onClick={() => setRecordType('soap')}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+                                                    recordType === 'soap' 
+                                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                <FaClipboardList className="text-xs" />
+                                                SOAP
+                                            </button>
+                                            <button
+                                                onClick={() => setRecordType('summary')}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+                                                    recordType === 'summary' 
+                                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                <FaFileAlt className="text-xs" />
+                                                Summary
+                                                <span className="text-[8px] font-medium text-yellow-500">beta</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setRecordType('callback')}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
+                                                    recordType === 'callback' 
+                                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                <FaPhoneAlt className="text-xs" />
+                                                Callback
+                                                <span className="text-[8px] font-medium text-yellow-500">beta</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Large Microphone Button - Front and Center */}
                                 {/* Desktop: Only show when no dictations exist (one dictation before generating) */}
                                 {/* Mobile: Only show when no dictations exist (one dictation at a time) */}
@@ -2543,7 +2741,7 @@ const QuickSOAP = () => {
                                                     <span>Generating...</span>
                                                 </div>
                                             ) : (
-                                                'Generate SOAP'
+                                                `Generate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}`
                                             )}
                                         </button>
                                     </div>
@@ -2724,7 +2922,7 @@ const QuickSOAP = () => {
                                             disabled={isGenerating}
                                             className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
                                         >
-                                            {isGenerating ? 'Generating...' : hasReport ? 'Regenerate SOAP' : 'Generate SOAP'}
+                                            {isGenerating ? 'Generating...' : hasReport ? `Regenerate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}` : `Generate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}`}
                                         </button>
                                         {hasReport && (
                                             <button
@@ -2903,94 +3101,127 @@ const QuickSOAP = () => {
                                         animation: isLoadingFromSaved ? 'fadeIn 0.5s ease-in-out' : 'none'
                                     }}
                                 >
-                                    {/* Unified SOAP Record Card */}
+                                    {/* Record Card - SOAP has sections, Summary/Callback have single textarea */}
                                     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                                        {parsedReport.sections.map((section, index) => {
-                                            const colors = getSectionColor(section.name);
+                                        {recordType === 'soap' ? (
+                                            // SOAP Record - Section-based display
+                                            <>
+                                                {parsedReport.sections.map((section, index) => {
+                                                    const colors = getSectionColor(section.name);
 
-                                            return (
-                                                <div
-                                                    key={index}
-                                                    className={`border-l-4 ${index < parsedReport.sections.length - 1 ? 'border-b border-gray-200' : ''}`}
-                                                    style={{ borderLeftColor: colors.border }}
-                                                >
-                                                    {/* Section Header */}
-                                                    <div className={`${colors.header} px-6 py-3 flex items-center justify-between`}>
-                                                        <h3 className="text-white font-semibold text-lg tracking-wide">
-                                                            {section.name.charAt(0)} – {section.name}
-                                                        </h3>
-                                                        <button
-                                                            onClick={() => copySection(section.name, section.content)}
-                                                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${copiedSection === section.name
-                                                                ? 'bg-white text-blue-600'
-                                                                : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
-                                                                }`}
+                                                    return (
+                                                        <div
+                                                            key={index}
+                                                            className={`border-l-4 ${index < parsedReport.sections.length - 1 ? 'border-b border-gray-200' : ''}`}
+                                                            style={{ borderLeftColor: colors.border }}
                                                         >
-                                                            <FaCopy className="text-xs" />
-                                                            {copiedSection === section.name ? 'Copied!' : 'Copy'}
-                                                        </button>
-                                                    </div>
+                                                            {/* Section Header */}
+                                                            <div className={`${colors.header} px-6 py-3 flex items-center justify-between`}>
+                                                                <h3 className="text-white font-semibold text-lg tracking-wide">
+                                                                    {section.name.charAt(0)} – {section.name}
+                                                                </h3>
+                                                                <button
+                                                                    onClick={() => copySection(section.name, section.content)}
+                                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${copiedSection === section.name
+                                                                        ? 'bg-white text-blue-600'
+                                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                                        }`}
+                                                                >
+                                                                    <FaCopy className="text-xs" />
+                                                                    {copiedSection === section.name ? 'Copied!' : 'Copy'}
+                                                                </button>
+                                                            </div>
 
-                                                    {/* Section Content */}
-                                                    <div className={`${colors.bg} px-6 py-4`}>
-                                                        <textarea
-                                                            ref={(el) => {
-                                                                if (el) {
-                                                                    textareaRefs.current[`section-${index}`] = el;
-                                                                    // One time auto size when mounted
-                                                                    setTimeout(() => adjustTextareaHeight(index, el), 0);
-                                                                }
-                                                            }}
-                                                            value={section.content}
-                                                            onChange={(e) => {
-                                                                isManualEditRef.current = true;
-                                                                const newSections = [...parsedReport.sections];
-                                                                newSections[index].content = e.target.value;
+                                                            {/* Section Content */}
+                                                            <div className={`${colors.bg} px-6 py-4`}>
+                                                                <textarea
+                                                                    ref={(el) => {
+                                                                        if (el) {
+                                                                            textareaRefs.current[`section-${index}`] = el;
+                                                                            // One time auto size when mounted
+                                                                            setTimeout(() => adjustTextareaHeight(index, el), 0);
+                                                                        }
+                                                                    }}
+                                                                    value={section.content}
+                                                                    onChange={(e) => {
+                                                                        isManualEditRef.current = true;
+                                                                        const newSections = [...parsedReport.sections];
+                                                                        newSections[index].content = e.target.value;
 
-                                                                // Update parsed sections
-                                                                setParsedReport(prev => ({ ...prev, sections: newSections }));
+                                                                        // Update parsed sections
+                                                                        setParsedReport(prev => ({ ...prev, sections: newSections }));
 
-                                                                // Update full report string for persistence
-                                                                const newReport = newSections
-                                                                    .map(s => `${s.name}:\n${s.content}`)
-                                                                    .join('\n\n');
-                                                                setReport(newReport);
+                                                                        // Update full report string for persistence
+                                                                        const newReport = newSections
+                                                                            .map(s => `${s.name}:\n${s.content}`)
+                                                                            .join('\n\n');
+                                                                        setReport(newReport);
 
-                                                                // Resize this textarea only (no scroll manipulation)
-                                                                adjustTextareaHeight(index, e.target);
-                                                            }}
-                                                            className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white text-sm"
-                                                            style={{
-                                                                fontFamily: 'inherit',
-                                                                lineHeight: '1.6',
-                                                                height: 'auto',
-                                                                overflowY: 'auto',
-                                                                whiteSpace: 'pre-wrap',
-                                                                wordWrap: 'break-word',
-                                                                scrollMargin: '0px',
-                                                                scrollPadding: '0px',
-                                                                scrollBehavior: 'auto'
-                                                            }}
-                                                            onFocus={(e) => {
-                                                                // Prevent scroll-into-view when focusing
-                                                                e.target.scrollIntoView = () => { };
-                                                            }}
-                                                            onInput={(e) => {
-                                                                // Prevent scroll during input by restoring scroll position
-                                                                const scrollContainer = e.target.closest('.overflow-y-auto') ||
-                                                                    document.querySelector('.fixed.top-0.right-0.bottom-0.overflow-y-auto');
-                                                                if (scrollContainer) {
-                                                                    const savedScroll = scrollContainer.scrollTop;
-                                                                    requestAnimationFrame(() => {
-                                                                        scrollContainer.scrollTop = savedScroll;
-                                                                    });
-                                                                }
-                                                            }}
-                                                        />
-                                                    </div>
+                                                                        // Resize this textarea only (no scroll manipulation)
+                                                                        adjustTextareaHeight(index, e.target);
+                                                                    }}
+                                                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white text-sm"
+                                                                    style={{
+                                                                        fontFamily: 'inherit',
+                                                                        lineHeight: '1.6',
+                                                                        height: 'auto',
+                                                                        overflowY: 'auto',
+                                                                        whiteSpace: 'pre-wrap',
+                                                                        wordWrap: 'break-word',
+                                                                        scrollMargin: '0px',
+                                                                        scrollPadding: '0px',
+                                                                        scrollBehavior: 'auto'
+                                                                    }}
+                                                                    onFocus={(e) => {
+                                                                        // Prevent scroll-into-view when focusing
+                                                                        e.target.scrollIntoView = () => { };
+                                                                    }}
+                                                                    onInput={(e) => {
+                                                                        // Prevent scroll during input by restoring scroll position
+                                                                        const scrollContainer = e.target.closest('.overflow-y-auto') ||
+                                                                            document.querySelector('.fixed.top-0.right-0.bottom-0.overflow-y-auto');
+                                                                        if (scrollContainer) {
+                                                                            const savedScroll = scrollContainer.scrollTop;
+                                                                            requestAnimationFrame(() => {
+                                                                                scrollContainer.scrollTop = savedScroll;
+                                                                            });
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </>
+                                        ) : (
+                                            // Summary/Callback Record - Single textarea display
+                                            <div className="flex flex-col h-full">
+                                                <div className={`px-4 py-2 rounded-t-lg flex-shrink-0 ${recordType === 'summary' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+                                                    <h3 className="text-white font-semibold text-lg tracking-wide flex items-center gap-2">
+                                                        {recordType === 'summary' ? (
+                                                            <><FaFileAlt className="text-sm" /> Clinical Summary</>
+                                                        ) : (
+                                                            <><FaPhoneAlt className="text-sm" /> Callback Notes</>
+                                                        )}
+                                                    </h3>
                                                 </div>
-                                            );
-                                        })}
+                                                <textarea
+                                                    value={report}
+                                                    onChange={(e) => {
+                                                        setReport(e.target.value);
+                                                    }}
+                                                    className="w-full px-4 py-4 border border-gray-300 border-t-0 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white flex-1"
+                                                    style={{
+                                                        fontFamily: 'inherit',
+                                                        lineHeight: '1.7',
+                                                        minHeight: 'calc(100vh - 350px)',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordWrap: 'break-word'
+                                                    }}
+                                                    placeholder={recordType === 'summary' ? 'Your clinical summary will appear here...' : 'Your callback notes will appear here...'}
+                                                />
+                                            </div>
+                                        )}
 
                                         {/* Copy All & Print Buttons at Bottom */}
                                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
@@ -3141,8 +3372,65 @@ const QuickSOAP = () => {
                                             {tutorialStep === 1 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <div className="text-center">
+                                                        <h3 className={`font-bold text-gray-800 mb-2 ${isMobileDevice ? 'text-lg' : 'text-2xl'}`}>Choose Your Record Type</h3>
+                                                        <p className={`text-gray-600 ${isMobileDevice ? 'text-sm' : 'text-lg'}`}>Before recording, select the type of record you want to create.</p>
+                                                    </div>
+                                                    {/* Record Type Selector Visual */}
+                                                    <div className="flex justify-center mb-2">
+                                                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                                            <div className="px-2 py-1.5 text-xs font-medium rounded-lg bg-white text-primary-600 shadow-sm flex items-center gap-1">
+                                                                <FaClipboardList className="text-[10px]" />
+                                                                SOAP
+                                                            </div>
+                                                            <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600 flex items-center gap-1">
+                                                                <FaFileAlt className="text-[10px]" />
+                                                                Summary
+                                                            </div>
+                                                            <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600 flex items-center gap-1">
+                                                                <FaPhoneAlt className="text-[10px]" />
+                                                                Callback
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
+                                                        <div className={`${isMobileDevice ? 'space-y-2' : 'space-y-4'}`}>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-4'}`}>
+                                                                <div className={`rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0 ${isMobileDevice ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                                                                    <FaClipboardList className={`text-white ${isMobileDevice ? 'text-[10px]' : 'text-sm'}`} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>SOAP Record</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-[10px]' : 'text-xs'}`}>Structured SOAP format</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-4'}`}>
+                                                                <div className={`rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 ${isMobileDevice ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                                                                    <FaFileAlt className={`text-white ${isMobileDevice ? 'text-[10px]' : 'text-sm'}`} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Summary</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-[10px]' : 'text-xs'}`}>Clinical summaries</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className={`flex items-start ${isMobileDevice ? 'gap-2' : 'gap-4'}`}>
+                                                                <div className={`rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0 ${isMobileDevice ? 'w-8 h-8' : 'w-10 h-10'}`}>
+                                                                    <FaPhoneAlt className={`text-white ${isMobileDevice ? 'text-[10px]' : 'text-sm'}`} />
+                                                                </div>
+                                                                <div>
+                                                                    <p className={`font-semibold text-gray-800 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Callback</p>
+                                                                    <p className={`text-gray-600 ${isMobileDevice ? 'text-[10px]' : 'text-xs'}`}>Phone conversation notes</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 2 && (
+                                                <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
+                                                    <div className="text-center">
                                                         <h3 className={`font-bold text-gray-800 mb-2 ${isMobileDevice ? 'text-lg' : 'text-2xl'}`}>Welcome to QuickSOAP Mobile</h3>
-                                                        <p className={`text-gray-600 ${isMobileDevice ? 'text-sm' : 'text-lg'}`}>Record dictations on your mobile device and send them to your desktop to generate professional SOAP reports.</p>
+                                                        <p className={`text-gray-600 ${isMobileDevice ? 'text-sm' : 'text-lg'}`}>Record dictations on your mobile device and send them to your desktop to generate reports.</p>
                                                     </div>
                                                     <div className={`bg-gray-50 rounded-xl border-2 border-dashed border-gray-300 ${isMobileDevice ? 'p-4' : 'p-6'}`}>
                                                         <div className="flex flex-col items-center justify-center space-y-3">
@@ -3150,7 +3438,7 @@ const QuickSOAP = () => {
                                                                 <FaMicrophone className={`text-white ${isMobileDevice ? 'text-2xl' : 'text-3xl'}`} />
                                                             </div>
                                                             <div className="text-center">
-                                                                <p className={`text-gray-700 font-semibold mb-1 ${isMobileDevice ? 'text-sm' : 'mb-2'}`}>Step 1: Record Dictation</p>
+                                                                <p className={`text-gray-700 font-semibold mb-1 ${isMobileDevice ? 'text-sm' : 'mb-2'}`}>Record Dictation</p>
                                                                 <p className={`text-gray-600 ${isMobileDevice ? 'text-xs' : 'text-sm'}`}>Tap the microphone button to start recording your clinical notes</p>
                                                             </div>
                                                         </div>
@@ -3161,7 +3449,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 2 && (
+                                            {tutorialStep === 3 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Recording Your Dictation</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -3198,7 +3486,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 3 && (
+                                            {tutorialStep === 4 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Review Your Dictation</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -3215,7 +3503,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 4 && (
+                                            {tutorialStep === 5 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Send to Desktop</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -3235,7 +3523,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 5 && (
+                                            {tutorialStep === 6 && (
                                                 <div className={`${isMobileDevice ? 'space-y-3' : 'space-y-6'}`}>
                                                     <h3 className={`font-bold text-gray-800 mb-3 ${isMobileDevice ? 'text-lg' : 'text-2xl mb-4'}`}>Send to Desktop & Generate Report</h3>
                                                     <div className={`bg-gray-50 rounded-xl border border-gray-200 ${isMobileDevice ? 'p-3' : 'p-6'}`}>
@@ -3316,8 +3604,68 @@ const QuickSOAP = () => {
                                             {tutorialStep === 1 && (
                                                 <div className="space-y-6">
                                                     <div className="text-center">
+                                                        <h3 className="text-2xl font-bold text-gray-800 mb-3">Choose Your Record Type</h3>
+                                                        <p className="text-gray-600 text-lg">Before recording, select the type of record you want to create.</p>
+                                                    </div>
+                                                    {/* Record Type Selector Visual */}
+                                                    <div className="flex justify-center mb-4">
+                                                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                                            <div className="px-3 py-2 text-sm font-medium rounded-lg bg-white text-primary-600 shadow-sm flex items-center gap-1.5">
+                                                                <FaClipboardList className="text-xs" />
+                                                                SOAP
+                                                            </div>
+                                                            <div className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 flex items-center gap-1.5">
+                                                                <FaFileAlt className="text-xs" />
+                                                                Summary
+                                                            </div>
+                                                            <div className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 flex items-center gap-1.5">
+                                                                <FaPhoneAlt className="text-xs" />
+                                                                Callback
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                                                        <div className="space-y-4">
+                                                            <div className="flex items-start gap-4">
+                                                                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                                                    <FaClipboardList className="text-white text-sm" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800">SOAP Record</p>
+                                                                    <p className="text-sm text-gray-600">Structured format with Subjective, Objective, Assessment, and Plan sections</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-start gap-4">
+                                                                <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0">
+                                                                    <FaFileAlt className="text-white text-sm" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800">Summary</p>
+                                                                    <p className="text-sm text-gray-600">Clinical summaries with professional medical terminology</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-start gap-4">
+                                                                <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                                                                    <FaPhoneAlt className="text-white text-sm" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-semibold text-gray-800">Callback</p>
+                                                                    <p className="text-sm text-gray-600">Document phone conversations with clients</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                                        <p className="text-sm text-blue-700 text-center font-medium">💡 Select your record type before clicking the microphone to start recording</p>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {tutorialStep === 2 && (
+                                                <div className="space-y-6">
+                                                    <div className="text-center">
                                                         <h3 className="text-2xl font-bold text-gray-800 mb-3">Welcome to QuickSOAP</h3>
-                                                        <p className="text-gray-600 text-lg">Type or dictate your clinical notes to generate a SOAP report. Your record will automatically save to Saved Records.</p>
+                                                        <p className="text-gray-600 text-lg">Type or dictate your clinical notes to generate your record. It will automatically save to Saved Records.</p>
                                                     </div>
                                                     <div className="bg-gray-50 rounded-xl p-6 border-2 border-dashed border-gray-300">
                                                         <div className="flex flex-col items-center justify-center space-y-4">
@@ -3325,7 +3673,7 @@ const QuickSOAP = () => {
                                                                 <FaMicrophone className="text-white text-3xl" />
                                                             </div>
                                                             <div className="text-center">
-                                                                <p className="text-gray-700 font-semibold mb-2">Step 1: Record or Type</p>
+                                                                <p className="text-gray-700 font-semibold mb-2">Record or Type</p>
                                                                 <p className="text-gray-600 text-sm">Click the microphone to record dictations or type notes directly</p>
                                                             </div>
                                                         </div>
@@ -3336,7 +3684,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 2 && (
+                                            {tutorialStep === 3 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Recording Dictations</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -3361,9 +3709,9 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 3 && (
+                                            {tutorialStep === 4 && (
                                                 <div className="space-y-6">
-                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your SOAP Report</h3>
+                                                    <h3 className="text-2xl font-bold text-gray-800 mb-4">Generating Your Report</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                                                         <div className="space-y-4">
                                                             <div className="flex items-center justify-center">
@@ -3374,16 +3722,39 @@ const QuickSOAP = () => {
                                                                     Generate SOAP
                                                                 </button>
                                                             </div>
-                                                            <p className="text-sm text-gray-600 text-center">Click "Generate SOAP" to create your report from all dictations and notes</p>
-                                                            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4">
-                                                                <p className="text-sm text-green-700 text-center font-medium">✅ Your report will automatically save to Saved Records once generated</p>
+                                                            <p className="text-sm text-gray-600 text-center">Click "Generate" to create your report from all dictations and notes</p>
+                                                        </div>
+                                                    </div>
+                                                    {/* Animated Loader Visual */}
+                                                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                                                        <p className="text-sm text-gray-600 mb-3 text-center">While generating, you'll see an animated loading screen:</p>
+                                                        <div className="relative rounded-lg overflow-hidden h-32 bg-gradient-to-br from-slate-50 to-white border border-gray-200">
+                                                            {/* Mini animated orbs */}
+                                                            <div className="absolute w-8 h-8 rounded-full opacity-70 blur-md animate-pulse" 
+                                                                style={{ background: '#3b82f6', top: '20%', left: '15%' }} 
+                                                            />
+                                                            <div className="absolute w-6 h-6 rounded-full opacity-70 blur-md animate-pulse" 
+                                                                style={{ background: '#10b981', top: '60%', left: '70%', animationDelay: '0.5s' }} 
+                                                            />
+                                                            <div className="absolute w-10 h-10 rounded-full opacity-60 blur-md animate-pulse" 
+                                                                style={{ background: '#f59e0b', top: '50%', left: '40%', animationDelay: '1s' }} 
+                                                            />
+                                                            <div className="absolute w-5 h-5 rounded-full opacity-60 blur-md animate-pulse" 
+                                                                style={{ background: '#ef4444', top: '30%', left: '80%', animationDelay: '1.5s' }} 
+                                                            />
+                                                            {/* Center text */}
+                                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                                <p className="text-primary-700 font-semibold text-sm">Generating your report...</p>
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                                        <p className="text-sm text-green-700 text-center font-medium">✅ Your report will automatically save to Saved Records once generated</p>
                                                     </div>
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 4 && (
+                                            {tutorialStep === 5 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Editing Your Report</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -3427,7 +3798,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 5 && (
+                                            {tutorialStep === 6 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Copy Sections & Save Changes</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -3456,7 +3827,7 @@ const QuickSOAP = () => {
                                                 </div>
                                             )}
 
-                                            {tutorialStep === 6 && (
+                                            {tutorialStep === 7 && (
                                                 <div className="space-y-6">
                                                     <h3 className="text-2xl font-bold text-gray-800 mb-4">Use QuickSOAP on Mobile</h3>
                                                     <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
@@ -3501,7 +3872,7 @@ const QuickSOAP = () => {
                                 {/* Tutorial Footer */}
                                 <div className={`border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0 ${isMobileDevice ? 'px-2 py-2' : 'px-6 py-4'}`}>
                                     <div className={`flex items-center ${isMobileDevice ? 'gap-1' : 'gap-2'}`}>
-                                        {(isMobileDevice ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]).map((step) => (
+                                        {(isMobileDevice ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4, 5, 6, 7]).map((step) => (
                                             <div
                                                 key={step}
                                                 className={`rounded-full transition-all ${isMobileDevice ? 'h-1.5' : 'h-2'} ${tutorialStep === step ? `bg-[#3369bd] ${isMobileDevice ? 'w-6' : 'w-8'}` : `bg-gray-300 ${isMobileDevice ? 'w-1.5' : 'w-2'}`}`}
@@ -3518,7 +3889,7 @@ const QuickSOAP = () => {
                                                 <span className={isMobileDevice ? 'hidden sm:inline' : ''}>Previous</span>
                                             </button>
                                         )}
-                                        {tutorialStep < (isMobileDevice ? 5 : 6) ? (
+                                        {tutorialStep < (isMobileDevice ? 6 : 7) ? (
                                             <button
                                                 onClick={() => setTutorialStep(tutorialStep + 1)}
                                                 className={`rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-1 ${isMobileDevice ? 'px-2 py-1 text-xs' : 'px-4 py-2'}`}

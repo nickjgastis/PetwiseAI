@@ -750,9 +750,9 @@ const SavedReports = () => {
     }, [reports.length, isAuthenticated]);
 
     const handleReportClick = (report) => {
-        // Check if this is a QuickSOAP report - if so, auto-load it instead of showing preview
+        // Check if this is a QuickSOAP, Summary, or Callback report - if so, auto-load it instead of showing preview
         const recordType = getRecordType(report);
-        if (recordType === 'quicksoap') {
+        if (recordType === 'quicksoap' || recordType === 'soap' || recordType === 'summary' || recordType === 'callback') {
             // Mark mobile report as viewed when clicked
             if (report.form_data?.from_mobile === true) {
                 const viewedReports = JSON.parse(localStorage.getItem('viewedMobileSOAPReports') || '[]');
@@ -761,7 +761,7 @@ const SavedReports = () => {
                     localStorage.setItem('viewedMobileSOAPReports', JSON.stringify(viewedReports));
                 }
             } else {
-                // Mark desktop QuickSOAP as viewed when clicked
+                // Mark desktop QuickSOAP/Summary/Callback as viewed when clicked
                 const viewedReports = JSON.parse(localStorage.getItem('viewedDesktopQuickSOAPReports') || '[]');
                 if (!viewedReports.includes(report.id)) {
                     viewedReports.push(report.id);
@@ -776,12 +776,12 @@ const SavedReports = () => {
                     }
                 }
             }
-            // Auto-load into QuickSOAP
+            // Auto-load into QuickSOAP view
             handleLoadQuickSOAP(report);
             return;
         }
         
-        // For non-QuickSOAP reports, show preview as before
+        // For PetSOAP/Generator reports, show preview as before
         setSelectedReport(selectedReport === report ? null : report);
         
         // Mark mobile report as viewed when clicked
@@ -872,8 +872,19 @@ const SavedReports = () => {
 
         const formData = report.form_data;
         
-        // Check for QuickSOAP record
-        if (formData.record_type === 'quicksoap' || 
+        // Check for Summary record
+        if (formData.record_type === 'summary') {
+            return 'summary';
+        }
+        
+        // Check for Callback record
+        if (formData.record_type === 'callback') {
+            return 'callback';
+        }
+        
+        // Check for QuickSOAP record (soap type or legacy quicksoap)
+        if (formData.record_type === 'soap' || 
+            formData.record_type === 'quicksoap' || 
             (formData.dictations && formData.input !== undefined)) {
             return 'quicksoap';
         }
@@ -918,8 +929,10 @@ const SavedReports = () => {
         // Filter by type
         const recordType = getRecordType(report);
         const matchesType = filterType === 'all' || 
-            (filterType === 'quicksoap' && recordType === 'quicksoap') ||
-            (filterType === 'petsoap' && recordType === 'generator');
+            (filterType === 'quicksoap' && (recordType === 'quicksoap' || recordType === 'soap')) ||
+            (filterType === 'petsoap' && recordType === 'generator') ||
+            (filterType === 'summary' && recordType === 'summary') ||
+            (filterType === 'callback' && recordType === 'callback');
         
         // Filter by search term
         const matchesSearch = report.report_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1083,6 +1096,13 @@ const SavedReports = () => {
         localStorage.removeItem('quickSOAP_lastInput');
         localStorage.removeItem('currentQuickSOAPReportId');
         localStorage.removeItem('quickSOAP_reportName');
+        localStorage.removeItem('quickSOAP_recordType');
+
+        // Get the record type from the report (soap, summary, callback, or quicksoap for legacy)
+        const reportRecordType = report.record_type || report.form_data?.record_type || 'soap';
+        // Normalize 'quicksoap' to 'soap' for the UI
+        const normalizedRecordType = reportRecordType === 'quicksoap' ? 'soap' : reportRecordType;
+        localStorage.setItem('quickSOAP_recordType', normalizedRecordType);
 
         // For mobile-generated reports (with report_text), load directly into generated view
         if (report.report_text && report.form_data?.from_mobile) {
@@ -1319,12 +1339,25 @@ const SavedReports = () => {
 
     // Helper function to get record type badge color
     const getRecordTypeBadgeColor = (recordType) => {
-        if (recordType === 'quicksoap') {
+        if (recordType === 'quicksoap' || recordType === 'soap') {
             return 'bg-gradient-to-r from-primary-600 to-primary-700';
         } else if (recordType === 'generator') {
             return 'bg-gradient-to-r from-purple-500 to-purple-700';
+        } else if (recordType === 'summary') {
+            return 'bg-gradient-to-r from-emerald-500 to-emerald-700';
+        } else if (recordType === 'callback') {
+            return 'bg-gradient-to-r from-amber-500 to-amber-700';
         }
         return 'bg-gradient-to-r from-gray-500 to-gray-700';
+    };
+
+    // Helper function to get record type display name
+    const getRecordTypeDisplayName = (recordType) => {
+        if (recordType === 'quicksoap' || recordType === 'soap') return 'QuickSOAP';
+        if (recordType === 'generator') return 'PetSOAP';
+        if (recordType === 'summary') return 'Summary';
+        if (recordType === 'callback') return 'Callback';
+        return 'Record';
     };
 
     return (
@@ -1349,46 +1382,58 @@ const SavedReports = () => {
                             />
                         </div>
                         {/* Filter Buttons */}
-                        <div className="relative bg-gray-100 rounded-xl p-1 inline-flex h-[52px]">
-                            <div 
-                                className="absolute top-1 bottom-1 bg-white rounded-lg shadow-sm transition-all duration-300 ease-out"
-                                style={{
-                                    width: filterType === 'all' ? '44px' : filterType === 'quicksoap' ? '92px' : '76px',
-                                    left: filterType === 'all' ? '0.25rem' : filterType === 'quicksoap' ? '48px' : '144px',
-                                }}
-                            />
+                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
                             <button
                                 onClick={() => setFilterType('all')}
-                                className={`relative z-10 px-2 py-3 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                                className={`px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                                     filterType === 'all' 
-                                        ? 'text-primary-600' 
-                                        : 'text-gray-600 hover:text-gray-800'
+                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                 }`}
-                                style={{ width: '44px' }}
                             >
                                 All
                             </button>
                             <button
                                 onClick={() => setFilterType('quicksoap')}
-                                className={`relative z-10 px-2 py-3 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                                className={`px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                                     filterType === 'quicksoap' 
-                                        ? 'text-primary-600' 
-                                        : 'text-gray-600 hover:text-gray-800'
+                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                 }`}
-                                style={{ width: '92px' }}
                             >
                                 QuickSOAP
                             </button>
                             <button
                                 onClick={() => setFilterType('petsoap')}
-                                className={`relative z-10 px-2 py-3 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap ${
+                                className={`px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
                                     filterType === 'petsoap' 
-                                        ? 'text-primary-600' 
-                                        : 'text-gray-600 hover:text-gray-800'
+                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
                                 }`}
-                                style={{ width: '76px' }}
                             >
                                 PetSOAP
+                            </button>
+                            <button
+                                onClick={() => setFilterType('summary')}
+                                className={`px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1 ${
+                                    filterType === 'summary' 
+                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                }`}
+                            >
+                                Summary
+                                <span className="text-[7px] font-medium text-yellow-500">beta</span>
+                            </button>
+                            <button
+                                onClick={() => setFilterType('callback')}
+                                className={`px-3 py-2.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1 ${
+                                    filterType === 'callback' 
+                                        ? 'bg-white text-primary-600 shadow-sm' 
+                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                }`}
+                            >
+                                Callback
+                                <span className="text-[7px] font-medium text-yellow-500">beta</span>
                             </button>
                         </div>
                     </div>
@@ -1432,7 +1477,7 @@ const SavedReports = () => {
                                             ) : (
                                                 <>
                                                     <div className={`${badgeColor} text-white text-xs font-semibold px-3 py-1 rounded-lg uppercase tracking-wide flex-shrink-0`}>
-                                                        {recordType === 'quicksoap' ? 'quicksoap' : recordType === 'generator' ? 'petsoap' : 'report'}
+                                                        {getRecordTypeDisplayName(recordType)}
                                                     </div>
                                                     <span className={`font-medium text-base flex-1 min-w-0 truncate transition-colors ${
                                                         isUnopened 
@@ -1583,7 +1628,52 @@ const SavedReports = () => {
                                 const recordType = getRecordType(selectedReport);
                                 const reportText = editingReport?.id === selectedReport.id ? editingReport.report_text : selectedReport.report_text;
                                 
-                                if (recordType === 'quicksoap') {
+                                // Summary and Callback records use simple textarea view
+                                if (recordType === 'summary' || recordType === 'callback') {
+                                    return (
+                                        <div className="editor-wrapper" style={{ padding: '16px', backgroundColor: '#f8fafc' }}>
+                                            <div className={`px-4 py-2 rounded-t-lg ${recordType === 'summary' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+                                                <h3 className="text-white font-semibold text-lg tracking-wide">
+                                                    {recordType === 'summary' ? '📋 Visit Summary' : '📞 Callback Notes'}
+                                                </h3>
+                                            </div>
+                                            {editingReport?.id === selectedReport.id ? (
+                                                <textarea
+                                                    value={reportText}
+                                                    onChange={(e) => {
+                                                        setEditingReport({
+                                                            ...editingReport,
+                                                            report_text: e.target.value
+                                                        });
+                                                    }}
+                                                    className="w-full px-4 py-4 border border-gray-300 border-t-0 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white"
+                                                    style={{
+                                                        fontFamily: 'inherit',
+                                                        lineHeight: '1.7',
+                                                        minHeight: '400px',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordWrap: 'break-word'
+                                                    }}
+                                                />
+                                            ) : (
+                                                <div 
+                                                    className="w-full px-4 py-4 border border-gray-300 border-t-0 rounded-b-lg bg-white text-gray-800"
+                                                    style={{
+                                                        fontFamily: 'inherit',
+                                                        lineHeight: '1.7',
+                                                        minHeight: '400px',
+                                                        whiteSpace: 'pre-wrap',
+                                                        wordWrap: 'break-word'
+                                                    }}
+                                                >
+                                                    {reportText}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                }
+                                
+                                if (recordType === 'quicksoap' || recordType === 'soap') {
                                     return (
                                         <div className="editor-wrapper" style={{ padding: '16px', backgroundColor: '#f8fafc' }}>
                                             <QuickSOAPView

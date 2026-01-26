@@ -89,6 +89,7 @@ const Dashboard = () => {
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
     const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
+    const [mobileReportTypes, setMobileReportTypes] = useState({ soap: 0, summary: 0, callback: 0 }); // Track types being generated
     const isProcessingQueueRef = useRef(false);
     const processingDraftIdsRef = useRef(new Set()); // Track which drafts are currently being processed
 
@@ -186,6 +187,7 @@ const Dashboard = () => {
         if (isMobile || !isAuthenticated || !user) {
             // Reset count when logged out
             setMobileReportsGenerating(0);
+            setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
             return;
         }
 
@@ -232,17 +234,19 @@ const Dashboard = () => {
                     return true; // Already processed, consider success
                 }
 
-                // Auto-generate SOAP report from mobile dictation
+                // Auto-generate report from mobile dictation
                 const formData = draft.form_data;
                 const dictations = formData.dictations || [];
                 const input = formData.input || '';
+                // Get record type from form_data (defaults to 'soap' for backwards compatibility)
+                const draftRecordType = formData.record_type || 'soap';
 
                 // Combine all dictations and manual input
                 const allDictations = dictations.map(d => d.fullText || d.summary || '').join('\n\n');
                 const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
 
                 if (!combinedInput.trim()) {
-                    console.error('No dictation content to generate SOAP from');
+                    console.error('No dictation content to generate report from');
                     // Delete draft if no content
                     await supabase
                         .from('saved_reports')
@@ -251,10 +255,11 @@ const Dashboard = () => {
                     return false;
                 }
 
-                // Generate SOAP report
+                // Generate report with appropriate record type
                 const response = await axios.post(`${API_URL}/api/generate-soap`, {
                     input: combinedInput.trim(),
-                    user: user ? { sub: user.sub } : null
+                    user: user ? { sub: user.sub } : null,
+                    recordType: draftRecordType
                 });
 
                 if (!response.data || !response.data.report) {
@@ -266,10 +271,16 @@ const Dashboard = () => {
                 const extractedPetName = response.data.petName;
 
                 const dateStr = new Date().toLocaleString();
+                // Get type label for report name
+                const typeLabel = draftRecordType === 'soap' || draftRecordType === 'quicksoap' 
+                    ? 'QuickSOAP' 
+                    : draftRecordType === 'summary' 
+                        ? 'Summary' 
+                        : 'Callback';
                 // Handle empty strings, null, undefined - only use pet name if it's a valid non-empty string
                 const reportName = (extractedPetName && extractedPetName.trim && extractedPetName.trim())
-                    ? `${extractedPetName.trim()} - ${dateStr}`
-                    : `QuickSOAP Mobile - ${dateStr}`;
+                    ? `${extractedPetName.trim()} - ${typeLabel} - ${dateStr}`
+                    : `${typeLabel} Mobile - ${dateStr}`;
 
                 // Double-check the draft still exists and hasn't been processed by another instance
                 const { data: finalDraftCheck } = await supabase
@@ -357,11 +368,12 @@ const Dashboard = () => {
 
                 // Fetch all drafts that were explicitly sent from mobile (sent_to_desktop: true)
                 // Only count drafts that don't have report_text (haven't been processed yet)
+                // Include all dictation-based record types: quicksoap, soap, summary, callback
                 const { data: allDrafts, error: draftError } = await supabase
                     .from('saved_reports')
-                    .select('id, form_data, report_text, created_at')
+                    .select('id, form_data, report_text, created_at, record_type')
                     .eq('user_id', userId)
-                    .eq('record_type', 'quicksoap')
+                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
                     .is('report_text', null)
                     .order('created_at', { ascending: true })
                     .limit(20);
@@ -395,6 +407,7 @@ const Dashboard = () => {
 
                 if (userError || !userData) {
                     setMobileReportsGenerating(0);
+                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
                     return;
                 }
 
@@ -402,17 +415,19 @@ const Dashboard = () => {
 
                 // Fetch all drafts that were explicitly sent from mobile (sent_to_desktop: true)
                 // Only get drafts that don't have report_text (haven't been processed yet)
+                // Include all dictation-based record types: quicksoap, soap, summary, callback
                 const { data: allDrafts, error: draftError } = await supabase
                     .from('saved_reports')
-                    .select('id, form_data, report_text, created_at')
+                    .select('id, form_data, report_text, created_at, record_type')
                     .eq('user_id', userId)
-                    .eq('record_type', 'quicksoap')
+                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
                     .is('report_text', null)
                     .order('created_at', { ascending: true }) // Process oldest first
                     .limit(20);
 
                 if (draftError || !allDrafts || allDrafts.length === 0) {
                     setMobileReportsGenerating(0);
+                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
                     return;
                 }
 
@@ -424,8 +439,22 @@ const Dashboard = () => {
 
                 if (sentDrafts.length === 0) {
                     setMobileReportsGenerating(0);
+                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
                     return;
                 }
+
+                // Count types being generated
+                const typeCounts = { soap: 0, summary: 0, callback: 0 };
+                sentDrafts.forEach(d => {
+                    const type = d.record_type || d.form_data?.record_type || 'soap';
+                    const normalizedType = type === 'quicksoap' ? 'soap' : type;
+                    if (typeCounts[normalizedType] !== undefined) {
+                        typeCounts[normalizedType]++;
+                    } else {
+                        typeCounts.soap++; // Default to soap for unknown types
+                    }
+                });
+                setMobileReportTypes(typeCounts);
 
                 // Update count of pending reports
                 setMobileReportsGenerating(sentDrafts.length);
@@ -450,9 +479,9 @@ const Dashboard = () => {
                 // Check if there are more after processing
                 const { data: remainingDrafts } = await supabase
                     .from('saved_reports')
-                    .select('id, form_data, report_text')
+                    .select('id, form_data, report_text, record_type')
                     .eq('user_id', userId)
-                    .eq('record_type', 'quicksoap')
+                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
                     .is('report_text', null);
 
                 const remainingSentDrafts = remainingDrafts?.filter(d =>
@@ -460,6 +489,18 @@ const Dashboard = () => {
                     !d.report_text
                 ) || [];
 
+                // Update type counts for remaining
+                const remainingTypeCounts = { soap: 0, summary: 0, callback: 0 };
+                remainingSentDrafts.forEach(d => {
+                    const type = d.record_type || d.form_data?.record_type || 'soap';
+                    const normalizedType = type === 'quicksoap' ? 'soap' : type;
+                    if (remainingTypeCounts[normalizedType] !== undefined) {
+                        remainingTypeCounts[normalizedType]++;
+                    } else {
+                        remainingTypeCounts.soap++;
+                    }
+                });
+                setMobileReportTypes(remainingTypeCounts);
                 setMobileReportsGenerating(remainingSentDrafts.length);
             } catch (err) {
                 console.error('Error processing mobile dictations queue:', err);
@@ -1393,12 +1434,26 @@ const Dashboard = () => {
                                 </div>
                                 <div>
                                     <p className="font-semibold text-base">
-                                        {mobileReportsGenerating === 1
-                                            ? '1 report generating from mobile'
-                                            : `${mobileReportsGenerating} reports generating from mobile`
-                                        }
+                                        {(() => {
+                                            const parts = [];
+                                            if (mobileReportTypes.soap > 0) {
+                                                parts.push(`${mobileReportTypes.soap} SOAP${mobileReportTypes.soap > 1 ? 's' : ''}`);
+                                            }
+                                            if (mobileReportTypes.summary > 0) {
+                                                parts.push(`${mobileReportTypes.summary} Summary${mobileReportTypes.summary > 1 ? 's' : ''}`);
+                                            }
+                                            if (mobileReportTypes.callback > 0) {
+                                                parts.push(`${mobileReportTypes.callback} Callback${mobileReportTypes.callback > 1 ? 's' : ''}`);
+                                            }
+                                            if (parts.length === 0) {
+                                                return mobileReportsGenerating === 1 
+                                                    ? '1 report generating from mobile'
+                                                    : `${mobileReportsGenerating} reports generating from mobile`;
+                                            }
+                                            return `${parts.join(', ')} generating from mobile`;
+                                        })()}
                                     </p>
-                                    <p className="text-sm opacity-90">Reports will appear in Saved Records when complete</p>
+                                    <p className="text-sm opacity-90">Will appear in Saved Records when complete</p>
                                 </div>
                             </div>
                         </div>

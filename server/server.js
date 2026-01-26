@@ -1306,9 +1306,9 @@ app.post('/api/generate-soap', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     try {
-        const { input, user } = req.body;
+        const { input, user, recordType = 'soap' } = req.body;
 
-        console.log('[SOAP] Received request, input length:', input?.length || 0);
+        console.log('[SOAP] Received request, input length:', input?.length || 0, 'recordType:', recordType);
 
         if (!input || !input.trim()) {
             console.log('[SOAP] Rejected - empty input');
@@ -1322,7 +1322,169 @@ app.post('/api/generate-soap', async (req, res) => {
 
         // Dynamic import for ESM module
         const { Agent, Runner } = await import('@openai/agents');
+        const runner = new Runner();
 
+        // Handle Summary and Callback record types with simpler single-agent approach
+        if (recordType === 'summary' || recordType === 'callback') {
+            const summaryAgent = new Agent({
+                name: "Clinical Summary Generator",
+                instructions: `You are a senior veterinary clinician creating a professional clinical summary report. Write as if documenting for medical records that will be reviewed by other veterinary professionals.
+
+CRITICAL RULES:
+1. You MUST process ANY input provided, even if brief. NEVER refuse or ask for more information.
+2. ONLY include information that was explicitly stated. You may rephrase professionally but NEVER invent details.
+3. If information wasn't mentioned, simply don't include that section.
+4. Do NOT use markdown formatting like ** or ## - use plain text only.
+
+STYLE GUIDELINES:
+- Write in formal clinical language appropriate for veterinary medical records
+- Use proper medical terminology (e.g., "acute onset emesis" rather than "vomiting")
+- Use standard veterinary abbreviations where appropriate (SID, BID, TID, PO, SQ, IV, IM, etc.)
+- Structure the report with clear sections and numbered points where appropriate
+- Be thorough but concise - include all clinically relevant details mentioned
+
+OUTPUT FORMAT (adapt sections dynamically based on content provided):
+
+Clinical Summary Report
+Date: [Current date]
+Patient: [Pet name if mentioned]
+
+[Opening paragraph summarizing the case/encounter]
+
+[Use numbered sections for key findings, organized logically. Examples:]
+
+1. [Topic/Finding]:
+[Details with clinical terminology]
+
+2. [Topic/Finding]:
+[Details with clinical terminology]
+
+[Continue with as many numbered sections as needed based on content]
+
+[If treatments/medications mentioned:]
+Treatment Protocol:
+- [Medication/treatment with all details provided - dose, route, frequency if mentioned]
+
+[If recommendations or follow-up mentioned:]
+Recommendations:
+[Clinical recommendations and follow-up instructions]
+
+[If appropriate, end with:]
+This report serves as documentation of [brief description of what this documents].
+
+End of Report.
+
+At the very end, on a new line, add:
+PET_NAME: [the pet's name if mentioned, or "no name provided"]`,
+                model: "gpt-4o-mini"
+            });
+
+            const callbackAgent = new Agent({
+                name: "Callback Notes Generator",
+                instructions: `You are a veterinary professional documenting a client communication for medical records. Create a formal, structured report suitable for the patient's medical file.
+
+CRITICAL RULES:
+1. You MUST process ANY input provided, even if brief. NEVER refuse or ask for more information.
+2. ONLY include information that was explicitly stated. You may rephrase professionally but NEVER invent details.
+3. If information wasn't mentioned, simply don't include that section.
+4. Do NOT use markdown formatting like ** or ## - use plain text only.
+
+STYLE GUIDELINES:
+- Write formally as if this will be reviewed by other veterinary professionals
+- Use proper medical terminology where appropriate
+- Structure with clear sections and numbered points for key information
+- Be thorough in documenting what was discussed and any recommendations given
+
+OUTPUT FORMAT (adapt sections dynamically based on content provided):
+
+Client Communication Report
+Date: [Current date]
+Patient: [Pet name if mentioned]
+
+Summary of Call
+[Opening paragraph describing who contacted whom and the general purpose]
+
+[Use numbered sections for key discussion points. Examples:]
+
+1. [Topic Discussed]:
+[Details of what was communicated, using clinical language where appropriate]
+
+2. [Topic Discussed]:
+[Details including any test results, findings, or clinical information shared]
+
+[Continue with as many numbered sections as needed]
+
+[If instructions were given:]
+Instructions Provided:
+[Numbered or bulleted list of specific instructions given to the client]
+
+[If follow-up or next steps mentioned:]
+Next Steps:
+[What was agreed upon - appointments, actions, timeline]
+
+[If clinical recommendations were made:]
+Recommendation:
+[Professional recommendations based on the discussion]
+
+This report serves as documentation of communication and recommended actions regarding [patient name if known]'s care.
+
+End of Report.
+
+At the very end, on a new line, add:
+PET_NAME: [the pet's name if mentioned, or "no name provided"]`,
+                model: "gpt-4o-mini"
+            });
+
+            const agent = recordType === 'summary' ? summaryAgent : callbackAgent;
+            console.log(`[${recordType.toUpperCase()}] Running ${recordType} generator...`);
+
+            const result = await runner.run(agent, input.trim());
+
+            if (!result.finalOutput) {
+                throw new Error(`${recordType} generation failed - no output`);
+            }
+
+            console.log(`[${recordType.toUpperCase()}] Generation complete`);
+
+            let report = result.finalOutput;
+            let petName = null;
+
+            // Extract pet name if present
+            const petNameMatch = report.match(/PET_NAME:\s*(.+?)(?:\n|$)/i);
+            if (petNameMatch && petNameMatch[1]) {
+                let extractedName = petNameMatch[1].trim();
+                extractedName = extractedName.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+                if (extractedName.toLowerCase() !== 'no name provided') {
+                    petName = extractedName;
+                }
+                report = report.replace(/PET_NAME:\s*.+?(?:\n|$)/i, '').trim();
+            }
+
+            // Increment usage counter
+            if (user?.sub) {
+                try {
+                    const { data: userData, error: fetchError } = await supabase
+                        .from('users')
+                        .select('quicksoap_count')
+                        .eq('auth0_user_id', user.sub)
+                        .single();
+
+                    if (!fetchError && userData) {
+                        const newCount = (userData.quicksoap_count || 0) + 1;
+                        await supabase
+                            .from('users')
+                            .update({ quicksoap_count: newCount })
+                            .eq('auth0_user_id', user.sub);
+                    }
+                } catch (updateError) {
+                    console.error(`[${recordType.toUpperCase()}] Failed to increment count:`, updateError);
+                }
+            }
+
+            return res.status(200).json({ report, petName, recordType });
+        }
+
+        // SOAP record type - use two-agent extraction + formatting approach
         // Agent 1: Extract information from transcript
         const transcriptionExtractor = new Agent({
             name: "Transcription Extractor",
@@ -1571,8 +1733,6 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             model: "gpt-4o-mini"
         });
 
-        const runner = new Runner();
-
         // Run Agent 1: Extract information
         console.log('[SOAP Agent] Running transcription extractor...');
         const extractorResult = await runner.run(transcriptionExtractor, input.trim());
@@ -1683,7 +1843,7 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             console.log('[SOAP] No user.sub provided, skipping counter increment');
         }
 
-        return res.status(200).json({ report, petName });
+        return res.status(200).json({ report, petName, recordType });
     } catch (err) {
         // Handle axios timeout errors
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {

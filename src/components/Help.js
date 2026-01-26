@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from './Footer';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaSave, FaFileAlt } from 'react-icons/fa';
+import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaSave, FaFileAlt, FaClipboardList, FaPhoneAlt } from 'react-icons/fa';
 
 const Help = () => {
     const { isAuthenticated } = useAuth0();
@@ -227,17 +227,17 @@ const Help = () => {
                             <span>QuickSOAP Tutorial</span>
                         </button>
                         <button
+                            onClick={() => openTutorial('PetQuery')}
+                            className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
+                        >
+                            <span>PetQuery Tutorial</span>
+                        </button>
+                        <button
                             onClick={() => openTutorial('PetSOAP')}
                             className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
                         >
                             <FaFileAlt className="text-sm" />
                             <span>PetSOAP Tutorial</span>
-                        </button>
-                        <button
-                            onClick={() => openTutorial('PetQuery')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
-                        >
-                            <span>PetQuery Tutorial</span>
                         </button>
                         <button
                             onClick={() => setShowQRModal(true)}
@@ -312,39 +312,58 @@ const Help = () => {
                             {whatsNewStep === 0 && (
                                 <div className="space-y-6">
                                     <div className="text-center">
-                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">Welcome to the Latest PetWise Updates</h3>
-                                        <p className="text-gray-600 text-lg">We're excited to share some amazing new features that will make your workflow even more efficient and powerful.</p>
+                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">New Record Types in QuickSOAP</h3>
+                                        <p className="text-gray-600 text-lg">QuickSOAP now supports three different record types to match your workflow needs.</p>
                                     </div>
-                                    <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border-2 border-primary-200 p-6">
-                                        <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-lg w-20 h-20">
-                                                <FaMicrophone className="text-white text-3xl" />
+                                    {/* Record Type Selector Visual */}
+                                    <div className="flex justify-center">
+                                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                            <div className="px-3 py-2 text-sm font-medium rounded-lg bg-white text-primary-600 shadow-sm flex items-center gap-1.5">
+                                                <FaClipboardList className="text-xs" />
+                                                SOAP
                                             </div>
-                                            <div className="text-center">
-                                                <p className="text-gray-700 font-semibold mb-2 text-lg">QuickSOAP - Voice-Powered SOAP Reports</p>
-                                                <p className="text-gray-600">Create professional SOAP reports instantly using voice dictation</p>
+                                            <div className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 flex items-center gap-1.5">
+                                                <FaFileAlt className="text-xs" />
+                                                Summary
+                                            </div>
+                                            <div className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 flex items-center gap-1.5">
+                                                <FaPhoneAlt className="text-xs" />
+                                                Callback
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border-2 border-green-200 p-6">
+                                    <div className="bg-gradient-to-br from-blue-50 to-primary-50 rounded-xl border-2 border-blue-200 p-6">
                                         <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg w-20 h-20">
-                                                <FaMobile className="text-white text-3xl" />
+                                            <div className="rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg w-16 h-16">
+                                                <FaClipboardList className="text-white text-2xl" />
                                             </div>
                                             <div className="text-center">
-                                                <p className="text-gray-700 font-semibold mb-2 text-lg">Mobile Experience</p>
-                                                <p className="text-gray-600">Record dictations on the go and sync seamlessly with your desktop</p>
+                                                <p className="text-gray-700 font-semibold mb-2 text-lg">SOAP Record</p>
+                                                <p className="text-gray-600">Classic SOAP format with Subjective, Objective, Assessment, and Plan sections</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 p-6">
-                                        <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg w-20 h-20">
-                                                <FaSave className="text-white text-3xl" />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 p-5">
+                                            <div className="flex flex-col items-center justify-center space-y-3">
+                                                <div className="rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg w-14 h-14">
+                                                    <FaFileAlt className="text-white text-xl" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-gray-700 font-semibold mb-1">Summary</p>
+                                                    <p className="text-gray-600 text-sm">Clinical summaries with professional medical terminology</p>
+                                                </div>
                                             </div>
-                                            <div className="text-center">
-                                                <p className="text-gray-700 font-semibold mb-2 text-lg">Organized Saved Records</p>
-                                                <p className="text-gray-600">Your records are now organized by type for easier access</p>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border-2 border-amber-200 p-5">
+                                            <div className="flex flex-col items-center justify-center space-y-3">
+                                                <div className="rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg w-14 h-14">
+                                                    <FaPhoneAlt className="text-white text-xl" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-gray-700 font-semibold mb-1">Callback</p>
+                                                    <p className="text-gray-600 text-sm">Document phone conversations with clients</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -353,170 +372,230 @@ const Help = () => {
 
                             {whatsNewStep === 1 && (
                                 <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">QuickSOAP - Voice-Powered SOAP Reports</h3>
+                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">SOAP Records</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-4">
+                                                <div className="rounded-full bg-blue-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
+                                                    <FaClipboardList className="text-white text-sm" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="font-semibold text-gray-800 mb-1">Structured SOAP Format</p>
+                                                    <p className="text-gray-600 text-sm">Your dictation is automatically organized into Subjective, Objective, Assessment, and Plan sections</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-start gap-4 mt-4">
                                                 <div className="rounded-full bg-primary-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
                                                     <FaMicrophone className="text-white text-sm" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="font-semibold text-gray-800 mb-1">Voice Dictation</p>
-                                                    <p className="text-gray-600 text-sm">Simply speak your clinical notes and PetWise will automatically structure them into professional SOAP format</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-blue-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <span className="text-white font-bold">SOAP</span>
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Automatic Structure</p>
-                                                    <p className="text-gray-600 text-sm">Your dictation is intelligently organized into Subjective, Objective, Assessment, and Plan sections</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-green-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <span className="text-white font-bold">✓</span>
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Edit and Refine</p>
-                                                    <p className="text-gray-600 text-sm">Review and edit the generated report before saving or copying to your records</p>
+                                                    <p className="text-gray-600 text-sm">Simply speak naturally - PetWise will structure your notes into professional SOAP format</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-primary-50 rounded-lg p-4 border-l-4 border-primary-600">
-                                        <p className="text-gray-700 text-sm"><strong>Tip:</strong> QuickSOAP works great for quick notes during rounds or after appointments. Just speak naturally and let PetWise handle the formatting.</p>
+                                    {/* Visual of SOAP sections */}
+                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                        <div className="flex border-b border-gray-200">
+                                            <div className="flex-1 border-r border-gray-200">
+                                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2">
+                                                    <span className="text-white font-semibold text-sm">S – Subjective</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-2">
+                                                    <span className="text-white font-semibold text-sm">O – Objective</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex">
+                                            <div className="flex-1 border-r border-gray-200">
+                                                <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2">
+                                                    <span className="text-white font-semibold text-sm">A – Assessment</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1">
+                                                <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-2">
+                                                    <span className="text-white font-semibold text-sm">P – Plan</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-600">
+                                        <p className="text-gray-700 text-sm"><strong>Best for:</strong> Complete patient encounters, examinations, and detailed medical documentation.</p>
                                     </div>
                                 </div>
                             )}
 
                             {whatsNewStep === 2 && (
                                 <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Mobile Experience</h3>
+                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Clinical Summaries</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-4">
-                                                <div className="rounded-full bg-green-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaMobile className="text-white text-sm" />
+                                                <div className="rounded-full bg-emerald-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
+                                                    <FaFileAlt className="text-white text-sm" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Record Anywhere</p>
-                                                    <p className="text-gray-600 text-sm">Use your mobile device to record dictations while you're on the move, in the field, or between appointments</p>
+                                                    <p className="font-semibold text-gray-800 mb-1">Professional Medical Language</p>
+                                                    <p className="text-gray-600 text-sm">Summaries use formal veterinary terminology and proper medical phrasing</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-blue-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <span className="text-white font-bold text-xs">SYNC</span>
+                                                <div className="rounded-full bg-green-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
+                                                    <span className="text-white font-bold text-xs">Rx</span>
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Seamless Sync</p>
-                                                    <p className="text-gray-600 text-sm">Your mobile dictations automatically sync to your desktop, ready to generate reports when you return</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-purple-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <span className="text-white font-bold text-xs">FAST</span>
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Quick Access</p>
-                                                    <p className="text-gray-600 text-sm">Access your profile, manage subscriptions, and view saved records all from your mobile device</p>
+                                                    <p className="font-semibold text-gray-800 mb-1">Treatment Documentation</p>
+                                                    <p className="text-gray-600 text-sm">Medications, vaccines, and treatments are automatically formatted and listed</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-600">
-                                        <p className="text-gray-700 text-sm"><strong>Perfect for:</strong> Farm calls, house visits, emergency situations, or any time you need to capture notes quickly without being at your desk.</p>
+                                    {/* Visual of Summary output */}
+                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                        <div className="bg-emerald-600 px-4 py-3">
+                                            <h4 className="text-white font-semibold flex items-center gap-2">
+                                                <FaFileAlt className="text-sm" /> Clinical Summary
+                                            </h4>
+                                        </div>
+                                        <div className="p-4 bg-gray-50">
+                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                                <p className="text-gray-700 text-sm italic">Your clinical summary will appear as a single editable text area...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-emerald-50 rounded-lg p-4 border-l-4 border-emerald-600">
+                                        <p className="text-gray-700 text-sm"><strong>Best for:</strong> Patient histories, case summaries, referral notes, and general medical documentation.</p>
                                     </div>
                                 </div>
                             )}
 
                             {whatsNewStep === 3 && (
                                 <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Organized Saved Records</h3>
+                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Callback Notes</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
                                         <div className="space-y-4">
                                             <div className="flex items-start gap-4">
-                                                <div className="rounded-full bg-purple-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaMicrophone className="text-white text-sm" />
+                                                <div className="rounded-full bg-amber-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
+                                                    <FaPhoneAlt className="text-white text-sm" />
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">QuickSOAP Records</p>
-                                                    <p className="text-gray-600 text-sm">All your voice-generated SOAP reports are now organized in their own dedicated section</p>
+                                                    <p className="font-semibold text-gray-800 mb-1">Client Communication</p>
+                                                    <p className="text-gray-600 text-sm">Document phone conversations with pet owners, including questions asked and advice given</p>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-blue-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaFileAlt className="text-white text-sm" />
+                                                <div className="rounded-full bg-yellow-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
+                                                    <span className="text-white font-bold text-xs">📞</span>
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">PetSOAP Records</p>
-                                                    <p className="text-gray-600 text-sm">Traditional form-based reports remain in their own section for easy access</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-green-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaSave className="text-white text-sm" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Easy Navigation</p>
-                                                    <p className="text-gray-600 text-sm">Switch between QuickSOAP and PetSOAP records with a simple tab selection</p>
+                                                    <p className="font-semibold text-gray-800 mb-1">Structured Call Notes</p>
+                                                    <p className="text-gray-600 text-sm">Automatically formats call type, discussion summary, concerns, and next steps</p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-white rounded-lg border border-gray-200 p-4 mt-6">
-                                        <p className="text-gray-600 text-sm mb-4 font-medium">Example record items:</p>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                                                <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold px-3 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
-                                                    quicksoap
-                                                </div>
-                                                <span className="font-medium text-base flex-1 min-w-0 truncate text-gray-800">
-                                                    Patient Exam - Routine Checkup
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                                                <div className="bg-gradient-to-r from-purple-500 to-purple-700 text-white text-xs font-semibold px-3 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
-                                                    petsoap
-                                                </div>
-                                                <span className="font-medium text-base flex-1 min-w-0 truncate text-gray-800">
-                                                    Detailed Consultation Report
-                                                </span>
+                                    {/* Visual of Callback output */}
+                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                        <div className="bg-amber-600 px-4 py-3">
+                                            <h4 className="text-white font-semibold flex items-center gap-2">
+                                                <FaPhoneAlt className="text-sm" /> Callback Notes
+                                            </h4>
+                                        </div>
+                                        <div className="p-4 bg-gray-50">
+                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
+                                                <p className="text-gray-700 text-sm italic">Your callback notes will appear as a single editable text area...</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-600">
-                                        <p className="text-gray-700 text-sm"><strong>Benefit:</strong> This organization makes it easier to find the right record type quickly, whether you're looking for a quick voice note or a detailed form-based report.</p>
+                                    <div className="bg-amber-50 rounded-lg p-4 border-l-4 border-amber-600">
+                                        <p className="text-gray-700 text-sm"><strong>Best for:</strong> Follow-up calls, medication questions, appointment scheduling, and client concerns.</p>
                                     </div>
                                 </div>
                             )}
 
                             {whatsNewStep === 4 && (
                                 <div className="space-y-6">
+                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Organized Saved Records</h3>
+                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
+                                        <p className="text-gray-600 mb-4">All record types are now filterable in Saved Records for easy access:</p>
+                                        {/* Filter visual */}
+                                        <div className="flex justify-center mb-4">
+                                            <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg bg-white text-primary-600 shadow-sm">All</div>
+                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">QuickSOAP</div>
+                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">PetSOAP</div>
+                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">Summary</div>
+                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">Callback</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
+                                        <p className="text-gray-600 text-sm mb-4 font-medium">Example record items:</p>
+                                        <div className="space-y-2">
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
+                                                    quicksoap
+                                                </div>
+                                                <span className="font-medium text-sm flex-1 min-w-0 truncate text-gray-800">
+                                                    Max - SOAP Record
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
+                                                    summary
+                                                </div>
+                                                <span className="font-medium text-sm flex-1 min-w-0 truncate text-gray-800">
+                                                    Bella - Clinical Summary
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
+                                                    callback
+                                                </div>
+                                                <span className="font-medium text-sm flex-1 min-w-0 truncate text-gray-800">
+                                                    Rocky - Callback Notes
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-600">
+                                        <p className="text-gray-700 text-sm"><strong>Tip:</strong> Click on any Summary or Callback record to open it in QuickSOAP for editing.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {whatsNewStep === 5 && (
+                                <div className="space-y-6">
                                     <div className="text-center">
                                         <h3 className="font-bold text-gray-800 mb-4 text-2xl">Ready to Get Started?</h3>
-                                        <p className="text-gray-600 text-lg mb-6">These new features are designed to make your workflow faster and more efficient. Try them out and see how they can transform your practice.</p>
+                                        <p className="text-gray-600 text-lg mb-6">Choose the right record type for your needs and let PetWise handle the formatting.</p>
                                     </div>
                                     <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border-2 border-primary-200 p-6">
-                                        <h4 className="font-semibold text-gray-800 mb-3 text-lg">Next Steps</h4>
+                                        <h4 className="font-semibold text-gray-800 mb-3 text-lg">How to Use</h4>
                                         <div className="space-y-3">
                                             <div className="flex items-start gap-3">
                                                 <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">1</span>
-                                                <p className="text-gray-700">Try QuickSOAP by clicking the microphone icon in the sidebar</p>
+                                                <p className="text-gray-700">Go to QuickSOAP from the sidebar</p>
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">2</span>
-                                                <p className="text-gray-700">Access your mobile experience by visiting PetWise on your phone</p>
+                                                <p className="text-gray-700">Select your record type: SOAP, Summary, or Callback</p>
                                             </div>
                                             <div className="flex items-start gap-3">
                                                 <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">3</span>
-                                                <p className="text-gray-700">Explore your organized saved records in the Saved Records section</p>
+                                                <p className="text-gray-700">Record your dictation and click Generate</p>
+                                            </div>
+                                            <div className="flex items-start gap-3">
+                                                <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">4</span>
+                                                <p className="text-gray-700">Edit and save - your record will be in Saved Records</p>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-600">
-                                        <p className="text-gray-700 text-sm"><strong>We're here to help:</strong> If you have any questions or feedback about these new features, don't hesitate to reach out to our support team.</p>
+                                        <p className="text-gray-700 text-sm"><strong>Works on mobile too!</strong> Select your record type on mobile and send to desktop for generation.</p>
                                     </div>
                                 </div>
                             )}
@@ -525,7 +604,7 @@ const Help = () => {
                         {/* Tutorial Footer */}
                         <div className="bg-gray-50 px-6 py-4 flex items-center justify-between flex-shrink-0 border-t border-gray-200">
                             <div className="flex items-center gap-2">
-                                {[0, 1, 2, 3, 4].map((step) => (
+                                {[0, 1, 2, 3, 4, 5].map((step) => (
                                     <div
                                         key={step}
                                         className={`w-2 h-2 rounded-full transition-all ${whatsNewStep === step ? 'bg-primary-600 w-8' : 'bg-gray-300'}`}
@@ -542,7 +621,7 @@ const Help = () => {
                                         Previous
                                     </button>
                                 )}
-                                {whatsNewStep < 4 ? (
+                                {whatsNewStep < 5 ? (
                                     <button
                                         onClick={() => setWhatsNewStep(whatsNewStep + 1)}
                                         className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-2"
