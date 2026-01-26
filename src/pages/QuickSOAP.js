@@ -47,7 +47,7 @@ const QuickSOAPPDFDocument = ({ reportText, title }) => {
             // Check for bold markers or section headers (lines ending with colon that are headers)
             const isBold = (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) ||
                 (trimmedLine.endsWith(':') && /^(Subjective|Objective|Assessment|Plan|Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Monitoring|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Owner Observations|Physical Exam|Vital Signs|Diagnostics):$/i.test(trimmedLine));
-            
+
             if (isBold) {
                 const cleanText = trimmedLine.replace(/^\*\*|\*\*$/g, '');
                 return (
@@ -320,7 +320,7 @@ const QuickSOAP = () => {
         if (typeof window !== 'undefined') {
             // DEV ONLY: Allow forcing mobile view via localStorage
             const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
-            
+
             const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
             const isMobileUserAgent = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -450,7 +450,7 @@ const QuickSOAP = () => {
         const checkMobile = () => {
             // DEV ONLY: Allow forcing mobile view via localStorage
             const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
-            
+
             // Only use user agent to avoid triggering on split-screen desktops
             // Don't use touch or width checks as touchscreen laptops would be falsely detected
             const isMobileUserAgent = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1614,7 +1614,7 @@ const QuickSOAP = () => {
                     const extractedPetName = response.data.petName;
                     // Start transition - fade out loader smoothly
                     setIsTransitioning(true);
-                    
+
                     // Delay before showing report to allow loader fade
                     setTimeout(() => {
                         setReport(generatedReport);
@@ -1646,7 +1646,7 @@ const QuickSOAP = () => {
 
                         // Hide loader and fade in report smoothly
                         setIsGenerating(false);
-                        
+
                         // Fade in sidebar and report after a short delay
                         setTimeout(() => {
                             setIsTransitioning(false);
@@ -2276,39 +2276,39 @@ const QuickSOAP = () => {
 
             {/* Fullscreen Animated Loader - Desktop Only */}
             {isGenerating && !isMobile && !hasReport && (
-                <div 
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden transition-opacity duration-500" 
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden transition-opacity duration-500"
                     style={{ left: isSidebarCollapsed ? '80px' : '224px' }}
                 >
                     {/* Animated background with blurred orbs - SOAP colors */}
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white">
                         {/* Subjective - Blue */}
-                        <div className="absolute w-32 h-32 rounded-full opacity-70 blur-2xl" 
-                            style={{ 
-                                background: '#3b82f6', 
+                        <div className="absolute w-32 h-32 rounded-full opacity-70 blur-2xl"
+                            style={{
+                                background: '#3b82f6',
                                 animation: 'float1 20s ease-in-out infinite'
-                            }} 
+                            }}
                         />
                         {/* Objective - Green */}
-                        <div className="absolute w-28 h-28 rounded-full opacity-70 blur-2xl" 
-                            style={{ 
-                                background: '#10b981', 
+                        <div className="absolute w-28 h-28 rounded-full opacity-70 blur-2xl"
+                            style={{
+                                background: '#10b981',
                                 animation: 'float2 25s ease-in-out infinite'
-                            }} 
+                            }}
                         />
                         {/* Assessment - Amber */}
-                        <div className="absolute w-36 h-36 rounded-full opacity-60 blur-2xl" 
-                            style={{ 
-                                background: '#f59e0b', 
+                        <div className="absolute w-36 h-36 rounded-full opacity-60 blur-2xl"
+                            style={{
+                                background: '#f59e0b',
                                 animation: 'float3 22s ease-in-out infinite'
-                            }} 
+                            }}
                         />
                         {/* Plan - Red */}
-                        <div className="absolute w-24 h-24 rounded-full opacity-60 blur-2xl" 
-                            style={{ 
-                                background: '#ef4444', 
+                        <div className="absolute w-24 h-24 rounded-full opacity-60 blur-2xl"
+                            style={{
+                                background: '#ef4444',
                                 animation: 'float4 28s ease-in-out infinite'
-                            }} 
+                            }}
                         />
                     </div>
                     {/* Content */}
@@ -2461,13 +2461,12 @@ const QuickSOAP = () => {
                             {/* Record Type Indicator - Show after dictation starts */}
                             {dictations.length > 0 && (!isRecording || !isMobile) && !hasReport && (
                                 <div className={`flex justify-center ${isMobile ? 'mb-2' : 'mb-3'}`}>
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                                        recordType === 'soap' 
-                                            ? 'bg-blue-100 text-blue-700' 
-                                            : recordType === 'summary' 
-                                                ? 'bg-emerald-100 text-emerald-700' 
-                                                : 'bg-amber-100 text-amber-700'
-                                    }`}>
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${recordType === 'soap'
+                                        ? 'bg-blue-100 text-blue-700'
+                                        : recordType === 'summary'
+                                            ? 'bg-emerald-100 text-emerald-700'
+                                            : 'bg-amber-100 text-amber-700'
+                                        }`}>
                                         {recordType === 'soap' && <FaClipboardList className="text-xs" />}
                                         {recordType === 'summary' && <FaFileAlt className="text-xs" />}
                                         {recordType === 'callback' && <FaPhoneAlt className="text-xs" />}
@@ -2555,22 +2554,20 @@ const QuickSOAP = () => {
                                         <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
                                             <button
                                                 onClick={() => setRecordType('soap')}
-                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
-                                                    recordType === 'soap' 
-                                                        ? 'bg-white text-primary-600 shadow-sm' 
-                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                                                }`}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'soap'
+                                                    ? 'bg-white text-primary-600 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 <FaClipboardList className="text-xs" />
                                                 SOAP
                                             </button>
                                             <button
                                                 onClick={() => setRecordType('summary')}
-                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
-                                                    recordType === 'summary' 
-                                                        ? 'bg-white text-primary-600 shadow-sm' 
-                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                                                }`}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'summary'
+                                                    ? 'bg-white text-primary-600 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 <FaFileAlt className="text-xs" />
                                                 Summary
@@ -2578,11 +2575,10 @@ const QuickSOAP = () => {
                                             </button>
                                             <button
                                                 onClick={() => setRecordType('callback')}
-                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${
-                                                    recordType === 'callback' 
-                                                        ? 'bg-white text-primary-600 shadow-sm' 
-                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                                                }`}
+                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'callback'
+                                                    ? 'bg-white text-primary-600 shadow-sm'
+                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                    }`}
                                             >
                                                 <FaPhoneAlt className="text-xs" />
                                                 Callback
@@ -2991,8 +2987,8 @@ const QuickSOAP = () => {
                                 <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center gap-3">
                                     <FaSave className="text-xl flex-shrink-0" />
                                     <div className="flex-1">
-                                        <p className="font-semibold text-base">Generating your SOAP report...</p>
-                                        <p className="text-sm opacity-90">This report will be automatically saved to your records. Feel free to name it and edit it once it's generated.</p>
+                                        <p className="font-semibold text-base">Generating your {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...</p>
+                                        <p className="text-sm opacity-90">This will be automatically saved to your records. Feel free to name it and edit it once it's generated.</p>
                                     </div>
                                 </div>
                             )}
@@ -3088,9 +3084,53 @@ const QuickSOAP = () => {
 
                             {/* Loader or Report Content */}
                             {isGenerating && isReportTransitioning ? (
-                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-16 flex flex-col items-center justify-center min-h-[400px]">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mb-4"></div>
-                                    <p className="text-gray-600 text-lg font-medium">Generating SOAP report...</p>
+                                <div className="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden">
+                                    {/* Animated orbs background */}
+                                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white">
+                                        <div className="absolute w-16 h-16 rounded-full opacity-60 blur-xl"
+                                            style={{ background: '#3b82f6', animation: 'loaderFloat1 8s ease-in-out infinite' }}
+                                        />
+                                        <div className="absolute w-14 h-14 rounded-full opacity-60 blur-xl"
+                                            style={{ background: '#10b981', animation: 'loaderFloat2 10s ease-in-out infinite' }}
+                                        />
+                                        <div className="absolute w-20 h-20 rounded-full opacity-50 blur-xl"
+                                            style={{ background: '#f59e0b', animation: 'loaderFloat3 9s ease-in-out infinite' }}
+                                        />
+                                        <div className="absolute w-12 h-12 rounded-full opacity-50 blur-xl"
+                                            style={{ background: '#ef4444', animation: 'loaderFloat4 11s ease-in-out infinite' }}
+                                        />
+                                    </div>
+                                    {/* Center text */}
+                                    <div className="relative z-10 text-center">
+                                        <p className="text-primary-700 text-lg font-semibold mb-1">Generating {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...</p>
+                                        <p className="text-primary-500/70 text-sm">This will be saved automatically</p>
+                                    </div>
+                                    <style>{`
+                                        @keyframes loaderFloat1 {
+                                            0%, 100% { top: 10%; left: 15%; transform: scale(1); }
+                                            25% { top: 55%; left: 65%; transform: scale(1.1); }
+                                            50% { top: 70%; left: 25%; transform: scale(0.9); }
+                                            75% { top: 25%; left: 60%; transform: scale(1.05); }
+                                        }
+                                        @keyframes loaderFloat2 {
+                                            0%, 100% { top: 65%; left: 55%; transform: scale(1); }
+                                            25% { top: 15%; left: 10%; transform: scale(0.95); }
+                                            50% { top: 35%; left: 70%; transform: scale(1.15); }
+                                            75% { top: 75%; left: 35%; transform: scale(1); }
+                                        }
+                                        @keyframes loaderFloat3 {
+                                            0%, 100% { top: 35%; left: 75%; transform: scale(1); }
+                                            25% { top: 70%; left: 40%; transform: scale(1.1); }
+                                            50% { top: 15%; left: 50%; transform: scale(0.9); }
+                                            75% { top: 55%; left: 10%; transform: scale(1.05); }
+                                        }
+                                        @keyframes loaderFloat4 {
+                                            0%, 100% { top: 80%; left: 15%; transform: scale(1); }
+                                            25% { top: 20%; left: 50%; transform: scale(1.1); }
+                                            50% { top: 60%; left: 80%; transform: scale(0.85); }
+                                            75% { top: 10%; left: 30%; transform: scale(1.05); }
+                                        }
+                                    `}</style>
                                 </div>
                             ) : (
                                 <div
@@ -3730,17 +3770,17 @@ const QuickSOAP = () => {
                                                         <p className="text-sm text-gray-600 mb-3 text-center">While generating, you'll see an animated loading screen:</p>
                                                         <div className="relative rounded-lg overflow-hidden h-32 bg-gradient-to-br from-slate-50 to-white border border-gray-200">
                                                             {/* Mini animated orbs */}
-                                                            <div className="absolute w-8 h-8 rounded-full opacity-70 blur-md animate-pulse" 
-                                                                style={{ background: '#3b82f6', top: '20%', left: '15%' }} 
+                                                            <div className="absolute w-8 h-8 rounded-full opacity-70 blur-md animate-pulse"
+                                                                style={{ background: '#3b82f6', top: '20%', left: '15%' }}
                                                             />
-                                                            <div className="absolute w-6 h-6 rounded-full opacity-70 blur-md animate-pulse" 
-                                                                style={{ background: '#10b981', top: '60%', left: '70%', animationDelay: '0.5s' }} 
+                                                            <div className="absolute w-6 h-6 rounded-full opacity-70 blur-md animate-pulse"
+                                                                style={{ background: '#10b981', top: '60%', left: '70%', animationDelay: '0.5s' }}
                                                             />
-                                                            <div className="absolute w-10 h-10 rounded-full opacity-60 blur-md animate-pulse" 
-                                                                style={{ background: '#f59e0b', top: '50%', left: '40%', animationDelay: '1s' }} 
+                                                            <div className="absolute w-10 h-10 rounded-full opacity-60 blur-md animate-pulse"
+                                                                style={{ background: '#f59e0b', top: '50%', left: '40%', animationDelay: '1s' }}
                                                             />
-                                                            <div className="absolute w-5 h-5 rounded-full opacity-60 blur-md animate-pulse" 
-                                                                style={{ background: '#ef4444', top: '30%', left: '80%', animationDelay: '1.5s' }} 
+                                                            <div className="absolute w-5 h-5 rounded-full opacity-60 blur-md animate-pulse"
+                                                                style={{ background: '#ef4444', top: '30%', left: '80%', animationDelay: '1.5s' }}
                                                             />
                                                             {/* Center text */}
                                                             <div className="absolute inset-0 flex items-center justify-center">

@@ -1374,8 +1374,8 @@ This report serves as documentation of [brief description of what this documents
 
 End of Report.
 
-At the very end, on a new line, add:
-PET_NAME: [the pet's name if mentioned, or "no name provided"]`,
+At the very end, on a new line, add exactly:
+PET_NAME: [write the actual pet name here, or write the word "none" if no pet name was mentioned - nothing else]`,
                 model: "gpt-4o-mini"
             });
 
@@ -1430,8 +1430,8 @@ This report serves as documentation of communication and recommended actions reg
 
 End of Report.
 
-At the very end, on a new line, add:
-PET_NAME: [the pet's name if mentioned, or "no name provided"]`,
+At the very end, on a new line, add exactly:
+PET_NAME: [write the actual pet name here, or write the word "none" if no pet name was mentioned - nothing else]`,
                 model: "gpt-4o-mini"
             });
 
@@ -1454,7 +1454,9 @@ PET_NAME: [the pet's name if mentioned, or "no name provided"]`,
             if (petNameMatch && petNameMatch[1]) {
                 let extractedName = petNameMatch[1].trim();
                 extractedName = extractedName.replace(/\*\*/g, '').replace(/\*/g, '').trim();
-                if (extractedName.toLowerCase() !== 'no name provided') {
+                // Only set petName if it's an actual name (not placeholder text)
+                const lowerName = extractedName.toLowerCase();
+                if (lowerName !== 'no name provided' && lowerName !== 'none' && !lowerName.includes('[') && !lowerName.includes(']')) {
                     petName = extractedName;
                 }
                 report = report.replace(/PET_NAME:\s*.+?(?:\n|$)/i, '').trim();
