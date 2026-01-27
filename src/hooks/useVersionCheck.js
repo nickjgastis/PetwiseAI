@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const CHECK_INTERVAL = 60000; // Check every 60 seconds
+const CHECK_INTERVAL = 60000; // Check every 60 seconds for new deployments
 
 export const useVersionCheck = () => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
