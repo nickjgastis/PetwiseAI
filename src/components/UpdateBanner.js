@@ -12,7 +12,7 @@ const UpdateBanner = () => {
       bottom: '20px',
       left: '50%',
       transform: 'translateX(-50%)',
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#3369bd',
       color: '#fff',
       padding: '12px 20px',
       borderRadius: '12px',
@@ -33,13 +33,12 @@ const UpdateBanner = () => {
         }
       `}</style>
       
-      <span style={{ marginRight: '8px' }}>🚀</span>
       <span>New update available!</span>
       
       <button
         onClick={refresh}
         style={{
-          backgroundColor: '#6366f1',
+          backgroundColor: '#5cccf0',
           color: '#fff',
           border: 'none',
           padding: '8px 16px',
@@ -49,8 +48,8 @@ const UpdateBanner = () => {
           fontSize: '13px',
           transition: 'background-color 0.2s'
         }}
-        onMouseOver={(e) => e.target.style.backgroundColor = '#4f46e5'}
-        onMouseOut={(e) => e.target.style.backgroundColor = '#6366f1'}
+        onMouseOver={(e) => e.target.style.backgroundColor = '#4ab8dc'}
+        onMouseOut={(e) => e.target.style.backgroundColor = '#5cccf0'}
       >
         Refresh
       </button>
@@ -59,7 +58,7 @@ const UpdateBanner = () => {
         onClick={dismiss}
         style={{
           backgroundColor: 'transparent',
-          color: '#888',
+          color: 'rgba(255,255,255,0.7)',
           border: 'none',
           padding: '4px 8px',
           cursor: 'pointer',
