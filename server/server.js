@@ -1649,7 +1649,7 @@ Here is the output format:
   USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Physical Exam**
-  NOTE: This section is ONLY for what the VET observed/found during examination - NOT owner reports
+  NOTE: This section is ONLY for what the VET observed/found during examination - NOT owner reports.  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
   DO NOT repeat anything already mentioned in History - if owner reported it, it stays in History only
   IMPORTANT: If vet mentioned a finding for any system below, REPLACE the default entirely - never keep both
   [ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]

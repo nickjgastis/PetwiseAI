@@ -6,6 +6,7 @@ import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
 import Navbar from './components/Navbar';
 import InstallPrompt from './components/InstallPrompt';
+import UpdateBanner from './components/UpdateBanner';
 import { supabase } from './supabaseClient';
 import "./styles/global.css";
 
@@ -131,6 +132,7 @@ const AppContent = () => {
     <div>
       {!hideNavbar && <Navbar />}
       <AppRoutes />
+      <UpdateBanner />
     </div>
   );
 };
