@@ -1712,6 +1712,17 @@ Masses:
   [Each medication on its own line with dose, route, frequency]
   [Each vaccine on its own line]
   [Each procedure on its own line]
+  
+  IF NO TREATMENTS WERE MENTIONED IN THE TRANSCRIPT:
+  Write "Suggested Treatments:" and list the 3 most common/appropriate treatment drugs for the diagnosis with standard doses:
+  Example for acute gastroenteritis:
+**Treatment:**
+
+**Suggested Treatments:**
+  Maropitant (Cerenia) 1 mg/kg SQ q24h
+  Lactated Ringer's Solution 10-20 mL/kg SQ
+  Metronidazole 10-15 mg/kg PO BID
+  
   USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Monitoring:**
