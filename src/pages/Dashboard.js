@@ -700,7 +700,9 @@ const Dashboard = () => {
             
             if (error) {
                 // PGRST116 = no rows found, also handle 406 status (Not Acceptable = no rows for .single())
-                const isNoRowsError = error.code === 'PGRST116' || error.message?.includes('JSON object requested') || error.details?.includes('0 rows');
+                console.log('Supabase error:', JSON.stringify(error));
+                const isNoRowsError = error.code === 'PGRST116' || error.message?.includes('JSON object requested') || error.details?.includes('0 rows') || error.code === '406';
+                console.log('isNoRowsError:', isNoRowsError);
                 if (isNoRowsError) {
                     // User doesn't exist - try to create
                     if (!user.email) {
@@ -725,7 +727,8 @@ const Dashboard = () => {
 
                     if (createError) {
                         // Handle race condition - App.js might have created user already
-                        if (createError.code === '23505') {
+                        console.log('Create error:', JSON.stringify(createError));
+                        if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.message?.includes('unique constraint')) {
                             // Fetch the existing user
                             const { data: existingUser, error: fetchError } = await supabase
                                 .from('users')
@@ -733,7 +736,11 @@ const Dashboard = () => {
                                 .eq('auth0_user_id', user.sub)
                                 .single();
                             
-                            if (fetchError) throw fetchError;
+                            if (fetchError) {
+                                console.log('Fetch existing user error:', JSON.stringify(fetchError));
+                                throw fetchError;
+                            }
+                            console.log('Fetched existing user:', existingUser?.email);
                             userData = existingUser;
                             
                             // Update email if missing (App.js doesn't capture email)
