@@ -699,7 +699,9 @@ const Dashboard = () => {
             let userData = data;
             
             if (error) {
-                if (error.code === 'PGRST116') {
+                // PGRST116 = no rows found, also handle 406 status (Not Acceptable = no rows for .single())
+                const isNoRowsError = error.code === 'PGRST116' || error.message?.includes('JSON object requested') || error.details?.includes('0 rows');
+                if (isNoRowsError) {
                     // User doesn't exist - try to create
                     if (!user.email) {
                         console.error('No email provided from Auth0');
@@ -750,7 +752,7 @@ const Dashboard = () => {
                     }
                 } else {
                     // Add retry for other errors
-                    console.error('Error fetching user data:', error);
+                    console.error('Error fetching user data:', error, 'Code:', error.code, 'Message:', error.message);
                     setTimeout(() => checkSubscription(), 2000);
                     return;
                 }
