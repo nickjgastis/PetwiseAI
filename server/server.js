@@ -1504,11 +1504,18 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
         CRITICAL: You MUST process ANY input provided, even if it's just a few words or a short note. NEVER refuse to process input or ask for more information. Work with whatever is given.
         
         Your job:
-        - Carefully capture every clinically relevant detail from the input (whether it's a full transcript, short notes, or just keywords).
+        - Carefully capture EVERY detail from the input (whether it's a full transcript, short notes, or just keywords).
+        - CRITICAL: Include ALL history and owner-reported information - do not omit ANY details, no matter how minor they seem.
+        - Every symptom, timeline, medication, diet change, behavioral observation, and background detail MUST be extracted.
         - Organize information under the headings below.
         - Do NOT interpret, diagnose, summarize, or add recommendations.
         - Do NOT upgrade or strengthen what was said (no extra certainty).
         - If the input is brief (e.g., "pancreatitis patient"), still extract it and categorize it appropriately.
+        
+        CRITICAL - MEDICAL TERMINOLOGY CONVERSION:
+        - Convert ALL layman/common terms to professional veterinary medical terminology as you extract.
+        - Examples: "throwing up" → "vomiting/emesis", "pooping" → "defecating", "peeing" → "urinating", "belly" → "abdomen", "eating less" → "hyporexia", "not eating" → "anorexia", "drinking a lot" → "polydipsia", "peeing a lot" → "polyuria", "tired/sleepy" → "lethargy", "lump" → "mass", "swelling" → "edema", "red" → "erythematous", "itchy" → "pruritic", "runny nose" → "nasal discharge", "eye gunk" → "ocular discharge".
+        - This applies to EVERY section below - always use medical terminology, never layman terms.
         
         Use exactly these headings:
         - PATIENT_IDENTIFICATION
@@ -1537,6 +1544,7 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
         Within each heading:
         - Use bullet points starting with "- ".
         - Each bullet should reflect a single fact or statement from the transcript.
+        - ALWAYS convert layman terms to medical terminology in every bullet point.
         - Clearly tag who said it when relevant:
           - Start owner statements with "Owner reports:".
           - Start veterinarian statements with "Vet notes:", "Vet says:", or "Vet asks:" as appropriate.
@@ -1562,11 +1570,12 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
         
         MASSES AND FINDINGS:
         - For each mass mentioned, capture:
-          - Location.
+          - Location (use anatomical terminology).
           - Size if given.
-          - How it feels if described (for example, "feels like a fatty lump").
+          - How it feels if described (use medical terms: "soft, fluctuant" not "squishy"; "firm, well-circumscribed" not "hard lump").
           - Who described it (owner or vet).
         - Do NOT label a mass as a tumor, cancer, or lymphoma unless those exact words were used, and respect who said them.
+        - Use medical terminology: "mass" not "lump", "subcutaneous" not "under the skin".
         
         DIAGNOSTIC_IMPRESSIONS_AND_DIAGNOSES:
         - Only include items here if:
@@ -1584,8 +1593,11 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
         GENERAL BEHAVIOR:
         - This is NOT a conversation. Do not add any commentary, explanation, or reasoning.
         - Do NOT summarize; list the specific statements.
-        - Do NOT leave out anything medically relevant.
-        - If something important is mentioned but unclear, capture it as it was said and mark it as unclear (for example, "Owner reports: 'he used to do seven' (unclear context)").`,
+        - ABSOLUTELY DO NOT leave out ANY information from the transcript - capture EVERYTHING.
+        - History is especially critical: every symptom mentioned, every timeline, every past condition, every medication, every diet detail, every behavioral change MUST be included.
+        - When in doubt, INCLUDE IT. It is better to include too much than to omit anything.
+        - If something important is mentioned but unclear, capture it as it was said and mark it as unclear (for example, "Owner reports: 'he used to do seven' (unclear context)").
+        - REMINDER: Every single extraction must use professional veterinary medical terminology - convert all layman terms as you extract.`,
             model: "gpt-4o-mini"
         });
 
@@ -1597,181 +1609,187 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
             instructions: `Take the SOAP information given to you and slot it into a properly formatted SOAP.
 
 CRITICAL - PET NAME EXTRACTION (DO THIS FIRST):
-- Look for "Pet Name:" in the PATIENT_IDENTIFICATION section
-- At the VERY END of your output, you MUST include: PET_NAME: [the pet's name]
-- If a name was provided (anything other than "not mentioned"), use that exact name
-- If no name was found, output: PET_NAME: no name provided
-- This line MUST appear as the last line of your response, after all SOAP content
+Look for "Pet Name:" in the PATIENT_IDENTIFICATION section
+At the VERY END of your output, you MUST include: PET_NAME: [the pet's name]
+If a name was provided (anything other than "not mentioned"), use that exact name
+If no name was found, output: PET_NAME: no name provided
+This line MUST appear as the last line of your response, after all SOAP content
 
 CRITICAL RULES:
-- Be THOROUGH - every single piece of information from the transcript MUST be included
-- NOTHING should be left out - if it was mentioned, it goes in the SOAP
-- DO NOT use dashes or bullet points - each line should be indented with spaces below headers
-- ONE point per line - never combine multiple findings into a single line
-- Each line should be a complete, descriptive sentence
-- All section headers must be bolded using **Header** markdown syntax
-- Use the defaults shown below ONLY if that system/vital was not mentioned
-- DO NOT include Weight in Physical Exam unless weight was specifically mentioned in the transcript
+Be THOROUGH - every single piece of information from the transcript MUST be included
+NOTHING should be left out - if it was mentioned, it goes in the SOAP
+DO NOT use dashes or bullet points - each line should start from the left margin
+ONE point per line - never combine multiple findings into a single line
+Each line should be a complete, descriptive sentence
+All section headers must be bolded using **Header** markdown syntax
+Use the defaults shown below ONLY if that system/vital was not mentioned
+DO NOT include Weight in Physical Exam unless weight was specifically mentioned in the transcript
 
 ABSOLUTELY NO REPETITION - THIS IS CRITICAL:
-- NEVER repeat the same information in multiple sections
-- Each piece of information appears ONCE and ONLY ONCE in the entire SOAP
-- Presenting Complaint vs History: Presenting Complaint is ONLY the reason for visit (chief complaint). History is everything else the owner reported (symptoms, timeline, past conditions). If something is in Presenting Complaint, it CANNOT appear in History.
-- History vs Physical Exam: History contains what the OWNER reported/observed at home. Physical Exam contains what the VET found during examination. Owner observations go in History, vet findings go in Physical Exam - never both.
-- If you mention a finding in one section, DO NOT mention it again anywhere else in the SOAP
+NEVER repeat the same information in multiple sections
+Each piece of information appears ONCE and ONLY ONCE in the entire SOAP
+Presenting Complaint vs History: Presenting Complaint is ONLY the reason for visit (chief complaint). History is everything else the owner reported (symptoms, timeline, past conditions). If something is in Presenting Complaint, it CANNOT appear in History.
+History vs Physical Exam: History contains what the OWNER reported/observed at home. Physical Exam contains what the VET found during examination. Owner observations go in History, vet findings go in Physical Exam - never both.
+If you mention a finding in one section, DO NOT mention it again anywhere else in the SOAP
 
 PHYSICAL EXAM DEFAULTS - REPLACEMENT RULE:
-- The defaults shown (e.g., "Eyes: Clear, no discharge") are ONLY used when that body system was NOT mentioned at all
-- If the vet mentioned ANY finding for a body system, COMPLETELY REPLACE the default with the actual finding
-- NEVER keep the default AND add the actual finding - it's one or the other
-- Example: If vet says "eyes are red", write "Eyes: Erythema observed" - NOT "Eyes: Clear, no discharge. Erythema observed."
+The defaults shown (e.g., "Eyes: Clear, no discharge") are ONLY used when that body system was NOT mentioned at all
+If the vet mentioned ANY finding for a body system, COMPLETELY REPLACE the default with the actual finding
+NEVER keep the default AND add the actual finding - it's one or the other
+Example: If vet says "eyes are red", write "Eyes: Erythema observed" - NOT "Eyes: Clear, no discharge. Erythema observed."
 
 Here is the output format:
 
 **Subjective**
 
 **Presenting Complaint:**
-  [Pet name, species, breed, age, and THE SINGLE PRIMARY REASON for visit - this is ONLY the chief complaint]
-  DO NOT include symptoms, history, or details here - just the main reason they came in
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
+This should be ONE LINE ONLY containing all presenting complaints in a single sentence using professional medical terminology.
+NEVER include history details here - history goes in the History section only.
+This is ONLY the chief complaint/reason for visit, not symptoms, timeline, or background.
+If the presenting complaint is brief (like "vomiting"), expand it with proper medical terminology but keep it to one line.
+If "None" or "No Findings", say "No presenting complaints found".
 
 **History:**
-  [Each history item on its own line - one fact per line]
-  [Write as direct clinical statements using professional medical terminology]
-  [NEVER use phrases like "Owner reports", "Owner states", "Stated by owner", "Per owner", "Client reports"]
-  [Just state the medical facts directly:]
-  Example format:
-    Vomiting for 3 days
-    Decreased appetite since onset
-    No diarrhea noted
-    Previously treated for similar episode 6 months ago
-    Currently on Hill's i/d diet
-    No current medications
-  DO NOT repeat the presenting complaint here
+EACH HISTORY ITEM MUST BE ON ITS OWN LINE - point form, not paragraph style.
+CRITICAL: Include ALL history mentioned in the transcript - do not omit any details.
+CRITICAL: USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - NEVER use layman/common terms.
+Convert ANY layman terms to proper medical terminology (e.g., "throwing up" → "emesis/vomiting", "pooping" → "defecating", "peeing" → "urinating", "eating less" → "hyporexia", "not eating" → "anorexia", "drinking a lot" → "polydipsia", "tired" → "lethargy").
+NEVER include physical exam findings here - those go in Physical Exam section only.
+History is ONLY what the owner reported, not what the vet observed during examination.
+NEVER use phrases like "Owner reports", "Owner states", "Stated by owner", "Per owner", "Client reports" - just state the medical facts directly.
+DO NOT repeat the presenting complaint here.
+Each line should be a single clinical fact with proper medical terminology.
 
 **Objective**
 
 **Vital Signs:**
-  Temperature: WNL
-  Pulse: WNL
-  Respiratory Rate: WNL
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+Temperature: WNL
+Pulse: WNL
+Respiratory Rate: WNL
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Physical Exam**
-  NOTE: This section is ONLY for what the VET observed/found during examination - NOT owner reports.  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
-  DO NOT repeat anything already mentioned in History - if owner reported it, it stays in History only
-  IMPORTANT: If vet mentioned a finding for any system below, REPLACE the default entirely - never keep both
-  [ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
-  General: Bright, alert, responsive
-  Body Condition Score: 5/9
-  Hydration: Euhydrated
-  Mucous Membranes: Pink, moist
-  CRT: <2 seconds
-  Cardiovascular: Heart sounds normal, no murmurs detected, regular sinus rhythm
-  Respiratory: Normal bronchovesicular sounds
-  Abdomen: Soft, non-painful abdomen on palpation
-  Musculoskeletal: Ambulatory, no lameness observed
-  Neurologic: Appropriate mentation, normal gait
-  Integumentary: No lesions, normal coat condition, no ectoparasites observed
-  Lymph Nodes: No lymphadenopathy
-  Eyes: Clear, no discharge
-  Ears: Clean, no debris or odor
-  Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
-  Nose: No abnormal findings
-  Throat: No abnormal findings
-  Urogenital: Normal
-  
-Masses:
-  [Only include masses the VET examined - with location, size, consistency from vet's exam]
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
+CRITICAL: USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - NEVER use layman/common terms.
+Convert ANY layman terms to proper medical terminology (e.g., "belly" → "abdomen", "throwing up" → "emesis", "lump" → "mass", "swelling" → "edema", "red" → "erythematous", "sore" → "painful on palpation").
+NOTE: This section is ONLY for what the VET observed/found during examination - NOT owner reports.
+DO NOT repeat anything already mentioned in History - if owner reported it, it stays in History only.
+IMPORTANT: If vet mentioned a finding for any system below, REPLACE the default entirely - never keep both.
+[ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
+General: Bright, alert, responsive
+Body Condition Score: 5/9
+Hydration: Euhydrated
+Mucous Membranes: Pink, moist
+CRT: <2 seconds
+Cardiovascular: Heart sounds normal, no murmurs detected, regular sinus rhythm
+Respiratory: Normal bronchovesicular sounds
+Abdomen: Soft, non-painful abdomen on palpation
+Musculoskeletal: Ambulatory, no lameness observed
+Neurologic: Appropriate mentation, normal gait
+Integumentary: No lesions, normal coat condition, no ectoparasites observed
+Lymph Nodes: No lymphadenopathy
+Eyes: Clear, no discharge
+Ears: Clean, no debris or odor
+Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
+Nose: No abnormal findings
+Throat: No abnormal findings
+Urogenital: Normal
+Masses: No masses observed
 
 **Diagnostics Performed:**
-  [Each test and its results on its own line, or "None performed"]
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+[Each test and its results on its own line, or "None performed"]
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Assessment**
 
 **Assessment:**
-  [Each statement on its own line - concise professional medical sentences]
-  [Use formal veterinary medical terminology exclusively - no layman terms]
-  [Summarize key clinical findings and their significance]
-  [State clinical impressions as declarative medical statements]
-  [Include differentials only if directly supported by findings]
-  [Do NOT restate the Plan or reference future actions here]
-  Example format:
-    Patient presents with acute onset emesis and hyporexia of 72 hours duration.
-    Physical examination reveals mild dehydration and epigastric discomfort on palpation.
-    Clinical presentation consistent with acute gastroenteritis.
-
+EACH ASSESSMENT ITEM MUST BE ON ITS OWN LINE - point form, NOT paragraph style.
+ONE clinical finding or observation per line.
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY (this is critical).
+Include clinical relevance and diagnostic reasoning.
+Integrate physical exam and diagnostic findings.
+Discuss lab results if mentioned.
+Do NOT restate the Plan or reference future actions here.
+Do NOT write long paragraphs - keep each point as a single concise line.
 
 **Diagnosis:**
-  [Each diagnosis on its own line with DDx directly underneath]
-  [Format: Diagnosis name, then DDx: comma-separated differentials for that specific diagnosis]
-  [Use formal veterinary medical terminology only]
-  Example format:
-    Acute Gastroenteritis
-    DDx: Dietary indiscretion, Infectious enteritis (viral/bacterial), Parasitic infections (e.g., giardiasis)
+[Each diagnosis on its own line with DDx directly underneath]
+[Format: Diagnosis name, then DDx: comma-separated differentials for that specific diagnosis]
+[Use formal veterinary medical terminology only]
+Example format:
+Acute Gastroenteritis
+DDx: Dietary indiscretion, Infectious enteritis (viral/bacterial), Parasitic infections (e.g., giardiasis)
 
-    Dehydration due to Vomiting and Diarrhea
-    DDx: Acute kidney injury secondary to dehydration, Electrolyte imbalances
+Dehydration due to Vomiting and Diarrhea
+DDx: Acute kidney injury secondary to dehydration, Electrolyte imbalances
 
 **Plan:**
 
 **Treatment:**
-  [Each medication on its own line with dose, route, frequency]
-  [Each vaccine on its own line]
-  [Each procedure on its own line]
-  
-  IF NO TREATMENTS WERE MENTIONED IN THE TRANSCRIPT:
-  Write "Suggested Treatments:" and list the 3 most common/appropriate treatment drugs for the diagnosis with standard doses:
-  Example for acute gastroenteritis:
-**Treatment:**
+[Each medication on its own line with dose, route, frequency]
+[Each vaccine on its own line]
+[Each procedure on its own line]
+
+IF NO TREATMENTS WERE MENTIONED IN THE TRANSCRIPT:
+Write "Suggested Treatments:" organized by diagnosis. One drug/treatment per line, no explanations, just list them.
+Format:
 
 **Suggested Treatments:**
-  Maropitant (Cerenia) 1 mg/kg SQ q24h
-  Lactated Ringer's Solution 10-20 mL/kg SQ
-  Metronidazole 10-15 mg/kg PO BID
-  
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+
+[Diagnosis Name]:
+Drug Name Dose Route Freq Duration
+Drug Name Dose Route Freq Duration
+
+[Another Diagnosis Name]:
+Drug Name Dose Route Freq Duration
+Drug Name Dose Route Freq Duration
+
+Example:
+
+Acute Gastroenteritis:
+Maropitant (Cerenia) 1 mg/kg SQ q24h x 3 days
+Lactated Ringer's Solution 10-20 mL/kg SQ PRN
+Metronidazole 10-15 mg/kg PO BID x 7 days
+
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
 
 **Monitoring:**
-  [Each monitoring instruction on its own line]
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+[Each monitoring instruction on its own line]
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Client Communication:**
-  REFERENCE THE TREATMENT SECTION ABOVE - pull the exact medications/doses/routes from there and incorporate into client communication.
-  
-  FORMAT EACH LINE AS: "Discussed [specific treatment/finding] - [clinical rationale/what was explained]"
-  
-  MANDATORY - For EACH treatment given, document what was explained to client:
-  - Injections given: "Discussed Maropitant (Cerenia) 1 mg/kg SQ administered for antiemetic effect, duration of action 24 hours"
-  - IV/SQ fluids: "Discussed administration of 150 mL LRS SQ for rehydration support, expect subcutaneous swelling to absorb over 6-8 hours"
-  - Oral medications sent home: "Discussed Metronidazole 15 mg/kg PO BID x 7 days for GI bacterial overgrowth, give with food to reduce GI upset"
-  - Pain management: "Discussed Meloxicam 0.1 mg/kg PO SID administered for analgesia and anti-inflammatory effect"
-  - Antibiotics: "Discussed Convenia 8 mg/kg SQ injection providing 14 days antibiotic coverage for skin infection"
-  
-  ALSO INCLUDE when discussed:
-  - Specific diagnostic findings explained: "Reviewed radiographs with owner showing intestinal gas pattern consistent with ileus"
-  - Lab result discussions: "Discussed elevated ALT (245 U/L) indicating hepatocellular injury, recommended recheck in 2 weeks"
-  - Prognosis with specifics: "Discussed guarded prognosis given BUN 85 mg/dL and creatinine 4.2 mg/dL indicating Stage 3 CKD"
-  - Declined treatments: "Owner declined recommended abdominal ultrasound due to financial constraints"
-  - Cost estimates discussed: "Discussed estimate for dental prophylaxis with extractions ($800-1200)"
-  
-  NEVER write vague statements like:
-  - "Discussed treatment plan" ❌
-  - "Explained medications" ❌  
-  - "Reviewed findings with owner" ❌
-  - "Discussed prognosis" ❌
-  
-  ALWAYS specify the WHAT, the DOSE/AMOUNT, and the WHY.
+REFERENCE THE TREATMENT SECTION ABOVE - pull the exact medications/doses/routes from there and incorporate into client communication.
+
+FORMAT EACH LINE AS: "Discussed [specific treatment/finding] - [clinical rationale/what was explained]"
+
+MANDATORY - For EACH treatment given, document what was explained to client:
+Injections given: "Discussed Maropitant (Cerenia) 1 mg/kg SQ administered for antiemetic effect, duration of action 24 hours"
+IV/SQ fluids: "Discussed administration of 150 mL LRS SQ for rehydration support, expect subcutaneous swelling to absorb over 6-8 hours"
+Oral medications sent home: "Discussed Metronidazole 15 mg/kg PO BID x 7 days for GI bacterial overgrowth, give with food to reduce GI upset"
+Pain management: "Discussed Meloxicam 0.1 mg/kg PO SID administered for analgesia and anti-inflammatory effect"
+Antibiotics: "Discussed Convenia 8 mg/kg SQ injection providing 14 days antibiotic coverage for skin infection"
+
+ALSO INCLUDE when discussed:
+Specific diagnostic findings explained: "Reviewed radiographs with owner showing intestinal gas pattern consistent with ileus"
+Lab result discussions: "Discussed elevated ALT (245 U/L) indicating hepatocellular injury, recommended recheck in 2 weeks"
+Prognosis with specifics: "Discussed guarded prognosis given BUN 85 mg/dL and creatinine 4.2 mg/dL indicating Stage 3 CKD"
+Declined treatments: "Owner declined recommended abdominal ultrasound due to financial constraints"
+Cost estimates discussed: "Discussed estimate for dental prophylaxis with extractions ($800-1200)"
+
+NEVER write vague statements like:
+"Discussed treatment plan" ❌
+"Explained medications" ❌
+"Reviewed findings with owner" ❌
+"Discussed prognosis" ❌
+
+ALWAYS specify the WHAT, the DOSE/AMOUNT, and the WHY.
 
 **Recommended Diagnostics:**
-  [Each recommended test on its own line, or "None recommended"]
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+[Each recommended test on its own line, or "None recommended"]
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Follow-up:**
-  [Follow-up instructions]
-  USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+[Follow-up instructions]
+USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,

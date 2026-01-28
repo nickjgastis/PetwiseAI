@@ -175,14 +175,10 @@ function ctaButton(text, url) {
  * Welcome email - sent on account creation
  */
 function generateWelcomeEmail(userName) {
-    const firstName = userName?.split(' ')[0] || 'there';
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
             Welcome to Petwise! 🐾
         </h1>
-        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${firstName},
-        </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             We're thrilled to have you join the Petwise community! You've just taken the first step toward 
             streamlining your veterinary documentation.
@@ -205,7 +201,7 @@ function generateWelcomeEmail(userName) {
  * Trial activated email - sent when trial starts
  */
 function generateTrialActivatedEmail(userName, trialEndDate) {
-    const firstName = userName?.split(' ')[0] || 'there';
+    const displayName = userName ? `Dr. ${userName}` : 'there';
     const endDateFormatted = new Date(trialEndDate).toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -218,7 +214,7 @@ function generateTrialActivatedEmail(userName, trialEndDate) {
             Your Trial Has Started! 🎉
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${firstName},
+            Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Congratulations on starting your 30-day free trial! You now have full access to all of Petwise's 
@@ -249,7 +245,7 @@ function generateTrialActivatedEmail(userName, trialEndDate) {
  * Subscription confirmed email - sent on paid plan purchase
  */
 function generateSubscriptionConfirmedEmail(userName, planInterval, nextBillingDate) {
-    const firstName = userName?.split(' ')[0] || 'there';
+    const displayName = userName ? `Dr. ${userName}` : 'there';
     const planName = planInterval === 'yearly' ? 'Annual' : 'Monthly';
     const billingDateFormatted = nextBillingDate 
         ? new Date(nextBillingDate).toLocaleDateString('en-US', { 
@@ -264,7 +260,7 @@ function generateSubscriptionConfirmedEmail(userName, planInterval, nextBillingD
             Welcome to Petwise Pro! 🚀
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${firstName},
+            Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Thank you for subscribing to Petwise! Your <strong>${planName} Plan</strong> is now active, and you have 
@@ -279,7 +275,7 @@ function generateSubscriptionConfirmedEmail(userName, planInterval, nextBillingD
             </p>
         </div>
         <div style="text-align: center;">
-            ${ctaButton('Go to Dashboard', `${APP_URL}/dashboard`)}
+            ${ctaButton('Get Started', `${APP_URL}/dashboard`)}
         </div>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
             You can manage your subscription anytime from your account settings. We're here if you need anything!
@@ -292,7 +288,7 @@ function generateSubscriptionConfirmedEmail(userName, planInterval, nextBillingD
  * Trial midway reminder - sent at day 15
  */
 function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
-    const firstName = userName?.split(' ')[0] || 'there';
+    const displayName = userName ? `Dr. ${userName}` : 'there';
     const endDateFormatted = new Date(trialEndDate).toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -305,7 +301,7 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
             How's Your Trial Going? 💬
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${firstName},
+            Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             You're halfway through your Petwise trial! We hope you're enjoying the time savings and 
@@ -339,7 +335,7 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
  * Trial ending reminder - sent 3 days before expiry
  */
 function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
-    const firstName = userName?.split(' ')[0] || 'there';
+    const displayName = userName ? `Dr. ${userName}` : 'there';
     const endDateFormatted = new Date(trialEndDate).toLocaleDateString('en-US', {
         weekday: 'long',
         year: 'numeric',
@@ -352,7 +348,7 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
             Your Trial Ends Soon ⏳
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${firstName},
+            Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Just a friendly heads up — your Petwise trial ends in <strong>${daysLeft} days</strong> 
