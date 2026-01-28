@@ -14,6 +14,9 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
 const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
+const emailRouter = require('./routes/emailRoutes');
+const cronRouter = require('./routes/cronRoutes');
+const { sendTrialActivatedEmail, sendSubscriptionConfirmedEmail } = require('./utils/emailService');
 // REMOVED: quicksoapTranscribe - using client-side chunking with /api/whisper-proxy instead
 const { correctTranscript } = require('./utils/vetCorrector');
 const { runMedicalCleanup } = require('./utils/medicalCleanup');
@@ -164,6 +167,12 @@ app.use(cors({
 
 // Mount student routes
 app.use('/student', studentRouter);
+app.use('/email', emailRouter);
+app.use('/cron', cronRouter);
+
+// Make supabase available to routes via app.locals
+app.locals.supabase = supabase;
+
 // REMOVED: /api/quicksoap route - using client-side chunking with /api/whisper-proxy instead
 
 // ================ CONSTANTS ================
@@ -2068,6 +2077,22 @@ app.post('/webhook', async (req, res) => {
                 }
 
                 console.log('Update successful:', data);
+
+                // Send subscription confirmation email (async, don't block webhook response)
+                if (data && data[0] && data[0].email) {
+                    sendSubscriptionConfirmedEmail(
+                        supabase,
+                        {
+                            auth0_user_id: session.client_reference_id,
+                            email: data[0].email,
+                            nickname: data[0].nickname
+                        },
+                        subscriptionInterval,
+                        new Date(subscription.current_period_end * 1000).toISOString()
+                    ).catch(err => {
+                        console.error('Failed to send subscription confirmation email:', err);
+                    });
+                }
             } catch (error) {
                 console.error('Subscription processing error:', error);
                 return res.status(500).json({ error: error.message });
@@ -2305,8 +2330,8 @@ app.post('/cancel-subscription', async (req, res) => {
 // ================ TRIAL ENDPOINT ================
 app.post('/activate-trial', async (req, res) => {
     try {
-        const { user_id, emailOptOut = false } = req.body;
-        console.log('Trial activation request:', { user_id, emailOptOut });
+        const { user_id } = req.body;
+        console.log('Trial activation request:', { user_id });
 
         if (!user_id) {
             throw new Error('user_id is required');
@@ -2322,7 +2347,7 @@ app.post('/activate-trial', async (req, res) => {
             has_used_trial: true,
             reports_used_today: 0,
             last_report_date: new Date().toISOString().split('T')[0],
-            email_opt_out: emailOptOut,
+            email_opt_out: false,
             // Clear student fields when activating trial (but preserve graduation year)
             plan_label: null,
             student_school_email: null,
@@ -2344,6 +2369,18 @@ app.post('/activate-trial', async (req, res) => {
         }
 
         console.log('Trial activation successful:', data);
+
+        // Send trial activation email (async, don't block response)
+        if (data && data[0] && data[0].email) {
+            sendTrialActivatedEmail(supabase, {
+                auth0_user_id: user_id,
+                email: data[0].email,
+                nickname: data[0].nickname
+            }, trialEndDate.toISOString()).catch(err => {
+                console.error('Failed to send trial activation email:', err);
+            });
+        }
+
         res.json(data);
     } catch (error) {
         console.error('Trial activation error:', error);

@@ -105,7 +105,8 @@ const AppContent = () => {
             .from('users')
             .insert([{
               auth0_user_id: user.sub,
-              nickname: user.nickname // Send the nickname from Auth0
+              nickname: user.nickname, // Send the nickname from Auth0
+              email_opt_out: false
             }]);
 
           // Handle potential insert error

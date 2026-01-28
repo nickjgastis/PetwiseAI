@@ -693,13 +693,14 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, welcome_email_sent_at')
                 .eq('auth0_user_id', user.sub)
                 .single();
-
+            let userData = data;
+            
             if (error) {
                 if (error.code === 'PGRST116') {
-                    // Create new user - ensure email is captured
+                    // User doesn't exist - try to create
                     if (!user.email) {
                         console.error('No email provided from Auth0');
                         throw new Error('Email is required for registration');
@@ -709,66 +710,112 @@ const Dashboard = () => {
                         .from('users')
                         .insert([{
                             auth0_user_id: user.sub,
-                            email: user.email,  // This is already being captured
+                            email: user.email,
                             nickname: user.nickname || user.name,
                             subscription_status: 'inactive',
                             has_accepted_terms: false,
                             dvm_name: null,
-                            created_at: new Date().toISOString() // Add creation timestamp
+                            created_at: new Date().toISOString(),
+                            email_opt_out: false
                         }])
                         .select()
                         .single();
 
-                    if (createError) throw createError;
-                    setHasAcceptedTerms(false);
-                    setNeedsWelcome(true);
-                    setUserData(newUser);
+                    if (createError) {
+                        // Handle race condition - App.js might have created user already
+                        if (createError.code === '23505') {
+                            // Fetch the existing user
+                            const { data: existingUser, error: fetchError } = await supabase
+                                .from('users')
+                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, welcome_email_sent_at')
+                                .eq('auth0_user_id', user.sub)
+                                .single();
+                            
+                            if (fetchError) throw fetchError;
+                            userData = existingUser;
+                            
+                            // Update email if missing (App.js doesn't capture email)
+                            if (user.email && !existingUser.email) {
+                                await supabase
+                                    .from('users')
+                                    .update({ email: user.email, nickname: user.nickname || user.name })
+                                    .eq('auth0_user_id', user.sub);
+                                userData.email = user.email;
+                            }
+                        } else {
+                            throw createError;
+                        }
+                    } else {
+                        userData = newUser;
+                    }
                 } else {
                     // Add retry for other errors
                     console.error('Error fetching user data:', error);
                     setTimeout(() => checkSubscription(), 2000);
                     return;
                 }
-            } else {
-                // Add email check and update
-                if (user.email && data.email !== user.email) {
-                    const { error: updateError } = await supabase
-                        .from('users')
-                        .update({ email: user.email })
-                        .eq('auth0_user_id', user.sub);
+            }
+            
+            // Send welcome email if not sent yet (works for both new and existing users)
+            // Using sessionStorage to prevent double sends in React Strict Mode
+            const welcomeEmailKey = `welcome_email_sent_${user.sub}`;
+            const alreadySentThisSession = sessionStorage.getItem(welcomeEmailKey);
+            
+            if (userData && user.email && !userData.welcome_email_sent_at && !alreadySentThisSession) {
+                sessionStorage.setItem(welcomeEmailKey, 'true');
+                console.log('Sending welcome email to:', user.email);
+                fetch(`${API_URL}/email/welcome`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        auth0_user_id: user.sub,
+                        email: user.email,
+                        nickname: user.nickname || user.name
+                    })
+                })
+                .then(res => res.json())
+                .then(result => console.log('Welcome email response:', result))
+                .catch(err => console.error('Welcome email error:', err));
+            }
+            
+            // Update email if changed
+            if (user.email && userData.email !== user.email) {
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({ email: user.email })
+                    .eq('auth0_user_id', user.sub);
 
-                    if (updateError) console.error('Error updating email:', updateError);
-                    data.email = user.email; // Update local data
-                }
+                if (updateError) console.error('Error updating email:', updateError);
+                userData.email = user.email;
+            }
 
-                // Add retry for pending states
-                if (data.subscription_status === 'pending' || data.subscription_status === 'incomplete') {
-                    setTimeout(() => checkSubscription(), 2000);
-                    return;
-                }
+            // Add retry for pending states
+            if (userData.subscription_status === 'pending' || userData.subscription_status === 'incomplete') {
+                setTimeout(() => checkSubscription(), 2000);
+                return;
+            }
 
-                setHasAcceptedTerms(data.has_accepted_terms);
-                setSubscriptionStatus(data.subscription_status);
+            setHasAcceptedTerms(userData.has_accepted_terms);
+            setSubscriptionStatus(userData.subscription_status);
 
-                // Check if user has active subscription OR student access OR trial
-                const hasActiveSubscription = ['active', 'past_due'].includes(data.subscription_status);
-                const hasTrial = data.subscription_status === 'active' && data.subscription_interval === 'trial';
-                const isStudentMode = data.plan_label === 'student' &&
-                    data.subscription_end_date &&
-                    new Date(data.subscription_end_date) > new Date();
+            // Check if user has active subscription OR student access OR trial
+            const hasActiveSubscription = ['active', 'past_due'].includes(userData.subscription_status);
+            const hasTrial = userData.subscription_status === 'active' && userData.subscription_interval === 'trial';
+            const isStudentMode = userData.plan_label === 'student' &&
+                userData.subscription_end_date &&
+                new Date(userData.subscription_end_date) > new Date();
 
-                setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
-                setUserData(data);
-                
-                // Onboarding is complete if:
-                // 1. has_completed_onboarding is explicitly true, OR
-                // 2. User has previously used trial (they went through flow before, just expired/canceled)
-                const hasCompletedOnboardingBefore = data.has_completed_onboarding === true || data.has_used_trial === true;
-                setHasCompletedOnboarding(hasCompletedOnboardingBefore);
+            setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
+            setUserData(userData);
+            
+            // Onboarding is complete if:
+            // 1. has_completed_onboarding is explicitly true, OR
+            // 2. User has previously used trial (they went through flow before, just expired/canceled)
+            const hasCompletedOnboardingBefore = userData.has_completed_onboarding === true || userData.has_used_trial === true;
+            setHasCompletedOnboarding(hasCompletedOnboardingBefore);
 
-                if (!data.dvm_name || data.dvm_name === null || data.dvm_name === '') {
-                    setNeedsWelcome(true);
-                }
+            if (!userData.dvm_name || userData.dvm_name === null || userData.dvm_name === '') {
+                setNeedsWelcome(true);
             }
         } catch (err) {
             console.error('Error:', err);
