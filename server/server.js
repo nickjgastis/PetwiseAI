@@ -2078,21 +2078,24 @@ app.post('/webhook', async (req, res) => {
 
                 console.log('Update successful:', data);
 
-                // Send subscription confirmation email (async, don't block webhook response)
+                // Send subscription confirmation email (wait for it to prevent serverless termination)
                 if (data && data[0] && data[0].email) {
                     console.log('Sending subscription confirmation email to:', data[0].email);
-                    sendSubscriptionConfirmedEmail(
-                        supabase,
-                        {
-                            auth0_user_id: session.client_reference_id,
-                            email: data[0].email,
-                            nickname: data[0].nickname
-                        },
-                        subscriptionInterval,
-                        new Date(subscription.current_period_end * 1000).toISOString()
-                    ).catch(err => {
+                    try {
+                        await sendSubscriptionConfirmedEmail(
+                            supabase,
+                            {
+                                auth0_user_id: session.client_reference_id,
+                                email: data[0].email,
+                                nickname: data[0].nickname
+                            },
+                            subscriptionInterval,
+                            new Date(subscription.current_period_end * 1000).toISOString()
+                        );
+                        console.log('Subscription confirmation email sent successfully');
+                    } catch (err) {
                         console.error('Failed to send subscription confirmation email:', err);
-                    });
+                    }
                 } else {
                     console.log('No email found for subscription confirmation:', data);
                 }
@@ -2373,16 +2376,19 @@ app.post('/activate-trial', async (req, res) => {
 
         console.log('Trial activation successful:', data);
 
-        // Send trial activation email (async, don't block response)
+        // Send trial activation email (wait for it before responding to prevent serverless termination)
         if (data && data[0] && data[0].email) {
             console.log('Sending trial activation email to:', data[0].email);
-            sendTrialActivatedEmail(supabase, {
-                auth0_user_id: user_id,
-                email: data[0].email,
-                nickname: data[0].nickname
-            }, trialEndDate.toISOString()).catch(err => {
+            try {
+                await sendTrialActivatedEmail(supabase, {
+                    auth0_user_id: user_id,
+                    email: data[0].email,
+                    nickname: data[0].nickname
+                }, trialEndDate.toISOString());
+                console.log('Trial activation email sent successfully');
+            } catch (err) {
                 console.error('Failed to send trial activation email:', err);
-            });
+            }
         } else {
             console.log('No email found for trial activation email:', data);
         }

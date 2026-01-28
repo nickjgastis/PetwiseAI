@@ -26,28 +26,7 @@ router.post('/welcome', async (req, res) => {
     }
 
     try {
-        // Check if welcome email was already sent
-        const { data: user, error: fetchError } = await supabase
-            .from('users')
-            .select('welcome_email_sent_at, email_opt_out')
-            .eq('auth0_user_id', auth0_user_id)
-            .single();
-
-        if (fetchError && fetchError.code !== 'PGRST116') {
-            console.error('Error fetching user:', fetchError);
-            return res.status(500).json({ error: 'Failed to fetch user' });
-        }
-
-        // Don't send if already sent
-        if (user?.welcome_email_sent_at) {
-            return res.json({ 
-                success: true, 
-                message: 'Welcome email already sent',
-                skipped: true 
-            });
-        }
-
-        // Send the welcome email
+        // Send the welcome email directly (skip database check to avoid timeout)
         const result = await sendWelcomeEmail(supabase, {
             auth0_user_id,
             email,
@@ -55,19 +34,15 @@ router.post('/welcome', async (req, res) => {
         });
 
         if (result.success) {
-            // Update the database to mark email as sent
-            await supabase
+            // Update the database to mark email as sent (fire and forget)
+            supabase
                 .from('users')
                 .update({ welcome_email_sent_at: new Date().toISOString() })
-                .eq('auth0_user_id', auth0_user_id);
+                .eq('auth0_user_id', auth0_user_id)
+                .then(() => console.log('Marked welcome email as sent'))
+                .catch(err => console.error('Failed to mark welcome email sent:', err));
 
             return res.json({ success: true, message: 'Welcome email sent' });
-        } else if (result.reason === 'opted_out') {
-            return res.json({ 
-                success: true, 
-                message: 'User opted out of emails',
-                skipped: true 
-            });
         } else {
             return res.status(500).json({ 
                 error: 'Failed to send email', 

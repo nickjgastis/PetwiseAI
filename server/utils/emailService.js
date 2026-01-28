@@ -10,6 +10,7 @@ const LOGO_URL = 'https://app.petwise.vet/PW.png';
 
 /**
  * Send an email using Resend
+ * Times out after 8 seconds to prevent serverless function timeout
  * @param {Object} options - Email options
  * @param {string} options.to - Recipient email
  * @param {string} options.subject - Email subject
@@ -19,13 +20,19 @@ const LOGO_URL = 'https://app.petwise.vet/PW.png';
  */
 async function sendEmail({ to, subject, html, text }) {
     try {
-        const { data, error } = await resend.emails.send({
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Email send timed out after 8s')), 8000)
+        );
+
+        const sendPromise = resend.emails.send({
             from: FROM_EMAIL,
             to,
             subject,
             html,
             text: text || stripHtml(html),
         });
+
+        const { data, error } = await Promise.race([sendPromise, timeoutPromise]);
 
         if (error) {
             console.error('Resend error:', error);
@@ -55,14 +62,21 @@ function stripHtml(html) {
 
 /**
  * Check if user has opted out of emails
+ * Times out after 3 seconds to prevent hanging
  */
 async function hasOptedOut(supabase, userId) {
     try {
-        const { data, error } = await supabase
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Opt-out check timed out')), 3000)
+        );
+        
+        const queryPromise = supabase
             .from('users')
             .select('email_opt_out')
             .eq('auth0_user_id', userId)
             .single();
+
+        const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
 
         if (error) {
             console.error('Error checking opt-out status:', error);
@@ -72,7 +86,7 @@ async function hasOptedOut(supabase, userId) {
         return data?.email_opt_out === true;
     } catch (err) {
         console.error('Opt-out check failed:', err);
-        return false;
+        return false; // Default to sending on timeout/error
     }
 }
 
@@ -369,11 +383,6 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
 // ============================================
 
 async function sendWelcomeEmail(supabase, user) {
-    if (await hasOptedOut(supabase, user.auth0_user_id)) {
-        console.log(`User ${user.email} has opted out of emails`);
-        return { success: false, reason: 'opted_out' };
-    }
-
     return sendEmail({
         to: user.email,
         subject: 'Welcome to Petwise! 🐾',
@@ -382,11 +391,6 @@ async function sendWelcomeEmail(supabase, user) {
 }
 
 async function sendTrialActivatedEmail(supabase, user, trialEndDate) {
-    if (await hasOptedOut(supabase, user.auth0_user_id)) {
-        console.log(`User ${user.email} has opted out of emails`);
-        return { success: false, reason: 'opted_out' };
-    }
-
     return sendEmail({
         to: user.email,
         subject: 'Your Petwise Trial Has Started! 🎉',
@@ -395,11 +399,6 @@ async function sendTrialActivatedEmail(supabase, user, trialEndDate) {
 }
 
 async function sendSubscriptionConfirmedEmail(supabase, user, planInterval, nextBillingDate) {
-    if (await hasOptedOut(supabase, user.auth0_user_id)) {
-        console.log(`User ${user.email} has opted out of emails`);
-        return { success: false, reason: 'opted_out' };
-    }
-
     return sendEmail({
         to: user.email,
         subject: 'Welcome to Petwise Pro! 🚀',
@@ -408,11 +407,6 @@ async function sendSubscriptionConfirmedEmail(supabase, user, planInterval, next
 }
 
 async function sendTrialMidwayEmail(supabase, user, daysLeft, trialEndDate) {
-    if (await hasOptedOut(supabase, user.auth0_user_id)) {
-        console.log(`User ${user.email} has opted out of emails`);
-        return { success: false, reason: 'opted_out' };
-    }
-
     return sendEmail({
         to: user.email,
         subject: `How's your Petwise trial going? 💬`,
@@ -421,11 +415,6 @@ async function sendTrialMidwayEmail(supabase, user, daysLeft, trialEndDate) {
 }
 
 async function sendTrialEndingEmail(supabase, user, daysLeft, trialEndDate) {
-    if (await hasOptedOut(supabase, user.auth0_user_id)) {
-        console.log(`User ${user.email} has opted out of emails`);
-        return { success: false, reason: 'opted_out' };
-    }
-
     return sendEmail({
         to: user.email,
         subject: `Your Petwise trial ends in ${daysLeft} days ⏳`,
