@@ -2069,7 +2069,7 @@ app.post('/webhook', async (req, res) => {
                     .from('users')
                     .update(updateData)
                     .eq('auth0_user_id', session.client_reference_id)
-                    .select();
+                    .select('*, email, nickname');
 
                 if (error) {
                     console.error('Supabase update error:', error);
@@ -2080,6 +2080,7 @@ app.post('/webhook', async (req, res) => {
 
                 // Send subscription confirmation email (async, don't block webhook response)
                 if (data && data[0] && data[0].email) {
+                    console.log('Sending subscription confirmation email to:', data[0].email);
                     sendSubscriptionConfirmedEmail(
                         supabase,
                         {
@@ -2092,6 +2093,8 @@ app.post('/webhook', async (req, res) => {
                     ).catch(err => {
                         console.error('Failed to send subscription confirmation email:', err);
                     });
+                } else {
+                    console.log('No email found for subscription confirmation:', data);
                 }
             } catch (error) {
                 console.error('Subscription processing error:', error);
@@ -2361,7 +2364,7 @@ app.post('/activate-trial', async (req, res) => {
             .from('users')
             .update(updateData)
             .eq('auth0_user_id', user_id)
-            .select();
+            .select('*, email, nickname');
 
         if (error) {
             console.error('Supabase update error:', error);
@@ -2372,6 +2375,7 @@ app.post('/activate-trial', async (req, res) => {
 
         // Send trial activation email (async, don't block response)
         if (data && data[0] && data[0].email) {
+            console.log('Sending trial activation email to:', data[0].email);
             sendTrialActivatedEmail(supabase, {
                 auth0_user_id: user_id,
                 email: data[0].email,
@@ -2379,6 +2383,8 @@ app.post('/activate-trial', async (req, res) => {
             }, trialEndDate.toISOString()).catch(err => {
                 console.error('Failed to send trial activation email:', err);
             });
+        } else {
+            console.log('No email found for trial activation email:', data);
         }
 
         res.json(data);
