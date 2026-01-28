@@ -745,11 +745,17 @@ const Dashboard = () => {
                             
                             // Update email if missing (App.js doesn't capture email)
                             if (user.email && !existingUser.email) {
-                                await supabase
+                                console.log('Updating missing email in database to:', user.email);
+                                const { error: emailUpdateError } = await supabase
                                     .from('users')
                                     .update({ email: user.email, nickname: user.nickname || user.name })
                                     .eq('auth0_user_id', user.sub);
-                                userData.email = user.email;
+                                if (emailUpdateError) {
+                                    console.error('Failed to update email:', emailUpdateError);
+                                } else {
+                                    console.log('Email updated successfully');
+                                    userData.email = user.email;
+                                }
                             }
                         } else {
                             throw createError;
