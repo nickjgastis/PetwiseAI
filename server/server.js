@@ -1355,7 +1355,6 @@ STYLE GUIDELINES:
 OUTPUT FORMAT (adapt sections dynamically based on content provided):
 
 Clinical Summary Report
-Date: [Current date]
 Patient: [Pet name if mentioned]
 
 [Opening paragraph summarizing the case/encounter]
@@ -1407,7 +1406,6 @@ STYLE GUIDELINES:
 OUTPUT FORMAT (adapt sections dynamically based on content provided):
 
 Client Communication Report
-Date: [Current date]
 Patient: [Pet name if mentioned]
 
 Summary of Call
