@@ -386,7 +386,7 @@ async function sendWelcomeEmail(supabase, user) {
     return sendEmail({
         to: user.email,
         subject: 'Welcome to Petwise! 🐾',
-        html: generateWelcomeEmail(user.nickname || user.email),
+        html: generateWelcomeEmail(user.dvm_name || user.nickname || user.email),
     });
 }
 
@@ -394,7 +394,7 @@ async function sendTrialActivatedEmail(supabase, user, trialEndDate) {
     return sendEmail({
         to: user.email,
         subject: 'Your Petwise Trial Has Started! 🎉',
-        html: generateTrialActivatedEmail(user.nickname || user.email, trialEndDate),
+        html: generateTrialActivatedEmail(user.dvm_name || user.nickname || user.email, trialEndDate),
     });
 }
 
@@ -402,7 +402,7 @@ async function sendSubscriptionConfirmedEmail(supabase, user, planInterval, next
     return sendEmail({
         to: user.email,
         subject: 'Welcome to Petwise Pro! 🚀',
-        html: generateSubscriptionConfirmedEmail(user.nickname || user.email, planInterval, nextBillingDate),
+        html: generateSubscriptionConfirmedEmail(user.dvm_name || user.nickname || user.email, planInterval, nextBillingDate),
     });
 }
 
@@ -410,7 +410,7 @@ async function sendTrialMidwayEmail(supabase, user, daysLeft, trialEndDate) {
     return sendEmail({
         to: user.email,
         subject: `How's your Petwise trial going? 💬`,
-        html: generateTrialMidwayEmail(user.nickname || user.email, daysLeft, trialEndDate),
+        html: generateTrialMidwayEmail(user.dvm_name || user.nickname || user.email, daysLeft, trialEndDate),
     });
 }
 
@@ -418,7 +418,7 @@ async function sendTrialEndingEmail(supabase, user, daysLeft, trialEndDate) {
     return sendEmail({
         to: user.email,
         subject: `Your Petwise trial ends in ${daysLeft} days ⏳`,
-        html: generateTrialEndingEmail(user.nickname || user.email, daysLeft, trialEndDate),
+        html: generateTrialEndingEmail(user.dvm_name || user.nickname || user.email, daysLeft, trialEndDate),
     });
 }
 

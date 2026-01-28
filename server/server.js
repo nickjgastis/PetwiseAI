@@ -2069,7 +2069,7 @@ app.post('/webhook', async (req, res) => {
                     .from('users')
                     .update(updateData)
                     .eq('auth0_user_id', session.client_reference_id)
-                    .select('*, email, nickname');
+                    .select('*, email, nickname, dvm_name');
 
                 if (error) {
                     console.error('Supabase update error:', error);
@@ -2087,7 +2087,8 @@ app.post('/webhook', async (req, res) => {
                             {
                                 auth0_user_id: session.client_reference_id,
                                 email: data[0].email,
-                                nickname: data[0].nickname
+                                nickname: data[0].nickname,
+                                dvm_name: data[0].dvm_name
                             },
                             subscriptionInterval,
                             new Date(subscription.current_period_end * 1000).toISOString()
@@ -2367,7 +2368,7 @@ app.post('/activate-trial', async (req, res) => {
             .from('users')
             .update(updateData)
             .eq('auth0_user_id', user_id)
-            .select('*, email, nickname');
+            .select('*, email, nickname, dvm_name');
 
         if (error) {
             console.error('Supabase update error:', error);
@@ -2383,7 +2384,8 @@ app.post('/activate-trial', async (req, res) => {
                 await sendTrialActivatedEmail(supabase, {
                     auth0_user_id: user_id,
                     email: data[0].email,
-                    nickname: data[0].nickname
+                    nickname: data[0].nickname,
+                    dvm_name: data[0].dvm_name
                 }, trialEndDate.toISOString());
                 console.log('Trial activation email sent successfully');
             } catch (err) {

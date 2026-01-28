@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    sendTrialMidwayEmail, 
-    sendTrialEndingEmail 
+const {
+    sendTrialMidwayEmail,
+    sendTrialEndingEmail
 } = require('../utils/emailService');
 
 /**
@@ -50,7 +50,7 @@ router.get('/trial-reminders-midway', verifyCronAuth, async (req, res) => {
         // Find trial users in the midway window who haven't received this email
         const { data: users, error } = await supabase
             .from('users')
-            .select('id, auth0_user_id, email, nickname, subscription_end_date, trial_midway_email_sent_at, email_opt_out')
+            .select('id, auth0_user_id, email, nickname, dvm_name, subscription_end_date, trial_midway_email_sent_at')
             .eq('subscription_status', 'active')
             .eq('subscription_interval', 'trial')
             .is('trial_midway_email_sent_at', null)
@@ -96,10 +96,10 @@ router.get('/trial-reminders-midway', verifyCronAuth, async (req, res) => {
         }
 
         console.log('Midway reminder results:', results);
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             message: `Processed ${users?.length || 0} users`,
-            results 
+            results
         });
     } catch (err) {
         console.error('Cron job error:', err);
@@ -130,7 +130,7 @@ router.get('/trial-reminders-ending', verifyCronAuth, async (req, res) => {
         // Find trial users in the ending window who haven't received this email
         const { data: users, error } = await supabase
             .from('users')
-            .select('id, auth0_user_id, email, nickname, subscription_end_date, trial_ending_email_sent_at, email_opt_out')
+            .select('id, auth0_user_id, email, nickname, dvm_name, subscription_end_date, trial_ending_email_sent_at')
             .eq('subscription_status', 'active')
             .eq('subscription_interval', 'trial')
             .is('trial_ending_email_sent_at', null)
@@ -176,10 +176,10 @@ router.get('/trial-reminders-ending', verifyCronAuth, async (req, res) => {
         }
 
         console.log('Ending reminder results:', results);
-        return res.json({ 
-            success: true, 
+        return res.json({
+            success: true,
             message: `Processed ${users?.length || 0} users`,
-            results 
+            results
         });
     } catch (err) {
         console.error('Cron job error:', err);
