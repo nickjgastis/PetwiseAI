@@ -211,18 +211,18 @@ function generateTrialActivatedEmail(userName, trialEndDate) {
 
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
-            Your Trial Has Started! 🎉
+            Your 14-Day Trial Has Started! 🎉
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Congratulations on starting your 30-day free trial! You now have full access to all of Petwise's 
-            powerful features.
+            Welcome to Petwise! Your 14-day free trial is now active, giving you full access to all features 
+            with unlimited reports.
         </p>
         <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin: 24px 0;">
             <p style="margin: 0; font-size: 14px; color: #166534; font-weight: 500;">
-                ✓ Unlimited SOAP notes<br>
+                ✓ Unlimited SOAP notes & reports<br>
                 ✓ AI-powered dictation<br>
                 ✓ Client callbacks & summaries<br>
                 ✓ Custom templates
@@ -238,7 +238,7 @@ function generateTrialActivatedEmail(userName, trialEndDate) {
             Pro tip: Try dictating your next exam and watch Petwise transform it into a complete SOAP note in seconds.
         </p>`;
 
-    return emailWrapper(content, 'Your 30-day free trial has started! Start creating notes now.');
+    return emailWrapper(content, 'Your 14-day free trial has started! Start creating notes now.');
 }
 
 /**
@@ -285,7 +285,7 @@ function generateSubscriptionConfirmedEmail(userName, planInterval, nextBillingD
 }
 
 /**
- * Trial midway reminder - sent at day 15
+ * Trial midway reminder - sent at day 7 (one week in)
  */
 function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
     const displayName = userName ? `Dr. ${userName}` : 'there';
@@ -298,13 +298,13 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
 
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
-            How's Your Trial Going? 💬
+            One Week In! 🎯
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            You're halfway through your Petwise trial! We hope you're enjoying the time savings and 
+            You're one week into your Petwise trial! We hope you're enjoying the time savings and 
             seeing how AI-powered documentation can transform your workflow.
         </p>
         <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0;">
@@ -325,14 +325,14 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
             ${ctaButton('Continue Exploring', `${APP_URL}/dashboard`)}
         </div>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Questions or feedback? Just reply to this email — we'd love to hear from you!
+            Questions or feedback? Reach out at <a href="mailto:support@petwise.vet" style="color: #3db6fd; text-decoration: none;">support@petwise.vet</a> — we'd love to hear from you!
         </p>`;
 
-    return emailWrapper(content, `You have ${daysLeft} days left in your Petwise trial. How's it going?`);
+    return emailWrapper(content, `One week in! How's your Petwise trial going?`);
 }
 
 /**
- * Trial ending reminder - sent 3 days before expiry
+ * Trial ending reminder - sent 2 days before expiry (day 12)
  */
 function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
     const displayName = userName ? `Dr. ${userName}` : 'there';
@@ -345,33 +345,32 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
 
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
-            Your Trial Ends Soon ⏳
+            Almost 2 Weeks In! 🚀
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Just a friendly heads up — your Petwise trial ends in <strong>${daysLeft} days</strong> 
-            on ${endDateFormatted}.
+            Wow, you're almost 2 weeks into your Petwise trial! We'd love to hear how it's going.
         </p>
-        <div style="background-color: #fef2f2; border-radius: 8px; padding: 16px; margin: 24px 0;">
-            <p style="margin: 0; font-size: 14px; color: #991b1b;">
-                <strong>⚠️ Don't lose access!</strong> Subscribe now to keep creating notes without interruption.
+        <div style="background-color: #eff6ff; border-radius: 8px; padding: 16px; margin: 24px 0;">
+            <p style="margin: 0; font-size: 14px; color: #1e40af;">
+                <strong>📅 What's next?</strong> Your trial ends on ${endDateFormatted}, and you'll automatically 
+                continue on the monthly plan — no action needed. All your saved reports and templates will be right where you left them.
             </p>
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Upgrade today and continue saving hours on documentation every week. Your notes and templates 
-            will be waiting for you.
+            If Petwise isn't for you, no worries — you can cancel anytime from your account settings before 
+            your trial ends.
         </p>
         <div style="text-align: center;">
-            ${ctaButton('Subscribe Now', `${APP_URL}/dashboard?subscribe=true`)}
+            ${ctaButton('Go to Dashboard', `${APP_URL}/dashboard`)}
         </div>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Not ready yet? We'd love to know what's holding you back. Reply to this email and let us know 
-            how we can help.
+            Questions or feedback? Reach out at <a href="mailto:support@petwise.vet" style="color: #3db6fd; text-decoration: none;">support@petwise.vet</a> — we'd love to hear from you!
         </p>`;
 
-    return emailWrapper(content, `Only ${daysLeft} days left in your Petwise trial. Subscribe to keep access!`);
+    return emailWrapper(content, `Almost 2 weeks in! Your Petwise trial ends in ${daysLeft} days.`);
 }
 
 // ============================================
@@ -389,7 +388,7 @@ async function sendWelcomeEmail(supabase, user) {
 async function sendTrialActivatedEmail(supabase, user, trialEndDate) {
     return sendEmail({
         to: user.email,
-        subject: 'Your Petwise Trial Has Started! 🎉',
+        subject: 'Your 14-Day Petwise Trial Has Started! 🎉',
         html: generateTrialActivatedEmail(user.dvm_name || user.nickname || user.email, trialEndDate),
     });
 }
@@ -405,7 +404,7 @@ async function sendSubscriptionConfirmedEmail(supabase, user, planInterval, next
 async function sendTrialMidwayEmail(supabase, user, daysLeft, trialEndDate) {
     return sendEmail({
         to: user.email,
-        subject: `How's your Petwise trial going? 💬`,
+        subject: `One Week In! How's Petwise working for you? 🎯`,
         html: generateTrialMidwayEmail(user.dvm_name || user.nickname || user.email, daysLeft, trialEndDate),
     });
 }
@@ -413,7 +412,7 @@ async function sendTrialMidwayEmail(supabase, user, daysLeft, trialEndDate) {
 async function sendTrialEndingEmail(supabase, user, daysLeft, trialEndDate) {
     return sendEmail({
         to: user.email,
-        subject: `Your Petwise trial ends in ${daysLeft} days ⏳`,
+        subject: `Almost 2 weeks in! Your trial ends soon 🚀`,
         html: generateTrialEndingEmail(user.dvm_name || user.nickname || user.email, daysLeft, trialEndDate),
     });
 }
