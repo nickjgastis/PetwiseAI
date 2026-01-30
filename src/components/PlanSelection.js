@@ -72,33 +72,42 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
         }
     };
 
-    const handleTrialActivation = async () => {
-        setIsLoading('trial');
+    // Stripe Trial Checkout (14-day free trial with card)
+    const handleStripeTrialCheckout = async (trialCurrency) => {
+        setIsLoading(`trial_${trialCurrency}`);
         try {
-            const response = await fetch(`${API_URL}/activate-trial`, {
+            const stripe = await stripePromise;
+            if (!stripe) throw new Error('Stripe failed to initialize');
+
+            const response = await fetch(`${API_URL}/create-trial-checkout-session`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    user_id: user.sub,
-                    emailOptOut: false
+                    user,
+                    currency: trialCurrency
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to activate trial');
+                if (data.code === 'TRIAL_ALREADY_USED') {
+                    throw new Error('You have already used your free trial');
+                }
+                throw new Error(data.error || 'Failed to start trial checkout');
             }
 
-            // Notify parent that trial was activated
-            if (onTrialActivated) {
-                onTrialActivated(data);
+            const result = await stripe.redirectToCheckout({ sessionId: data.id });
+            if (result.error) {
+                console.error(result.error.message);
+                setIsLoading(null);
             }
         } catch (error) {
-            console.error('Trial activation error:', error);
+            console.error('Trial checkout error:', error);
+            alert(error.message);
             setIsLoading(null);
         }
     };
@@ -147,7 +156,7 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                     Choose Your Plan
                 </h2>
                 <p className="text-white/70 text-sm sm:text-base max-w-md mx-auto">
-                    Start with a free trial or select a plan that fits your practice
+                    Start with a 14-day free trial or select a plan that fits your practice
                 </p>
             </div>
 
@@ -206,7 +215,7 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                     </button>
                 </div>
 
-                {/* Trial Plan - Center/Featured */}
+                {/* 14-Day Stripe Trial - Center/Featured */}
                 <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ring-2 ring-[#3468bd] relative order-first lg:order-none">
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white px-4 py-1 rounded-full text-xs font-bold">
                         RECOMMENDED
@@ -214,13 +223,13 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                     <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Free Trial</h3>
                     <div className="mb-4">
                         <span className="text-4xl font-extrabold text-gray-900">
-                            {PRICES[currency].symbol}0
+                            $0
                         </span>
-                        <span className="text-gray-500 ml-1">/30 days</span>
+                        <span className="text-gray-500 ml-1">/14 days</span>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">No credit card required</p>
+                    <p className="text-gray-500 text-sm mb-6">Full unlimited access • Cancel anytime</p>
                     
-                    <ul className="space-y-3 mb-8">
+                    <ul className="space-y-3 mb-6">
                         {features.map((feature, idx) => (
                             <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
                                 <FaCheck className="text-green-500 flex-shrink-0" />
@@ -229,13 +238,18 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                         ))}
                     </ul>
 
-                    <button
-                        onClick={handleTrialActivation}
-                        disabled={isLoading !== null}
-                        className="w-full py-3 px-6 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white font-semibold rounded-xl hover:from-[#2a5298] hover:to-[#1e3a6e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                    >
-                        {isLoading === 'trial' ? 'Activating...' : 'Start Free Trial'}
-                    </button>
+                    <div className="space-y-2">
+                        <button
+                            onClick={() => handleStripeTrialCheckout('usd')}
+                            disabled={isLoading !== null}
+                            className="w-full py-3 px-6 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white font-semibold rounded-xl hover:from-[#2a5298] hover:to-[#1e3a6e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        >
+                            {isLoading === 'trial_usd' ? 'Loading...' : 'Start Free Trial'}
+                        </button>
+                        <p className="text-xs text-gray-400 text-center mt-2">
+                            Auto-renews to monthly after 14 days. Cancel anytime.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Yearly Plan */}

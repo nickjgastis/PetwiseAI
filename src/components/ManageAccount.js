@@ -142,7 +142,8 @@ const ManageAccount = ({ user, onBack }) => {
     const getSubscriptionLabel = () => {
         if (!userData?.subscription_interval) return 'None';
         const labels = {
-            trial: 'Free Trial',
+            trial: 'Free Trial (Legacy)',
+            stripe_trial: '14-Day Trial',
             monthly: 'Monthly',
             yearly: 'Yearly'
         };
@@ -231,11 +232,17 @@ const ManageAccount = ({ user, onBack }) => {
                                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
                                     <span className="text-gray-600 font-medium flex items-center gap-2">
                                         <FaCalendar className="text-sm" />
-                                        {userData.subscription_interval === 'trial' ? 'Expires' : 'Renews'}
+                                        {userData.subscription_interval === 'trial' ? 'Expires' : 
+                                         userData.subscription_interval === 'stripe_trial' ? 'Trial Ends' : 'Renews'}
                                     </span>
                                     <span className="text-gray-800 font-semibold">
                                         {new Date(userData.subscription_end_date).toLocaleDateString()}
-                                        {userData.subscription_interval !== 'trial' && userData.stripe_customer_id && (
+                                        {userData.subscription_interval === 'stripe_trial' && (
+                                            <span className={`ml-2 text-xs ${userData.cancel_at_period_end ? 'text-orange-500' : 'text-blue-500'}`}>
+                                                {userData.cancel_at_period_end ? '(Canceling)' : '(Auto-converts to monthly)'}
+                                            </span>
+                                        )}
+                                        {!['trial', 'stripe_trial'].includes(userData.subscription_interval) && userData.stripe_customer_id && (
                                             <span className={`ml-2 text-xs ${userData.cancel_at_period_end ? 'text-orange-500' : 'text-green-500'}`}>
                                                 {userData.cancel_at_period_end ? '(Canceling)' : '(Auto-renew)'}
                                             </span>

@@ -110,53 +110,46 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
         }
     };
 
-    const handleTrialActivation = async () => {
-        try {
-            console.log('Starting trial activation for user:', user.sub);
+    // State for trial loading
+    const [trialLoading, setTrialLoading] = useState(null);
 
-            const response = await fetch(`${API_URL}/activate-trial`, {
+    // Stripe Trial Checkout (14-day free trial with card)
+    const handleStripeTrialCheckout = async (trialCurrency) => {
+        setTrialLoading(trialCurrency);
+        try {
+            const stripe = await stripePromise;
+            if (!stripe) throw new Error('Stripe failed to initialize');
+
+            const response = await fetch(`${API_URL}/create-trial-checkout-session`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    user_id: user.sub,
-                    emailOptOut: false
+                    user,
+                    currency: trialCurrency
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to activate trial');
+                if (data.code === 'TRIAL_ALREADY_USED') {
+                    throw new Error('You have already used your free trial');
+                }
+                throw new Error(data.error || 'Failed to start trial checkout');
             }
 
-            console.log('Trial activation response:', data);
-
-            if (data && data.length > 0) {
-                // Refresh subscription data in parent component if callback provided
-                if (onSubscriptionChange) {
-                    // Small delay to ensure database has updated
-                    setTimeout(() => {
-                        onSubscriptionChange();
-                    }, 300);
-                }
-                // Dispatch event to notify Dashboard and other components
-                setTimeout(() => {
-                    window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
-                }, 300);
-                // Small delay to ensure database has updated, then navigate to QuickSOAP
-                setTimeout(() => {
-                    navigate('/dashboard/quicksoap');
-                }, 500);
-            } else {
-                throw new Error('No data returned from trial activation');
+            const result = await stripe.redirectToCheckout({ sessionId: data.id });
+            if (result.error) {
+                console.error(result.error.message);
+                setTrialLoading(null);
             }
         } catch (error) {
-            console.error('Trial activation error:', error);
-            // You might want to show this error to the user
-            alert(`Failed to activate trial: ${error.message}`);
+            console.error('Trial checkout error:', error);
+            alert(error.message);
+            setTrialLoading(null);
         }
     };
 
@@ -300,7 +293,8 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                                 <p className="text-gray-600 text-sm md:text-lg font-medium leading-relaxed max-w-2xl mx-auto">
                                     Current Plan: {(() => {
                                         const planTypes = {
-                                            trial: 'Free Trial (50 reports/day)',
+                                            trial: 'Free Trial (Legacy)',
+                                            stripe_trial: '14-Day Trial',
                                             monthly: 'Monthly Plan',
                                             yearly: 'Yearly Plan'
                                         };
@@ -321,7 +315,7 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                                 </div>
                                 <div className="flex justify-center gap-4 mt-4 mb-4 text-gray-500 text-xs md:text-sm font-medium">
                                     <div className="flex items-center gap-1">
-                                        <span className="text-primary-600 font-bold text-lg">✓</span> No credit card required
+                                        <span className="text-primary-600 font-bold text-lg">✓</span> 14-day free trial
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <span className="text-primary-600 font-bold text-lg">✓</span> Cancel anytime
@@ -380,23 +374,23 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                         </button>
                     </div>
 
-                    {/* Free Trial Card */}
-                    <div className={`w-full md:flex-1 p-6 rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-primary-200 shadow-xl shadow-primary-100 relative transform md:-translate-y-1 md:scale-[1.03] transition-all duration-300 flex flex-col ${user.has_used_trial ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    {/* 14-Day Stripe Trial Card */}
+                    <div className={`w-full md:flex-1 p-6 rounded-2xl bg-gradient-to-b from-white to-blue-50 border border-primary-200 shadow-xl shadow-primary-100 relative transform md:-translate-y-1 md:scale-[1.03] transition-all duration-300 flex flex-col ${user.has_activated_stripe_trial ? 'opacity-60 cursor-not-allowed' : ''}`}>
                         <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap">
-                            No Credit Card Required
+                            14 DAYS FREE
                         </div>
                         <h3 className="text-xl font-bold text-primary-700 mb-2 text-center mt-2">
-                            30-Day Free Trial
+                            14-Day Free Trial
                         </h3>
                         <p className="text-4xl font-extrabold text-gray-900 text-center">
                             $0
                         </p>
                         <p className="text-center text-gray-500 text-sm mb-6">
-                            No credit card required
+                            Full unlimited access • Cancel anytime
                         </p>
-                        <ul className="space-y-3 text-gray-700 text-sm mb-8 flex-1">
+                        <ul className="space-y-3 text-gray-700 text-sm mb-6 flex-1">
                             <li className="flex items-center gap-2">
-                                <span className="text-primary-600 font-bold">✓</span> 50 SOAP records per day
+                                <span className="text-primary-600 font-bold">✓</span> Unlimited SOAP reports
                             </li>
                             <li className="flex items-center gap-2">
                                 <span className="text-primary-600 font-bold">✓</span> QuickQuery access
@@ -405,16 +399,30 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                                 <span className="text-primary-600 font-bold">✓</span> Full dashboard access
                             </li>
                             <li className="flex items-center gap-2">
-                                <span className="text-primary-600 font-bold">✓</span> All core features included
+                                <span className="text-primary-600 font-bold">✓</span> All features included
                             </li>
                         </ul>
-                        <button
-                            onClick={handleTrialActivation}
-                            className="w-full py-3 rounded-xl text-white font-semibold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed mt-auto"
-                            disabled={user.has_used_trial || subscriptionStatus === 'active'}
-                        >
-                            {user.has_used_trial ? 'Trial Used' : 'Start Free Trial'}
-                        </button>
+                        {user.has_activated_stripe_trial || subscriptionStatus === 'active' ? (
+                            <button
+                                disabled
+                                className="w-full py-3 rounded-xl text-white font-semibold bg-gray-400 mt-auto cursor-not-allowed"
+                            >
+                                {user.has_activated_stripe_trial ? 'Trial Already Used' : 'Active Subscription'}
+                            </button>
+                        ) : (
+                            <div className="space-y-2 mt-auto">
+                                <button
+                                    onClick={() => handleStripeTrialCheckout('usd')}
+                                    disabled={trialLoading !== null}
+                                    className="w-full py-3 rounded-xl text-white font-semibold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                                >
+                                    {trialLoading === 'usd' ? 'Loading...' : 'Start Free Trial'}
+                                </button>
+                                <p className="text-xs text-gray-400 text-center">
+                                    Auto-renews to monthly after 14 days. Cancel anytime.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Yearly Plan Card */}

@@ -111,9 +111,9 @@ const Dashboard = () => {
         // Check for active subscription
         const hasActiveSubscription = ['active', 'past_due'].includes(userData?.subscription_status);
 
-        // Check for trial - trial has subscription_status='active' and subscription_interval='trial'
+        // Check for trial - both legacy 'trial' and new 'stripe_trial'
         const hasTrial = userData?.subscription_status === 'active' &&
-            userData?.subscription_interval === 'trial';
+            ['trial', 'stripe_trial'].includes(userData?.subscription_interval);
 
         return hasActiveSubscription || hasTrial;
     };
@@ -693,7 +693,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, welcome_email_sent_at')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at')
                 .eq('auth0_user_id', user.sub)
                 .single();
             let userData = data;
@@ -732,7 +732,7 @@ const Dashboard = () => {
                             // Fetch the existing user
                             const { data: existingUser, error: fetchError } = await supabase
                                 .from('users')
-                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, welcome_email_sent_at')
+                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at')
                                 .eq('auth0_user_id', user.sub)
                                 .single();
                             
@@ -813,9 +813,10 @@ const Dashboard = () => {
             setHasAcceptedTerms(userData.has_accepted_terms);
             setSubscriptionStatus(userData.subscription_status);
 
-            // Check if user has active subscription OR student access OR trial
+            // Check if user has active subscription OR student access OR trial (legacy or Stripe)
             const hasActiveSubscription = ['active', 'past_due'].includes(userData.subscription_status);
-            const hasTrial = userData.subscription_status === 'active' && userData.subscription_interval === 'trial';
+            const hasTrial = userData.subscription_status === 'active' && 
+                ['trial', 'stripe_trial'].includes(userData.subscription_interval);
             const isStudentMode = userData.plan_label === 'student' &&
                 userData.subscription_end_date &&
                 new Date(userData.subscription_end_date) > new Date();

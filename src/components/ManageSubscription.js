@@ -78,36 +78,41 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         }
     };
 
-    const handleTrialActivation = async () => {
-        setIsLoading('trial');
+    // Stripe Trial Checkout (14-day free trial with card)
+    const handleStripeTrialCheckout = async (trialCurrency) => {
+        setIsLoading(`trial_${trialCurrency}`);
         try {
-            const response = await fetch(`${API_URL}/activate-trial`, {
+            const stripe = await stripePromise;
+            if (!stripe) throw new Error('Stripe failed to initialize');
+
+            const response = await fetch(`${API_URL}/create-trial-checkout-session`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    user_id: user.sub,
-                    emailOptOut: false
+                    user,
+                    currency: trialCurrency
                 }),
             });
 
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Failed to activate trial');
+                if (data.code === 'TRIAL_ALREADY_USED') {
+                    throw new Error('You have already used your free trial');
+                }
+                throw new Error(data.error || 'Failed to start trial checkout');
             }
 
-            // Refresh subscription data
-            if (onSubscriptionChange) {
-                onSubscriptionChange();
+            const result = await stripe.redirectToCheckout({ sessionId: data.id });
+            if (result.error) {
+                console.error(result.error.message);
+                setIsLoading(null);
             }
-            
-            // Dispatch event to notify other components
-            window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
         } catch (error) {
-            console.error('Trial activation error:', error);
+            console.error('Trial checkout error:', error);
             alert(error.message);
             setIsLoading(null);
         }
@@ -213,7 +218,8 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
     const getCurrentPlanLabel = () => {
         if (isStudentPlan) return '🎓 Student Access';
-        if (subscriptionInterval === 'trial') return 'Free Trial';
+        if (subscriptionInterval === 'stripe_trial') return '14-Day Trial';
+        if (subscriptionInterval === 'trial') return 'Free Trial (Legacy)';
         if (subscriptionInterval === 'monthly') return 'Monthly Plan';
         if (subscriptionInterval === 'yearly') return 'Yearly Plan';
         return 'No Active Plan';
@@ -223,8 +229,11 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         return subscriptionInterval === planType && subscriptionStatus === 'active';
     };
 
-    const hasUsedTrial = user?.has_used_trial;
+    // Check if user has already used Stripe trial
+    const hasUsedStripeTrial = user?.has_activated_stripe_trial;
     const hasStripeCustomer = user?.stripe_customer_id;
+    // Check if currently on any trial (legacy or Stripe)
+    const isOnAnyTrial = subscriptionInterval === 'trial' || subscriptionInterval === 'stripe_trial';
 
     return (
         <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center p-4 sm:p-8 overflow-y-auto">
@@ -329,32 +338,32 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                     </button>
                 </div>
 
-                {/* Trial Plan */}
+                {/* 14-Day Stripe Trial */}
                 <div className={`flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl transition-all duration-300 relative ${
-                    isCurrentPlan('trial') ? 'ring-4 ring-yellow-400' : hasUsedTrial ? 'opacity-60' : 'hover:shadow-2xl hover:-translate-y-1'
+                    isOnAnyTrial ? 'ring-4 ring-yellow-400' : hasUsedStripeTrial ? 'opacity-60' : 'hover:shadow-2xl hover:-translate-y-1'
                 } order-first lg:order-none`}>
-                    {isCurrentPlan('trial') && (
+                    {isOnAnyTrial && (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-xs font-bold">
                             CURRENT PLAN
                         </div>
                     )}
-                    {!hasUsedTrial && !isCurrentPlan('trial') && (
+                    {!hasUsedStripeTrial && !isOnAnyTrial && (
                         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white px-4 py-1 rounded-full text-xs font-bold">
-                            FREE
+                            14 DAYS FREE
                         </div>
                     )}
                     <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Free Trial</h3>
                     <div className="mb-4">
                         <span className="text-4xl font-extrabold text-gray-900">
-                            {PRICES[currency].symbol}0
+                            $0
                         </span>
-                        <span className="text-gray-500 ml-1">/30 days</span>
+                        <span className="text-gray-500 ml-1">/14 days</span>
                     </div>
                     <p className="text-gray-500 text-sm mb-6">
-                        {hasUsedTrial ? 'Trial already used' : 'No credit card required'}
+                        {hasUsedStripeTrial ? 'Trial already used' : 'Full unlimited access • Cancel anytime'}
                     </p>
                     
-                    <ul className="space-y-3 mb-8">
+                    <ul className="space-y-3 mb-6">
                         {features.map((feature, idx) => (
                             <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
                                 <FaCheck className="text-green-500 flex-shrink-0" />
@@ -363,19 +372,34 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                         ))}
                     </ul>
 
-                    <button
-                        onClick={handleTrialActivation}
-                        disabled={isLoading !== null || hasUsedTrial || isCurrentPlan('trial')}
-                        className={`w-full py-3 px-6 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                            isCurrentPlan('trial')
-                                ? 'bg-yellow-100 text-yellow-700 cursor-default'
-                                : hasUsedTrial
-                                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                    : 'bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white hover:from-[#2a5298] hover:to-[#1e3a6e] shadow-lg'
-                        }`}
-                    >
-                        {isLoading === 'trial' ? 'Activating...' : isCurrentPlan('trial') ? 'Current Plan' : hasUsedTrial ? 'Trial Used' : 'Start Free Trial'}
-                    </button>
+                    {isOnAnyTrial ? (
+                        <button
+                            disabled
+                            className="w-full py-3 px-6 font-semibold rounded-xl bg-yellow-100 text-yellow-700 cursor-default"
+                        >
+                            Current Plan
+                        </button>
+                    ) : hasUsedStripeTrial ? (
+                        <button
+                            disabled
+                            className="w-full py-3 px-6 font-semibold rounded-xl bg-gray-200 text-gray-500 cursor-not-allowed"
+                        >
+                            Trial Already Used
+                        </button>
+                    ) : (
+                        <div className="space-y-2">
+                            <button
+                                onClick={() => handleStripeTrialCheckout('usd')}
+                                disabled={isLoading !== null}
+                                className="w-full py-3 px-6 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white hover:from-[#2a5298] hover:to-[#1e3a6e] shadow-lg"
+                            >
+                                {isLoading === 'trial_usd' ? 'Loading...' : 'Start Free Trial'}
+                            </button>
+                            <p className="text-xs text-gray-400 text-center mt-2">
+                                Auto-renews to monthly after 14 days. Cancel anytime.
+                            </p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Yearly Plan */}

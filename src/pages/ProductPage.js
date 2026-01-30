@@ -91,13 +91,13 @@ const ProductPage = () => {
 
                         <div className="pricing-card free highlight-card">
                             <div className="pricing-header">
-                                <h3>30 Day Free Trial</h3>
-                                <p className="price">$0<span>/mo</span></p>
+                                <h3>14-Day Free Trial</h3>
+                                <p className="price">$0<span>/14 days</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>No credit card required</li>
-                                <li>50 records per day</li>
-                                <li>Quick Query</li>
+                                <li>Full unlimited access</li>
+                                <li>Unlimited SOAP reports</li>
+                                <li>Quick Query included</li>
                             </ul>
                             <div className="pricing-footer">
                                 <button

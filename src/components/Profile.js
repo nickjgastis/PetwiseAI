@@ -213,10 +213,19 @@ const Profile = ({ isMobileSignup = false }) => {
             return <span>None</span>;
         }
 
-        const planType = userData?.subscription_interval === 'trial' ? 'Trial' : 'Full Access';
-        const planInterval = userData?.subscription_interval
-            ? ` (${userData.subscription_interval.charAt(0).toUpperCase() + userData.subscription_interval.slice(1)})`
-            : '';
+        // Handle both legacy 'trial' and new 'stripe_trial'
+        const isAnyTrial = ['trial', 'stripe_trial'].includes(userData?.subscription_interval);
+        const planType = isAnyTrial ? 'Trial' : 'Full Access';
+        
+        // Format interval display
+        let planInterval = '';
+        if (userData?.subscription_interval === 'stripe_trial') {
+            planInterval = ' (14-Day Trial)';
+        } else if (userData?.subscription_interval === 'trial') {
+            planInterval = ' (Trial)';
+        } else if (userData?.subscription_interval) {
+            planInterval = ` (${userData.subscription_interval.charAt(0).toUpperCase() + userData.subscription_interval.slice(1)})`;
+        }
 
         return (
             <>
@@ -235,13 +244,20 @@ const Profile = ({ isMobileSignup = false }) => {
             return <span className="text-red-600 font-medium">Inactive - Subscribe to access all features</span>;
         }
 
+        // Check if on any type of trial
+        const isAnyTrial = ['trial', 'stripe_trial'].includes(userData?.subscription_interval);
+
         return (
             <>
                 <span className="text-green-600 font-medium">Active</span>
                 {subscriptionEndDate && (
                     <span className="text-gray-500 text-sm ml-2">
                         {' '}(Expires: {formatDate(subscriptionEndDate)}
-                        {userData?.subscription_interval !== 'trial' && userData?.stripe_customer_id ? (
+                        {userData?.subscription_interval === 'stripe_trial' ? (
+                            userData.cancel_at_period_end ?
+                                ' - Canceling' :
+                                ' - Auto-renews to monthly'
+                        ) : !isAnyTrial && userData?.stripe_customer_id ? (
                             userData.cancel_at_period_end ?
                                 ' - Will not renew' :
                                 ' - Will renew automatically'
@@ -295,7 +311,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 <h2 className="text-2xl font-bold mb-3">Get Started with PetWise</h2>
                                                 <p className="text-white/80 mb-6">
                                                     {isMobileSignup
-                                                        ? "Start with a free trial. No credit card required."
+                                                        ? "Start with a 14-day free trial. Full unlimited access."
                                                         : "Choose the perfect plan for your veterinary practice."
                                                     }
                                                 </p>

@@ -112,9 +112,9 @@ const HomePage = () => {
                                 onClick={() => loginWithRedirect(signUpOptions)}
                                 className="hero-cta-button"
                             >
-                                Start 30 Day Free Trial
+                                Start 14-Day Free Trial
                             </button>
-                            <p className="no-card-text">No credit card required</p>
+                            <p className="no-card-text">Full unlimited access • Cancel anytime</p>
                         </div>
                     </div>
 
@@ -206,8 +206,8 @@ const HomePage = () => {
                 <section className="cta-banner-section">
                     <div className="cta-banner-container">
                         <h2>Less paperwork. More pets!</h2>
-                        <p className="cta-banner-text">Get 30 days free with unlimited PetQuery and 50 SOAP's per day!</p>
-                        <p className="cta-banner-subtext">No credit card required</p>
+                        <p className="cta-banner-text">Get 14 days free with unlimited PetQuery and unlimited SOAP reports!</p>
+                        <p className="cta-banner-subtext">Full access • Cancel anytime</p>
                         <button
                             onClick={() => loginWithRedirect(signUpOptions)}
                             className="hero-cta-button"
@@ -316,13 +316,13 @@ const HomePage = () => {
 
                         <div className="pricing-card free highlight-card">
                             <div className="pricing-header">
-                                <h3>30 Day Free Trial</h3>
-                                <p className="price">$0<span>/mo</span></p>
+                                <h3>14-Day Free Trial</h3>
+                                <p className="price">$0<span>/14 days</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>No credit card required</li>
-                                <li>50 records per day</li>
-                                <li>Quick Query</li>
+                                <li>Full unlimited access</li>
+                                <li>Unlimited SOAP reports</li>
+                                <li>Quick Query included</li>
                             </ul>
                             <div className="pricing-footer">
                                 <button

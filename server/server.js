@@ -193,9 +193,11 @@ const PRICE_IDS = {
         ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
         : 'price_1QcwYWFpF2XskoMKH9MJisoy'
 };
-const TRIAL_DAYS = 30;  // Changed from TRIAL_MINUTES
+const TRIAL_DAYS = 30;  // Legacy in-house trial (no longer offered to new users)
+const STRIPE_TRIAL_DAYS = 14;  // New Stripe trial with card required
 const REPORT_LIMITS = {
-    trial: 50,
+    trial: 50,           // Legacy in-house trial limit
+    stripe_trial: Infinity,  // New Stripe trial - unlimited
     monthly: Infinity,
     yearly: Infinity
 };
@@ -2015,6 +2017,112 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 });
 
+// ================ STRIPE TRIAL CHECKOUT ENDPOINT ================
+// Creates a Stripe checkout session with 14-day free trial
+app.post('/create-trial-checkout-session', async (req, res) => {
+    try {
+        const { user, currency = 'usd' } = req.body;
+        
+        // Validate currency
+        if (!['usd', 'cad'].includes(currency)) {
+            return res.status(400).json({ error: 'Invalid currency. Must be "usd" or "cad"' });
+        }
+        
+        // Get the monthly price for the selected currency (trial converts to monthly)
+        const priceId = PRICE_IDS[`monthly_${currency}`];
+        
+        if (!priceId) {
+            throw new Error('Invalid currency configuration');
+        }
+        
+        // Check if user has already used Stripe trial
+        const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('has_activated_stripe_trial, email')
+            .eq('auth0_user_id', user.sub)
+            .single();
+            
+        if (userError) {
+            console.error('Error fetching user:', userError);
+            throw new Error('Failed to verify user eligibility');
+        }
+        
+        if (userData?.has_activated_stripe_trial) {
+            return res.status(400).json({ 
+                error: 'You have already used your free trial',
+                code: 'TRIAL_ALREADY_USED'
+            });
+        }
+        
+        // Find or create Stripe customer
+        let customer;
+        const existingCustomers = await stripe.customers.list({
+            email: user.email,
+            limit: 1
+        });
+
+        if (existingCustomers.data.length > 0) {
+            customer = await stripe.customers.update(existingCustomers.data[0].id, {
+                email: user.email,
+                name: user.name || 'Valued Customer',
+                metadata: { auth0_user_id: user.sub }
+            });
+        } else {
+            customer = await stripe.customers.create({
+                email: user.email,
+                name: user.name || 'Valued Customer',
+                metadata: { auth0_user_id: user.sub }
+            });
+        }
+
+        // Create checkout session with 14-day trial
+        const session = await stripe.checkout.sessions.create({
+            customer: customer.id,
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            allow_promotion_codes: true,  // Allow promo codes for first month after trial
+            billing_address_collection: 'required',
+            automatic_tax: { enabled: true },
+            tax_id_collection: { enabled: true },
+            customer_update: {
+                address: 'auto',
+                name: 'auto'
+            },
+            line_items: [{
+                price: priceId,
+                quantity: 1,
+            }],
+            subscription_data: {
+                trial_period_days: STRIPE_TRIAL_DAYS,  // 14-day free trial
+                metadata: {
+                    trial_type: 'stripe_trial',
+                    currency: currency
+                }
+            },
+            success_url: process.env.NODE_ENV === 'production'
+                ? 'https://app.petwise.vet/dashboard?trial_started=true'
+                : 'http://localhost:3000/dashboard?trial_started=true',
+            cancel_url: process.env.NODE_ENV === 'production'
+                ? 'https://app.petwise.vet/dashboard'
+                : 'http://localhost:3000/dashboard',
+            client_reference_id: user.sub
+        });
+
+        console.log('Created trial checkout session:', {
+            sessionId: session.id,
+            customerId: customer.id,
+            priceId: priceId,
+            trialDays: STRIPE_TRIAL_DAYS,
+            currency: currency
+        });
+
+        res.json({ id: session.id });
+    } catch (error) {
+        console.error('Trial checkout error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ================ WEBHOOK HANDLER ================
 // Processes Stripe webhook events
 app.post('/webhook', async (req, res) => {
@@ -2039,7 +2147,7 @@ app.post('/webhook', async (req, res) => {
 
         console.log('Event Type:', event.type);
 
-        // Handle initial subscription creation
+        // Handle initial subscription creation (both regular and trial)
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object;
             console.log('Checkout Session:', session);
@@ -2050,34 +2158,53 @@ app.post('/webhook', async (req, res) => {
 
                 const priceId = subscription.items.data[0].price.id;
                 console.log('Price ID:', priceId);
+                
+                // Check if this is a trial subscription
+                const isStripeTrial = subscription.status === 'trialing' && subscription.trial_end;
+                console.log('Is Stripe Trial:', isStripeTrial, 'Trial End:', subscription.trial_end);
 
-                // Determine subscription interval from price
-                let subscriptionInterval = 'monthly'; // default
-
-                if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
+                // Determine subscription interval
+                let subscriptionInterval;
+                
+                if (isStripeTrial) {
+                    // This is a Stripe trial - set interval to stripe_trial
+                    subscriptionInterval = 'stripe_trial';
+                } else if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
                     subscriptionInterval = 'yearly';
-                } else if (priceId === PRICE_IDS.monthly_usd || priceId === PRICE_IDS.monthly_cad) {
+                } else {
                     subscriptionInterval = 'monthly';
                 }
+
+                // For trials, use trial_end as the subscription_end_date
+                // For regular subscriptions, use current_period_end
+                const endDate = isStripeTrial 
+                    ? new Date(subscription.trial_end * 1000).toISOString()
+                    : new Date(subscription.current_period_end * 1000).toISOString();
 
                 const updateData = {
                     subscription_status: 'active',
                     subscription_interval: subscriptionInterval,
                     stripe_customer_id: session.customer,
-                    subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+                    subscription_end_date: endDate,
                     reports_used_today: 0,
                     last_report_date: new Date().toISOString().split('T')[0],
-                    has_used_trial: true,
                     cancel_at_period_end: false,
-                    // Clear student fields on paid activation (but preserve graduation year)
+                    // Clear student fields on activation (but preserve graduation year)
                     plan_label: null,
                     student_school_email: null,
                     student_last_student_redeem_at: null
-                    // student_grad_year: null, // REMOVED - graduation year is permanent
                 };
+                
+                // Set appropriate trial flags
+                if (isStripeTrial) {
+                    updateData.has_activated_stripe_trial = true;
+                } else {
+                    updateData.has_used_trial = true;  // Legacy flag for non-trial paid subscriptions
+                }
 
                 console.log('Updating user with data:', {
                     auth0_user_id: session.client_reference_id,
+                    isStripeTrial,
                     ...updateData
                 });
 
@@ -2094,27 +2221,44 @@ app.post('/webhook', async (req, res) => {
 
                 console.log('Update successful:', data);
 
-                // Send subscription confirmation email (wait for it to prevent serverless termination)
+                // Send appropriate email based on subscription type
                 if (data && data[0] && data[0].email) {
-                    console.log('Sending subscription confirmation email to:', data[0].email);
                     try {
-                        await sendSubscriptionConfirmedEmail(
-                            supabase,
-                            {
-                                auth0_user_id: session.client_reference_id,
-                                email: data[0].email,
-                                nickname: data[0].nickname,
-                                dvm_name: data[0].dvm_name
-                            },
-                            subscriptionInterval,
-                            new Date(subscription.current_period_end * 1000).toISOString()
-                        );
-                        console.log('Subscription confirmation email sent successfully');
+                        if (isStripeTrial) {
+                            // Send trial activation email for Stripe trials
+                            console.log('Sending Stripe trial activation email to:', data[0].email);
+                            await sendTrialActivatedEmail(
+                                supabase,
+                                {
+                                    auth0_user_id: session.client_reference_id,
+                                    email: data[0].email,
+                                    nickname: data[0].nickname,
+                                    dvm_name: data[0].dvm_name
+                                },
+                                endDate
+                            );
+                            console.log('Stripe trial activation email sent successfully');
+                        } else {
+                            // Send subscription confirmation email for paid subscriptions
+                            console.log('Sending subscription confirmation email to:', data[0].email);
+                            await sendSubscriptionConfirmedEmail(
+                                supabase,
+                                {
+                                    auth0_user_id: session.client_reference_id,
+                                    email: data[0].email,
+                                    nickname: data[0].nickname,
+                                    dvm_name: data[0].dvm_name
+                                },
+                                subscriptionInterval,
+                                endDate
+                            );
+                            console.log('Subscription confirmation email sent successfully');
+                        }
                     } catch (err) {
-                        console.error('Failed to send subscription confirmation email:', err);
+                        console.error('Failed to send email:', err);
                     }
                 } else {
-                    console.log('No email found for subscription confirmation:', data);
+                    console.log('No email found for user:', data);
                 }
             } catch (error) {
                 console.error('Subscription processing error:', error);
@@ -2122,7 +2266,7 @@ app.post('/webhook', async (req, res) => {
             }
         }
 
-        // Handle successful recurring payments
+        // Handle successful recurring payments (renewals only, not trial starts)
         if (event.type === 'invoice.payment_succeeded') {
             const invoice = event.data.object;
             console.log('Payment succeeded for invoice:', invoice.id);
@@ -2132,6 +2276,12 @@ app.post('/webhook', async (req, res) => {
                 try {
                     const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
                     const customer = await stripe.customers.retrieve(invoice.customer);
+
+                    // Skip if subscription is in trial - checkout.session.completed handles trial starts
+                    if (subscription.status === 'trialing') {
+                        console.log('Skipping invoice.payment_succeeded for trialing subscription:', subscription.id);
+                        return res.status(200).json({ received: true });
+                    }
 
                     console.log('Updating subscription for customer:', customer.id);
 
@@ -2236,16 +2386,17 @@ app.post('/webhook', async (req, res) => {
             }
         }
 
-        // Handle subscription updates (cancellations, reactivations, etc.)
+        // Handle subscription updates (cancellations, reactivations, trial conversions, etc.)
         if (event.type === 'customer.subscription.updated') {
             const subscription = event.data.object;
-            console.log('Subscription updated:', subscription.id);
+            const previousAttributes = event.data.previous_attributes || {};
+            console.log('Subscription updated:', subscription.id, 'Status:', subscription.status, 'Previous:', previousAttributes);
 
             try {
                 // Find user by stripe customer ID
                 const { data: userData, error: userError } = await supabase
                     .from('users')
-                    .select('auth0_user_id')
+                    .select('auth0_user_id, subscription_interval, email, nickname, dvm_name')
                     .eq('stripe_customer_id', subscription.customer)
                     .single();
 
@@ -2258,14 +2409,58 @@ app.post('/webhook', async (req, res) => {
                     subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                     cancel_at_period_end: subscription.cancel_at_period_end || false
                 };
-
-                // Update status based on subscription status
-                if (subscription.status === 'active') {
+                
+                // Check if this is a trial-to-paid conversion
+                // This happens when status changes from 'trialing' to 'active'
+                const wasTrialing = previousAttributes.status === 'trialing';
+                const isNowActive = subscription.status === 'active';
+                const isTrialConversion = wasTrialing && isNowActive;
+                
+                if (isTrialConversion) {
+                    console.log('Trial conversion detected for user:', userData.auth0_user_id);
+                    // Determine the new interval from the price
+                    const priceId = subscription.items.data[0].price.id;
+                    let newInterval = 'monthly'; // default for trial conversion
+                    
+                    if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
+                        newInterval = 'yearly';
+                    }
+                    
+                    updateData.subscription_interval = newInterval;
                     updateData.subscription_status = 'active';
-                } else if (subscription.status === 'past_due') {
-                    updateData.subscription_status = 'past_due';
-                } else if (subscription.status === 'canceled') {
-                    updateData.subscription_status = 'inactive';
+                    
+                    // Send welcome to paid subscription email
+                    if (userData.email) {
+                        try {
+                            await sendSubscriptionConfirmedEmail(
+                                supabase,
+                                {
+                                    auth0_user_id: userData.auth0_user_id,
+                                    email: userData.email,
+                                    nickname: userData.nickname,
+                                    dvm_name: userData.dvm_name
+                                },
+                                newInterval,
+                                new Date(subscription.current_period_end * 1000).toISOString()
+                            );
+                            console.log('Trial conversion email sent to:', userData.email);
+                        } catch (emailErr) {
+                            console.error('Failed to send trial conversion email:', emailErr);
+                        }
+                    }
+                } else {
+                    // Regular status update (not trial conversion)
+                    if (subscription.status === 'active') {
+                        updateData.subscription_status = 'active';
+                    } else if (subscription.status === 'past_due') {
+                        updateData.subscription_status = 'past_due';
+                    } else if (subscription.status === 'canceled') {
+                        updateData.subscription_status = 'inactive';
+                        updateData.subscription_interval = null;  // Clear interval on cancellation
+                    } else if (subscription.status === 'trialing') {
+                        // Still in trial, keep as stripe_trial
+                        updateData.subscription_status = 'active';
+                    }
                 }
 
                 const { error: updateError } = await supabase
@@ -2350,72 +2545,16 @@ app.post('/cancel-subscription', async (req, res) => {
     }
 });
 
-// ================ TRIAL ENDPOINT ================
+// ================ LEGACY TRIAL ENDPOINT (DISABLED) ================
+// In-house trials are no longer offered. New users should use Stripe trial via /create-trial-checkout-session
+// This endpoint is kept to return a proper error message to any old clients still calling it
 app.post('/activate-trial', async (req, res) => {
-    try {
-        const { user_id } = req.body;
-        console.log('Trial activation request:', { user_id });
-
-        if (!user_id) {
-            throw new Error('user_id is required');
-        }
-
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
-
-        const updateData = {
-            subscription_status: 'active',
-            subscription_interval: 'trial',
-            subscription_end_date: trialEndDate.toISOString(),
-            has_used_trial: true,
-            reports_used_today: 0,
-            last_report_date: new Date().toISOString().split('T')[0],
-            email_opt_out: false,
-            // Clear student fields when activating trial (but preserve graduation year)
-            plan_label: null,
-            student_school_email: null,
-            student_last_student_redeem_at: null
-            // student_grad_year: null, // REMOVED - graduation year is permanent
-        };
-
-        console.log('Updating user with data:', updateData);
-
-        const { data, error } = await supabase
-            .from('users')
-            .update(updateData)
-            .eq('auth0_user_id', user_id)
-            .select('*, email, nickname, dvm_name');
-
-        if (error) {
-            console.error('Supabase update error:', error);
-            throw error;
-        }
-
-        console.log('Trial activation successful:', data);
-
-        // Send trial activation email (wait for it before responding to prevent serverless termination)
-        if (data && data[0] && data[0].email) {
-            console.log('Sending trial activation email to:', data[0].email);
-            try {
-                await sendTrialActivatedEmail(supabase, {
-                    auth0_user_id: user_id,
-                    email: data[0].email,
-                    nickname: data[0].nickname,
-                    dvm_name: data[0].dvm_name
-                }, trialEndDate.toISOString());
-                console.log('Trial activation email sent successfully');
-            } catch (err) {
-                console.error('Failed to send trial activation email:', err);
-            }
-        } else {
-            console.log('No email found for trial activation email:', data);
-        }
-
-        res.json(data);
-    } catch (error) {
-        console.error('Trial activation error:', error);
-        res.status(500).json({ error: error.message });
-    }
+    console.log('Legacy trial activation attempted - endpoint disabled');
+    return res.status(410).json({ 
+        error: 'In-house trials are no longer available. Please start a 14-day free trial with card.',
+        code: 'LEGACY_TRIAL_DISABLED',
+        redirect: '/subscribe'
+    });
 });
 
 // Add this new endpoint for canceling trials

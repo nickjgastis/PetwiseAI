@@ -20,6 +20,14 @@
     {
       "path": "/cron/trial-reminders-ending",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/cron/stripe-trial-reminders-midway",
+      "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/cron/stripe-trial-reminders-ending",
+      "schedule": "0 14 * * *"
     }
   ]
 }
