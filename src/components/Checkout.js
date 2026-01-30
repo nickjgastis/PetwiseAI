@@ -412,11 +412,11 @@ const Checkout = ({ onBack, user, subscriptionStatus, embedded = false, onSubscr
                         ) : (
                             <div className="space-y-2 mt-auto">
                                 <button
-                                    onClick={() => handleStripeTrialCheckout('usd')}
+                                    onClick={() => handleStripeTrialCheckout(currency)}
                                     disabled={trialLoading !== null}
                                     className="w-full py-3 rounded-xl text-white font-semibold bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                                 >
-                                    {trialLoading === 'usd' ? 'Loading...' : 'Start Free Trial'}
+                                    {trialLoading ? 'Loading...' : 'Start Free Trial'}
                                 </button>
                                 <p className="text-xs text-gray-400 text-center">
                                     Auto-renews to monthly after 14 days. Cancel anytime.

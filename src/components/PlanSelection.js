@@ -240,11 +240,11 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
 
                     <div className="space-y-2">
                         <button
-                            onClick={() => handleStripeTrialCheckout('usd')}
+                            onClick={() => handleStripeTrialCheckout(currency)}
                             disabled={isLoading !== null}
                             className="w-full py-3 px-6 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white font-semibold rounded-xl hover:from-[#2a5298] hover:to-[#1e3a6e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         >
-                            {isLoading === 'trial_usd' ? 'Loading...' : 'Start Free Trial'}
+                            {isLoading?.startsWith('trial_') ? 'Loading...' : 'Start Free Trial'}
                         </button>
                         <p className="text-xs text-gray-400 text-center mt-2">
                             Auto-renews to monthly after 14 days. Cancel anytime.
