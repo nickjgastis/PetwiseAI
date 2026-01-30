@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { FaCheck, FaCrown, FaGraduationCap } from 'react-icons/fa';
+import { useAuth0 } from '@auth0/auth0-react';
+import { FaCheck, FaCrown, FaGraduationCap, FaSignOutAlt } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
 
 const stripePromise = loadStripe(
@@ -14,9 +15,20 @@ const API_URL = process.env.NODE_ENV === 'production'
     : 'http://localhost:3001';
 
 const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
+    const { logout } = useAuth0();
     const [isLoading, setIsLoading] = useState(null); // Track which button is loading
     const [currency, setCurrency] = useState('usd');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
+
+    const handleLogout = () => {
+        logout({
+            logoutParams: {
+                returnTo: window.location.origin.includes('app.petwise.vet') 
+                    ? 'https://petwise.vet' 
+                    : window.location.origin
+            }
+        });
+    };
 
     const PRICES = {
         usd: {
@@ -132,7 +144,16 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center justify-center p-4 sm:p-8">
+        <div className="min-h-screen bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center justify-center p-4 sm:p-8 relative">
+            {/* Logout Button */}
+            <button
+                onClick={handleLogout}
+                className="absolute top-4 right-4 sm:top-6 sm:right-6 flex items-center gap-2 px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm"
+            >
+                <FaSignOutAlt />
+                <span className="hidden sm:inline">Log Out</span>
+            </button>
+
             {/* Student Redeem Modal */}
             {showStudentRedeem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
