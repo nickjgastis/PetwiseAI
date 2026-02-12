@@ -5,7 +5,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
 import Navbar from './components/Navbar';
-import InstallPrompt from './components/InstallPrompt';
 import UpdateBanner from './components/UpdateBanner';
 import { supabase } from './supabaseClient';
 import "./styles/global.css";
@@ -138,32 +137,8 @@ const AppContent = () => {
   );
 };
 
-// Check if we should show install gate
-const shouldShowInstallGate = () => {
-  // DEV ONLY: Skip gate in development
-  if (process.env.NODE_ENV === 'development') return false;
-  
-  // DEV ONLY: Allow forcing mobile view via localStorage
-  const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
-  
-  // Only check user agent - don't use width to avoid triggering on split-screen desktops
-  const isMobileDevice = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  if (!isMobileDevice) return false;
-  
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                       window.navigator.standalone === true;
-  if (isStandalone) return false;
-  
-  return true;
-};
-
 const App = () => {
   const navigate = useNavigate();
-
-  // Block everything when gate should show - don't even load Auth0
-  if (shouldShowInstallGate()) {
-    return <InstallPrompt />;
-  }
 
   return (
     <Auth0Provider

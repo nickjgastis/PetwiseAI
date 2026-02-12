@@ -1761,19 +1761,34 @@ REFERENCE THE TREATMENT SECTION ABOVE - pull the exact medications/doses/routes 
 
 FORMAT EACH LINE AS: "Discussed [specific treatment/finding] - [clinical rationale/what was explained]"
 
-MANDATORY - For EACH treatment given, document what was explained to client:
-Injections given: "Discussed Maropitant (Cerenia) 1 mg/kg SQ administered for antiemetic effect, duration of action 24 hours"
-IV/SQ fluids: "Discussed administration of 150 mL LRS SQ for rehydration support, expect subcutaneous swelling to absorb over 6-8 hours"
-Oral medications sent home: "Discussed Metronidazole 15 mg/kg PO BID x 7 days for GI bacterial overgrowth, give with food to reduce GI upset"
-Pain management: "Discussed Meloxicam 0.1 mg/kg PO SID administered for analgesia and anti-inflammatory effect"
-Antibiotics: "Discussed Convenia 8 mg/kg SQ injection providing 14 days antibiotic coverage for skin infection"
+MANDATORY - For EACH treatment given, document what was explained to client. At the end of this section always end with : The client was informed of the benefits, potential adverse reactions and side effects of above medications. and include the following statement about medication legality:
+Injections given: 
+Discussed Maropitant (Cerenia) 1 mg/kg SQ administered for antiemetic effect, duration of action 24 hours
+Discussed benefits, potential adverse reactions and side effects of above medications with client.
+IV/SQ fluids: 
+Discussed administration of 150 mL LRS SQ for rehydration support, expect subcutaneous swelling to absorb over 6-8 hours
+Discussed benefits, potential adverse reactions and side effects of above medications with client.
+Oral medications sent home: 
+Discussed Metronidazole 15 mg/kg PO BID x 7 days for GI bacterial overgrowth, give with food to reduce GI upset
+Discussed benefits, potential adverse reactions and side effects of above medications with client.
+Pain management: 
+Discussed Meloxicam 0.1 mg/kg PO SID administered for analgesia and anti-inflammatory effect
+Discussed benefits, potential adverse reactions and side effects of above medications with client.
+Antibiotics: 
+Discussed Convenia 8 mg/kg SQ injection providing 14 days antibiotic coverage for skin infection
+Discussed benefits, potential adverse reactions and side effects of above medications with client.
 
 ALSO INCLUDE when discussed:
-Specific diagnostic findings explained: "Reviewed radiographs with owner showing intestinal gas pattern consistent with ileus"
-Lab result discussions: "Discussed elevated ALT (245 U/L) indicating hepatocellular injury, recommended recheck in 2 weeks"
-Prognosis with specifics: "Discussed guarded prognosis given BUN 85 mg/dL and creatinine 4.2 mg/dL indicating Stage 3 CKD"
-Declined treatments: "Owner declined recommended abdominal ultrasound due to financial constraints"
-Cost estimates discussed: "Discussed estimate for dental prophylaxis with extractions ($800-1200)"
+Specific diagnostic findings explained: 
+"Reviewed radiographs with owner showing intestinal gas pattern consistent with ileus"
+Lab result discussions: 
+"Discussed elevated ALT (245 U/L) indicating hepatocellular injury, recommended recheck in 2 weeks"
+Prognosis with specifics: 
+"Discussed guarded prognosis given BUN 85 mg/dL and creatinine 4.2 mg/dL indicating Stage 3 CKD"
+Declined treatments: 
+"Owner declined recommended abdominal ultrasound due to financial constraints"
+Cost estimates discussed: 
+"Discussed estimate for dental prophylaxis with extractions ($800-1200)"
 
 NEVER write vague statements like:
 "Discussed treatment plan" ❌
@@ -2022,38 +2037,38 @@ app.post('/create-checkout-session', async (req, res) => {
 app.post('/create-trial-checkout-session', async (req, res) => {
     try {
         const { user, currency = 'usd' } = req.body;
-        
+
         // Validate currency
         if (!['usd', 'cad'].includes(currency)) {
             return res.status(400).json({ error: 'Invalid currency. Must be "usd" or "cad"' });
         }
-        
+
         // Get the monthly price for the selected currency (trial converts to monthly)
         const priceId = PRICE_IDS[`monthly_${currency}`];
-        
+
         if (!priceId) {
             throw new Error('Invalid currency configuration');
         }
-        
+
         // Check if user has already used Stripe trial
         const { data: userData, error: userError } = await supabase
             .from('users')
             .select('has_activated_stripe_trial, email')
             .eq('auth0_user_id', user.sub)
             .single();
-            
+
         if (userError) {
             console.error('Error fetching user:', userError);
             throw new Error('Failed to verify user eligibility');
         }
-        
+
         if (userData?.has_activated_stripe_trial) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 error: 'You have already used your free trial',
                 code: 'TRIAL_ALREADY_USED'
             });
         }
-        
+
         // Find or create Stripe customer
         let customer;
         const existingCustomers = await stripe.customers.list({
@@ -2158,14 +2173,14 @@ app.post('/webhook', async (req, res) => {
 
                 const priceId = subscription.items.data[0].price.id;
                 console.log('Price ID:', priceId);
-                
+
                 // Check if this is a trial subscription
                 const isStripeTrial = subscription.status === 'trialing' && subscription.trial_end;
                 console.log('Is Stripe Trial:', isStripeTrial, 'Trial End:', subscription.trial_end);
 
                 // Determine subscription interval
                 let subscriptionInterval;
-                
+
                 if (isStripeTrial) {
                     // This is a Stripe trial - set interval to stripe_trial
                     subscriptionInterval = 'stripe_trial';
@@ -2177,7 +2192,7 @@ app.post('/webhook', async (req, res) => {
 
                 // For trials, use trial_end as the subscription_end_date
                 // For regular subscriptions, use current_period_end
-                const endDate = isStripeTrial 
+                const endDate = isStripeTrial
                     ? new Date(subscription.trial_end * 1000).toISOString()
                     : new Date(subscription.current_period_end * 1000).toISOString();
 
@@ -2194,7 +2209,7 @@ app.post('/webhook', async (req, res) => {
                     student_school_email: null,
                     student_last_student_redeem_at: null
                 };
-                
+
                 // Set appropriate trial flags
                 if (isStripeTrial) {
                     updateData.has_activated_stripe_trial = true;
@@ -2409,26 +2424,26 @@ app.post('/webhook', async (req, res) => {
                     subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                     cancel_at_period_end: subscription.cancel_at_period_end || false
                 };
-                
+
                 // Check if this is a trial-to-paid conversion
                 // This happens when status changes from 'trialing' to 'active'
                 const wasTrialing = previousAttributes.status === 'trialing';
                 const isNowActive = subscription.status === 'active';
                 const isTrialConversion = wasTrialing && isNowActive;
-                
+
                 if (isTrialConversion) {
                     console.log('Trial conversion detected for user:', userData.auth0_user_id);
                     // Determine the new interval from the price
                     const priceId = subscription.items.data[0].price.id;
                     let newInterval = 'monthly'; // default for trial conversion
-                    
+
                     if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
                         newInterval = 'yearly';
                     }
-                    
+
                     updateData.subscription_interval = newInterval;
                     updateData.subscription_status = 'active';
-                    
+
                     // Send welcome to paid subscription email
                     if (userData.email) {
                         try {
@@ -2550,7 +2565,7 @@ app.post('/cancel-subscription', async (req, res) => {
 // This endpoint is kept to return a proper error message to any old clients still calling it
 app.post('/activate-trial', async (req, res) => {
     console.log('Legacy trial activation attempted - endpoint disabled');
-    return res.status(410).json({ 
+    return res.status(410).json({
         error: 'In-house trials are no longer available. Please start a 14-day free trial with card.',
         code: 'LEGACY_TRIAL_DISABLED',
         redirect: '/subscribe'

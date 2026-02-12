@@ -18,6 +18,7 @@ import WelcomeToPetwise from '../components/WelcomeToPetwise';
 import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
+import InstallPrompt from '../components/InstallPrompt';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -965,6 +966,16 @@ const Dashboard = () => {
                 setShowWelcomePage(false);
             }}
         />;
+    }
+
+    // PWA install gate — mobile browser users must install to home screen
+    // This runs AFTER onboarding (terms, DVM name, plan, welcome page) so signup is frictionless
+    if (isMobile && process.env.NODE_ENV !== 'development') {
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                             window.navigator.standalone === true;
+        if (!isStandalone) {
+            return <InstallPrompt />;
+        }
     }
 
     // After onboarding, check if on mobile
