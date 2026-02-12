@@ -76,6 +76,16 @@ select {
     }
 }
 
+/* Onboarding animations */
+.animate-fade-in {
+    animation: onb-fadeIn 0.35s ease-out;
+}
+
+@keyframes onb-fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* PWA standalone mode - match sidebar blue */
 @media all and (display-mode: standalone) {
     body {

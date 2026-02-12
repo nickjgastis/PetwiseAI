@@ -19,6 +19,7 @@ import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import InstallPrompt from '../components/InstallPrompt';
+import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -87,6 +88,7 @@ const Dashboard = () => {
     const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default true for existing users
     const [showWelcomePage, setShowWelcomePage] = useState(false); // Show welcome after plan selection
+    const [onboardingData, setOnboardingData] = useState(null); // New onboarding flow data (null = no row = skip)
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
     const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
@@ -824,7 +826,61 @@ const Dashboard = () => {
 
             setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
             setUserData(userData);
-            
+
+            // Check new onboarding flow table (find or create for new users)
+            try {
+                const { data: onboarding, error: onboardingError } = await supabase
+                    .from('onboarding')
+                    .select('*')
+                    .eq('auth0_user_id', user.sub)
+                    .single();
+                
+                if (onboardingError && onboardingError.code === 'PGRST116') {
+                    // No onboarding row — check if this is a brand new user
+                    const isNewUser = !userData.has_accepted_terms && !userData.dvm_name && 
+                                      (!userData.subscription_status || userData.subscription_status === 'inactive') &&
+                                      !userData.has_completed_onboarding && !userData.has_used_trial;
+                    
+                    if (isNewUser) {
+                        // Create onboarding row now (upsert to handle race conditions)
+                        const { data: newOnboarding } = await supabase
+                            .from('onboarding')
+                            .upsert([{
+                                auth0_user_id: user.sub,
+                                status: 'in_progress',
+                                current_step: 'congrats',
+                                quiz_answers: {},
+                            }], { onConflict: 'auth0_user_id' })
+                            .select()
+                            .single();
+                        
+                        if (newOnboarding && newOnboarding.status === 'in_progress') {
+                            console.log('Onboarding row created for new user');
+                            setOnboardingData(newOnboarding);
+                        } else {
+                            setOnboardingData(null);
+                        }
+                    } else {
+                        setOnboardingData(null); // Existing user, skip
+                    }
+                } else if (onboardingError) {
+                    console.error('Error fetching onboarding:', onboardingError);
+                    setOnboardingData(null);
+                } else if (onboarding && onboarding.status === 'in_progress') {
+                    // If user came back from Stripe with active subscription, advance trial step to welcome
+                    if (onboarding.current_step === 'trial' && (hasActiveSubscription || hasTrial || isStudentMode)) {
+                        onboarding.current_step = 'welcome';
+                        await supabase.from('onboarding').update({ current_step: 'welcome', updated_at: new Date().toISOString() }).eq('auth0_user_id', user.sub);
+                    }
+                    setOnboardingData(onboarding);
+                } else {
+                    setOnboardingData(null); // Completed or no row — skip
+                }
+            } catch (onboardingErr) {
+                console.error('Error checking onboarding:', onboardingErr);
+                setOnboardingData(null);
+            }
+
             // Onboarding is complete if:
             // 1. has_completed_onboarding is explicitly true, OR
             // 2. User has previously used trial (they went through flow before, just expired/canceled)
@@ -833,6 +889,8 @@ const Dashboard = () => {
 
             if (!userData.dvm_name || userData.dvm_name === null || userData.dvm_name === '') {
                 setNeedsWelcome(true);
+            } else {
+                setNeedsWelcome(false);
             }
         } catch (err) {
             console.error('Error:', err);
@@ -917,6 +975,25 @@ const Dashboard = () => {
         return null;
     }
 
+    // ================ NEW ONBOARDING FLOW ================
+    // If onboardingData exists with in_progress status, this is a new user — show the new flow
+    // Existing users have no onboarding row, so this is skipped entirely
+    if (onboardingData && onboardingData.status === 'in_progress') {
+        return <OnboardingFlow 
+            onboardingData={onboardingData}
+            userData={userData}
+            refreshSubscription={checkSubscription}
+            onComplete={() => {
+                setOnboardingData(null);
+                setHasAcceptedTerms(true);
+                setHasCompletedOnboarding(true);
+                setNeedsWelcome(false);
+                checkSubscription(); // Refresh everything
+            }}
+        />;
+    }
+
+    // ================ LEGACY ONBOARDING (existing users only) ================
     // Check terms first
     if (!hasAcceptedTerms) {
         return <TermsOfService onAccept={handleAcceptTerms} />;
@@ -924,30 +1001,25 @@ const Dashboard = () => {
 
     // Then check if they need to set their DVM name
     if (needsWelcome || !userData?.dvm_name) {
-        // Show welcome for DVM name setup - onboarding checks will handle next step
         return <Welcome onComplete={(updatedData) => {
             setNeedsWelcome(false);
             setUserData(updatedData);
-            // Don't navigate - let the onboarding flow control where to go next
         }} />;
     }
 
     // Check if user needs to complete onboarding (select plan + see welcome page)
     if (!hasCompletedOnboarding) {
-        // If they haven't selected a plan yet, show plan selection
         if (!subscriptionStatus || subscriptionStatus === 'inactive') {
             return <PlanSelection 
                 user={{ ...user, sub: user.sub }} 
                 onTrialActivated={() => {
-                    // Trial was activated, show welcome page
                     setShowWelcomePage(true);
                     setSubscriptionStatus('active');
-                    checkSubscription(); // Refresh data
+                    checkSubscription();
                 }}
             />;
         }
         
-        // They have a plan but haven't completed onboarding - show welcome page
         return <WelcomeToPetwise 
             user={user}
             onComplete={() => {
@@ -969,7 +1041,7 @@ const Dashboard = () => {
     }
 
     // PWA install gate — mobile browser users must install to home screen
-    // This runs AFTER onboarding (terms, DVM name, plan, welcome page) so signup is frictionless
+    // For legacy users who somehow end up here on mobile browser
     if (isMobile && process.env.NODE_ENV !== 'development') {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                              window.navigator.standalone === true;
