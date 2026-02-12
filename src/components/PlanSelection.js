@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useAuth0 } from '@auth0/auth0-react';
 import { FaCheck, FaCrown, FaGraduationCap, FaSignOutAlt } from 'react-icons/fa';
@@ -19,6 +19,14 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
     const [isLoading, setIsLoading] = useState(null); // Track which button is loading
     const [currency, setCurrency] = useState('usd');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
+    const scrollContainerRef = useRef(null);
+
+    // Scroll to top on mount
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = 0;
+        }
+    }, []);
 
     const handleLogout = () => {
         logout({
@@ -144,7 +152,7 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center justify-center p-4 sm:p-8 relative">
+        <div ref={scrollContainerRef} className="fixed inset-0 bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center sm:justify-center p-4 sm:p-8 overflow-y-auto" style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}>
             {/* Logout Button */}
             <button
                 onClick={handleLogout}
@@ -166,23 +174,23 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
             )}
 
             {/* Header */}
-            <div className="text-center mb-8 sm:mb-12">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                    <img src="/PW.png" alt="Petwise" className="w-12 h-12 sm:w-14 sm:h-14" />
-                    <h1 className="text-3xl sm:text-4xl font-bold text-white">
+            <div className="text-center mb-4 sm:mb-12 mt-8 sm:mt-0">
+                <div className="flex items-center justify-center gap-3 mb-2 sm:mb-4">
+                    <img src="/PW.png" alt="Petwise" className="w-10 h-10 sm:w-14 sm:h-14" />
+                    <h1 className="text-2xl sm:text-4xl font-bold text-white">
                         Petwise<span className="font-normal">.vet</span>
                     </h1>
                 </div>
-                <h2 className="text-xl sm:text-2xl text-white/90 font-medium mb-2">
+                <h2 className="text-lg sm:text-2xl text-white/90 font-medium mb-1 sm:mb-2">
                     Choose Your Plan
                 </h2>
-                <p className="text-white/70 text-sm sm:text-base max-w-md mx-auto">
+                <p className="text-white/70 text-xs sm:text-base max-w-md mx-auto">
                     Start with a 14-day free trial or select a plan that fits your practice
                 </p>
             </div>
 
             {/* Currency Toggle */}
-            <div className="flex items-center gap-2 mb-6 bg-white/10 rounded-full p-1">
+            <div className="flex items-center gap-2 mb-4 sm:mb-6 bg-white/10 rounded-full p-1">
                 <button
                     onClick={() => setCurrency('usd')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
@@ -206,21 +214,21 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
             </div>
 
             {/* Plan Cards */}
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 w-full max-w-5xl">
+            <div className="flex flex-col lg:flex-row gap-3 sm:gap-6 w-full max-w-5xl">
                 {/* Monthly Plan */}
-                <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Monthly</h3>
-                    <div className="mb-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
+                <div className="flex-1 bg-white rounded-2xl p-4 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2">Monthly</h3>
+                    <div className="mb-2 sm:mb-4">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-gray-900">
                             {PRICES[currency].symbol}{PRICES[currency].monthly}
                         </span>
-                        <span className="text-gray-500 ml-1">/{PRICES[currency].code}/mo</span>
+                        <span className="text-gray-500 ml-1 text-sm">/{PRICES[currency].code}/mo</span>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">Billed monthly, cancel anytime</p>
+                    <p className="text-gray-500 text-xs sm:text-sm mb-3 sm:mb-6">Billed monthly, cancel anytime</p>
                     
-                    <ul className="space-y-3 mb-8">
+                    <ul className="space-y-1.5 sm:space-y-3 mb-4 sm:mb-8">
                         {features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
+                            <li key={idx} className="flex items-center gap-2 sm:gap-3 text-gray-700 text-xs sm:text-sm">
                                 <FaCheck className="text-green-500 flex-shrink-0" />
                                 {feature}
                             </li>
@@ -230,68 +238,68 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                     <button
                         onClick={() => handleCheckout('monthly')}
                         disabled={isLoading !== null}
-                        className="w-full py-3 px-6 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 sm:py-3 px-6 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
                         {isLoading === 'monthly' ? 'Processing...' : 'Get Monthly'}
                     </button>
                 </div>
 
                 {/* 14-Day Stripe Trial - Center/Featured */}
-                <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ring-2 ring-[#3468bd] relative order-first lg:order-none">
+                <div className="flex-1 bg-white rounded-2xl p-4 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 ring-2 ring-[#3468bd] relative order-first lg:order-none">
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white px-4 py-1 rounded-full text-xs font-bold">
                         RECOMMENDED
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Free Trial</h3>
-                    <div className="mb-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2 mt-2">Free Trial</h3>
+                    <div className="mb-2 sm:mb-4">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-gray-900">
                             $0
                         </span>
-                        <span className="text-gray-500 ml-1">/14 days</span>
+                        <span className="text-gray-500 ml-1 text-sm">/14 days</span>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">Full unlimited access • Cancel anytime</p>
+                    <p className="text-gray-500 text-xs sm:text-sm mb-3 sm:mb-6">Full unlimited access • Cancel anytime</p>
                     
-                    <ul className="space-y-3 mb-6">
+                    <ul className="space-y-1.5 sm:space-y-3 mb-3 sm:mb-6">
                         {features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
+                            <li key={idx} className="flex items-center gap-2 sm:gap-3 text-gray-700 text-xs sm:text-sm">
                                 <FaCheck className="text-green-500 flex-shrink-0" />
                                 {feature}
                             </li>
                         ))}
                     </ul>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5 sm:space-y-2">
                         <button
                             onClick={() => handleStripeTrialCheckout(currency)}
                             disabled={isLoading !== null}
-                            className="w-full py-3 px-6 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white font-semibold rounded-xl hover:from-[#2a5298] hover:to-[#1e3a6e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                            className="w-full py-2.5 sm:py-3 px-6 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white font-semibold rounded-xl hover:from-[#2a5298] hover:to-[#1e3a6e] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm sm:text-base"
                         >
                             {isLoading?.startsWith('trial_') ? 'Loading...' : 'Start Free Trial'}
                         </button>
-                        <p className="text-xs text-gray-400 text-center mt-2">
+                        <p className="text-xs text-gray-400 text-center">
                             Auto-renews to monthly after 14 days. Cancel anytime.
                         </p>
                     </div>
                 </div>
 
                 {/* Yearly Plan */}
-                <div className="flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative">
+                <div className="flex-1 bg-white rounded-2xl p-4 sm:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 relative">
                     <div className="absolute -top-3 right-4 bg-gradient-to-r from-amber-400 to-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
                         <FaCrown className="text-[10px]" /> BEST VALUE
                     </div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Yearly</h3>
-                    <div className="mb-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 sm:mb-2 mt-2">Yearly</h3>
+                    <div className="mb-2 sm:mb-4">
+                        <span className="text-3xl sm:text-4xl font-extrabold text-gray-900">
                             {PRICES[currency].symbol}{PRICES[currency].yearly}
                         </span>
-                        <span className="text-gray-500 ml-1">/{PRICES[currency].code}/mo</span>
+                        <span className="text-gray-500 ml-1 text-sm">/{PRICES[currency].code}/mo</span>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">
+                    <p className="text-gray-500 text-xs sm:text-sm mb-3 sm:mb-6">
                         {PRICES[currency].symbol}{PRICES[currency].yearlyTotal}/{PRICES[currency].code} billed yearly
                     </p>
                     
-                    <ul className="space-y-3 mb-8">
+                    <ul className="space-y-1.5 sm:space-y-3 mb-4 sm:mb-8">
                         {features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
+                            <li key={idx} className="flex items-center gap-2 sm:gap-3 text-gray-700 text-xs sm:text-sm">
                                 <FaCheck className="text-green-500 flex-shrink-0" />
                                 {feature}
                             </li>
@@ -301,7 +309,7 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
                     <button
                         onClick={() => handleCheckout('yearly')}
                         disabled={isLoading !== null}
-                        className="w-full py-3 px-6 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-2.5 sm:py-3 px-6 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
                         {isLoading === 'yearly' ? 'Processing...' : 'Get Yearly'}
                     </button>
@@ -309,22 +317,22 @@ const PlanSelection = ({ user, onTrialActivated, onPlanSelected }) => {
             </div>
 
             {/* Student Access Button */}
-            <div className="mt-8 flex flex-col items-center">
+            <div className="mt-4 sm:mt-8 flex flex-col items-center">
                 <button
                     onClick={() => setShowStudentRedeem(true)}
                     disabled={isLoading !== null}
-                    className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                    className="flex items-center justify-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-sm sm:text-base"
                 >
                     <FaGraduationCap />
                     Student Access
                 </button>
-                <p className="text-white/70 text-xs mt-2 text-center">
+                <p className="text-white/70 text-xs mt-1.5 sm:mt-2 text-center">
                     Vet students get free access with school credentials
                 </p>
             </div>
 
             {/* Footer note */}
-            <p className="text-white/60 text-xs mt-8 text-center max-w-md">
+            <p className="text-white/60 text-xs mt-4 sm:mt-8 mb-4 sm:mb-0 text-center max-w-md">
                 All plans include full access to all features. Paid plans will be charged immediately.
             </p>
         </div>

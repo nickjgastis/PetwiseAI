@@ -8,6 +8,9 @@ const TermsOfService = ({ onAccept }) => {
     useEffect(() => {
         const element = scrollRef.current;
         if (element) {
+            // Ensure we start at the top
+            element.scrollTop = 0;
+
             const checkScroll = () => {
                 const scrolledToBottom =
                     Math.abs(element.scrollHeight - element.scrollTop - element.clientHeight) <= 1;
@@ -32,24 +35,28 @@ const TermsOfService = ({ onAccept }) => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto p-8 bg-white rounded-2xl shadow-lg">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">Terms of Service & Privacy Policy</h1>
-                <p className="text-gray-600">Please read and accept our terms to continue</p>
+        <div className="fixed inset-0 flex flex-col bg-white overflow-hidden" style={{ overscrollBehavior: 'none' }}>
+            {/* Fixed header */}
+            <div className="flex-shrink-0 px-4 pt-5 pb-3 sm:px-8 sm:pt-8 sm:pb-4">
+                <div className="text-center">
+                    <h1 className="text-xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">Terms of Service & Privacy Policy</h1>
+                    <p className="text-gray-600 text-sm sm:text-base">Please read and accept our terms to continue</p>
+                </div>
+
+                {!isScrolledToBottom && (
+                    <div className="bg-primary-50 border border-primary-200 rounded-lg p-2 sm:p-4 mt-3 sm:mt-6 text-center">
+                        <div className="flex items-center justify-center gap-2 text-primary-700 font-medium text-xs sm:text-base">
+                            <svg className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                            Scroll to the bottom to accept
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {!isScrolledToBottom && (
-                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 text-center">
-                    <div className="flex items-center justify-center gap-2 text-primary-700 font-medium">
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                        </svg>
-                        Please scroll to the bottom to accept
-                    </div>
-                </div>
-            )}
-
-            <div ref={scrollRef} className="h-96 overflow-y-auto p-6 mb-6 border border-gray-200 rounded-xl bg-gray-50 leading-relaxed">
+            {/* Scrollable terms area — takes all remaining space */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto mx-4 sm:mx-8 border border-gray-200 rounded-xl bg-gray-50 leading-relaxed p-4 sm:p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <h2 className="text-2xl font-bold text-gray-800 mb-4 mt-6 first:mt-0">Terms of Service</h2>
                 <p className="mb-4"><strong className="text-gray-700">Effective Date:</strong> January 1, 2025</p>
                 <p className="mb-4 text-gray-700">
@@ -378,23 +385,23 @@ const TermsOfService = ({ onAccept }) => {
 
             </div>
 
-            <div className="mt-8 flex flex-col gap-4">
-                <label className={`flex items-center gap-3 p-3 rounded-lg transition-colors duration-200 ${!isScrolledToBottom ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`}>
+            {/* Fixed bottom controls */}
+            <div className="flex-shrink-0 px-4 py-3 sm:px-8 sm:py-4 border-t border-gray-100 bg-white">
+                <label className={`flex items-center gap-3 p-2 sm:p-3 rounded-lg transition-colors duration-200 ${!isScrolledToBottom ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'}`}>
                     <input
                         type="checkbox"
                         checked={hasAccepted}
                         onChange={(e) => setHasAccepted(e.target.checked)}
                         disabled={!isScrolledToBottom}
-                        className="w-5 h-5 text-primary-600 bg-white border-2 border-primary-300 rounded focus:ring-primary-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-5 h-5 flex-shrink-0 text-primary-600 bg-white border-2 border-primary-300 rounded focus:ring-primary-500 focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
-                    <span className="text-gray-700 font-medium">I have read and agree to the Terms of Service and Privacy Policy</span>
+                    <span className="text-gray-700 font-medium text-xs sm:text-base">I have read and agree to the Terms of Service and Privacy Policy</span>
                 </label>
-
 
                 <button
                     onClick={handleAccept}
                     disabled={!hasAccepted || !isScrolledToBottom}
-                    className="px-8 py-4 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 mt-4 text-lg"
+                    className="w-full px-8 py-3 sm:py-4 bg-primary-600 text-white font-semibold rounded-lg hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 mt-2 text-base sm:text-lg"
                 >
                     Accept & Continue
                 </button>

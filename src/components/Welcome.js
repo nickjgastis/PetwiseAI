@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 
@@ -8,6 +8,11 @@ const Welcome = ({ onComplete }) => {
     const [error, setError] = useState('');
     const [isStudentMode, setIsStudentMode] = useState(false);
     const { user } = useAuth0();
+
+    // Scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -35,7 +40,7 @@ const Welcome = ({ onComplete }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-gradient-to-br from-[#3468bd] via-[#2c5aa0] to-[#1e3d72] flex items-center justify-center p-2 sm:p-4 z-50">
+        <div className="fixed inset-0 bg-gradient-to-br from-[#3468bd] via-[#2c5aa0] to-[#1e3d72] flex items-center justify-center p-2 sm:p-4 z-50" style={{ overscrollBehavior: 'none' }}>
             <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg bg-white rounded-2xl shadow-2xl p-4 sm:p-6 lg:p-8 animate-fade-in">
                 {/* Logo */}
                 <div className="flex justify-center mb-4 sm:mb-6">
