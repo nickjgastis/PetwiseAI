@@ -151,7 +151,7 @@ const ManageAccount = ({ user, onBack }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center p-4 sm:p-8 overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center p-4 sm:p-8 overflow-y-auto pb-24" style={{ WebkitOverflowScrolling: 'touch' }}>
             {/* Header with back button */}
             <div className="w-full max-w-2xl mb-6">
                 <button
@@ -334,6 +334,8 @@ const ManageAccount = ({ user, onBack }) => {
             <p className="text-white/60 text-xs mt-8 text-center max-w-md">
                 Need help? Contact us at support@petwise.vet
             </p>
+            {/* Extra spacer for mobile safe area */}
+            <div className="flex-shrink-0 w-full" style={{ paddingBottom: 'env(safe-area-inset-bottom, 20px)' }} />
         </div>
     );
 };

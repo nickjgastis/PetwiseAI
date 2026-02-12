@@ -33,7 +33,9 @@ const InstallPrompt = () => {
     localStorage.removeItem('auth0.is.authenticated');
     logout({
       logoutParams: {
-        returnTo: window.location.origin
+        returnTo: window.location.origin.includes('app.petwise.vet')
+          ? 'https://petwise.vet'
+          : window.location.origin
       }
     });
   };

@@ -1,29 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 
 const TermsOfService = ({ onAccept, onBack }) => {
-    const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
     const [hasAccepted, setHasAccepted] = useState(false);
-    const scrollRef = useRef(null);
-
-    useEffect(() => {
-        const element = scrollRef.current;
-        if (element) {
-            element.scrollTop = 0;
-
-            const checkScroll = () => {
-                const scrolledToBottom =
-                    Math.abs(element.scrollHeight - element.scrollTop - element.clientHeight) <= 1;
-                setIsScrolledToBottom(scrolledToBottom);
-            };
-
-            checkScroll();
-            element.addEventListener('scroll', checkScroll);
-            return () => element.removeEventListener('scroll', checkScroll);
-        }
-    }, []);
 
     const handleAccept = () => {
-        if (isScrolledToBottom && hasAccepted) {
+        if (hasAccepted) {
             onAccept({ emailOptOut: false });
         }
     };
@@ -58,21 +39,10 @@ const TermsOfService = ({ onAccept, onBack }) => {
             <div className="flex-shrink-0 px-4 pt-4 pb-2 sm:px-8 sm:pt-5 sm:pb-3 text-center">
                 <h1 className="text-xl sm:text-3xl font-bold text-white mb-1">Terms of Service & Privacy Policy</h1>
                 <p className="text-white/60 text-xs sm:text-sm">Please read and accept our terms to continue</p>
-
-                {!isScrolledToBottom && (
-                    <div className="bg-white/10 border border-white/10 rounded-lg p-2 sm:p-3 mt-3 text-center backdrop-blur-sm">
-                        <div className="flex items-center justify-center gap-2 text-white/70 font-medium text-xs sm:text-sm">
-                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
-                            Scroll to the bottom to accept
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Scrollable terms area */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto mx-4 sm:mx-8 border border-white/10 rounded-xl bg-white/10 backdrop-blur-sm leading-relaxed p-4 sm:p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex-1 overflow-y-auto mx-4 sm:mx-8 border border-white/10 rounded-xl bg-white/10 backdrop-blur-sm leading-relaxed p-4 sm:p-6" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <h2 className="text-2xl font-bold text-white mb-4 mt-6 first:mt-0">Terms of Service</h2>
                 <p className="mb-4"><strong className="text-white/90">Effective Date:</strong> <span className="text-white/80">January 1, 2025</span></p>
                 <p className="mb-4 text-white/85">
@@ -403,20 +373,19 @@ const TermsOfService = ({ onAccept, onBack }) => {
 
             {/* Fixed bottom controls */}
             <div className="flex-shrink-0 px-4 py-3 sm:px-8 sm:py-4 bg-gradient-to-t from-[#1e3a6e] to-[#1e3a6e]/95 border-t border-white/10">
-                <label className={`flex items-center gap-3 p-2 sm:p-3 rounded-lg transition-colors duration-200 ${!isScrolledToBottom ? 'opacity-50 cursor-not-allowed' : 'hover:bg-white/5 cursor-pointer'}`}>
+                <label className="flex items-center gap-3 p-2 sm:p-3 rounded-lg transition-colors duration-200 hover:bg-white/5 cursor-pointer">
                     <input
                         type="checkbox"
                         checked={hasAccepted}
                         onChange={(e) => setHasAccepted(e.target.checked)}
-                        disabled={!isScrolledToBottom}
-                        className="w-5 h-5 flex-shrink-0 text-[#3db6fd] bg-white/10 border-2 border-white/30 rounded focus:ring-[#3db6fd] focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-5 h-5 flex-shrink-0 text-[#3db6fd] bg-white/10 border-2 border-white/30 rounded focus:ring-[#3db6fd] focus:ring-2"
                     />
                     <span className="text-white/80 font-medium text-xs sm:text-sm">I have read and agree to the Terms of Service and Privacy Policy</span>
                 </label>
 
                 <button
                     onClick={handleAccept}
-                    disabled={!hasAccepted || !isScrolledToBottom}
+                    disabled={!hasAccepted}
                     className="w-full py-3 sm:py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] disabled:bg-white/10 disabled:text-white/30 disabled:cursor-not-allowed transition-colors duration-200 mt-2 text-base sm:text-lg"
                 >
                     Accept & Continue
