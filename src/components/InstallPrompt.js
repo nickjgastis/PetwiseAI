@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import '../styles/InstallPrompt.css';
 
 // Check conditions synchronously to avoid flash
@@ -23,9 +24,19 @@ const getInitialGateState = () => {
 };
 
 const InstallPrompt = () => {
+  const { logout } = useAuth0();
   const [showGate] = useState(getInitialGateState);
   // Check for early-captured prompt from index.html
   const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredInstallPrompt || null);
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth0.is.authenticated');
+    logout({
+      logoutParams: {
+        returnTo: window.location.origin
+      }
+    });
+  };
 
   // Detect platform
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -105,6 +116,7 @@ const InstallPrompt = () => {
           </div>
 
           <p className="install-gate-footer">Only Safari supports app installation on iOS</p>
+          <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
         </div>
       </div>
     );
@@ -143,6 +155,7 @@ const InstallPrompt = () => {
           </div>
 
           <p className="install-gate-footer">Works offline • Fast • Secure</p>
+          <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
         </div>
       </div>
     );
@@ -185,6 +198,7 @@ const InstallPrompt = () => {
           </div>
 
           <p className="install-gate-footer">Works offline • Fast • Secure</p>
+          <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
         </div>
       </div>
     );
@@ -214,6 +228,7 @@ const InstallPrompt = () => {
         </div>
 
         <p className="install-gate-footer">Works offline • Fast • Secure</p>
+        <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
       </div>
     </div>
   );
