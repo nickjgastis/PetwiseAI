@@ -80,9 +80,9 @@ router.post('/test/:type', async (req, res) => {
         nickname
     };
 
-    // Mock dates for testing
+    // Mock dates for testing (14-day trial)
     const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 15); // 15 days from now
+    trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days from now (midway point)
 
     const subscriptionEndDate = new Date();
     subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30); // 30 days from now
@@ -98,7 +98,7 @@ router.post('/test/:type', async (req, res) => {
                 result = await sendTrialActivatedEmail(supabase, mockUser, trialEndDate.toISOString());
                 break;
             case 'trial-midway':
-                result = await sendTrialMidwayEmail(supabase, mockUser, 15, trialEndDate.toISOString());
+                result = await sendTrialMidwayEmail(supabase, mockUser, 7, trialEndDate.toISOString());
                 break;
             case 'trial-ending':
                 const endingSoon = new Date();

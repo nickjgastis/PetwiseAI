@@ -177,24 +177,33 @@ function ctaButton(text, url) {
 function generateWelcomeEmail(userName) {
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
-            Welcome to Petwise! 🐾
+            Welcome to PetWise! 🐾
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            We're thrilled to have you join the Petwise community! You've just taken the first step toward 
-            streamlining your veterinary documentation.
+            Hi there,
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Petwise uses AI to help you create professional SOAP notes, client communications, and more — 
-            saving you hours every week so you can focus on what matters most: your patients.
+            I wanted to personally welcome you to PetWise and thank you for giving the platform a try.
+        </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            PetWise was built to help veterinarians save time on documentation while maintaining high clinical 
+            quality and consistency. During your trial, you'll have full access to explore the core features 
+            and see how it fits into your workflow.
+        </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            If you have any questions as you get started, you can reach us anytime at 
+            <a href="mailto:info@petwise.vet" style="color: #3db6fd; text-decoration: none;">info@petwise.vet</a>, 
+            and our team will be happy to help.
         </p>
         <div style="text-align: center;">
             ${ctaButton('Get Started', `${APP_URL}/dashboard`)}
         </div>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Ready to see what Petwise can do? Start your free trial and experience the difference.
+            All the best,<br>
+            Nick
         </p>`;
 
-    return emailWrapper(content, 'Welcome to Petwise! Get started with your account.');
+    return emailWrapper(content, 'Welcome to PetWise! Thanks for giving the platform a try.');
 }
 
 /**
@@ -211,14 +220,15 @@ function generateTrialActivatedEmail(userName, trialEndDate) {
 
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
-            Your 14-Day Trial Has Started! 🎉
+            Your Trial Has Started! 🎉
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${displayName},
+            Congratulations on starting your PetWise trial!
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Welcome to Petwise! Your 14-day free trial is now active, giving you full access to all features 
-            with unlimited reports.
+            You now have full access to the platform to explore how it can support your day-to-day clinical 
+            documentation and reporting. Most users find it helpful to begin by running a few real cases 
+            through the system to get a feel for the workflow.
         </p>
         <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin: 24px 0;">
             <p style="margin: 0; font-size: 14px; color: #166534; font-weight: 500;">
@@ -231,14 +241,22 @@ function generateTrialActivatedEmail(userName, trialEndDate) {
         <p style="margin: 0 0 8px; font-size: 14px; color: #6b7280;">
             <strong>Trial ends:</strong> ${endDateFormatted}
         </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            If you have any questions or would like guidance along the way, you can reach us at 
+            <a href="mailto:info@petwise.vet" style="color: #3db6fd; text-decoration: none;">info@petwise.vet</a>.
+        </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            I hope PetWise proves to be a valuable addition to your practice.
+        </p>
         <div style="text-align: center;">
-            ${ctaButton('Start Creating Notes', `${APP_URL}/dashboard`)}
+            ${ctaButton('Start Exploring', `${APP_URL}/dashboard`)}
         </div>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Pro tip: Try dictating your next exam and watch Petwise transform it into a complete SOAP note in seconds.
+            All the best,<br>
+            Nick
         </p>`;
 
-    return emailWrapper(content, 'Your 14-day free trial has started! Start creating notes now.');
+    return emailWrapper(content, 'Congratulations on starting your PetWise trial! Explore the full platform now.');
 }
 
 /**
@@ -304,8 +322,7 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
             Hi ${displayName},
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            You're one week into your Petwise trial! We hope you're enjoying the time savings and 
-            seeing how AI-powered documentation can transform your workflow.
+            I wanted to check in and see how your first week with PetWise has been going.
         </p>
         <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
@@ -313,22 +330,27 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
             </p>
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            <strong>Have you tried everything?</strong>
+            If it's helpful, we'd be happy to invite you to a complimentary one-on-one demo with 
+            <strong>Dr. Stacey Gastis</strong>. The session is about an hour, walks through real clinical 
+            use cases, and includes <strong>1 hour of RACE-approved CE</strong>.
         </p>
-        <ul style="margin: 0 0 16px; padding-left: 20px; font-size: 15px; color: #374151; line-height: 1.8;">
-            <li>Dictate a full exam and generate a SOAP note</li>
-            <li>Create a client callback summary</li>
-            <li>Set up a custom template for common cases</li>
-            <li>Use PetQuery to look up drug dosages or protocols</li>
-        </ul>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Many users find this session helpful for seeing how PetWise fits into real-world workflows 
+            and for getting the most out of the platform during the remainder of the trial.
+        </p>
         <div style="text-align: center;">
-            ${ctaButton('Continue Exploring', `${APP_URL}/dashboard`)}
+            ${ctaButton('Book a Demo Session', 'https://calendar.app.google/o8NWwhrDwnX78a1H8')}
         </div>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            If you have any questions in the meantime, please reach out to us at 
+            <a href="mailto:info@petwise.vet" style="color: #3db6fd; text-decoration: none;">info@petwise.vet</a>.
+        </p>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Questions or feedback? Reach out at <a href="mailto:support@petwise.vet" style="color: #3db6fd; text-decoration: none;">support@petwise.vet</a> — we'd love to hear from you!
+            All the best,<br>
+            Nick
         </p>`;
 
-    return emailWrapper(content, `One week in! How's your Petwise trial going?`);
+    return emailWrapper(content, `One week in — book a free demo with Dr. Gastis (1hr RACE-approved CE included)`);
 }
 
 /**
@@ -345,32 +367,41 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
 
     const content = `
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
-            Almost 2 Weeks In! 🚀
+            Your Trial Ends Soon 🚀
         </h1>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Hi ${displayName},
+            Hi there,
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            Wow, you're almost 2 weeks into your Petwise trial! We'd love to hear how it's going.
+            I'm checking in as your PetWise trial is nearing its end.
         </p>
-        <div style="background-color: #eff6ff; border-radius: 8px; padding: 16px; margin: 24px 0;">
-            <p style="margin: 0; font-size: 14px; color: #1e40af;">
-                <strong>📅 What's next?</strong> Your trial ends on ${endDateFormatted}, and you'll automatically 
-                continue on the monthly plan — no action needed. All your saved reports and templates will be right where you left them.
+        <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0;">
+            <p style="margin: 0; font-size: 14px; color: #92400e;">
+                <strong>⏰ ${daysLeft} days remaining</strong> — Trial ends ${endDateFormatted}
             </p>
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            If Petwise isn't for you, no worries — you can cancel anytime from your account settings before 
-            your trial ends.
+            If you haven't already, we'd be happy to invite you to a complimentary one-on-one demo with 
+            <strong>Dr. Stacey Gastis</strong>. The session is about an hour, walks through real clinical 
+            use cases, and includes <strong>1 hour of RACE-approved CE</strong>.
+        </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            There's no obligation at all. It's simply an opportunity to make sure you're getting full value 
+            from PetWise and to answer any questions you may have before your trial concludes.
         </p>
         <div style="text-align: center;">
-            ${ctaButton('Go to Dashboard', `${APP_URL}/dashboard`)}
+            ${ctaButton('Book a Demo Session', 'https://calendar.app.google/o8NWwhrDwnX78a1H8')}
         </div>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            If you have any questions, please contact us at 
+            <a href="mailto:info@petwise.vet" style="color: #3db6fd; text-decoration: none;">info@petwise.vet</a>.
+        </p>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
-            Questions or feedback? Reach out at <a href="mailto:support@petwise.vet" style="color: #3db6fd; text-decoration: none;">support@petwise.vet</a> — we'd love to hear from you!
+            All the best,<br>
+            Nick
         </p>`;
 
-    return emailWrapper(content, `Almost 2 weeks in! Your Petwise trial ends in ${daysLeft} days.`);
+    return emailWrapper(content, `Your PetWise trial ends in ${daysLeft} days — book a free demo before it's over.`);
 }
 
 // ============================================
