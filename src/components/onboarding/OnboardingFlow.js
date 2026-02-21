@@ -10,10 +10,11 @@ import TestimonialStep from './TestimonialStep';
 import TrialStep from './TrialStep';
 import WelcomeToPetwise from '../WelcomeToPetwise';
 import TermsOfService from '../TermsOfService';
+import BookingStep from './BookingStep';
 import InstallPrompt from '../InstallPrompt';
 
-// Steps in order: congrats → quiz1 → quiz2 → affirmation → benefits → testimonial → trial → welcome → terms → complete
-const STEPS = ['congrats', 'quiz1', 'quiz2', 'affirmation', 'benefits', 'testimonial', 'trial', 'welcome', 'terms', 'complete'];
+// Steps in order: congrats → quiz1 → quiz2 → affirmation → benefits → testimonial → trial → welcome → booking → terms → complete
+const STEPS = ['congrats', 'quiz1', 'quiz2', 'affirmation', 'benefits', 'testimonial', 'trial', 'welcome', 'booking', 'terms', 'complete'];
 
 const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscription }) => {
     const { user } = useAuth0();
@@ -88,7 +89,7 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
     };
 
     const handleWelcomeComplete = () => {
-        goToStep('terms');
+        nextStep();
     };
 
     const handleTermsAccepted = async ({ emailOptOut }) => {
@@ -166,6 +167,10 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
 
     if (currentStep === 'welcome') {
         return <WelcomeToPetwise user={user} onComplete={handleWelcomeComplete} onBack={prevStep} />;
+    }
+
+    if (currentStep === 'booking') {
+        return <BookingStep onNext={() => nextStep()} onBack={prevStep} />;
     }
 
     if (currentStep === 'terms') {

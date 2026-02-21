@@ -1,6 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import OnboardingLayout from './OnboardingLayout';
-import { FaVolumeUp, FaVolumeMute, FaMicrophone } from 'react-icons/fa';
 
 const DICTATION_TEXT = "So today we have a 7 year old male neutered golden retriever presenting for intermittent vomiting over the past three days. Owner reports decreased appetite and some lethargy. No recent dietary changes, no access to toxins. On physical exam temp is 101.8, heart rate 120, respiratory rate 24. Body condition score 5 out of 9. Mild cranial abdominal pain on palpation. Mucous membranes pink and moist, CRT less than 2 seconds. I'm thinking acute gastroenteritis, likely dietary indiscretion versus early GI foreign body. Differentials include pancreatitis and hepatopathy. Plan is CBC chem panel, abdominal rads, maropitant 1 mg per kg sub-q SID for 3 days, bland diet, recheck 48 hours.";
 
@@ -218,34 +217,11 @@ const PetQueryDemo = () => {
 // ─── Main BenefitsStep ───
 const BenefitsStep = ({ onNext, onBack }) => {
     const [featurePhase, setFeaturePhase] = useState(0);
-    const [isMuted, setIsMuted] = useState(false);
-    const videoRef = useRef(null);
 
-    useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.muted = false;
-            videoRef.current.volume = 0.25;
-            videoRef.current.play().catch(() => {
-                if (videoRef.current) {
-                    videoRef.current.muted = true;
-                    setIsMuted(true);
-                    videoRef.current.play().catch(() => {});
-                }
-            });
-        }
-    }, []);
-
-    const toggleMute = () => {
-        if (videoRef.current) {
-            videoRef.current.muted = !videoRef.current.muted;
-            setIsMuted(videoRef.current.muted);
-        }
-    };
-
-    // Phase 1: QuickSOAP demo
-    if (featurePhase === 1) {
+    // Phase 0: QuickSOAP demo
+    if (featurePhase === 0) {
         return (
-            <OnboardingLayout currentStep="benefits" onBack={() => setFeaturePhase(0)}>
+            <OnboardingLayout currentStep="benefits" onBack={onBack}>
                 <div className="flex flex-col items-center justify-center h-full animate-fade-in">
                     <div className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
                         <QuickSOAPDemo />
@@ -258,7 +234,7 @@ const BenefitsStep = ({ onNext, onBack }) => {
                             Dictate patient visits and get AI-generated SOAP notes instantly.
                         </p>
                         <button
-                            onClick={() => setFeaturePhase(2)}
+                            onClick={() => setFeaturePhase(1)}
                             className="w-full max-w-sm mx-auto block py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 text-base sm:text-lg"
                         >
                             Next
@@ -269,62 +245,27 @@ const BenefitsStep = ({ onNext, onBack }) => {
         );
     }
 
-    // Phase 2: PetQuery demo
-    if (featurePhase === 2) {
-        return (
-            <OnboardingLayout currentStep="benefits" onBack={() => setFeaturePhase(1)}>
-                <div className="flex flex-col items-center justify-center h-full animate-fade-in">
-                    <div className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
-                        <PetQueryDemo />
-                    </div>
-                    <div className="text-center mt-3 sm:mt-4 flex-shrink-0">
-                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1">
-                            Instant AI Vet Answers
-                        </h2>
-                        <p className="text-white/60 text-xs sm:text-sm mb-4">
-                            Ask veterinary questions and get detailed, professional answers.
-                        </p>
-                        <button
-                            onClick={onNext}
-                            className="w-full max-w-sm mx-auto block py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 text-base sm:text-lg"
-                        >
-                            Continue
-                        </button>
-                    </div>
-                </div>
-            </OnboardingLayout>
-        );
-    }
-
-    // Phase 0: Video
+    // Phase 1: PetQuery demo
     return (
-        <OnboardingLayout currentStep="benefits" onBack={onBack}>
-            <div className="text-center animate-fade-in">
-                <div className="relative mx-auto mb-3" style={{ maxHeight: 'calc(100vh - 220px)', maxWidth: 'calc((100vh - 220px) * 9 / 16)' }}>
-                    <video
-                        ref={videoRef}
-                        src="/Petwise ad.MOV"
-                        playsInline
-                        loop
-                        className="w-full h-full object-cover rounded-2xl shadow-2xl shadow-black/30"
-                        style={{ aspectRatio: '9/16' }}
-                    />
+        <OnboardingLayout currentStep="benefits" onBack={() => setFeaturePhase(0)}>
+            <div className="flex flex-col items-center justify-center h-full animate-fade-in">
+                <div className="flex-1 min-h-0 flex items-center justify-center w-full overflow-hidden">
+                    <PetQueryDemo />
+                </div>
+                <div className="text-center mt-3 sm:mt-4 flex-shrink-0">
+                    <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-1">
+                        Instant AI Vet Answers
+                    </h2>
+                    <p className="text-white/60 text-xs sm:text-sm mb-4">
+                        Ask veterinary questions and get detailed, professional answers.
+                    </p>
                     <button
-                        onClick={toggleMute}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/70 transition-all"
+                        onClick={onNext}
+                        className="w-full max-w-sm mx-auto block py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 text-base sm:text-lg"
                     >
-                        {isMuted ? <FaVolumeMute className="text-sm" /> : <FaVolumeUp className="text-sm" />}
+                        Continue
                     </button>
                 </div>
-
-                <p className="text-white/60 text-xs sm:text-sm mb-3">— Dr. Stacey Gastis, DVM</p>
-
-                <button
-                    onClick={() => setFeaturePhase(1)}
-                    className="w-full max-w-sm mx-auto block py-3 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 text-base sm:text-lg"
-                >
-                    Next
-                </button>
             </div>
         </OnboardingLayout>
     );

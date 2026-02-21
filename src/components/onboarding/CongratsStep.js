@@ -4,6 +4,7 @@ import { supabase } from '../../supabaseClient';
 import OnboardingLayout from './OnboardingLayout';
 
 const CongratsStep = ({ onNext }) => {
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [dvmName1, setDvmName1] = useState('');
     const [dvmName2, setDvmName2] = useState('');
     const [isStudentMode, setIsStudentMode] = useState(false);
@@ -26,9 +27,10 @@ const CongratsStep = ({ onNext }) => {
 
         setIsSubmitting(true);
         try {
+            const updates = { dvm_name: dvmName1.trim(), phone_number: phoneNumber.trim() };
             const { error: updateError } = await supabase
                 .from('users')
-                .update({ dvm_name: dvmName1.trim() })
+                .update(updates)
                 .eq('auth0_user_id', user.sub);
             if (updateError) throw updateError;
             onNext();
@@ -68,6 +70,19 @@ const CongratsStep = ({ onNext }) => {
                         </button>
                     </div>
 
+                    {/* Phone number */}
+                    <div>
+                        <input
+                            type="tel"
+                            placeholder="Phone number"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            className="w-full px-3.5 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:border-[#3db6fd] focus:bg-white/15 transition-all text-sm sm:text-base"
+                            required
+                            autoFocus
+                        />
+                    </div>
+
                     {/* Name input */}
                     <div>
                         <div className="flex rounded-lg overflow-hidden border border-white/20 bg-white/10 backdrop-blur-sm focus-within:border-[#3db6fd] focus-within:bg-white/15 transition-all">
@@ -81,7 +96,6 @@ const CongratsStep = ({ onNext }) => {
                                 onChange={(e) => setDvmName1(e.target.value)}
                                 className="flex-1 px-3.5 py-3 bg-transparent text-white placeholder-white/40 focus:outline-none text-sm sm:text-base"
                                 required
-                                autoFocus
                             />
                         </div>
                     </div>
@@ -113,7 +127,7 @@ const CongratsStep = ({ onNext }) => {
 
                     <button
                         type="submit"
-                        disabled={isSubmitting || !dvmName1.trim() || !dvmName2.trim()}
+                        disabled={isSubmitting || !phoneNumber.trim() || !dvmName1.trim() || !dvmName2.trim()}
                         className="w-full py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
                         {isSubmitting ? 'Saving...' : 'Continue'}

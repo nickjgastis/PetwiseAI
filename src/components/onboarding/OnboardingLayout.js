@@ -1,7 +1,7 @@
 import React from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 
-const STEP_ORDER = ['congrats', 'quiz1', 'quiz2', 'affirmation', 'benefits', 'testimonial', 'trial', 'welcome', 'terms'];
+const STEP_ORDER = ['congrats', 'quiz1', 'quiz2', 'affirmation', 'benefits', 'testimonial', 'trial', 'welcome', 'booking', 'terms'];
 
 const OnboardingLayout = ({ currentStep, children, showProgress = true, wide = false, onBack }) => {
     const stepIndex = STEP_ORDER.indexOf(currentStep);
