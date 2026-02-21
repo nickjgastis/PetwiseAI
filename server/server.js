@@ -165,6 +165,54 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization']
 }));
 
+// ================ ADMIN AUTH MIDDLEWARE ================
+const ADMIN_USER_ID = process.env.REACT_APP_ADMIN_USER_ID;
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+
+const adminTokenCache = new Map();
+
+const requireAdmin = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        if (adminTokenCache.has(token)) {
+            const cached = adminTokenCache.get(token);
+            if (Date.now() < cached.expiresAt) {
+                req.adminUser = cached.userInfo;
+                return next();
+            }
+            adminTokenCache.delete(token);
+        }
+
+        const userInfoRes = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!userInfoRes.ok) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        const userInfo = await userInfoRes.json();
+
+        if (userInfo.sub !== ADMIN_USER_ID) {
+            console.warn(`Admin access denied for user: ${userInfo.sub}`);
+            return res.status(403).json({ error: 'Forbidden: not an admin user' });
+        }
+
+        adminTokenCache.set(token, { userInfo, expiresAt: Date.now() + 5 * 60 * 1000 });
+        req.adminUser = userInfo;
+        next();
+    } catch (err) {
+        console.error('Admin auth error:', err);
+        return res.status(401).json({ error: 'Authentication failed' });
+    }
+};
+
 // Mount student routes
 app.use('/student', studentRouter);
 app.use('/email', emailRouter);
@@ -3232,15 +3280,47 @@ app.post('/manual-reset', async (req, res) => {
     }
 });
 
-// Add this new admin metrics endpoint
-app.get('/admin-metrics', async (req, res) => {
+// ================ ADMIN ENDPOINTS (Auth0 protected) ================
+app.get('/admin/users', requireAdmin, async (req, res) => {
     try {
-        // Verify admin access - should match process.env.REACT_APP_ADMIN_USER_ID
-        const { user_id } = req.query;
+        const [usersRes, onboardingRes] = await Promise.all([
+            supabase.from('users').select('*').order('created_at', { ascending: false }),
+            supabase.from('onboarding').select('auth0_user_id, status, current_step'),
+        ]);
 
-        if (!user_id || user_id !== process.env.REACT_APP_ADMIN_USER_ID) {
-            return res.status(403).json({ error: 'Unauthorized access' });
-        }
+        if (usersRes.error) throw usersRes.error;
+
+        const obMap = {};
+        (onboardingRes.data || []).forEach(o => { obMap[o.auth0_user_id] = o; });
+
+        const users = (usersRes.data || []).map(u => ({
+            id: u.id,
+            email: u.email,
+            nickname: u.nickname,
+            dvm_name: u.dvm_name,
+            created_at: u.created_at,
+            subscription_status: u.subscription_status,
+            subscription_interval: u.subscription_interval,
+            subscription_end_date: u.subscription_end_date,
+            cancel_at_period_end: u.cancel_at_period_end,
+            has_completed_onboarding: u.has_completed_onboarding,
+            weekly_reports_count: u.weekly_reports_count,
+            quicksoap_count: u.quicksoap_count,
+            quick_query_messages_count: u.quick_query_messages_count,
+            plan_label: u.plan_label,
+            onboarding_status: obMap[u.auth0_user_id]?.status || null,
+            onboarding_step: obMap[u.auth0_user_id]?.current_step || null,
+        }));
+
+        res.json({ users });
+    } catch (error) {
+        console.error('Admin users error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/admin-metrics', requireAdmin, async (req, res) => {
+    try {
 
         // Get users
         const { data: users, error: userError } = await supabase

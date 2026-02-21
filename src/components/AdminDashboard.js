@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { supabase } from '../supabaseClient';
+import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import '../styles/AdminDashboard.css';
 
-const ADMIN_ACCESS_CODE = 'petwise8975247';
+const ADMIN_USER_ID = process.env.REACT_APP_ADMIN_USER_ID;
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.petwise.vet'
+    : 'http://localhost:3001';
 
 const FILTERS = [
     { key: 'all', label: 'All', color: 'bg-gray-800', ring: 'ring-gray-800' },
@@ -218,11 +221,8 @@ const UserCard = ({ user, rCol, sCol, qCol, formatDate, getStatusBadge, getOnboa
 // MAIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════════
 const AdminDashboard = () => {
-    const [isAuthenticated, setIsAuthenticated] = useState(() =>
-        sessionStorage.getItem('adminAuth') === 'true'
-    );
-    const [accessCode, setAccessCode] = useState('');
-    const [authError, setAuthError] = useState('');
+    const { isAuthenticated, isLoading: authLoading, user, loginWithRedirect, logout, getAccessTokenSilently } = useAuth0();
+    const isAdmin = isAuthenticated && user?.sub === ADMIN_USER_ID;
 
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -248,56 +248,34 @@ const AdminDashboard = () => {
     const sCol = 'quicksoap_count';
     const qCol = 'quick_query_messages_count';
 
-    // ─── Auth ────────────────────────────────────────────────────────────────
-    const handleAccessSubmit = (e) => {
-        e.preventDefault();
-        if (accessCode === ADMIN_ACCESS_CODE) {
-            sessionStorage.setItem('adminAuth', 'true');
-            setIsAuthenticated(true);
-        } else {
-            setAuthError('Invalid access code');
-            setAccessCode('');
-        }
-    };
+    // ─── Data (all server-side, Auth0 token protected) ───────────────────────
+    const getAuthHeaders = useCallback(async () => {
+        const token = await getAccessTokenSilently();
+        return { Authorization: `Bearer ${token}` };
+    }, [getAccessTokenSilently]);
 
-    // ─── Data ────────────────────────────────────────────────────────────────
-    const fetchServerMetrics = async () => {
+    const fetchServerMetrics = useCallback(async () => {
         try {
-            const apiUrl = process.env.NODE_ENV === 'production'
-                ? 'https://api.petwise.vet/admin-metrics'
-                : 'http://localhost:3001/admin-metrics';
-            const check = await fetch(apiUrl, { method: 'HEAD', headers: { 'Content-Type': 'application/json' } }).catch(() => ({ ok: false }));
-            if (!check.ok) return;
-            const res = await axios.get(apiUrl, { params: { admin_access: 'true' } });
+            const headers = await getAuthHeaders();
+            const res = await axios.get(`${API_URL}/admin-metrics`, { headers });
             setAdvancedMetrics(res.data);
         } catch (err) { console.error('Server metrics error:', err); }
-    };
+    }, [getAuthHeaders]);
 
     const fetchData = useCallback(async () => {
         try {
             setLoading(true);
-            const [usersRes, onboardingRes] = await Promise.all([
-                supabase.from('users').select('*').order('created_at', { ascending: false }),
-                supabase.from('onboarding').select('auth0_user_id, status, current_step'),
-            ]);
-            if (usersRes.error) throw usersRes.error;
-
-            const obMap = {};
-            (onboardingRes.data || []).forEach(o => { obMap[o.auth0_user_id] = o; });
-
-            setUsers((usersRes.data || []).map(u => ({
-                ...u,
-                onboarding_status: obMap[u.auth0_user_id]?.status || null,
-                onboarding_step: obMap[u.auth0_user_id]?.current_step || null,
-            })));
+            const headers = await getAuthHeaders();
+            const res = await axios.get(`${API_URL}/admin/users`, { headers });
+            setUsers(res.data.users || []);
         } catch (err) {
-            setError('Failed to load: ' + (err.message || JSON.stringify(err)));
+            setError('Failed to load: ' + (err.response?.data?.error || err.message));
         } finally { setLoading(false); }
-    }, []);
+    }, [getAuthHeaders]);
 
     useEffect(() => {
-        if (isAuthenticated) { fetchData(); fetchServerMetrics(); }
-    }, [isAuthenticated, fetchData]);
+        if (isAdmin) { fetchData(); fetchServerMetrics(); }
+    }, [isAdmin, fetchData, fetchServerMetrics]);
 
     const refresh = () => { fetchData(); fetchServerMetrics(); };
 
@@ -431,45 +409,71 @@ const AdminDashboard = () => {
     // RENDER
     // ═════════════════════════════════════════════════════════════════════════
 
-    // ─── Login ───────────────────────────────────────────────────────────────
-    if (!isAuthenticated) {
+    // ─── Auth loading ────────────────────────────────────────────────────────
+    if (authLoading) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm">
-                    <div className="text-center mb-6">
-                        <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
-                        </div>
-                        <h1 className="text-xl font-bold text-gray-900">PetWise Admin</h1>
-                    </div>
-                    <form onSubmit={handleAccessSubmit} className="space-y-3">
-                        <input
-                            type="password"
-                            value={accessCode}
-                            onChange={(e) => setAccessCode(e.target.value)}
-                            placeholder="Access code"
-                            className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none text-base"
-                            autoFocus
-                        />
-                        <button type="submit" className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-blue-500/30">
-                            Continue
-                        </button>
-                    </form>
-                    {authError && <p className="text-red-500 text-center mt-3 text-sm">{authError}</p>}
+            <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-10 h-10 border-[3px] border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">Authenticating...</p>
                 </div>
             </div>
         );
     }
 
-    // ─── Loading ─────────────────────────────────────────────────────────────
+    // ─── Not logged in ───────────────────────────────────────────────────────
+    if (!isAuthenticated) {
+        return (
+            <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
+                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-900 mb-2">PetWise Admin</h1>
+                    <p className="text-sm text-gray-500 mb-6">Sign in with your admin account to continue</p>
+                    <button
+                        onClick={() => loginWithRedirect({ appState: { returnTo: '/admin' } })}
+                        className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-blue-500/30"
+                    >
+                        Sign In
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Authenticated but not admin ─────────────────────────────────────────
+    if (!isAdmin) {
+        return (
+            <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm text-center">
+                    <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                        </svg>
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h1>
+                    <p className="text-sm text-gray-500 mb-6">This account doesn't have admin access.</p>
+                    <button
+                        onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                        className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl active:bg-gray-200 transition-colors"
+                    >
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ─── Data loading ────────────────────────────────────────────────────────
     if (loading) {
         return (
             <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-10 h-10 border-[3px] border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">Loading...</p>
+                    <p className="text-sm text-gray-500">Loading dashboard...</p>
                 </div>
             </div>
         );
@@ -498,7 +502,7 @@ const AdminDashboard = () => {
                                 <RefreshIcon />
                             </button>
                             <button
-                                onClick={() => { sessionStorage.removeItem('adminAuth'); setIsAuthenticated(false); }}
+                                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
                                 className="px-3 py-2 text-[13px] text-gray-500 active:bg-gray-100 rounded-xl transition-colors"
                             >
                                 Logout
