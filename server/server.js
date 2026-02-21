@@ -166,8 +166,12 @@ app.use(cors({
 }));
 
 // ================ ADMIN AUTH MIDDLEWARE ================
-const ADMIN_USER_ID = process.env.REACT_APP_ADMIN_USER_ID;
+const ADMIN_USER_ID = process.env.ADMIN_USER_ID || process.env.REACT_APP_ADMIN_USER_ID;
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+
+if (!ADMIN_USER_ID) console.warn('WARNING: ADMIN_USER_ID is not set — admin endpoints will reject all requests');
+if (!AUTH0_DOMAIN) console.warn('WARNING: AUTH0_DOMAIN is not set — admin auth will fail');
+console.log(`Admin middleware initialized. Admin ID configured: ${ADMIN_USER_ID ? 'yes' : 'NO'}`);
 
 const adminTokenCache = new Map();
 
@@ -200,7 +204,7 @@ const requireAdmin = async (req, res, next) => {
         const userInfo = await userInfoRes.json();
 
         if (userInfo.sub !== ADMIN_USER_ID) {
-            console.warn(`Admin access denied for user: ${userInfo.sub}`);
+            console.warn(`Admin access denied. Token sub: "${userInfo.sub}", expected: "${ADMIN_USER_ID}"`);
             return res.status(403).json({ error: 'Forbidden: not an admin user' });
         }
 
