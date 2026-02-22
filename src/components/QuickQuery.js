@@ -1189,7 +1189,6 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     appearance: none;
                 }
                 textarea::placeholder {
-                    line-height: 18px !important;
                     opacity: 1;
                     color: #9ca3af;
                 }
@@ -1391,7 +1390,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 )}
                             </div>
                             {/* Input form - ChatGPT style on mobile */}
-                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-end'}`}>
+                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-start'}`}>
                                 {isMobile ? (
                                     /* Mobile input - ChatGPT style, same height as send button (32px) */
                                     <div className="relative flex-1 bg-gray-100 rounded-full px-3 flex items-center justify-center" style={{ minHeight: '32px', maxHeight: '92px', overflow: 'hidden', paddingTop: '7px', paddingBottom: '7px' }}>
@@ -1565,7 +1564,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 {/* Send button - smaller on mobile */}
                                 <button
                                     type="submit"
-                                    className={`${isMobile ? 'w-8 h-8 active:scale-95' : 'w-12 h-12'} bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0 touch-manipulation`}
+                                    className={`${isMobile ? 'w-8 h-8 active:scale-95' : 'w-[52px] h-[52px]'} bg-primary-500 text-white rounded-full hover:bg-primary-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0 touch-manipulation`}
                                     disabled={isLoading || !inputMessage.trim() || isRecording}
                                     aria-label="Send message"
                                 >
@@ -1584,7 +1583,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     <button
                                         onClick={handleClear}
                                         type="button"
-                                        className="px-4 py-2 h-12 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 font-medium flex-shrink-0 flex items-center gap-2"
+                                        className="px-4 py-2 h-[52px] bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 font-medium flex-shrink-0 flex items-center gap-2"
                                     >
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M3 6h18" />
