@@ -1356,65 +1356,74 @@ const Dashboard = () => {
                 )}
 
                 {/* Sidebar Navigation */}
-                <aside className={`fixed top-0 left-0 h-full bg-gradient-to-b from-primary-600 to-primary-700 shadow-2xl z-50 flex flex-col transition-all duration-300 ${isMobileMenuOpen ? 'left-0' : 'left-[-250px]'
-                    } ${isSidebarCollapsed ? 'w-20 sidebar-collapsed' : 'w-56'} md:left-0`}>
+                <aside
+                    className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 ${isMobileMenuOpen ? 'left-0' : 'left-[-250px]'} ${isSidebarCollapsed ? 'w-20 sidebar-collapsed' : 'w-56'} md:left-0`}
+                    style={{
+                        background: 'linear-gradient(180deg, #2d5fb8 0%, #1e4a94 50%, #183d7a 100%)',
+                        boxShadow: '2px 0 20px rgba(30,74,148,0.15)',
+                        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+                    }}
+                >
                     {/* Logo Section */}
-                    <div className="p-4 text-center border-b border-white border-opacity-20 flex flex-col items-center justify-center relative">
-                        <Link to="/dashboard" className={`text-white no-underline font-inter transition-colors duration-300 flex items-center text-xl gap-3 tracking-wide group ${isSidebarCollapsed ? 'justify-center' : 'justify-center'}`}>
+                    <div className="px-4 py-5 flex flex-col items-center justify-center relative" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                        <Link to="/dashboard" className={`text-white no-underline transition-colors duration-300 flex items-center text-xl gap-3 tracking-wide group ${isSidebarCollapsed ? 'justify-center' : 'justify-center'}`}>
                             <div className="relative">
                                 <img src="/PW.png" alt="PW" className={`w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 ${isSidebarCollapsed ? 'ml-1' : ''}`} />
                                 {!isSidebarCollapsed && (
-                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-accent-400 rounded-full animate-pulse"></div>
+                                    <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-accent-400 rounded-full animate-pulse" style={{ boxShadow: '0 0 6px rgba(92,204,240,0.5)' }}></div>
                                 )}
                             </div>
                             <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
-                                <span className="font-bold text-white">Petwise</span>
-                                <span className="font-normal text-white opacity-90">.vet</span>
+                                <span className="font-bold text-white" style={{ letterSpacing: '0.02em' }}>Petwise</span>
+                                <span className="font-light text-white/70" style={{ letterSpacing: '0.02em' }}>.vet</span>
                             </span>
                         </Link>
                     </div>
                     {/* User Info Section */}
                     {isStudentMode() ? (
-                        <div className={`mx-2 my-2 p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg shadow-lg border border-white border-opacity-20 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                                    <span className="text-white text-sm">🎓</span>
+                        <div className={`mx-3 my-3 p-3 rounded-xl ${isSidebarCollapsed ? 'hidden' : 'block'}`} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                            <div className="flex items-center gap-2 mb-2.5">
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                                    <span className="text-white text-xs">🎓</span>
                                 </div>
-                                <div className="text-white text-sm font-bold tracking-wide uppercase">Student</div>
+                                <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase">Student</div>
                             </div>
-                            <div className="text-white text-base font-semibold mb-1">{userData?.nickname || 'Student'}</div>
-                            <div className="text-white text-xs opacity-85">
+                            <div className="text-white text-sm font-semibold mb-0.5">{userData?.nickname || 'Student'}</div>
+                            <div className="text-white/50 text-[11px]">
                                 Access until {new Date(userData.subscription_end_date).toLocaleDateString()}
                             </div>
                         </div>
                     ) : (
                         userData?.dvm_name && (
-                            <div className={`mx-2 my-2 p-3 bg-white bg-opacity-10 rounded-lg border border-white border-opacity-20 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
+                            <div className={`mx-3 my-3 p-3 rounded-xl ${isSidebarCollapsed ? 'hidden' : 'block'}`} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)' }}>
                                 <div className="flex items-center gap-3">
                                     {hasActivePlan() && (
-                                        <div className="w-8 h-8 bg-accent-400 rounded-full flex items-center justify-center">
-                                            <span className="text-white text-sm font-bold">Dr.</span>
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(92,204,240,0.2)' }}>
+                                            <span className="text-white text-xs font-bold">Dr.</span>
                                         </div>
                                     )}
-                                    <div className="text-white text-base font-medium">{userData.dvm_name}</div>
+                                    <div className="text-white text-sm font-medium">{userData.dvm_name}</div>
                                 </div>
                             </div>
                         )
                     )}
                     {/* Navigation Menu */}
-                    <ul className="list-none p-0 m-0 flex-1">
+                    <ul className="list-none p-0 m-0 flex-1 mt-1">
                         {hasActivePlan() && (
                             <>
                                 {/* QuickSOAP */}
-                                <li className="mx-2 my-1 relative">
+                                <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/quicksoap"
                                         onClick={closeMobileMenu}
                                         data-tooltip="QuickSOAP"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : ''}`}
+                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'text-white' : 'hover:text-white'}`}
+                                        style={location.pathname === '/dashboard/quicksoap' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 relative ${location.pathname === '/dashboard/quicksoap' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                            <FaMicrophone className="text-sm" />
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative`} style={{ background: location.pathname === '/dashboard/quicksoap' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                            <FaMicrophone className="text-xs" />
                                             {/* Notification dot for pending dictations */}
                                             {hasPendingDictation && !isMobile && (
                                                 <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
@@ -1433,40 +1442,49 @@ const Dashboard = () => {
                         )}
                         {isSubscribed && (
                             <>
-                                <li className="mx-2 my-1 relative">
+                                <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/report-form"
                                         onClick={closeMobileMenu}
                                         data-tooltip="Report Generator"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'bg-white bg-opacity-30' : ''}`}
+                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'text-white' : 'hover:text-white'}`}
+                                        style={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                            <FaFileAlt className="text-sm" />
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                            <FaFileAlt className="text-xs" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetSOAP</span>
                                     </Link>
                                 </li>
-                                <li className="mx-2 my-1 relative">
+                                <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/quick-query"
                                         onClick={closeMobileMenu}
                                         data-tooltip="QuickMed Query"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quick-query' ? 'bg-white bg-opacity-30' : ''}`}
+                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quick-query' ? 'text-white' : 'hover:text-white'}`}
+                                        style={location.pathname === '/dashboard/quick-query' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                            <FaSearch className="text-sm" />
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/quick-query' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                            <FaSearch className="text-xs" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetQUERY</span>
                                     </Link>
                                 </li>
-                                <li className="mx-2 my-1 relative">
+                                <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/saved-reports"
                                         data-tooltip="Saved Reports"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : ''}`}
+                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/saved-reports' ? 'text-white' : 'hover:text-white'}`}
+                                        style={location.pathname === '/dashboard/saved-reports' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/saved-reports') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/saved-reports') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 relative ${location.pathname === '/dashboard/saved-reports' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                            <FaSave className="text-sm" />
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative" style={{ background: location.pathname === '/dashboard/saved-reports' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                            <FaSave className="text-xs" />
                                             {/* Notification dot for new mobile SOAP */}
                                             {hasNewMobileSOAP && !isMobile && (
                                                 <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
@@ -1481,87 +1499,102 @@ const Dashboard = () => {
                                         </span>
                                     </Link>
                                 </li>
-                                <li className="mx-2 my-1 relative">
+                                <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/templates"
                                         data-tooltip="My Templates"
-                                        className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/templates' ? 'bg-white bg-opacity-30' : ''}`}
+                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/templates' ? 'text-white' : 'hover:text-white'}`}
+                                        style={location.pathname === '/dashboard/templates' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/templates') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/templates') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/templates' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                            <FaClipboard className="text-sm" />
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/templates' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                            <FaClipboard className="text-xs" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>My Templates</span>
                                     </Link>
                                 </li>
                             </>
                         )}
-                        <li className="mx-2 my-1 relative">
+                        <li className="mx-3 my-0.5 relative">
                             <Link
                                 to="/dashboard/profile"
                                 onClick={closeMobileMenu}
                                 data-tooltip="Profile"
-                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/profile' ? 'bg-white bg-opacity-30' : ''}`}
+                                className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/profile' ? 'text-white' : 'hover:text-white'}`}
+                                style={location.pathname === '/dashboard/profile' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                onMouseEnter={(e) => { if (location.pathname !== '/dashboard/profile') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                onMouseLeave={(e) => { if (location.pathname !== '/dashboard/profile') e.currentTarget.style.background = 'transparent'; }}
                             >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                    <FaUser className="text-sm" />
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/profile' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                    <FaUser className="text-xs" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Profile</span>
                             </Link>
                         </li>
                         {subscriptionStatus === 'past_due' && (
-                            <li className={`mx-2 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
+                            <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
                                 <Link
                                     to="/dashboard/profile"
-                                    className="flex items-center text-orange-800 no-underline font-medium bg-gradient-to-r from-orange-50 to-orange-100 border-l-4 border-orange-400 rounded-lg p-2.5 hover:from-orange-100 hover:to-orange-200 transition-all duration-200"
+                                    className="flex items-center text-amber-200 no-underline font-medium rounded-xl p-2.5 transition-all duration-200 text-xs"
+                                    style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.15)' }}
                                 >
-                                    <div className="w-6 h-6 bg-orange-200 rounded flex items-center justify-center mr-2">
-                                        <span className="text-orange-600 text-xs">💳</span>
+                                    <div className="w-6 h-6 rounded-md flex items-center justify-center mr-2" style={{ background: 'rgba(245,158,11,0.2)' }}>
+                                        <span className="text-[10px]">💳</span>
                                     </div>
-                                    <span className="text-xs">Payment needs attention</span>
+                                    <span className="text-[11px]">Payment needs attention</span>
                                 </Link>
                             </li>
                         )}
-                        <li className="mx-2 my-1 relative">
+                        <li className="mx-3 my-0.5 relative">
                             <Link
                                 to="/dashboard/help"
                                 onClick={closeMobileMenu}
                                 data-tooltip="Help"
-                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-white hover:bg-opacity-20 hover:text-accent-400 group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : ''} relative`}
+                                className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/help' ? 'text-white' : 'hover:text-white'} relative`}
+                                style={location.pathname === '/dashboard/help' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                onMouseEnter={(e) => { if (location.pathname !== '/dashboard/help') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                onMouseLeave={(e) => { if (location.pathname !== '/dashboard/help') e.currentTarget.style.background = 'transparent'; }}
                             >
-                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-200 ${location.pathname === '/dashboard/help' ? 'bg-white bg-opacity-30' : 'bg-white bg-opacity-20'}`}>
-                                    <FaQuestionCircle className="text-sm" />
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/help' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                    <FaQuestionCircle className="text-xs" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Help</span>
                                 {!isSidebarCollapsed && (
-                                    <span className="absolute top-1/2 -translate-y-1/2 right-2 bg-yellow-400/80 backdrop-blur-sm text-yellow-900 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-yellow-500/30">NEW</span>
+                                    <span className="absolute top-1/2 -translate-y-1/2 right-2.5 text-[8px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(92,204,240,0.2)', color: '#5cccf0', letterSpacing: '0.05em' }}>NEW</span>
                                 )}
                             </Link>
                         </li>
-                        <li className="mx-2 my-1 relative">
+                        <li className="mx-3 my-0.5 relative" style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             <button
                                 onClick={() => {
                                     closeMobileMenu();
                                     handleLogout();
                                 }}
-                                className={`flex items-center text-white no-underline text-base py-2.5 px-3 rounded-lg transition-all duration-200 w-full whitespace-nowrap hover:bg-red-500 hover:bg-opacity-20 hover:text-red-300 group bg-transparent border-none cursor-pointer ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
+                                className={`flex items-center text-white/50 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap hover:text-red-300 group bg-transparent border-none cursor-pointer ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
                                 data-tooltip="Logout"
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
                             >
-                                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-lg flex items-center justify-center group-hover:bg-red-500 transition-colors duration-200">
-                                    <FaSignOutAlt className="text-sm" />
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                                    <FaSignOutAlt className="text-xs" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Logout</span>
                             </button>
                         </li>
                     </ul>
 
-                    {/* Toggle Button - Below Logout */}
-                    <div className="flex justify-center py-2">
+                    {/* Toggle Button */}
+                    <div className="flex justify-center py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                         <button
-                            className="w-6 h-6 bg-white bg-opacity-20 hover:bg-opacity-30 rounded text-white text-xs flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                            className="w-7 h-7 rounded-lg text-white/40 hover:text-white/70 text-[10px] flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                            style={{ background: 'rgba(255,255,255,0.06)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
                             onClick={toggleSidebar}
                             aria-label="Toggle Sidebar"
                         >
-                            &lt;
+                            {isSidebarCollapsed ? '›' : '‹'}
                         </button>
                     </div>
                 </aside>

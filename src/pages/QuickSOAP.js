@@ -96,7 +96,7 @@ const normalizeHeaderSpacing = (content) => {
         // Check if this line is a header (ends with colon and matches common header patterns)
         const isHeader = trimmed.endsWith(':') &&
             (trimmed.match(/^[A-Z][a-zA-Z\s]+:$/) ||
-                /^(Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Monitoring|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Owner Observations|Physical Exam|Vital Signs|Diagnostics|Assessment|Plan):$/i.test(trimmed));
+                /^(Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Monitoring|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Skin & Coat|Diet\/Appetite|V\/D\/C\/S|Current Medication|Risk Factors|Additional Information|Owner Observations|Physical Exam|Vital Signs|Diagnostics|Assessment|Plan):$/i.test(trimmed));
 
         // If this is a header and not the first line, ensure there's a blank line before it
         if (isHeader && i > 0) {
@@ -359,6 +359,20 @@ const QuickSOAP = () => {
     const [currentChunkTranscript, setCurrentChunkTranscript] = useState('');
     const chunkedRecorderRef = useRef(null);
 
+    // Template system state
+    const [templates, setTemplates] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('quickSOAP_selectedTemplate');
+            if (saved) {
+                try { return JSON.parse(saved); } catch (e) { return null; }
+            }
+        }
+        return null;
+    });
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+    const [templateSearchQuery, setTemplateSearchQuery] = useState('');
+
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const textareaRefs = useRef({});
@@ -366,6 +380,10 @@ const QuickSOAP = () => {
     const sidebarInputTextareaRef = useRef(null);
     const draftRecordIdRef = useRef(null);
     const reportScrollContainerRef = useRef(null);
+    const topBarRef = useRef(null);
+    const [topBarHeight, setTopBarHeight] = useState(0);
+    const topInputBarRef = useRef(null);
+    const [showStickyBar, setShowStickyBar] = useState(false);
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
     const animationFrameRef = useRef(null);
@@ -500,6 +518,28 @@ const QuickSOAP = () => {
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, [isRecording, isPaused, isMobile]);
 
+    // Measure top bar height for desktop layout
+    useEffect(() => {
+        const el = topBarRef.current;
+        if (!el || !hasReport || isMobile) { setTopBarHeight(0); return; }
+        const ro = new ResizeObserver(() => setTopBarHeight(el.offsetHeight));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [hasReport, isMobile]);
+
+    // Show sticky bar when top input bar scrolls out of view
+    useEffect(() => {
+        const el = topInputBarRef.current;
+        const root = reportScrollContainerRef.current;
+        if (!el || !root || !hasReport || isMobile) { setShowStickyBar(false); return; }
+        const observer = new IntersectionObserver(
+            ([entry]) => setShowStickyBar(!entry.isIntersecting),
+            { root, threshold: 0 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [hasReport, isMobile]);
+
     // Watch for sidebar collapse state changes (desktop only)
     useEffect(() => {
         if (isMobile) return;
@@ -537,6 +577,40 @@ const QuickSOAP = () => {
             localStorage.removeItem('openQuickSOAPTutorial');
         }
     }, []);
+
+    // Fetch user templates for template selector
+    useEffect(() => {
+        const fetchTemplates = async () => {
+            if (!user?.sub) return;
+            try {
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id')
+                    .eq('auth0_user_id', user.sub)
+                    .single();
+                if (userError || !userData) return;
+
+                const { data, error } = await supabase
+                    .from('templates')
+                    .select('id, template_name, template_text')
+                    .eq('user_id', userData.id)
+                    .order('created_at', { ascending: false });
+                if (!error && data) setTemplates(data);
+            } catch (err) {
+                console.error('Failed to fetch templates:', err);
+            }
+        };
+        fetchTemplates();
+    }, [user?.sub]);
+
+    // Persist selectedTemplate to localStorage
+    useEffect(() => {
+        if (selectedTemplate) {
+            localStorage.setItem('quickSOAP_selectedTemplate', JSON.stringify(selectedTemplate));
+        } else {
+            localStorage.removeItem('quickSOAP_selectedTemplate');
+        }
+    }, [selectedTemplate]);
 
     // Load from localStorage on mount (only when loading from saved records)
     useEffect(() => {
@@ -626,6 +700,7 @@ const QuickSOAP = () => {
         setDraftRecordId(null);
         draftRecordIdRef.current = null;
         setLastDictationCount(0);
+        setSelectedTemplate(null);
 
         // Clear localStorage
         localStorage.removeItem('quickSOAP_dictations');
@@ -634,6 +709,7 @@ const QuickSOAP = () => {
         localStorage.removeItem('quickSOAP_lastInput');
         localStorage.removeItem('currentQuickSOAPReportId');
         localStorage.removeItem('quickSOAP_reportName');
+        localStorage.removeItem('quickSOAP_selectedTemplate');
     }, []);
 
     // Helper to load draft data into component state
@@ -1517,9 +1593,10 @@ const QuickSOAP = () => {
     };
 
     const handleGenerateSOAP = async () => {
-        // Combine all dictations and manual input
+        // Combine template (if any) + all dictations + manual input
+        const templatePrefix = selectedTemplate ? `[TEMPLATE - Use as baseline for this record]\n${selectedTemplate.template_text}\n\n[DICTATION - Additional findings and observations]\n` : '';
         const allDictations = dictations.map(d => d.fullText || '').filter(text => text.trim()).join('\n\n');
-        const combinedInput = allDictations + (input.trim() ? '\n\n' + input.trim() : '');
+        const combinedInput = templatePrefix + allDictations + (input.trim() ? '\n\n' + input.trim() : '');
 
         console.log('[QuickSOAP] Generate clicked:', {
             dictationsCount: dictations.length,
@@ -1679,6 +1756,7 @@ const QuickSOAP = () => {
             setIsEditingReportName(false);
             setHasBeenSentToDesktop(false);
             setPetName(null);
+            setSelectedTemplate(null);
             // Clear draft record ID to prevent replacing old records
             setDraftRecordId(null);
             draftRecordIdRef.current = null;
@@ -1689,6 +1767,7 @@ const QuickSOAP = () => {
             localStorage.removeItem('quickSOAP_lastInput');
             localStorage.removeItem('currentQuickSOAPReportId');
             localStorage.removeItem('quickSOAP_reportName');
+            localStorage.removeItem('quickSOAP_selectedTemplate');
             // Transition back to center: fade in centered input
             setTimeout(() => {
                 setIsTransitioning(false);
@@ -2086,28 +2165,38 @@ const QuickSOAP = () => {
         const name = sectionName.toLowerCase();
         if (name.includes('subjective')) return {
             border: '#3b82f6',
-            header: 'bg-gradient-to-r from-blue-500 to-blue-700',
-            bg: 'bg-blue-50'
+            header: 'bg-gradient-to-r from-blue-500 to-blue-600',
+            bg: 'bg-blue-50',
+            focusRing: '0 0 0 2px rgba(59,130,246,0.15)',
+            copyHover: 'rgba(255,255,255,0.25)',
         };
         if (name.includes('objective')) return {
             border: '#10b981',
-            header: 'bg-gradient-to-r from-green-500 to-green-700',
-            bg: 'bg-green-50'
+            header: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
+            bg: 'bg-emerald-50',
+            focusRing: '0 0 0 2px rgba(16,185,129,0.15)',
+            copyHover: 'rgba(255,255,255,0.25)',
         };
         if (name.includes('assessment')) return {
             border: '#f59e0b',
-            header: 'bg-gradient-to-r from-amber-500 to-amber-700',
-            bg: 'bg-amber-50'
+            header: 'bg-gradient-to-r from-amber-500 to-amber-600',
+            bg: 'bg-amber-50',
+            focusRing: '0 0 0 2px rgba(245,158,11,0.15)',
+            copyHover: 'rgba(255,255,255,0.25)',
         };
         if (name.includes('plan')) return {
             border: '#ef4444',
-            header: 'bg-gradient-to-r from-red-500 to-red-700',
-            bg: 'bg-red-50'
+            header: 'bg-gradient-to-r from-red-500 to-red-600',
+            bg: 'bg-red-50',
+            focusRing: '0 0 0 2px rgba(239,68,68,0.15)',
+            copyHover: 'rgba(255,255,255,0.25)',
         };
         return {
             border: '#6b7280',
-            header: 'bg-gradient-to-r from-gray-500 to-gray-700',
-            bg: 'bg-gray-50'
+            header: 'bg-gradient-to-r from-gray-500 to-gray-600',
+            bg: 'bg-gray-50',
+            focusRing: '0 0 0 2px rgba(107,114,128,0.15)',
+            copyHover: 'rgba(255,255,255,0.25)',
         };
     };
 
@@ -2358,22 +2447,26 @@ const QuickSOAP = () => {
             )}
 
             <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full ${isGenerating && !isMobile && !hasReport ? 'invisible' : ''}`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>
-                {/* Left Side - Input Area */}
+                {/* Left Side - Input Area (top bar when report exists on desktop) */}
                 <div
-                    className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed top-0 bottom-0 z-40'}
+                    ref={hasReport && !isMobile ? topBarRef : undefined}
+                    className={isMobile ? 'relative w-full h-full z-40 overflow-hidden' : 'fixed z-40'}
                     style={{
                         ...(isMobile ? { height: '100%', overflow: 'hidden' } : {}),
-                        ...(hasReport ? {
-                            left: isMobile ? '0' : (isSidebarCollapsed ? '80px' : '224px'),
-                            width: isMobile ? '100%' : '25%',
+                        ...(hasReport && !isMobile ? {
+                            display: 'none',
+                        } : hasReport && isMobile ? {
+                            left: '0',
+                            width: '100%',
                             backgroundColor: 'white',
-                            borderRight: isMobile ? 'none' : '2px solid #e5e7eb',
                             opacity: isTransitioning ? 0 : 1,
                             transform: isTransitioning ? 'translateX(-150px)' : 'translateX(0)',
-                            transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s ease-in-out, width 0.3s ease-in-out'
+                            transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
                         } : {
                             left: isMobile ? '0' : (isSidebarCollapsed ? '80px' : '224px'),
                             width: isMobile ? '100%' : (isSidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 224px)'),
+                            top: '0',
+                            bottom: '0',
                             backgroundColor: isMobile ? 'white' : 'transparent',
                             opacity: isTransitioning ? 0 : 1,
                             transform: isTransitioning ? 'scale(0.95)' : 'scale(1)',
@@ -2548,43 +2641,44 @@ const QuickSOAP = () => {
 
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
-                                {/* Record Type Selector - Show before first dictation */}
+                                {/* Record Type Selector + Template Button - Show before first dictation */}
                                 {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex justify-center ${isMobile ? 'mb-4' : 'mb-5'}`}>
-                                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
-                                            <button
-                                                onClick={() => setRecordType('soap')}
-                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'soap'
-                                                    ? 'bg-white text-primary-600 shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                <FaClipboardList className="text-xs" />
-                                                SOAP
-                                            </button>
-                                            <button
-                                                onClick={() => setRecordType('summary')}
-                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'summary'
-                                                    ? 'bg-white text-primary-600 shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                <FaFileAlt className="text-xs" />
-                                                Summary
-                                                <span className="text-[8px] font-medium text-yellow-500">beta</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setRecordType('callback')}
-                                                className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'callback'
-                                                    ? 'bg-white text-primary-600 shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                                                    }`}
-                                            >
-                                                <FaPhoneAlt className="text-xs" />
-                                                Callback
-                                                <span className="text-[8px] font-medium text-yellow-500">beta</span>
-                                            </button>
+                                    <div className={`relative ${isMobile ? 'mb-4' : 'mb-5'}`}>
+                                        <div className="flex justify-center">
+                                            <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                                <button
+                                                    onClick={() => setRecordType('soap')}
+                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'soap'
+                                                        ? 'bg-blue-500 text-white shadow-sm'
+                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                        }`}
+                                                >
+                                                    <FaClipboardList className="text-xs" />
+                                                    SOAP
+                                                </button>
+                                                <button
+                                                    onClick={() => setRecordType('summary')}
+                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'summary'
+                                                        ? 'bg-emerald-500 text-white shadow-sm'
+                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                        }`}
+                                                >
+                                                    <FaFileAlt className="text-xs" />
+                                                    Summary
+                                                </button>
+                                                <button
+                                                    onClick={() => setRecordType('callback')}
+                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'callback'
+                                                        ? 'bg-amber-500 text-white shadow-sm'
+                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                        }`}
+                                                >
+                                                    <FaPhoneAlt className="text-xs" />
+                                                    Callback
+                                                </button>
+                                            </div>
                                         </div>
+                                        {/* Template Context button - hidden for now */}
                                     </div>
                                 )}
 
@@ -2745,8 +2839,8 @@ const QuickSOAP = () => {
 
                             </div>
                         </div>
-                    ) : (
-                        // Sidebar layout when report is generated
+                    ) : isMobile ? (
+                        // Mobile sidebar layout when report is generated (unchanged)
                         <div className="h-full flex flex-col overflow-hidden px-6 py-8 bg-white">
                             {/* Header */}
                             <div className="mb-6 flex-shrink-0">
@@ -2758,53 +2852,29 @@ const QuickSOAP = () => {
                                 </p>
                             </div>
 
-                            {/* Error Message */}
                             {error && (
                                 <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-3 rounded-r-lg flex-shrink-0">
                                     <p className="text-red-600 text-xs">{error}</p>
                                 </div>
                             )}
 
-                            {/* Dictation Bubbles - Scrollable Container */}
                             {dictations.length > 0 && (
                                 <div className="mb-4 overflow-y-auto max-h-48 space-y-2 flex-shrink-0">
                                     {dictations.map((dictation) => (
-                                        <div
-                                            key={dictation.id}
-                                            className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm"
-                                        >
+                                        <div key={dictation.id} className="bg-blue-50 border border-blue-200 rounded-lg p-3 shadow-sm">
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-1">
                                                         <span className="text-xs font-semibold text-blue-700">
                                                             {dictation.expanded ? 'Full Transcript' : 'Dictation Summary'}
                                                         </span>
-                                                        <button
-                                                            onClick={() => toggleDictationExpand(dictation.id)}
-                                                            className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1"
-                                                        >
-                                                            {dictation.expanded ? (
-                                                                <>
-                                                                    <FaChevronUp className="text-xs" />
-                                                                    <span>Collapse</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <FaChevronDown className="text-xs" />
-                                                                    <span>Expand</span>
-                                                                </>
-                                                            )}
+                                                        <button onClick={() => toggleDictationExpand(dictation.id)} className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1">
+                                                            {dictation.expanded ? (<><FaChevronUp className="text-xs" /><span>Collapse</span></>) : (<><FaChevronDown className="text-xs" /><span>Expand</span></>)}
                                                         </button>
                                                     </div>
-                                                    <p className="text-sm text-gray-700">
-                                                        {dictation.expanded ? dictation.fullText : dictation.summary}
-                                                    </p>
+                                                    <p className="text-sm text-gray-700">{dictation.expanded ? dictation.fullText : dictation.summary}</p>
                                                 </div>
-                                                <button
-                                                    onClick={() => handleDeleteDictationClick(dictation.id)}
-                                                    className="text-gray-400 hover:text-red-500 transition-colors"
-                                                    title="Remove dictation"
-                                                >
+                                                <button onClick={() => handleDeleteDictationClick(dictation.id)} className="text-gray-400 hover:text-red-500 transition-colors" title="Remove dictation">
                                                     <FaTimes className="text-xs" />
                                                 </button>
                                             </div>
@@ -2813,123 +2883,26 @@ const QuickSOAP = () => {
                                 </div>
                             )}
 
-                            {/* Add More Dictation Button - Show in generated view */}
-                            {!isMobile && !isRecording && !isTranscribing && hasReport && (
-                                <div className="mb-4 flex flex-col items-center flex-shrink-0">
-                                    <button
-                                        onClick={startRecording}
-                                        disabled={isGenerating}
-                                        className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
-                                        title={dictations.length > 0 ? "Add More Dictation" : "Start Dictation"}
-                                    >
-                                        <FaMicrophone className="text-xl" />
-                                        {dictations.length > 0 && <span className="absolute text-[10px] bottom-0 right-0 bg-white text-primary-600 rounded-full px-1.5 py-0.5 font-semibold shadow-sm">Add more +</span>}
-                                    </button>
-                                </div>
-                            )}
-
-                            {/* Transcribing Indicator */}
-                            {isTranscribing && (
-                                <div className="mb-4 flex flex-col items-center gap-2 flex-shrink-0">
-                                    <div className="flex items-center gap-3 text-gray-600">
-                                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
-                                        <span className="text-sm font-medium">Transcribing...</span>
-                                    </div>
-                                    {needsSegmentation && (
-                                        <span className="text-xs text-gray-500 text-center px-4">
-                                            Hang tight! Longer recordings can take up to 3 minutes to transcribe.
-                                        </span>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* Input Textarea (Desktop only) */}
-                            {!isMobile && (
-                                <div className="mb-4 flex-shrink-0">
-                                    <textarea
-                                        ref={sidebarInputTextareaRef}
-                                        value={input}
-                                        onChange={(e) => {
-                                            setInput(e.target.value);
-                                        }}
-                                        placeholder="Add additional notes here (optional)..."
-                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm overflow-y-auto"
-                                        style={{
-                                            whiteSpace: 'pre-wrap',
-                                            wordWrap: 'break-word',
-                                            maxHeight: '200px',
-                                            minHeight: '80px'
-                                        }}
-                                        disabled={isTranscribing || isGenerating}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Buttons */}
                             <div className="flex flex-col gap-3 flex-shrink-0">
-                                {/* Recording Controls - Only show when recording in generated view, always show in ungenerated view */}
                                 {(isRecording || !hasReport) && (
                                     <div className="flex flex-col items-center gap-2">
                                         <div className="flex justify-center items-center gap-3">
                                             {isRecording && !isPaused && (
-                                                <button
-                                                    onClick={pauseRecording}
-                                                    disabled={isTranscribing || isGenerating}
-                                                    className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed ${isMobile ? 'w-20 h-20' : 'w-16 h-16'}`}
-                                                    title="Pause Recording"
-                                                >
-                                                    <FaPause className={isMobile ? 'text-xl' : 'text-lg'} />
+                                                <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-yellow-500 hover:bg-yellow-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed" title="Pause Recording">
+                                                    <FaPause className="text-xl" />
                                                 </button>
                                             )}
                                             {isRecording && isPaused && (
-                                                <button
-                                                    onClick={resumeRecording}
-                                                    disabled={isTranscribing || isGenerating}
-                                                    className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-green-500 hover:bg-green-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed ${isMobile ? 'w-20 h-20' : 'w-16 h-16'}`}
-                                                    title="Resume Recording"
-                                                >
-                                                    <FaPlay className={isMobile ? 'text-xl' : 'text-lg'} />
+                                                <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-green-500 hover:bg-green-600 text-white disabled:bg-gray-300 disabled:cursor-not-allowed" title="Resume Recording">
+                                                    <FaPlay className="text-xl" />
                                                 </button>
                                             )}
-                                            <button
-                                                onClick={isRecording ? stopRecording : startRecording}
-                                                disabled={isTranscribing || isGenerating}
-                                                className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${isRecording
-                                                    ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse'
-                                                    : 'bg-primary-600 hover:bg-primary-700 text-white'
-                                                    } disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none ${isMobile ? 'w-24 h-24' : 'w-20 h-20'}`}
-                                                title={isRecording ? 'Stop Recording' : 'Start Recording'}
-                                            >
-                                                {isRecording ? <FaStop className={isMobile ? 'text-2xl' : 'text-xl'} /> : <FaMicrophone className={isMobile ? 'text-2xl' : 'text-xl'} />}
+                                            <button onClick={isRecording ? stopRecording : startRecording} disabled={isTranscribing || isGenerating} className={`rounded-full flex items-center justify-center transition-all duration-200 shadow-lg ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : 'bg-primary-600 hover:bg-primary-700 text-white'} disabled:bg-gray-300 disabled:cursor-not-allowed disabled:animate-none w-24 h-24`} title={isRecording ? 'Stop Recording' : 'Start Recording'}>
+                                                {isRecording ? <FaStop className="text-2xl" /> : <FaMicrophone className="text-2xl" />}
                                             </button>
                                         </div>
-                                        {isRecording && (
-                                            <p className="text-xs font-medium text-gray-600">
-                                                {isPaused ? 'Paused' : 'Listening...'}
-                                            </p>
-                                        )}
+                                        {isRecording && <p className="text-xs font-medium text-gray-600">{isPaused ? 'Paused' : 'Listening...'}</p>}
                                     </div>
-                                )}
-                                {!isMobile && (dictations.length > 0 || input.trim()) && !isTranscribing && (
-                                    <>
-                                        <button
-                                            type="button"
-                                            onClick={handleGenerateSOAP}
-                                            disabled={isGenerating}
-                                            className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
-                                        >
-                                            {isGenerating ? 'Generating...' : hasReport ? `Regenerate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}` : `Generate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}`}
-                                        </button>
-                                        {hasReport && (
-                                            <button
-                                                onClick={handleClearReport}
-                                                disabled={isGenerating}
-                                                className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200 shadow-sm text-sm"
-                                            >
-                                                Start New
-                                            </button>
-                                        )}
-                                    </>
                                 )}
                                 {isMobile && dictations.length > 0 && (
                                     <div className="w-full space-y-2">
@@ -2961,6 +2934,170 @@ const QuickSOAP = () => {
                                 )}
                             </div>
                         </div>
+                    ) : (
+                        // Desktop top bar when report is generated
+                        <div
+                            className="flex flex-col gap-3"
+                            style={{
+                                fontFamily: "'Inter', sans-serif",
+                                background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
+                                padding: '16px 24px',
+                            }}
+                        >
+                            {/* Row 1: Mic + Actions + Notes */}
+                            <div className="flex items-center gap-3">
+                                {/* Mic / Recording controls */}
+                                {!isRecording && !isTranscribing && (
+                                    <button
+                                        onClick={startRecording}
+                                        disabled={isGenerating}
+                                        className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
+                                        title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
+                                    >
+                                        <FaMicrophone className="text-base" />
+                                        {dictations.length > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+                                                <span className="text-primary-600 text-[10px] font-bold leading-none">+</span>
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
+                                {isRecording && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        {!isPaused ? (
+                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
+                                                <FaPause className="text-sm" />
+                                            </button>
+                                        ) : (
+                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
+                                                <FaPlay className="text-sm" />
+                                            </button>
+                                        )}
+                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
+                                            <FaStop className="text-base" />
+                                        </button>
+                                        <span className="text-xs text-gray-500 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
+                                    </div>
+                                )}
+                                {isTranscribing && (
+                                    <div className="flex items-center gap-2.5 flex-shrink-0 bg-blue-50 rounded-xl px-4 py-2.5">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent" />
+                                        <span className="text-xs text-primary-600 font-medium">Transcribing...</span>
+                                    </div>
+                                )}
+
+                                {/* Action buttons */}
+                                {(dictations.length > 0 || input.trim()) && !isTranscribing && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSOAP}
+                                            disabled={isGenerating}
+                                            className="px-5 py-2.5 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)',
+                                                boxShadow: '0 2px 8px rgba(51,105,189,0.2)',
+                                            }}
+                                        >
+                                            {isGenerating ? 'Generating...' : 'Regenerate'}
+                                        </button>
+                                        <button
+                                            onClick={handleClearReport}
+                                            disabled={isGenerating}
+                                            className="px-4 py-2.5 bg-white text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb' }}
+                                        >
+                                            Start New
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* Error inline */}
+                                {error && (
+                                    <div className="flex-shrink-0 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                                        <p className="text-red-500 text-xs font-medium">{error}</p>
+                                    </div>
+                                )}
+
+                                {/* Additional notes - auto-grows */}
+                                <textarea
+                                    ref={sidebarInputTextareaRef}
+                                    value={input}
+                                    onChange={(e) => {
+                                        setInput(e.target.value);
+                                        const el = e.target;
+                                        el.style.height = 'auto';
+                                        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+                                    }}
+                                    placeholder="Add extra notes or context..."
+                                    className="flex-1 min-w-[200px] px-4 py-2.5 bg-white text-sm resize-none focus:outline-none text-gray-700 rounded-xl transition-shadow placeholder:text-xs placeholder:italic placeholder:text-gray-300 placeholder:font-light"
+                                    style={{
+                                        maxHeight: '120px',
+                                        minHeight: '42px',
+                                        fontFamily: "'Inter', sans-serif",
+                                        overflow: 'auto',
+                                        border: '1px solid #e8ecf2',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                    }}
+                                    onFocus={(e) => { e.target.style.borderColor = '#93b4e8'; e.target.style.boxShadow = '0 0 0 3px rgba(51,105,189,0.08)'; }}
+                                    onBlur={(e) => { e.target.style.borderColor = '#e8ecf2'; e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)'; }}
+                                    disabled={isTranscribing || isGenerating}
+                                />
+                            </div>
+
+                            {/* Row 2: Dictation cards */}
+                            {dictations.length > 0 && (
+                                <div className="flex flex-wrap gap-2 overflow-y-auto rounded-xl" style={{ maxHeight: '160px' }}>
+                                    {dictations.map((dictation, idx) => (
+                                        <div
+                                            key={dictation.id}
+                                            className={`bg-white rounded-xl transition-all ${dictation.expanded ? 'w-full' : 'flex-1 min-w-[220px]'}`}
+                                            style={{
+                                                border: '1px solid #e0e8f5',
+                                                padding: '8px 12px',
+                                                boxShadow: '0 1px 3px rgba(51,105,189,0.04)',
+                                            }}
+                                        >
+                                            <div className="flex items-start justify-between gap-1.5">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span
+                                                            className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                                                            style={{ backgroundColor: '#eef3fb' }}
+                                                        >
+                                                            <FaMicrophone className="text-[7px] text-primary-400" />
+                                                        </span>
+                                                        <span className="text-[10px] font-semibold text-primary-500 tracking-wide uppercase">
+                                                            {dictation.expanded ? 'Transcript' : `Dictation ${idx + 1}`}
+                                                        </span>
+                                                        <button
+                                                            onClick={() => toggleDictationExpand(dictation.id)}
+                                                            className="text-primary-400 hover:text-primary-600 text-[10px] flex items-center gap-0.5 transition-colors ml-auto"
+                                                        >
+                                                            {dictation.expanded ? (
+                                                                <><FaChevronUp className="text-[7px]" /><span>Less</span></>
+                                                            ) : (
+                                                                <><FaChevronDown className="text-[7px]" /><span>More</span></>
+                                                            )}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-500 leading-snug">
+                                                        {dictation.expanded ? dictation.fullText : dictation.summary}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleDeleteDictationClick(dictation.id)}
+                                                    className="text-gray-200 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5"
+                                                    title="Remove dictation"
+                                                >
+                                                    <FaTimes className="text-[8px]" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -2970,30 +3107,222 @@ const QuickSOAP = () => {
                         ref={(el) => {
                             if (el) reportScrollContainerRef.current = el;
                         }}
-                        className="fixed top-0 right-0 bottom-0 bg-gray-50 overflow-y-auto z-30"
+                        className="fixed right-0 bottom-0 overflow-y-auto z-30"
                         style={{
-                            // Start after sidebar + input (25% of viewport)
-                            left: isMobile ? '0' : (isSidebarCollapsed ? 'calc(80px + 25%)' : 'calc(224px + 25%)'),
-                            width: isMobile ? '100%' : (isSidebarCollapsed ? 'calc(75% - 80px)' : 'calc(75% - 224px)'),
-                            paddingTop: '20px',
+                            background: 'linear-gradient(180deg, #f8f9fb 0%, #f1f3f7 100%)',
+                            left: isSidebarCollapsed ? '80px' : '224px',
+                            top: '0',
                             paddingBottom: '40px',
                             opacity: isTransitioning ? 0 : 1,
-                            transform: isTransitioning ? 'translateX(100px)' : 'translateX(0)',
-                            transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s ease-in-out, width 0.3s ease-in-out'
+                            transform: isTransitioning ? 'translateY(20px)' : 'translateY(0)',
+                            transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s ease-in-out, top 0.2s ease-in-out'
                         }}>
-                        <div className="max-w-5xl mx-auto px-8 py-4">
+                        {/* Top input bar - scrolls with content */}
+                        <div
+                            ref={topInputBarRef}
+                            className="flex flex-col gap-3"
+                            style={{
+                                fontFamily: "'Inter', sans-serif",
+                                background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
+                                padding: '16px 24px',
+                                borderBottom: '1px solid #e8ecf2',
+                            }}
+                        >
+                            <div className="flex items-center gap-3">
+                                {!isRecording && !isTranscribing && (
+                                    <button
+                                        onClick={startRecording}
+                                        disabled={isGenerating}
+                                        className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
+                                        title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
+                                    >
+                                        <FaMicrophone className="text-base" />
+                                        {dictations.length > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+                                                <span className="text-primary-600 text-[10px] font-bold leading-none">+</span>
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
+                                {isRecording && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        {!isPaused ? (
+                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
+                                                <FaPause className="text-sm" />
+                                            </button>
+                                        ) : (
+                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
+                                                <FaPlay className="text-sm" />
+                                            </button>
+                                        )}
+                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
+                                            <FaStop className="text-base" />
+                                        </button>
+                                        <span className="text-xs text-gray-500 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
+                                    </div>
+                                )}
+                                {isTranscribing && (
+                                    <div className="flex items-center gap-2.5 flex-shrink-0 bg-blue-50 rounded-xl px-4 py-2.5">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent" />
+                                        <span className="text-xs text-primary-600 font-medium">Transcribing...</span>
+                                    </div>
+                                )}
+                                {(dictations.length > 0 || input.trim()) && !isTranscribing && (
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={handleGenerateSOAP}
+                                            disabled={isGenerating}
+                                            className="px-5 py-2.5 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 2px 8px rgba(51,105,189,0.2)' }}
+                                        >
+                                            {isGenerating ? 'Generating...' : 'Regenerate'}
+                                        </button>
+                                        <button
+                                            onClick={handleClearReport}
+                                            disabled={isGenerating}
+                                            className="px-4 py-2.5 bg-white text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb' }}
+                                        >
+                                            Start New
+                                        </button>
+                                    </div>
+                                )}
+                                {error && (
+                                    <div className="flex-shrink-0 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                                        <p className="text-red-500 text-xs font-medium">{error}</p>
+                                    </div>
+                                )}
+                                <textarea
+                                    ref={sidebarInputTextareaRef}
+                                    value={input}
+                                    onChange={(e) => {
+                                        setInput(e.target.value);
+                                        const el = e.target;
+                                        el.style.height = 'auto';
+                                        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+                                    }}
+                                    placeholder="Add extra notes or context..."
+                                    className="flex-1 min-w-[200px] px-4 py-2.5 bg-white text-sm resize-none focus:outline-none text-gray-700 rounded-xl transition-shadow placeholder:text-xs placeholder:italic placeholder:text-gray-300 placeholder:font-light"
+                                    style={{ maxHeight: '120px', minHeight: '42px', fontFamily: "'Inter', sans-serif", overflow: 'auto', border: '1px solid #e8ecf2', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
+                                    onFocus={(e) => { e.target.style.borderColor = '#93b4e8'; e.target.style.boxShadow = '0 0 0 3px rgba(51,105,189,0.08)'; }}
+                                    onBlur={(e) => { e.target.style.borderColor = '#e8ecf2'; e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)'; }}
+                                    disabled={isTranscribing || isGenerating}
+                                />
+                            </div>
+                            {dictations.length > 0 && (
+                                <div className="flex flex-wrap gap-2 overflow-y-auto rounded-xl" style={{ maxHeight: '160px' }}>
+                                    {dictations.map((dictation, idx) => (
+                                        <div
+                                            key={dictation.id}
+                                            className={`bg-white rounded-xl transition-all ${dictation.expanded ? 'w-full' : 'flex-1 min-w-[220px]'}`}
+                                            style={{ border: '1px solid #e0e8f5', padding: '8px 12px', boxShadow: '0 1px 3px rgba(51,105,189,0.04)' }}
+                                        >
+                                            <div className="flex items-start justify-between gap-1.5">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#eef3fb' }}>
+                                                            <FaMicrophone className="text-[7px] text-primary-400" />
+                                                        </span>
+                                                        <span className="text-[10px] font-semibold text-primary-500 tracking-wide uppercase">
+                                                            {dictation.expanded ? 'Transcript' : `Dictation ${idx + 1}`}
+                                                        </span>
+                                                        <button onClick={() => toggleDictationExpand(dictation.id)} className="text-primary-400 hover:text-primary-600 text-[10px] flex items-center gap-0.5 transition-colors ml-auto">
+                                                            {dictation.expanded ? (<><FaChevronUp className="text-[7px]" /><span>Less</span></>) : (<><FaChevronDown className="text-[7px]" /><span>More</span></>)}
+                                                        </button>
+                                                    </div>
+                                                    <p className="text-[11px] text-gray-500 leading-snug">
+                                                        {dictation.expanded ? dictation.fullText : dictation.summary}
+                                                    </p>
+                                                </div>
+                                                <button onClick={() => handleDeleteDictationClick(dictation.id)} className="text-gray-200 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5" title="Remove dictation">
+                                                    <FaTimes className="text-[8px]" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Sticky action bar - appears when top input bar scrolls out */}
+                        {(dictations.length > 0 || input.trim()) && !isTranscribing && (
+                            <div
+                                className="sticky top-0 z-20 flex items-center gap-3 px-6 py-2.5"
+                                style={{
+                                    fontFamily: "'Inter', sans-serif",
+                                    background: 'rgba(248,249,251,0.92)',
+                                    backdropFilter: 'blur(12px)',
+                                    WebkitBackdropFilter: 'blur(12px)',
+                                    borderBottom: showStickyBar ? '1px solid rgba(232,236,242,0.7)' : '1px solid transparent',
+                                    opacity: showStickyBar ? 1 : 0,
+                                    pointerEvents: showStickyBar ? 'auto' : 'none',
+                                    transform: showStickyBar ? 'translateY(0)' : 'translateY(-100%)',
+                                    transition: 'opacity 0.2s ease, transform 0.2s ease, border-bottom 0.2s ease',
+                                }}
+                            >
+                                {!isRecording && !isTranscribing && (
+                                    <button
+                                        onClick={startRecording}
+                                        disabled={isGenerating}
+                                        className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-md hover:shadow-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
+                                        title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
+                                    >
+                                        <FaMicrophone className="text-xs" />
+                                        {dictations.length > 0 && (
+                                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.12)' }}>
+                                                <span className="text-primary-600 text-[8px] font-bold leading-none">+</span>
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
+                                {isRecording && (
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                        {!isPaused ? (
+                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-md transition-all" title="Pause"><FaPause className="text-[10px]" /></button>
+                                        ) : (
+                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md transition-all" title="Resume"><FaPlay className="text-[10px]" /></button>
+                                        )}
+                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-9 h-9 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md animate-pulse transition-all" title="Stop Recording"><FaStop className="text-xs" /></button>
+                                        <span className="text-[10px] text-gray-400 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
+                                    </div>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateSOAP}
+                                    disabled={isGenerating}
+                                    className="px-4 py-1.5 text-white rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                    style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 1px 4px rgba(51,105,189,0.18)' }}
+                                >
+                                    {isGenerating ? 'Generating...' : 'Regenerate'}
+                                </button>
+                                <button
+                                    onClick={handleClearReport}
+                                    disabled={isGenerating}
+                                    className="px-3 py-1.5 bg-white text-gray-500 rounded-lg text-xs font-medium hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                    style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}
+                                >
+                                    Start New
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="mx-auto px-6 py-4" style={{ maxWidth: 'calc(100% - 40px)' }}>
                             {/* Generation Banner - Desktop Only */}
                             {isGenerating && !isMobile && (
-                                <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center gap-3">
-                                    <FaSave className="text-xl flex-shrink-0" />
+                                <div
+                                    className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-5 py-3 rounded-xl mb-5 flex items-center gap-3"
+                                    style={{ boxShadow: '0 2px 12px rgba(51,105,189,0.15)', fontFamily: "'Inter', sans-serif" }}
+                                >
+                                    <FaSave className="text-lg flex-shrink-0 opacity-80" />
                                     <div className="flex-1">
-                                        <p className="font-semibold text-base">Generating your {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...</p>
-                                        <p className="text-sm opacity-90">This will be automatically saved to your records. Feel free to name it and edit it once it's generated.</p>
+                                        <p className="font-semibold text-sm">Generating your {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...</p>
+                                        <p className="text-xs opacity-75 mt-0.5">This will be automatically saved. Feel free to name and edit it once generated.</p>
                                     </div>
                                 </div>
                             )}
                             {/* Report Title - Editable */}
-                            <div className="mb-3">
+                            <div className="mb-2">
                                 {isEditingReportName ? (
                                     <input
                                         type="text"
@@ -3005,12 +3334,14 @@ const QuickSOAP = () => {
                                                 setIsEditingReportName(false);
                                             }
                                         }}
-                                        className="w-full text-lg font-semibold text-black bg-transparent border-b-2 border-gray-300 focus:border-primary-600 focus:outline-none pb-1"
+                                        className="w-full text-xl font-bold text-gray-900 bg-transparent border-b-2 border-gray-300 focus:border-primary-500 focus:outline-none pb-1 tracking-tight"
+                                        style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         autoFocus
                                     />
                                 ) : (
                                     <h2
-                                        className="text-lg font-semibold text-black cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-primary-600"
+                                        className="text-xl font-bold text-gray-900 cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-primary-400 tracking-tight"
+                                        style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         onClick={() => setIsEditingReportName(true)}
                                         title="Click to edit report name"
                                     >
@@ -3020,61 +3351,61 @@ const QuickSOAP = () => {
                             </div>
 
                             {/* Report Header */}
-                            <div className="mb-4 flex items-center justify-between">
-                                <div>
-                                    <p className="text-xs text-gray-500">Generated from your clinical notes</p>
-                                </div>
-                                <div className="flex items-center gap-2">
+                            <div className="mb-5 flex items-center justify-between">
+                                <p className="text-xs text-gray-400 font-medium tracking-wide uppercase" style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', letterSpacing: '0.05em' }}>
+                                    Generated from your clinical notes
+                                </p>
+                                <div className="flex items-center gap-1.5">
                                     {isAuthenticated && (
                                         <button
                                             onClick={handleSaveRecord}
                                             disabled={isSaving || !hasReport}
-                                            className={`px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer ${saveMessageVisible
-                                                ? 'bg-[#5cccf0] text-white'
-                                                : 'bg-[#3369bd] text-white hover:bg-[#2c5aa3]'
-                                                } disabled:bg-[#95a5a6] disabled:cursor-not-allowed flex items-center gap-1.5`}
-                                            style={{ fontSize: '0.9rem' }}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer ${saveMessageVisible
+                                                ? 'bg-primary-100 text-primary-700'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
+                                                } disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5`}
+                                            style={{ fontFamily: "'Inter', sans-serif" }}
                                             title="Save record"
                                         >
-                                            <FaSave className="text-xs" />
+                                            <FaSave className="text-[10px]" />
                                             {isSaving ? 'Saving...' : saveMessageVisible ? 'Saved!' : 'Save'}
                                         </button>
                                     )}
                                     <button
                                         onClick={copyAll}
-                                        className={`px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer ${copiedSection === 'all'
-                                            ? 'bg-[#5cccf0] text-white'
-                                            : 'bg-[#3369bd] text-white hover:bg-[#2c5aa3]'
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer ${copiedSection === 'all'
+                                            ? 'bg-primary-100 text-primary-700'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
                                             }`}
-                                        style={{ fontSize: '0.9rem' }}
+                                        style={{ fontFamily: "'Inter', sans-serif" }}
                                     >
                                         {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
                                     </button>
                                     <button
                                         onClick={handlePrint}
-                                        className="px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer bg-[#3369bd] text-white hover:bg-[#2c5aa3] flex items-center gap-1.5"
-                                        style={{ fontSize: '0.9rem' }}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 flex items-center gap-1.5"
+                                        style={{ fontFamily: "'Inter', sans-serif" }}
                                         title="Print report"
                                     >
-                                        <FaPrint className="text-xs" />
+                                        <FaPrint className="text-[10px]" />
                                         Print
                                     </button>
                                     {isAuthenticated && hasReport && (
                                         <button
                                             onClick={handleSaveAndClear}
                                             disabled={isSaving || !hasReport}
-                                            className="px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer bg-green-200 text-green-800 hover:bg-green-300 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed flex items-center gap-1.5"
-                                            style={{ fontSize: '0.9rem' }}
+                                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5"
+                                            style={{ fontFamily: "'Inter', sans-serif" }}
                                             title="Save record and clear"
                                         >
-                                            <FaSave className="text-xs" />
+                                            <FaSave className="text-[10px]" />
                                             Save & Clear
                                         </button>
                                     )}
                                     <button
                                         onClick={handleClearReport}
-                                        className="px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer bg-red-200 text-red-800 hover:bg-red-300"
-                                        style={{ fontSize: '0.9rem' }}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-red-50 text-red-600 hover:bg-red-100"
+                                        style={{ fontFamily: "'Inter', sans-serif" }}
                                         title="Clear report and return to input"
                                     >
                                         Clear
@@ -3142,7 +3473,7 @@ const QuickSOAP = () => {
                                     }}
                                 >
                                     {/* Record Card - SOAP has sections, Summary/Callback have single textarea */}
-                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)' }}>
                                         {recordType === 'soap' ? (
                                             // SOAP Record - Section-based display
                                             <>
@@ -3152,33 +3483,46 @@ const QuickSOAP = () => {
                                                     return (
                                                         <div
                                                             key={index}
-                                                            className={`border-l-4 ${index < parsedReport.sections.length - 1 ? 'border-b border-gray-200' : ''}`}
-                                                            style={{ borderLeftColor: colors.border }}
+                                                            className={index < parsedReport.sections.length - 1 ? 'border-b border-gray-100' : ''}
                                                         >
                                                             {/* Section Header */}
-                                                            <div className={`${colors.header} px-6 py-3 flex items-center justify-between`}>
-                                                                <h3 className="text-white font-semibold text-lg tracking-wide">
-                                                                    {section.name.charAt(0)} – {section.name}
-                                                                </h3>
+                                                            <div
+                                                                className={`${colors.header} px-5 py-4 flex items-center justify-between`}
+                                                                style={{ borderLeft: `3px solid ${colors.border}` }}
+                                                            >
+                                                                <div className="flex items-center gap-2.5">
+                                                                    <span
+                                                                        className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold"
+                                                                        style={{ fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.2)' }}
+                                                                    >
+                                                                        {section.name.charAt(0)}
+                                                                    </span>
+                                                                    <h3
+                                                                        className="text-white font-semibold tracking-wider uppercase"
+                                                                        style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', letterSpacing: '0.08em' }}
+                                                                    >
+                                                                        {section.name}
+                                                                    </h3>
+                                                                </div>
                                                                 <button
                                                                     onClick={() => copySection(section.name, section.content)}
-                                                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${copiedSection === section.name
-                                                                        ? 'bg-white text-blue-600'
-                                                                        : 'bg-white bg-opacity-20 text-white hover:bg-opacity-30'
+                                                                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${copiedSection === section.name
+                                                                        ? 'bg-white text-gray-700'
+                                                                        : 'text-white hover:bg-white/20'
                                                                         }`}
+                                                                    style={{ fontFamily: "'Inter', sans-serif", backgroundColor: copiedSection === section.name ? undefined : 'rgba(255,255,255,0.1)' }}
                                                                 >
-                                                                    <FaCopy className="text-xs" />
+                                                                    <FaCopy className="text-[9px]" />
                                                                     {copiedSection === section.name ? 'Copied!' : 'Copy'}
                                                                 </button>
                                                             </div>
 
                                                             {/* Section Content */}
-                                                            <div className={`${colors.bg} px-6 py-4`}>
+                                                            <div className={`${colors.bg} px-5 py-3`}>
                                                                 <textarea
                                                                     ref={(el) => {
                                                                         if (el) {
                                                                             textareaRefs.current[`section-${index}`] = el;
-                                                                            // One time auto size when mounted
                                                                             setTimeout(() => adjustTextareaHeight(index, el), 0);
                                                                         }
                                                                     }}
@@ -3188,36 +3532,37 @@ const QuickSOAP = () => {
                                                                         const newSections = [...parsedReport.sections];
                                                                         newSections[index].content = e.target.value;
 
-                                                                        // Update parsed sections
                                                                         setParsedReport(prev => ({ ...prev, sections: newSections }));
 
-                                                                        // Update full report string for persistence
                                                                         const newReport = newSections
                                                                             .map(s => `${s.name}:\n${s.content}`)
                                                                             .join('\n\n');
                                                                         setReport(newReport);
 
-                                                                        // Resize this textarea only (no scroll manipulation)
                                                                         adjustTextareaHeight(index, e.target);
                                                                     }}
-                                                                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white text-sm"
+                                                                    className="w-full bg-white resize-none text-gray-800 focus:outline-none rounded-lg transition-shadow"
                                                                     style={{
-                                                                        fontFamily: 'inherit',
-                                                                        lineHeight: '1.6',
+                                                                        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                                                        fontSize: '14px',
+                                                                        lineHeight: '1.8',
                                                                         height: 'auto',
                                                                         overflowY: 'auto',
                                                                         whiteSpace: 'pre-wrap',
                                                                         wordWrap: 'break-word',
                                                                         scrollMargin: '0px',
                                                                         scrollPadding: '0px',
-                                                                        scrollBehavior: 'auto'
+                                                                        scrollBehavior: 'auto',
+                                                                        padding: '12px 14px',
                                                                     }}
                                                                     onFocus={(e) => {
-                                                                        // Prevent scroll-into-view when focusing
                                                                         e.target.scrollIntoView = () => { };
+                                                                        e.target.style.boxShadow = colors.focusRing;
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        e.target.style.boxShadow = 'none';
                                                                     }}
                                                                     onInput={(e) => {
-                                                                        // Prevent scroll during input by restoring scroll position
                                                                         const scrollContainer = e.target.closest('.overflow-y-auto') ||
                                                                             document.querySelector('.fixed.top-0.right-0.bottom-0.overflow-y-auto');
                                                                         if (scrollContainer) {
@@ -3236,13 +3581,18 @@ const QuickSOAP = () => {
                                         ) : (
                                             // Summary/Callback Record - Single textarea display
                                             <div className="flex flex-col h-full">
-                                                <div className={`px-4 py-2 rounded-t-lg flex-shrink-0 ${recordType === 'summary' ? 'bg-emerald-600' : 'bg-amber-600'}`}>
-                                                    <h3 className="text-white font-semibold text-lg tracking-wide flex items-center gap-2">
-                                                        {recordType === 'summary' ? (
-                                                            <><FaFileAlt className="text-sm" /> Clinical Summary</>
-                                                        ) : (
-                                                            <><FaPhoneAlt className="text-sm" /> Callback Notes</>
-                                                        )}
+                                                <div className={`px-5 py-2 flex-shrink-0 flex items-center gap-2.5 ${recordType === 'summary' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}>
+                                                    <span
+                                                        className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold"
+                                                        style={{ fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.2)' }}
+                                                    >
+                                                        {recordType === 'summary' ? <FaFileAlt className="text-[10px]" /> : <FaPhoneAlt className="text-[10px]" />}
+                                                    </span>
+                                                    <h3
+                                                        className="text-white font-semibold tracking-wider uppercase"
+                                                        style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', letterSpacing: '0.08em' }}
+                                                    >
+                                                        {recordType === 'summary' ? 'Clinical Summary' : 'Callback Notes'}
                                                     </h3>
                                                 </div>
                                                 <textarea
@@ -3250,10 +3600,11 @@ const QuickSOAP = () => {
                                                     onChange={(e) => {
                                                         setReport(e.target.value);
                                                     }}
-                                                    className="w-full px-4 py-4 border border-gray-300 border-t-0 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none text-gray-800 leading-relaxed bg-white flex-1"
+                                                    className="w-full px-5 py-4 border-none focus:outline-none resize-none text-gray-800 bg-white flex-1 rounded-b-2xl"
                                                     style={{
-                                                        fontFamily: 'inherit',
-                                                        lineHeight: '1.7',
+                                                        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                                        fontSize: '14px',
+                                                        lineHeight: '1.8',
                                                         minHeight: 'calc(100vh - 350px)',
                                                         whiteSpace: 'pre-wrap',
                                                         wordWrap: 'break-word'
@@ -3264,24 +3615,24 @@ const QuickSOAP = () => {
                                         )}
 
                                         {/* Copy All & Print Buttons at Bottom */}
-                                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-2">
+                                        <div className="px-5 py-3 bg-gray-50/80 border-t border-gray-100 flex justify-end gap-1.5">
                                             <button
                                                 onClick={copyAll}
-                                                className={`px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer ${copiedSection === 'all'
-                                                    ? 'bg-[#5cccf0] text-white'
-                                                    : 'bg-[#3369bd] text-white hover:bg-[#2c5aa3]'
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer ${copiedSection === 'all'
+                                                    ? 'bg-primary-100 text-primary-700'
+                                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
                                                     }`}
-                                                style={{ fontSize: '0.9rem' }}
+                                                style={{ fontFamily: "'Inter', sans-serif" }}
                                             >
                                                 {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
                                             </button>
                                             <button
                                                 onClick={handlePrint}
-                                                className="px-3 py-1.5 rounded text-sm transition-all border-none cursor-pointer bg-[#3369bd] text-white hover:bg-[#2c5aa3] flex items-center gap-1.5"
-                                                style={{ fontSize: '0.9rem' }}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 flex items-center gap-1.5"
+                                                style={{ fontFamily: "'Inter', sans-serif" }}
                                                 title="Print report"
                                             >
-                                                <FaPrint className="text-xs" />
+                                                <FaPrint className="text-[10px]" />
                                                 Print
                                             </button>
                                         </div>
@@ -3322,6 +3673,82 @@ const QuickSOAP = () => {
                                 <div className="flex justify-center mb-4">
                                     <img src="/PW QR CODE.png" alt="QuickSOAP Mobile App QR Code" className="w-64 h-64 border-4 border-white rounded-lg shadow-lg" />
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Template Selector Modal */}
+                {showTemplateSelector && (
+                    <div
+                        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+                        onClick={() => { setShowTemplateSelector(false); setTemplateSearchQuery(''); }}
+                    >
+                        <div
+                            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[70vh] flex flex-col overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                                <h3 className="text-lg font-semibold text-gray-900">Select a Template</h3>
+                                <button
+                                    onClick={() => { setShowTemplateSelector(false); setTemplateSearchQuery(''); }}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <FaTimes />
+                                </button>
+                            </div>
+                            <div className="px-6 py-3 border-b border-gray-100">
+                                <input
+                                    type="text"
+                                    value={templateSearchQuery}
+                                    onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                                    placeholder="Search templates..."
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100 focus:outline-none"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex-1 overflow-y-auto px-6 py-3">
+                                {templates
+                                    .filter(t => t.template_name.toLowerCase().includes(templateSearchQuery.toLowerCase()))
+                                    .map((template) => (
+                                        <button
+                                            key={template.id}
+                                            onClick={() => {
+                                                setSelectedTemplate(template);
+                                                setShowTemplateSelector(false);
+                                                setTemplateSearchQuery('');
+                                            }}
+                                            className={`w-full text-left px-4 py-3 rounded-xl mb-2 transition-all duration-150 border ${
+                                                selectedTemplate?.id === template.id
+                                                    ? 'bg-primary-50 border-primary-300 ring-2 ring-primary-100'
+                                                    : 'bg-gray-50 border-gray-100 hover:bg-primary-50 hover:border-primary-200'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
+                                                    <FaClipboardList className="text-primary-500 text-sm" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900 truncate">{template.template_name}</p>
+                                                    <p className="text-xs text-gray-400 truncate mt-0.5">
+                                                        {template.template_text?.replace(/[*#\n]/g, ' ').slice(0, 80)}...
+                                                    </p>
+                                                </div>
+                                                {selectedTemplate?.id === template.id && (
+                                                    <FaCheckCircle className="text-primary-500 flex-shrink-0 ml-auto" />
+                                                )}
+                                            </div>
+                                        </button>
+                                    ))
+                                }
+                                {templates.filter(t => t.template_name.toLowerCase().includes(templateSearchQuery.toLowerCase())).length === 0 && (
+                                    <p className="text-sm text-gray-400 text-center py-8">
+                                        {templates.length === 0 ? 'No templates yet. Create one in the Templates tab.' : 'No matching templates.'}
+                                    </p>
+                                )}
+                            </div>
+                            <div className="px-6 py-3 border-t border-gray-100 text-xs text-gray-400 text-center">
+                                Template content will be used as baseline context for your SOAP generation
                             </div>
                         </div>
                     </div>

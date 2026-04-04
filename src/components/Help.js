@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from './Footer';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaSave, FaFileAlt, FaClipboardList, FaPhoneAlt } from 'react-icons/fa';
+import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaSave, FaFileAlt, FaClipboardList, FaPhoneAlt, FaBolt, FaBrain, FaRocket, FaMagic, FaColumns } from 'react-icons/fa';
 
 const Help = () => {
     const { isAuthenticated } = useAuth0();
@@ -312,10 +312,101 @@ const Help = () => {
                             {whatsNewStep === 0 && (
                                 <div className="space-y-6">
                                     <div className="text-center">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-primary-700 rounded-full text-xs font-semibold mb-3 tracking-wide uppercase">
+                                            <FaBolt className="text-[10px]" /> Major Update
+                                        </div>
+                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">Smarter, Faster, More Accurate</h3>
+                                        <p className="text-gray-500 text-base max-w-lg mx-auto">We've completely upgraded the intelligence behind PetWise. Records are now generated with deeper clinical understanding and significantly improved accuracy.</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5 text-center">
+                                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                                                <FaBrain className="text-white text-lg" />
+                                            </div>
+                                            <p className="font-semibold text-gray-800 text-sm mb-1">Deeper Context</p>
+                                            <p className="text-gray-500 text-xs">Understands more of what you dictate — catches nuance, medications, and clinical details that matter</p>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-5 text-center">
+                                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                                                <FaRocket className="text-white text-lg" />
+                                            </div>
+                                            <p className="font-semibold text-gray-800 text-sm mb-1">Noticeably Faster</p>
+                                            <p className="text-gray-500 text-xs">Records generate quicker than before — less waiting, more documenting</p>
+                                        </div>
+                                        <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-5 text-center">
+                                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
+                                                <FaMagic className="text-white text-lg" />
+                                            </div>
+                                            <p className="font-semibold text-gray-800 text-sm mb-1">Higher Accuracy</p>
+                                            <p className="text-gray-500 text-xs">Better medical terminology, cleaner formatting, and fewer corrections needed</p>
+                                        </div>
+                                    </div>
+                                    <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl p-4 border border-primary-100">
+                                        <p className="text-gray-600 text-sm text-center">This applies to all record types — SOAP, Summary, and Callback records all benefit from the upgrade.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {whatsNewStep === 1 && (
+                                <div className="space-y-6">
+                                    <div className="text-center">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-primary-700 rounded-full text-xs font-semibold mb-3 tracking-wide uppercase">
+                                            <FaColumns className="text-[10px]" /> Layout Update
+                                        </div>
+                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">Redesigned QuickSOAP Workspace</h3>
+                                        <p className="text-gray-500 text-base max-w-lg mx-auto">The dictation controls have moved from the sidebar to a dedicated top bar above your record — giving you a wider editing area and a cleaner workflow.</p>
+                                    </div>
+                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 border-b border-gray-200">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+                                                    <FaMicrophone className="text-white text-sm" />
+                                                </div>
+                                                <div className="flex-1 h-8 bg-white rounded-lg border border-gray-200 flex items-center px-3">
+                                                    <span className="text-gray-300 text-xs italic">Add extra notes or context...</span>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <div className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded-lg font-medium">Regenerate</div>
+                                                    <div className="px-3 py-1.5 bg-gray-200 text-gray-600 text-xs rounded-lg font-medium">Start New</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <div className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-100">
+                                                    <div className="text-[10px] text-blue-400 font-medium mb-1">Dictation 1</div>
+                                                    <div className="text-[10px] text-gray-400">Summary preview...</div>
+                                                </div>
+                                                <div className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-100">
+                                                    <div className="text-[10px] text-blue-400 font-medium mb-1">Dictation 2</div>
+                                                    <div className="text-[10px] text-gray-400">Summary preview...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 space-y-2">
+                                            <div className="h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded text-white text-xs flex items-center px-3 font-semibold">Subjective</div>
+                                            <div className="h-10 bg-gray-50 rounded border border-gray-100"></div>
+                                            <div className="h-6 bg-gradient-to-r from-green-500 to-green-600 rounded text-white text-xs flex items-center px-3 font-semibold">Objective</div>
+                                            <div className="h-10 bg-gray-50 rounded border border-gray-100"></div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                                            <p className="font-semibold text-gray-800 text-sm mb-1">Wider editing area</p>
+                                            <p className="text-gray-500 text-xs">Your SOAP sections now stretch across the full width — no more cramped text fields</p>
+                                        </div>
+                                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                                            <p className="font-semibold text-gray-800 text-sm mb-1">Everything in one flow</p>
+                                            <p className="text-gray-500 text-xs">Dictations, notes, and controls are all above your record — scroll down to edit</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {whatsNewStep === 2 && (
+                                <div className="space-y-6">
+                                    <div className="text-center">
                                         <h3 className="font-bold text-gray-800 mb-2 text-2xl">New Record Types in QuickSOAP</h3>
                                         <p className="text-gray-600 text-lg">QuickSOAP now supports three different record types to match your workflow needs.</p>
                                     </div>
-                                    {/* Record Type Selector Visual */}
                                     <div className="flex justify-center">
                                         <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
                                             <div className="px-3 py-2 text-sm font-medium rounded-lg bg-white text-primary-600 shadow-sm flex items-center gap-1.5">
@@ -370,7 +461,7 @@ const Help = () => {
                                 </div>
                             )}
 
-                            {whatsNewStep === 1 && (
+                            {whatsNewStep === 3 && (
                                 <div className="space-y-6">
                                     <h3 className="font-bold text-gray-800 mb-4 text-2xl">SOAP Records</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
@@ -395,7 +486,6 @@ const Help = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {/* Visual of SOAP sections */}
                                     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                         <div className="flex border-b border-gray-200">
                                             <div className="flex-1 border-r border-gray-200">
@@ -428,7 +518,7 @@ const Help = () => {
                                 </div>
                             )}
 
-                            {whatsNewStep === 2 && (
+                            {whatsNewStep === 4 && (
                                 <div className="space-y-6">
                                     <h3 className="font-bold text-gray-800 mb-4 text-2xl">Clinical Summaries</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
@@ -453,7 +543,6 @@ const Help = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {/* Visual of Summary output */}
                                     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                         <div className="bg-emerald-600 px-4 py-3">
                                             <h4 className="text-white font-semibold flex items-center gap-2">
@@ -472,7 +561,7 @@ const Help = () => {
                                 </div>
                             )}
 
-                            {whatsNewStep === 3 && (
+                            {whatsNewStep === 5 && (
                                 <div className="space-y-6">
                                     <h3 className="font-bold text-gray-800 mb-4 text-2xl">Callback Notes</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
@@ -497,7 +586,6 @@ const Help = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    {/* Visual of Callback output */}
                                     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                         <div className="bg-amber-600 px-4 py-3">
                                             <h4 className="text-white font-semibold flex items-center gap-2">
@@ -516,12 +604,11 @@ const Help = () => {
                                 </div>
                             )}
 
-                            {whatsNewStep === 4 && (
+                            {whatsNewStep === 6 && (
                                 <div className="space-y-6">
                                     <h3 className="font-bold text-gray-800 mb-4 text-2xl">Organized Saved Records</h3>
                                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
                                         <p className="text-gray-600 mb-4">All record types are now filterable in Saved Records for easy access:</p>
-                                        {/* Filter visual */}
                                         <div className="flex justify-center mb-4">
                                             <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
                                                 <div className="px-2 py-1.5 text-xs font-medium rounded-lg bg-white text-primary-600 shadow-sm">All</div>
@@ -567,7 +654,7 @@ const Help = () => {
                                 </div>
                             )}
 
-                            {whatsNewStep === 5 && (
+                            {whatsNewStep === 7 && (
                                 <div className="space-y-6">
                                     <div className="text-center">
                                         <h3 className="font-bold text-gray-800 mb-4 text-2xl">Ready to Get Started?</h3>
@@ -603,11 +690,11 @@ const Help = () => {
 
                         {/* Tutorial Footer */}
                         <div className="bg-gray-50 px-6 py-4 flex items-center justify-between flex-shrink-0 border-t border-gray-200">
-                            <div className="flex items-center gap-2">
-                                {[0, 1, 2, 3, 4, 5].map((step) => (
+                            <div className="flex items-center gap-1.5">
+                                {[0, 1, 2, 3, 4, 5, 6, 7].map((step) => (
                                     <div
                                         key={step}
-                                        className={`w-2 h-2 rounded-full transition-all ${whatsNewStep === step ? 'bg-primary-600 w-8' : 'bg-gray-300'}`}
+                                        className={`h-2 rounded-full transition-all ${whatsNewStep === step ? 'bg-primary-600 w-6' : 'bg-gray-300 w-2'}`}
                                     />
                                 ))}
                             </div>
@@ -621,7 +708,7 @@ const Help = () => {
                                         Previous
                                     </button>
                                 )}
-                                {whatsNewStep < 5 ? (
+                                {whatsNewStep < 7 ? (
                                     <button
                                         onClick={() => setWhatsNewStep(whatsNewStep + 1)}
                                         className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-2"

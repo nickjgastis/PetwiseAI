@@ -1,4 +1,4 @@
-// Medical dictation cleanup using GPT-4o-mini
+// Medical dictation cleanup using GPT-5.4-nano
 // Runs AFTER Whisper transcription and BEFORE VetCorrector
 
 const axios = require('axios');
@@ -86,7 +86,7 @@ TEXT:
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
             {
-                model: 'gpt-4o-mini',
+                model: 'gpt-5.4-nano',
                 messages: [
                     { role: 'system', content: SYSTEM_PROMPT },
                     { role: 'user', content: userPrompt }

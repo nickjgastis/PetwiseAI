@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import '../styles/Templates.css';
-import { FaTimes, FaEdit, FaPlus } from 'react-icons/fa';
+import { FaTimes, FaEdit, FaPlus, FaClipboardList } from 'react-icons/fa';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { createEditor, Node, Transforms, Editor } from 'slate';
@@ -90,7 +90,7 @@ const PDFButton = ({ templateText, templateName }) => {
     };
 
     return (
-        <button className="template-view-button" onClick={handleDownload}>
+        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200" onClick={handleDownload}>
             Download PDF
         </button>
     );
@@ -113,7 +113,7 @@ const PrintButton = ({ templateText }) => {
     };
 
     return (
-        <button className="template-view-button" onClick={handlePrint}>
+        <button className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200" onClick={handlePrint}>
             Print Template
         </button>
     );
@@ -591,96 +591,141 @@ const Templates = () => {
     };
 
     return (
-        <div className="templates">
-            <div className="templates-header">
-                <h2>My Templates</h2>
-                <button className="create-button" onClick={handleCreateNew}>
-                    <FaPlus /> Create New Template
+        <div className="flex flex-col h-full bg-gradient-to-br from-gray-50 via-white to-gray-50 px-6 py-5 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-5">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">My Templates</h2>
+                <button
+                    onClick={handleCreateNew}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                    <FaPlus className="text-xs" />
+                    Create New Template
                 </button>
             </div>
 
-            <div className="search-container">
-                <input
-                    type="text"
-                    placeholder="Search templates..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="search-input"
-                />
-            </div>
-
-            <div className="templates-container">
-                <div className="templates-list">
-                    {filteredTemplates.map(template => (
-                        <div
-                            key={template.id}
-                            className={`template-item ${selectedTemplate?.id === template.id ? 'selected' : ''}`}
-                            onClick={() => setSelectedTemplate(template)}
-                        >
-                            <div className="template-name">{template.template_name}</div>
-                            <div className="template-actions">
-                                <button
-                                    className="edit-button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEditTemplate(template);
-                                    }}
-                                >
-                                    <FaEdit />
-                                </button>
-                                <button
-                                    className="delete-button"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete(template.id);
-                                    }}
-                                >
-                                    <FaTimes />
-                                </button>
-                            </div>
+            {/* Main content grid */}
+            <div className="flex-1 min-h-0 grid grid-cols-[320px_1fr] gap-5 overflow-hidden">
+                {/* Template list */}
+                <div className="overflow-y-auto pr-2 space-y-2">
+                    {/* Search */}
+                    <input
+                        type="text"
+                        placeholder="Search templates..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none transition-all duration-200 sticky top-0 z-10"
+                    />
+                    {isLoadingTemplates ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary-600 border-t-transparent"></div>
                         </div>
-                    ))}
+                    ) : filteredTemplates.length === 0 ? (
+                        <p className="text-sm text-gray-400 text-center py-12">
+                            {templates.length === 0 ? 'No templates yet. Click "Create New Template" to get started.' : 'No matching templates.'}
+                        </p>
+                    ) : (
+                        filteredTemplates.map(template => (
+                            <button
+                                key={template.id}
+                                onClick={() => setSelectedTemplate(template)}
+                                className={`w-full text-left px-4 py-3 rounded-xl transition-all duration-150 border ${
+                                    selectedTemplate?.id === template.id
+                                        ? 'bg-primary-50 border-primary-300 ring-2 ring-primary-100'
+                                        : 'bg-white border-gray-100 hover:bg-primary-50 hover:border-primary-200'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                        selectedTemplate?.id === template.id ? 'bg-primary-200' : 'bg-primary-100'
+                                    }`}>
+                                        <FaClipboardList className="text-primary-500 text-sm" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{template.template_name}</p>
+                                        <p className="text-xs text-gray-400 truncate mt-0.5">
+                                            {template.template_text?.replace(/[*#\n]/g, ' ').trim().slice(0, 60)}...
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100">
+                                        <button
+                                            className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleEditTemplate(template);
+                                            }}
+                                            title="Edit"
+                                        >
+                                            <FaEdit className="text-xs" />
+                                        </button>
+                                        <button
+                                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(template.id);
+                                            }}
+                                            title="Delete"
+                                        >
+                                            <FaTimes className="text-xs" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </button>
+                        ))
+                    )}
                 </div>
 
-                <div className="template-content">
+                {/* Template content pane */}
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
                     {selectedTemplate ? (
-                        <div className="template-view">
-                            {editingTemplate?.id === selectedTemplate.id ? (
-                                <input
-                                    type="text"
-                                    value={editingTemplate.template_name || ''}
-                                    onChange={(e) => setEditingTemplate({
-                                        ...editingTemplate,
-                                        template_name: e.target.value
-                                    })}
-                                    className="template-name-input"
-                                    style={{
-                                        fontSize: '1.17em',
-                                        fontWeight: 'bold',
-                                        marginBottom: '10px',
-                                        padding: '5px',
-                                        width: '100%',
-                                        placeholder: 'Enter template name'
-                                    }}
-                                />
-                            ) : (
-                                <h3>{selectedTemplate.template_name}</h3>
-                            )}
-                            <div className="template-actions">
+                        <div className="flex flex-col h-full">
+                            {/* Template name */}
+                            <div className="px-6 pt-5 pb-3 border-b border-gray-100">
+                                {editingTemplate?.id === selectedTemplate.id ? (
+                                    <input
+                                        type="text"
+                                        value={editingTemplate.template_name || ''}
+                                        onChange={(e) => setEditingTemplate({
+                                            ...editingTemplate,
+                                            template_name: e.target.value
+                                        })}
+                                        placeholder="Enter template name"
+                                        className="w-full text-xl font-bold text-gray-900 border-2 border-gray-200 rounded-xl px-4 py-2 focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none transition-all"
+                                    />
+                                ) : (
+                                    <h3 className="text-xl font-bold text-gray-900">{selectedTemplate.template_name}</h3>
+                                )}
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="px-6 py-3 border-b border-gray-100 flex items-center gap-2">
                                 {editingTemplate?.id === selectedTemplate.id ? (
                                     <>
-                                        <button onClick={handleSave}>Save</button>
-                                        <button onClick={handleCancel}>Cancel</button>
+                                        <button
+                                            onClick={handleSave}
+                                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm"
+                                        >
+                                            Save
+                                        </button>
+                                        <button
+                                            onClick={handleCancel}
+                                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200"
+                                        >
+                                            Cancel
+                                        </button>
                                     </>
                                 ) : (
                                     <>
                                         <button
-                                            className="edit-button"
                                             onClick={() => handleEditTemplate(selectedTemplate)}
+                                            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-all duration-200 shadow-sm"
                                         >
                                             Edit
                                         </button>
-                                        <button className="template-view-button" onClick={copyToClipboard}>
+                                        <button
+                                            onClick={copyToClipboard}
+                                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-xl transition-all duration-200"
+                                        >
                                             {copyButtonText}
                                         </button>
                                         <PDFButton templateText={selectedTemplate.template_text} templateName={selectedTemplate.template_name} />
@@ -688,49 +733,54 @@ const Templates = () => {
                                     </>
                                 )}
                             </div>
-                            <div className="template-text">
-                                {editingTemplate?.id === selectedTemplate.id ? (
-                                    <Slate
-                                        editor={editor}
-                                        initialValue={deserializeToSlate(editingTemplate.template_text)}
-                                        onChange={value => {
-                                            const text = serializeToString(value);
-                                            setEditingTemplate(prev => ({
-                                                ...prev,
-                                                template_text: text
-                                            }));
-                                        }}
-                                    >
-                                        <Editable
-                                            style={editorStyles}
-                                            renderElement={renderElement}
-                                            renderLeaf={renderLeaf}
-                                            onPaste={handlePaste}
+
+                            {/* Template text content */}
+                            <div className="flex-1 overflow-y-auto">
+                                <div className="template-text" style={{ border: 'none', borderRadius: 0, margin: 0 }}>
+                                    {editingTemplate?.id === selectedTemplate.id ? (
+                                        <Slate
+                                            editor={editor}
+                                            initialValue={deserializeToSlate(editingTemplate.template_text)}
+                                            onChange={value => {
+                                                const text = serializeToString(value);
+                                                setEditingTemplate(prev => ({
+                                                    ...prev,
+                                                    template_text: text
+                                                }));
+                                            }}
+                                        >
+                                            <Editable
+                                                style={editorStyles}
+                                                renderElement={renderElement}
+                                                renderLeaf={renderLeaf}
+                                                onPaste={handlePaste}
+                                            />
+                                        </Slate>
+                                    ) : (
+                                        <div
+                                            style={viewStyles}
+                                            dangerouslySetInnerHTML={{
+                                                __html: formatMessage(selectedTemplate.template_text)
+                                            }}
                                         />
-                                    </Slate>
-                                ) : (
-                                    <div
-                                        className="template-content"
-                                        style={viewStyles}
-                                        dangerouslySetInnerHTML={{
-                                            __html: formatMessage(selectedTemplate.template_text)
-                                        }}
-                                    />
-                                )}
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="no-selection">
-                            Select a template or create a new one
+                        <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                            <FaClipboardList className="text-4xl text-gray-200 mb-3" />
+                            <p className="text-sm">Select a template or create a new one</p>
                         </div>
                     )}
                 </div>
             </div>
 
+            {/* Error toast */}
             {error && (
-                <div className="error-message">
-                    {error}
-                    <button onClick={() => setError(null)}>×</button>
+                <div className="fixed bottom-5 right-5 bg-red-500 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 z-50">
+                    <span className="text-sm">{error}</span>
+                    <button onClick={() => setError(null)} className="text-white hover:text-red-200 transition-colors font-bold">×</button>
                 </div>
             )}
         </div>
