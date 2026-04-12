@@ -1628,7 +1628,13 @@ SUBJECTIVE_HISTORY:
 - Do NOT place current medications here unless they are clearly historical and no longer being given.
 - Do NOT repeat the presenting complaint here.
 - No future-tense or forward-looking statements belong here. Statements like "these take 5-7 days to resolve" or "this may happen again" are vet guidance and go to RECOMMENDATIONS_AND_PLAN or client communication context.
-- Focus on TIMELINE and PROGRESSION only. If a clinical finding (e.g., pruritus, urticaria, excoriations, scars) is already captured in another SUBJECTIVE heading like SKIN_COAT, VDCS, or CURRENT_MEDICATION, do NOT restate it here. History should add only new temporal or contextual information not covered elsewhere.
+- Focus on TIMELINE and PROGRESSION only. Do NOT place facts here that belong in a more specific heading:
+  - Medications/supplements → CURRENT_MEDICATION (not History)
+  - Skin/coat/flea findings → SKIN_COAT (not History)
+  - Diet/appetite info → DIET_APPETITE (not History)
+  - V/D/C/S episodes → VDCS (not History)
+  - Environmental exposures → RISK_FACTORS (not History)
+  History should ONLY contain timeline/progression context that has no better home.
 
 SUBJECTIVE_SKIN_COAT:
 - What the OWNER reported about skin and coat issues AT HOME, before the visit: pruritus, lesions the owner noticed, licking, chewing, hair loss, odor, coat changes the owner described.
@@ -1656,10 +1662,11 @@ SUBJECTIVE_RISK_FACTORS:
 - Only include if risk factor information is actually mentioned.
 
 SUBJECTIVE_ADDITIONAL_INFO:
-- Catch-all for CLINICALLY RELEVANT owner-reported information that does not fit the above categories.
-- Owner observations, behavioral changes, energy level, sleep changes, anxiety, stress, mobility concerns, urination/defecation details not captured elsewhere.
-- Must be clinically relevant to the case. Exclude: pet personality/temperament during the visit, cohabiting pet behavior, casual conversation, vet educational explanations (e.g., "this is a delayed hypersensitivity reaction"), vet warnings about side effects, and breed commentary.
-- Only include if there is leftover owner-reported information that truly does not belong in any other SUBJECTIVE heading.
+- Catch-all for CLINICALLY RELEVANT owner-reported information that does not fit ANY of the above categories.
+- Before placing anything here, verify it is NOT a rephrased version of something already in another heading. If hearing decline is in HISTORY, do not restate it here as "reduced auditory responsiveness." If cognitive decline is in HISTORY, do not restate it here as "reduced responsiveness to environmental stimuli."
+- Owner observations, behavioral changes, energy level, sleep changes, anxiety, stress, mobility concerns, urination/defecation details — ONLY if not already captured elsewhere.
+- Exclude: pet personality/temperament during the visit, cohabiting pet behavior, casual conversation, vet educational explanations, vet warnings about side effects, breed commentary.
+- This heading should be EMPTY most of the time. Only include truly unique leftover information.
 
 HEADING PRIORITY (when a sentence could fit more than one heading):
 1. SUBJECTIVE_PRESENTING_COMPLAINT
@@ -1720,10 +1727,11 @@ MASSES AND FINDINGS:
 - Use medical terminology: "mass" not "lump", "subcutaneous" not "under the skin".
 
 CRITICAL - ZERO DUPLICATION ACROSS SUBJECTIVE HEADINGS:
-- Every fact appears exactly ONCE across all SUBJECTIVE headings. No exceptions.
-- If a detail is placed in a specific heading (e.g., pruritus in SKIN_COAT), it must NOT also appear in HISTORY or any other heading.
-- HISTORY should only contain timeline/progression facts that are not already captured in another heading. If skin findings are in SKIN_COAT, do not re-describe them in HISTORY. If meds are in CURRENT_MEDICATION, do not mention them in HISTORY.
-- Before finalizing output, scan every SUBJECTIVE heading and delete any fact that already appears in a higher-priority heading.
+- Every fact appears exactly ONCE across ALL SUBJECTIVE headings. No exceptions, no rephrasing.
+- This means: if a medication is listed in CURRENT_MEDICATION, do NOT also mention it in HISTORY. If a skin finding is in SKIN_COAT, do NOT also describe it in HISTORY. If a flea treatment is in CURRENT_MEDICATION, do NOT also put it in SKIN_COAT. If vaccinations are in CURRENT_MEDICATION, do NOT mention them in HISTORY.
+- Rephrasing the same fact differently still counts as duplication. "Glucosamine had been administered" and "Glucosamine had previously been administered for osteoarthritic management" are the SAME fact — pick ONE heading and put it there only.
+- HISTORY is the LAST place to put something. Only use HISTORY for timeline/progression context that does not fit in any other specific heading.
+- PLACEMENT RULE: When a fact could go in a specific heading (SKIN_COAT, CURRENT_MEDICATION, DIET_APPETITE, VDCS, RISK_FACTORS) OR in HISTORY, always choose the specific heading. HISTORY gets only what is left over.
 
 GENERAL BEHAVIOR:
 - This is NOT a conversation. Do not add any commentary, explanation, or reasoning.
@@ -1732,8 +1740,17 @@ GENERAL BEHAVIOR:
 - Favor recall over compression: it is better to include too much than to omit anything.
 - If something important is mentioned but unclear, capture it as said and mark it as unclear.
 - Preserve clinically meaningful detail: duration, severity, frequency, progression, response to treatment.
+- Capture nuanced details: specific doses mentioned, exact timelines ("two days ago", "within 20 minutes"), conditional instructions ("if she breaks out again"), titration guidance, owner-expressed concerns or hesitations, declined recommendations, cost discussions, and any qualifiers the doctor used ("up to", "as needed", "if not improving").
 - If information is vague, keep it vague rather than inventing specifics.
-- REMINDER: Every single extraction must use professional veterinary medical terminology.`,
+- REMINDER: Every single extraction must use professional veterinary medical terminology.
+
+FINAL CHECK (DO THIS BEFORE OUTPUTTING):
+Go through every SUBJECTIVE heading you have written. For each bullet point, ask: does this same topic appear in ANY other SUBJECTIVE heading? If yes, DELETE it from the lower-priority heading. Specific rules:
+- If a medication appears in CURRENT_MEDICATION, delete it from HISTORY.
+- If a skin/coat finding appears in SKIN_COAT, delete it from HISTORY.
+- If a detail about hearing, vision, cognition, or any symptom appears in HISTORY, delete any restatement or elaboration of it from ADDITIONAL_INFO.
+- ADDITIONAL_INFO should contain ZERO items that are reworded versions of facts in other headings. When in doubt, delete it from ADDITIONAL_INFO.
+- Two bullet points about the same underlying topic (e.g., "hearing had declined" and "reduced auditory responsiveness noted by family member") are the SAME fact — merge into one and keep in the highest-priority heading only.`,
             model: "gpt-5.4-mini"
         });
 
@@ -1833,7 +1850,8 @@ Each risk factor on its own line.
 Past-tense owner-reported observations only. No vet commentary, no future-tense statements.
 Each additional observation on its own line.
 
-ALL Subjective subheadings are extensions of the patient history — strictly past-tense, owner-reported, pre-visit information. No present-tense exam findings, no vet recommendations, no vet explanations, no treatments prescribed today, no future-tense statements. USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY. Verify no fact is duplicated across subheadings before outputting.
+ALL Subjective subheadings are extensions of the patient history — strictly past-tense, owner-reported, pre-visit information. No present-tense exam findings, no vet recommendations, no vet explanations, no treatments prescribed today, no future-tense statements. USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY.
+BEFORE OUTPUTTING: Scan all Subjective subheadings. If the same fact appears in two or more subheadings (even if worded differently), keep it ONLY in the most specific subheading and delete it from the others. A fact about medication stays only in Current Medication. A fact about skin stays only in Skin & Coat. History should contain only timeline/context not covered elsewhere.
 
 **Objective**
 
@@ -1869,7 +1887,6 @@ Oral: Oral exam normal: Gingiva healthy, Gd. 1 tartar
 Nose: No abnormal findings
 Throat: No abnormal findings
 Urogenital: Normal
-Masses: No masses observed
 
 **Diagnostics Performed:**
 [Each test and its results on its own line, or "None performed"]
@@ -1929,42 +1946,28 @@ Metronidazole 10-15 mg/kg PO BID x 7 days
 
 USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY
 
-**Monitoring:**
-List what to monitor, one item per line. Do NOT start every line with "Monitor for" — state the item directly.
-Example format:
-Frequency and character of emesis
-Appetite and water intake
-Progression or resolution of cutaneous lesions
-USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
-
 **Client Communication:**
-REFERENCE THE TREATMENT SECTION ABOVE - pull the exact medications/doses/routes from there.
-
-FORMAT: Use "Discussed with client:" once, then list each item underneath. Do NOT repeat "Discussed" on every line.
-Each item should include the WHAT, the DOSE/AMOUNT (if applicable), and the WHY.
-
-Example format:
-
-Discussed with client:
-Maropitant (Cerenia) 1 mg/kg SQ administered for antiemetic effect, duration of action 24 hours
-Metronidazole 15 mg/kg PO BID x 7 days for GI bacterial overgrowth, give with food to reduce GI upset
-Administration of 150 mL LRS SQ for rehydration support, expect subcutaneous swelling to absorb over 6-8 hours
-Elevated ALT (245 U/L) indicating hepatocellular injury, recommended recheck in 2 weeks
-Guarded prognosis given BUN 85 mg/dL and creatinine 4.2 mg/dL indicating Stage 3 CKD
-Owner declined recommended abdominal ultrasound due to financial constraints
-
-At the end, always include:
+Always include this line:
 The client was informed of the benefits, potential adverse reactions and side effects of above medications.
 
-NEVER write vague statements like "Discussed treatment plan" or "Explained medications" — always specify the treatment, dose, and rationale.
+Then, ONLY if the doctor dictated specific nuanced considerations, warnings, or notable discussion points, include those below. Examples of nuanced considerations worth including:
+- Specific side effects the vet warned about (e.g., sedation at higher doses of diphenhydramine)
+- Prognosis discussions with specific details
+- Owner declined a recommended treatment or diagnostic
+- Special administration instructions the vet emphasized
+- Cost discussions
+- Specific follow-up timing or conditions discussed
+
+Do NOT re-list or re-state any medication already listed in the Treatment section. The blanket statement covers all medications in Treatment. Client Communication should only contain information that is NOT already in Treatment — nuanced discussion points, warnings, owner decisions, prognosis, etc.
+If the doctor did not dictate any specific nuanced discussion points beyond the medications, just include the blanket medication statement and nothing else.
 
 **Recommended Diagnostics:**
 [Each recommended test on its own line, or "None recommended"]
 USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Follow-up:**
-[Follow-up instructions]
-USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
+If the doctor dictated specific follow-up plans, recheck timing, or future steps, write those.
+If nothing was dictated about follow-up, provide a brief suggested follow-up based on the case — keep it to 1 concise line appropriate for the diagnosis and treatment plan.
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,

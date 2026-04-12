@@ -96,7 +96,7 @@ const normalizeHeaderSpacing = (content) => {
         // Check if this line is a header (ends with colon and matches common header patterns)
         const isHeader = trimmed.endsWith(':') &&
             (trimmed.match(/^[A-Z][a-zA-Z\s]+:$/) ||
-                /^(Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Monitoring|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Skin & Coat|Diet\/Appetite|V\/D\/C\/S|Current Medication|Risk Factors|Additional Information|Owner Observations|Physical Exam|Vital Signs|Diagnostics|Assessment|Plan):$/i.test(trimmed));
+                /^(Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Skin & Coat|Diet\/Appetite|V\/D\/C\/S|Current Medication|Risk Factors|Additional Information|Owner Observations|Physical Exam|Vital Signs|Diagnostics|Assessment|Plan):$/i.test(trimmed));
 
         // If this is a header and not the first line, ensure there's a blank line before it
         if (isHeader && i > 0) {
@@ -2951,13 +2951,13 @@ const QuickSOAP = () => {
                                     <button
                                         onClick={startRecording}
                                         disabled={isGenerating}
-                                        className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
+                                        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
                                         title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
                                     >
-                                        <FaMicrophone className="text-base" />
+                                        <FaMicrophone className="text-xl" />
                                         {dictations.length > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
-                                                <span className="text-primary-600 text-[10px] font-bold leading-none">+</span>
+                                            <span className="absolute -top-0.5 -right-0.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)', width: '20px', height: '20px' }}>
+                                                <span className="text-primary-600 text-xs font-bold leading-none">+</span>
                                             </span>
                                         )}
                                     </button>
@@ -2965,15 +2965,15 @@ const QuickSOAP = () => {
                                 {isRecording && (
                                     <div className="flex items-center gap-2 flex-shrink-0">
                                         {!isPaused ? (
-                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
+                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
                                                 <FaPause className="text-sm" />
                                             </button>
                                         ) : (
-                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
+                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
                                                 <FaPlay className="text-sm" />
                                             </button>
                                         )}
-                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
+                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
                                             <FaStop className="text-base" />
                                         </button>
                                         <span className="text-xs text-gray-500 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
@@ -2988,12 +2988,12 @@ const QuickSOAP = () => {
 
                                 {/* Action buttons */}
                                 {(dictations.length > 0 || input.trim()) && !isTranscribing && (
-                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex items-center gap-2.5 flex-shrink-0">
                                         <button
                                             type="button"
                                             onClick={handleGenerateSOAP}
                                             disabled={isGenerating}
-                                            className="px-5 py-2.5 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            className="px-6 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
                                             style={{
                                                 background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)',
                                                 boxShadow: '0 2px 8px rgba(51,105,189,0.2)',
@@ -3004,8 +3004,8 @@ const QuickSOAP = () => {
                                         <button
                                             onClick={handleClearReport}
                                             disabled={isGenerating}
-                                            className="px-4 py-2.5 bg-white text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb' }}
+                                            className="px-5 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', boxShadow: '0 2px 8px rgba(16,185,129,0.2)' }}
                                         >
                                             Start New
                                         </button>
@@ -3072,12 +3072,15 @@ const QuickSOAP = () => {
                                                         </span>
                                                         <button
                                                             onClick={() => toggleDictationExpand(dictation.id)}
-                                                            className="text-primary-400 hover:text-primary-600 text-[10px] flex items-center gap-0.5 transition-colors ml-auto"
+                                                            className="ml-auto px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+                                                            style={{ background: dictation.expanded ? 'rgba(51,105,189,0.12)' : 'rgba(51,105,189,0.07)', color: '#3369bd' }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(51,105,189,0.18)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = dictation.expanded ? 'rgba(51,105,189,0.12)' : 'rgba(51,105,189,0.07)'}
                                                         >
                                                             {dictation.expanded ? (
-                                                                <><FaChevronUp className="text-[7px]" /><span>Less</span></>
+                                                                <><FaChevronUp className="text-[10px]" /><span>Less</span></>
                                                             ) : (
-                                                                <><FaChevronDown className="text-[7px]" /><span>More</span></>
+                                                                <><FaChevronDown className="text-[10px]" /><span>Expand</span></>
                                                             )}
                                                         </button>
                                                     </div>
@@ -3133,13 +3136,13 @@ const QuickSOAP = () => {
                                     <button
                                         onClick={startRecording}
                                         disabled={isGenerating}
-                                        className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
+                                        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
                                         title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
                                     >
-                                        <FaMicrophone className="text-base" />
+                                        <FaMicrophone className="text-xl" />
                                         {dictations.length > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
-                                                <span className="text-primary-600 text-[10px] font-bold leading-none">+</span>
+                                            <span className="absolute -top-0.5 -right-0.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)', width: '20px', height: '20px' }}>
+                                                <span className="text-primary-600 text-xs font-bold leading-none">+</span>
                                             </span>
                                         )}
                                     </button>
@@ -3147,15 +3150,15 @@ const QuickSOAP = () => {
                                 {isRecording && (
                                     <div className="flex items-center gap-2 flex-shrink-0">
                                         {!isPaused ? (
-                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
+                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
                                                 <FaPause className="text-sm" />
                                             </button>
                                         ) : (
-                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-11 h-11 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
+                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
                                                 <FaPlay className="text-sm" />
                                             </button>
                                         )}
-                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
+                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
                                             <FaStop className="text-base" />
                                         </button>
                                         <span className="text-xs text-gray-500 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
@@ -3168,12 +3171,12 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
                                 {(dictations.length > 0 || input.trim()) && !isTranscribing && (
-                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                    <div className="flex items-center gap-2.5 flex-shrink-0">
                                         <button
                                             type="button"
                                             onClick={handleGenerateSOAP}
                                             disabled={isGenerating}
-                                            className="px-5 py-2.5 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            className="px-6 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
                                             style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 2px 8px rgba(51,105,189,0.2)' }}
                                         >
                                             {isGenerating ? 'Generating...' : 'Regenerate'}
@@ -3181,8 +3184,8 @@ const QuickSOAP = () => {
                                         <button
                                             onClick={handleClearReport}
                                             disabled={isGenerating}
-                                            className="px-4 py-2.5 bg-white text-gray-500 rounded-xl text-sm font-medium hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                            style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid #e5e7eb' }}
+                                            className="px-5 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                            style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', boxShadow: '0 2px 8px rgba(16,185,129,0.2)' }}
                                         >
                                             Start New
                                         </button>
@@ -3227,8 +3230,14 @@ const QuickSOAP = () => {
                                                         <span className="text-[10px] font-semibold text-primary-500 tracking-wide uppercase">
                                                             {dictation.expanded ? 'Transcript' : `Dictation ${idx + 1}`}
                                                         </span>
-                                                        <button onClick={() => toggleDictationExpand(dictation.id)} className="text-primary-400 hover:text-primary-600 text-[10px] flex items-center gap-0.5 transition-colors ml-auto">
-                                                            {dictation.expanded ? (<><FaChevronUp className="text-[7px]" /><span>Less</span></>) : (<><FaChevronDown className="text-[7px]" /><span>More</span></>)}
+                                                        <button
+                                                            onClick={() => toggleDictationExpand(dictation.id)}
+                                                            className="ml-auto px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+                                                            style={{ background: dictation.expanded ? 'rgba(51,105,189,0.12)' : 'rgba(51,105,189,0.07)', color: '#3369bd' }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(51,105,189,0.18)'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.background = dictation.expanded ? 'rgba(51,105,189,0.12)' : 'rgba(51,105,189,0.07)'}
+                                                        >
+                                                            {dictation.expanded ? (<><FaChevronUp className="text-[10px]" /><span>Less</span></>) : (<><FaChevronDown className="text-[10px]" /><span>Expand</span></>)}
                                                         </button>
                                                     </div>
                                                     <p className="text-[11px] text-gray-500 leading-snug">
@@ -3265,13 +3274,13 @@ const QuickSOAP = () => {
                                     <button
                                         onClick={startRecording}
                                         disabled={isGenerating}
-                                        className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-md hover:shadow-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
+                                        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-md hover:shadow-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
                                         title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
                                     >
-                                        <FaMicrophone className="text-xs" />
+                                        <FaMicrophone className="text-sm" />
                                         {dictations.length > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.12)' }}>
-                                                <span className="text-primary-600 text-[8px] font-bold leading-none">+</span>
+                                            <span className="absolute -top-0.5 -right-0.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.12)', width: '15px', height: '15px' }}>
+                                                <span className="text-primary-600 text-[9px] font-bold leading-none">+</span>
                                             </span>
                                         )}
                                     </button>
@@ -3279,11 +3288,11 @@ const QuickSOAP = () => {
                                 {isRecording && (
                                     <div className="flex items-center gap-1.5 flex-shrink-0">
                                         {!isPaused ? (
-                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-8 h-8 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-md transition-all" title="Pause"><FaPause className="text-[10px]" /></button>
+                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-9 h-9 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-md transition-all" title="Pause"><FaPause className="text-[10px]" /></button>
                                         ) : (
-                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-8 h-8 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md transition-all" title="Resume"><FaPlay className="text-[10px]" /></button>
+                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md transition-all" title="Resume"><FaPlay className="text-[10px]" /></button>
                                         )}
-                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-9 h-9 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md animate-pulse transition-all" title="Stop Recording"><FaStop className="text-xs" /></button>
+                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md animate-pulse transition-all" title="Stop Recording"><FaStop className="text-xs" /></button>
                                         <span className="text-[10px] text-gray-400 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
                                     </div>
                                 )}
@@ -3291,7 +3300,7 @@ const QuickSOAP = () => {
                                     type="button"
                                     onClick={handleGenerateSOAP}
                                     disabled={isGenerating}
-                                    className="px-4 py-1.5 text-white rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                    className="px-5 py-2 text-white rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
                                     style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 1px 4px rgba(51,105,189,0.18)' }}
                                 >
                                     {isGenerating ? 'Generating...' : 'Regenerate'}
@@ -3299,8 +3308,8 @@ const QuickSOAP = () => {
                                 <button
                                     onClick={handleClearReport}
                                     disabled={isGenerating}
-                                    className="px-3 py-1.5 bg-white text-gray-500 rounded-lg text-xs font-medium hover:bg-gray-50 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                    style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}
+                                    className="px-4 py-2 text-white rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
+                                    style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', boxShadow: '0 1px 4px rgba(16,185,129,0.15)' }}
                                 >
                                     Start New
                                 </button>
@@ -3718,11 +3727,10 @@ const QuickSOAP = () => {
                                                 setShowTemplateSelector(false);
                                                 setTemplateSearchQuery('');
                                             }}
-                                            className={`w-full text-left px-4 py-3 rounded-xl mb-2 transition-all duration-150 border ${
-                                                selectedTemplate?.id === template.id
+                                            className={`w-full text-left px-4 py-3 rounded-xl mb-2 transition-all duration-150 border ${selectedTemplate?.id === template.id
                                                     ? 'bg-primary-50 border-primary-300 ring-2 ring-primary-100'
                                                     : 'bg-gray-50 border-gray-100 hover:bg-primary-50 hover:border-primary-200'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center flex-shrink-0">
