@@ -245,11 +245,15 @@ const PRICE_IDS = {
         ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
         : 'price_1QcwYWFpF2XskoMKH9MJisoy'
 };
-const TRIAL_DAYS = 30;  // Legacy in-house trial (no longer offered to new users)
-const STRIPE_TRIAL_DAYS = 14;  // New Stripe trial with card required
+// Trial mode: 'legacy' = 14-day no-CC in-house trial | 'stripe' = 14-day Stripe trial with CC
+// Keep both code paths working so we can flip back by changing this env var.
+// Frontend has a matching flag in src/utils/featureFlags.js
+const TRIAL_MODE = process.env.TRIAL_MODE || 'legacy';
+const TRIAL_DAYS = 14;  // Legacy in-house trial duration (no CC) - was 30, now matches Stripe trial length
+const STRIPE_TRIAL_DAYS = 14;  // Stripe trial duration (CC required)
 const REPORT_LIMITS = {
-    trial: 50,           // Legacy in-house trial limit
-    stripe_trial: Infinity,  // New Stripe trial - unlimited
+    trial: Infinity,         // Legacy in-house trial - unlimited (matches Stripe trial UX)
+    stripe_trial: Infinity,  // Stripe trial - unlimited
     monthly: Infinity,
     yearly: Infinity
 };
@@ -2723,16 +2727,85 @@ app.post('/cancel-subscription', async (req, res) => {
     }
 });
 
-// ================ LEGACY TRIAL ENDPOINT (DISABLED) ================
-// In-house trials are no longer offered. New users should use Stripe trial via /create-trial-checkout-session
-// This endpoint is kept to return a proper error message to any old clients still calling it
+// ================ LEGACY TRIAL ENDPOINT ================
+// 14-day in-house trial, no credit card required
+// Re-enabled to support TRIAL_MODE='legacy' (the default). Stripe trial remains
+// available via /create-trial-checkout-session if TRIAL_MODE flips to 'stripe'.
 app.post('/activate-trial', async (req, res) => {
-    console.log('Legacy trial activation attempted - endpoint disabled');
-    return res.status(410).json({
-        error: 'In-house trials are no longer available. Please start a 14-day free trial with card.',
-        code: 'LEGACY_TRIAL_DISABLED',
-        redirect: '/subscribe'
-    });
+    try {
+        const { user_id } = req.body;
+        console.log('Trial activation request:', { user_id });
+
+        if (!user_id) {
+            return res.status(400).json({ error: 'user_id is required' });
+        }
+
+        // Block re-activation: user already used their trial (legacy or stripe)
+        const { data: existing, error: fetchErr } = await supabase
+            .from('users')
+            .select('has_used_trial, has_activated_stripe_trial, subscription_status, subscription_interval')
+            .eq('auth0_user_id', user_id)
+            .single();
+
+        if (fetchErr) {
+            console.error('Error fetching user for trial check:', fetchErr);
+            return res.status(500).json({ error: 'Failed to verify user eligibility' });
+        }
+
+        if (existing?.has_used_trial || existing?.has_activated_stripe_trial) {
+            return res.status(400).json({
+                error: 'You have already used your free trial',
+                code: 'TRIAL_ALREADY_USED'
+            });
+        }
+
+        const trialEndDate = new Date();
+        trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
+
+        const updateData = {
+            subscription_status: 'active',
+            subscription_interval: 'trial',
+            subscription_end_date: trialEndDate.toISOString(),
+            has_used_trial: true,
+            reports_used_today: 0,
+            last_report_date: new Date().toISOString().split('T')[0],
+            // Clear student fields when activating trial (but preserve graduation year)
+            plan_label: null,
+            student_school_email: null,
+            student_last_student_redeem_at: null
+        };
+
+        const { data, error } = await supabase
+            .from('users')
+            .update(updateData)
+            .eq('auth0_user_id', user_id)
+            .select('*, email, nickname, dvm_name');
+
+        if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+        }
+
+        console.log('Trial activation successful:', data);
+
+        if (data && data[0] && data[0].email) {
+            try {
+                await sendTrialActivatedEmail(supabase, {
+                    auth0_user_id: user_id,
+                    email: data[0].email,
+                    nickname: data[0].nickname,
+                    dvm_name: data[0].dvm_name
+                }, trialEndDate.toISOString());
+            } catch (err) {
+                console.error('Failed to send trial activation email:', err);
+            }
+        }
+
+        res.json(data);
+    } catch (error) {
+        console.error('Trial activation error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Add this new endpoint for canceling trials

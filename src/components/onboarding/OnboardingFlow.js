@@ -13,8 +13,14 @@ import TermsOfService from '../TermsOfService';
 import BookingStep from './BookingStep';
 import InstallPrompt from '../InstallPrompt';
 
-// Steps in order: congrats → quiz1 → quiz2 → affirmation → benefits → testimonial → trial → welcome → booking → terms → complete
-const STEPS = ['congrats', 'quiz1', 'quiz2', 'affirmation', 'benefits', 'testimonial', 'trial', 'welcome', 'booking', 'terms', 'complete'];
+// Active flow: congrats(name+phone+terms) → benefits → testimonial → trial → welcome → complete
+// Removed for now (kept in repo in case we want to re-add): quiz1, quiz2, affirmation, booking, terms
+// Terms are now accepted inline on CongratsStep. Booking moved to in-app BookingBanner.
+const STEPS = ['congrats', 'benefits', 'testimonial', 'trial', 'welcome', 'complete'];
+
+// Steps that were removed — if a user has an in-flight onboarding row on one of these,
+// jump them back to 'congrats' so they aren't stuck.
+const REMOVED_STEPS = ['quiz1', 'quiz2', 'affirmation', 'booking', 'terms'];
 
 const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscription }) => {
     const { user } = useAuth0();
@@ -31,6 +37,14 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
             goToStep('welcome');
         }
     }, [currentStep, userData?.subscription_status]);
+
+    // Safety jump: if a user's saved current_step was removed from the flow, send them to congrats
+    useEffect(() => {
+        if (REMOVED_STEPS.includes(currentStep)) {
+            goToStep('congrats');
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const saveStep = async (step, extraData = {}) => {
         try {
@@ -88,10 +102,29 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
         goToStep('welcome');
     };
 
-    const handleWelcomeComplete = () => {
-        nextStep();
+    const handleWelcomeComplete = async () => {
+        // Welcome is now the final user-facing step. Mark onboarding complete here.
+        try {
+            await supabase
+                .from('users')
+                .update({ has_completed_onboarding: true })
+                .eq('auth0_user_id', user.sub);
+        } catch (err) {
+            console.error('Error marking onboarding complete:', err);
+        }
+
+        goToStep('complete');
+
+        // Mobile browser users get the install gate before landing in the app
+        if (isMobile && !isStandalone && process.env.NODE_ENV !== 'development') {
+            return;
+        }
+
+        if (onComplete) onComplete();
     };
 
+    // Kept for reference — terms now accepted inline on CongratsStep
+    // eslint-disable-next-line no-unused-vars
     const handleTermsAccepted = async ({ emailOptOut }) => {
         // Mark terms accepted and onboarding complete in users table
         try {

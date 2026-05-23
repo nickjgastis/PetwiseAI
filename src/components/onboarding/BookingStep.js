@@ -24,7 +24,7 @@ const BookingStep = ({ onNext, onBack }) => {
 
                 {/* Calendly embed will go here */}
                 <a
-                    href="https://calendly.com/d/cvkg-xhd-k56/complimentary-walk-through-pw"
+                    href="https://calendar.app.google/msd3h7YsD4qK3Rvo7"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full max-w-sm mx-auto block py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 text-base sm:text-lg"

@@ -20,6 +20,8 @@ import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, Fa
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import InstallPrompt from '../components/InstallPrompt';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
+import TrialEnded from '../components/TrialEnded';
+import BookingBanner from '../components/BookingBanner';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -1040,6 +1042,16 @@ const Dashboard = () => {
         />;
     }
 
+    // ================ TRIAL ENDED GATE ================
+    // User finished onboarding, used their trial (legacy or stripe), and no longer has an active plan.
+    // Show a full-screen paywall reassuring them their data is safe.
+    const trialEnded = !isStudentMode()
+        && (userData?.has_used_trial === true || userData?.has_activated_stripe_trial === true)
+        && !['active', 'past_due'].includes(userData?.subscription_status);
+    if (trialEnded) {
+        return <TrialEnded user={{ ...user, ...userData }} onSubscribed={checkSubscription} />;
+    }
+
     // PWA install gate — mobile browser users must install to home screen
     // For legacy users who somehow end up here on mobile browser
     if (isMobile && process.env.NODE_ENV !== 'development') {
@@ -1738,6 +1750,8 @@ const Dashboard = () => {
                     </Routes>
                 </main>
             </div>
+            {/* One-time book-a-demo nudge — only shown to users with an active plan post-onboarding */}
+            {hasActivePlan() && hasCompletedOnboarding && <BookingBanner user={user} />}
         </>
     );
 };

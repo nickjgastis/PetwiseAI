@@ -4,6 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { FaCheck, FaCrown, FaGraduationCap, FaSignOutAlt } from 'react-icons/fa';
 import StudentRedeem from '../StudentRedeem';
 import OnboardingLayout from './OnboardingLayout';
+import { TRIAL_MODE } from '../../utils/featureFlags';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -16,9 +17,15 @@ const API_URL = process.env.NODE_ENV === 'production'
     : 'http://localhost:3001';
 
 const PRICES = {
-    usd: { monthly: 79, yearly: 69, yearlyTotal: 828, symbol: '$', code: 'USD' },
-    cad: { monthly: 109, yearly: 96, yearlyTotal: 1152, symbol: '$', code: 'CAD' }
+    usd: { monthly: 79, yearly: 69, yearlyTotal: 828, monthlyAnnual: 948, symbol: '$', code: 'USD' },
+    cad: { monthly: 109, yearly: 96, yearlyTotal: 1152, monthlyAnnual: 1308, symbol: '$', code: 'CAD' }
 };
+
+const CheckBadge = ({ size = 'sm' }) => (
+    <div className={`${size === 'xs' ? 'w-4 h-4' : 'w-5 h-5'} rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-sm`}>
+        <FaCheck className={`text-white ${size === 'xs' ? 'text-[8px]' : 'text-[10px]'}`} />
+    </div>
+);
 
 const FEATURES = [
     'Unlimited SOAP reports',
@@ -73,6 +80,38 @@ const TrialStep = ({ user, onTrialActivated, onBack }) => {
             console.error('Checkout error:', error);
             setIsLoading(null);
         }
+    };
+
+    const handleLegacyTrialActivation = async () => {
+        setIsLoading('trial');
+        try {
+            const response = await fetch(`${API_URL}/activate-trial`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.sub }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                if (data.code === 'TRIAL_ALREADY_USED') throw new Error('You have already used your free trial');
+                throw new Error(data.error || 'Failed to activate trial');
+            }
+
+            window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+            if (onTrialActivated) onTrialActivated(data);
+        } catch (error) {
+            console.error('Trial activation error:', error);
+            alert(error.message);
+            setIsLoading(null);
+        }
+    };
+
+    const handleStartTrial = () => {
+        if (TRIAL_MODE === 'legacy') {
+            return handleLegacyTrialActivation();
+        }
+        return handleStripeTrialCheckout(currency);
     };
 
     const handleStripeTrialCheckout = async (trialCurrency) => {
@@ -136,12 +175,12 @@ const TrialStep = ({ user, onTrialActivated, onBack }) => {
                     </div>
 
                     {/* Features list */}
-                    <div className="bg-white/10 rounded-xl p-3 mb-4">
-                        <p className="text-white/80 text-xs font-semibold mb-2 uppercase tracking-wide">All plans include:</p>
+                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 mb-4 border border-white/15">
+                        <p className="text-white/80 text-[11px] font-semibold mb-2 uppercase tracking-wide">All plans include</p>
                         <div className="grid grid-cols-2 gap-1.5">
                             {FEATURES.map((f, i) => (
                                 <div key={i} className="flex items-center gap-1.5">
-                                    <FaCheck className="text-green-400 text-[10px] flex-shrink-0" />
+                                    <CheckBadge size="xs" />
                                     <span className="text-white/90 text-xs">{f}</span>
                                 </div>
                             ))}
@@ -156,18 +195,22 @@ const TrialStep = ({ user, onTrialActivated, onBack }) => {
                             <div className="flex items-center justify-between mt-1">
                                 <div>
                                     <h3 className="font-bold text-gray-800 text-sm">14-Day Free Trial</h3>
-                                    <p className="text-gray-400 text-xs">Full access • Cancel anytime</p>
+                                    <p className="text-gray-400 text-xs">
+                                        {TRIAL_MODE === 'legacy' ? 'No credit card required' : 'Full access • Cancel anytime'}
+                                    </p>
                                 </div>
                                 <span className="text-2xl font-extrabold text-gray-900">$0</span>
                             </div>
                             <button
-                                onClick={() => handleStripeTrialCheckout(currency)}
+                                onClick={handleStartTrial}
                                 disabled={isLoading !== null}
                                 className="w-full mt-3 py-2.5 bg-[#3db6fd] text-white font-semibold rounded-lg text-sm disabled:opacity-50 transition-all"
                             >
-                                {isLoading?.startsWith('trial_') ? 'Loading...' : 'Start Free Trial'}
+                                {(isLoading === 'trial' || isLoading?.startsWith('trial_')) ? 'Loading...' : 'Start Free Trial'}
                             </button>
-                            <p className="text-[10px] text-gray-400 text-center mt-1.5">Auto-renews to monthly. Cancel anytime.</p>
+                            <p className="text-[10px] text-gray-400 text-center mt-1.5">
+                                {TRIAL_MODE === 'legacy' ? 'No credit card. Cancel anytime.' : 'Auto-renews to monthly. Cancel anytime.'}
+                            </p>
                         </div>
 
                         {/* Monthly */}
@@ -273,7 +316,7 @@ const TrialStep = ({ user, onTrialActivated, onBack }) => {
                 {/* Cards row */}
                 <div className="flex gap-5 w-full max-w-5xl mx-auto">
                     {/* Monthly */}
-                    <div className="flex-1 bg-white rounded-2xl p-6 shadow-xl">
+                    <div className="flex-1 bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
                         <h3 className="text-xl font-bold text-gray-800 mb-2">Monthly</h3>
                         <div className="mb-3">
                             <span className="text-4xl font-extrabold text-gray-900">{PRICES[currency].symbol}{PRICES[currency].monthly}</span>
@@ -285,46 +328,55 @@ const TrialStep = ({ user, onTrialActivated, onBack }) => {
                                 <li key={i} className="flex items-center gap-2.5 text-gray-700 text-sm"><FaCheck className="text-green-500 flex-shrink-0" />{f}</li>
                             ))}
                         </ul>
-                        <button onClick={() => handleCheckout('monthly')} disabled={isLoading !== null} className="w-full py-3 bg-[#3468bd] text-white font-semibold rounded-xl disabled:opacity-50 transition-all">
+                        <button onClick={() => handleCheckout('monthly')} disabled={isLoading !== null} className="w-full py-3 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] disabled:opacity-50 transition-all">
                             {isLoading === 'monthly' ? 'Processing...' : 'Get Monthly'}
                         </button>
                     </div>
 
                     {/* Trial — featured */}
-                    <div className="flex-1 bg-white rounded-2xl p-6 shadow-xl ring-2 ring-[#3db6fd] relative">
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#3db6fd] text-white px-4 py-1 rounded-full text-xs font-bold">RECOMMENDED</div>
+                    <div className="flex-1 bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ring-2 ring-[#3db6fd] relative">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#3db6fd] to-[#3468bd] text-white px-4 py-1 rounded-full text-xs font-bold">RECOMMENDED</div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Free Trial</h3>
                         <div className="mb-3">
                             <span className="text-4xl font-extrabold text-gray-900">$0</span>
                             <span className="text-gray-500 ml-1">/14 days</span>
                         </div>
-                        <p className="text-gray-500 text-sm mb-5">Full access • Cancel anytime</p>
+                        <p className="text-gray-500 text-sm mb-5">
+                            {TRIAL_MODE === 'legacy' ? 'No credit card required • Full access' : 'Full access • Cancel anytime'}
+                        </p>
                         <ul className="space-y-2.5 mb-5">
                             {FEATURES.map((f, i) => (
                                 <li key={i} className="flex items-center gap-2.5 text-gray-700 text-sm"><FaCheck className="text-green-500 flex-shrink-0" />{f}</li>
                             ))}
                         </ul>
-                        <button onClick={() => handleStripeTrialCheckout(currency)} disabled={isLoading !== null} className="w-full py-3 bg-[#3db6fd] text-white font-semibold rounded-xl disabled:opacity-50 transition-all shadow-lg">
-                            {isLoading?.startsWith('trial_') ? 'Loading...' : 'Start Free Trial'}
+                        <button onClick={handleStartTrial} disabled={isLoading !== null} className="w-full py-3 bg-gradient-to-r from-[#3db6fd] to-[#3468bd] hover:from-[#5ec4ff] hover:to-[#2a5298] text-white font-semibold rounded-xl disabled:opacity-50 transition-all shadow-lg">
+                            {(isLoading === 'trial' || isLoading?.startsWith('trial_')) ? 'Loading...' : 'Start Free Trial'}
                         </button>
-                        <p className="text-xs text-gray-400 text-center mt-2">Auto-renews to monthly. Cancel anytime.</p>
+                        <p className="text-xs text-gray-400 text-center mt-2">
+                            {TRIAL_MODE === 'legacy' ? 'No credit card. Cancel anytime.' : 'Auto-renews to monthly. Cancel anytime.'}
+                        </p>
                     </div>
 
                     {/* Yearly */}
-                    <div className="flex-1 bg-white rounded-2xl p-6 shadow-xl relative">
-                        <div className="absolute -top-3 right-4 bg-amber-400 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><FaCrown className="text-[10px]" /> BEST VALUE</div>
+                    <div className="flex-1 bg-white rounded-2xl p-6 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 relative">
+                        <div className="absolute -top-3 right-4 bg-gradient-to-r from-amber-400 to-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><FaCrown className="text-[10px]" /> BEST VALUE</div>
                         <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Yearly</h3>
                         <div className="mb-3">
                             <span className="text-4xl font-extrabold text-gray-900">{PRICES[currency].symbol}{PRICES[currency].yearly}</span>
                             <span className="text-gray-500 ml-1">/{PRICES[currency].code}/mo</span>
                         </div>
-                        <p className="text-gray-500 text-sm mb-5">{PRICES[currency].symbol}{PRICES[currency].yearlyTotal}/{PRICES[currency].code} billed yearly</p>
+                        <div className="flex flex-wrap items-center gap-1.5 mb-5">
+                            <span className="text-gray-500 text-sm">{PRICES[currency].symbol}{PRICES[currency].yearlyTotal}/{PRICES[currency].code} yearly</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-[11px] font-bold">
+                                Save {PRICES[currency].symbol}{PRICES[currency].monthlyAnnual - PRICES[currency].yearlyTotal}
+                            </span>
+                        </div>
                         <ul className="space-y-2.5 mb-6">
                             {FEATURES.map((f, i) => (
                                 <li key={i} className="flex items-center gap-2.5 text-gray-700 text-sm"><FaCheck className="text-green-500 flex-shrink-0" />{f}</li>
                             ))}
                         </ul>
-                        <button onClick={() => handleCheckout('yearly')} disabled={isLoading !== null} className="w-full py-3 bg-[#3468bd] text-white font-semibold rounded-xl disabled:opacity-50 transition-all">
+                        <button onClick={() => handleCheckout('yearly')} disabled={isLoading !== null} className="w-full py-3 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] disabled:opacity-50 transition-all">
                             {isLoading === 'yearly' ? 'Processing...' : 'Get Yearly'}
                         </button>
                     </div>

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
 import OnboardingLayout from './OnboardingLayout';
@@ -8,6 +9,7 @@ const CongratsStep = ({ onNext }) => {
     const [dvmName1, setDvmName1] = useState('');
     const [dvmName2, setDvmName2] = useState('');
     const [isStudentMode, setIsStudentMode] = useState(false);
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { user } = useAuth0();
@@ -24,10 +26,19 @@ const CongratsStep = ({ onNext }) => {
             setError('Please enter your name.');
             return;
         }
+        if (!acceptedTerms) {
+            setError('Please accept the Terms of Service to continue.');
+            return;
+        }
 
         setIsSubmitting(true);
         try {
-            const updates = { dvm_name: dvmName1.trim(), phone_number: phoneNumber.trim() };
+            const updates = {
+                dvm_name: dvmName1.trim(),
+                phone_number: phoneNumber.trim(),
+                has_accepted_terms: true,
+                email_opt_out: false,
+            };
             const { error: updateError } = await supabase
                 .from('users')
                 .update(updates)
@@ -35,7 +46,7 @@ const CongratsStep = ({ onNext }) => {
             if (updateError) throw updateError;
             onNext();
         } catch (err) {
-            console.error('Error saving DVM name:', err);
+            console.error('Error saving profile:', err);
             setError('Failed to save. Please try again.');
             setIsSubmitting(false);
         }
@@ -121,13 +132,34 @@ const CongratsStep = ({ onNext }) => {
                         This appears as <span className="text-white/50">{isStudentMode ? 'Student' : 'Dr.'} {dvmName1 || 'Your Name'}</span> on reports and can't be changed.
                     </p>
 
+                    {/* Terms checkbox */}
+                    <label className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={acceptedTerms}
+                            onChange={(e) => setAcceptedTerms(e.target.checked)}
+                            className="mt-0.5 w-4 h-4 flex-shrink-0 accent-[#3db6fd] cursor-pointer"
+                        />
+                        <span className="text-white/75 text-[12px] sm:text-[13px] leading-snug">
+                            I agree to the{' '}
+                            <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-[#3db6fd] hover:text-[#5ec4ff] underline underline-offset-2">
+                                Terms of Service
+                            </Link>{' '}
+                            and{' '}
+                            <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#3db6fd] hover:text-[#5ec4ff] underline underline-offset-2">
+                                Privacy Policy
+                            </Link>
+                            .
+                        </span>
+                    </label>
+
                     {error && (
                         <p className="text-red-300 text-sm text-center bg-red-500/10 rounded-lg py-2 px-3">{error}</p>
                     )}
 
                     <button
                         type="submit"
-                        disabled={isSubmitting || !phoneNumber.trim() || !dvmName1.trim() || !dvmName2.trim()}
+                        disabled={isSubmitting || !phoneNumber.trim() || !dvmName1.trim() || !dvmName2.trim() || !acceptedTerms}
                         className="w-full py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
                         {isSubmitting ? 'Saving...' : 'Continue'}

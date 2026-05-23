@@ -28,23 +28,23 @@ function verifyCronAuth(req, res, next) {
 
 /**
  * GET /cron/trial-reminders-midway
- * Send reminder emails to users at day 15 of their trial
+ * Send reminder emails to legacy trial users at day 7 (7 days remaining in 14-day trial)
  * Scheduled to run daily via Vercel Cron
+ * NOTE: Window was +14..+16 when legacy trial was 30 days. Now 14 days, so midway = day 7.
  */
 router.get('/trial-reminders-midway', verifyCronAuth, async (req, res) => {
     const { supabase } = req.app.locals;
     const results = { sent: 0, skipped: 0, errors: [] };
 
     try {
-        // Calculate the target date range for day 15
-        // Users who started their trial 15 days ago (subscription_end_date is 15 days from now)
+        // Calculate the target date range for day 7 (7 days remaining in 14-day trial)
         const now = new Date();
         const targetDateMin = new Date(now);
-        targetDateMin.setDate(targetDateMin.getDate() + 14); // 14 days from now (start of window)
+        targetDateMin.setDate(targetDateMin.getDate() + 6); // 6 days from now (start of window)
         targetDateMin.setHours(0, 0, 0, 0);
 
         const targetDateMax = new Date(now);
-        targetDateMax.setDate(targetDateMax.getDate() + 16); // 16 days from now (end of window)
+        targetDateMax.setDate(targetDateMax.getDate() + 8); // 8 days from now (end of window)
         targetDateMax.setHours(23, 59, 59, 999);
 
         // Find trial users in the midway window who haven't received this email

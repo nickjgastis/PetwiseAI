@@ -266,6 +266,21 @@ const Help = () => {
                             </section>
                         ))}
 
+                        {/* Book a Demo CTA */}
+                        <section className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-xl p-8 text-center">
+                            <h2 className="text-2xl font-bold text-white mb-2">Book a Complimentary 1-on-1 Demo</h2>
+                            <p className="text-white/90 mb-1">Walk through PetWise with <strong>Dr. Stacey Gastis</strong> and get real clinical use cases.</p>
+                            <p className="text-white/80 text-sm mb-4">Includes <strong>1 hour of RACE-approved CE</strong> — completely free.</p>
+                            <a
+                                href="https://calendar.app.google/msd3h7YsD4qK3Rvo7"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block px-6 py-3 bg-white text-amber-700 font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+                            >
+                                Book a Demo →
+                            </a>
+                        </section>
+
                         <section className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl shadow-xl p-8 text-center">
                             <h2 className="text-2xl font-bold text-white mb-3">Contact Support</h2>
                             <p className="text-white/90 mb-2">Need additional help? Email us at <a href="mailto:support@petwise.vet" className="text-white font-semibold hover:underline no-underline">support@petwise.vet</a></p>
