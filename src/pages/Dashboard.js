@@ -21,7 +21,7 @@ import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clear
 import InstallPrompt from '../components/InstallPrompt';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import TrialEnded from '../components/TrialEnded';
-import BookingBanner from '../components/BookingBanner';
+// import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -1750,8 +1750,13 @@ const Dashboard = () => {
                     </Routes>
                 </main>
             </div>
-            {/* One-time book-a-demo nudge — only shown to users with an active plan post-onboarding */}
-            {hasActivePlan() && hasCompletedOnboarding && <BookingBanner user={user} />}
+            {/* Book-a-demo nudge — disabled for now. Re-enable by uncommenting below.
+                File at src/components/BookingBanner.js is kept in repo.
+                {hasCompletedOnboarding
+                    && userData?.subscription_status === 'active'
+                    && userData?.subscription_interval === 'trial'
+                    && <BookingBanner user={user} />}
+            */}
         </>
     );
 };

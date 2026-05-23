@@ -70,8 +70,7 @@ const BookingBanner = ({ user }) => {
                                 Free 1-on-1 demo
                             </h3>
                             <p className="text-white/70 text-[11px] sm:text-xs leading-snug">
-                                Walk through PetWise with Dr. Gastis
-                                <span className="hidden sm:inline"> — includes 1 hour of RACE-approved CE.</span>
+                                Walk through PetWise with Dr. Gastis and get the most out of your trial.
                             </p>
                         </div>
                     </div>

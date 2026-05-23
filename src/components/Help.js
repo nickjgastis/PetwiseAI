@@ -269,8 +269,7 @@ const Help = () => {
                         {/* Book a Demo CTA */}
                         <section className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-xl p-8 text-center">
                             <h2 className="text-2xl font-bold text-white mb-2">Book a Complimentary 1-on-1 Demo</h2>
-                            <p className="text-white/90 mb-1">Walk through PetWise with <strong>Dr. Stacey Gastis</strong> and get real clinical use cases.</p>
-                            <p className="text-white/80 text-sm mb-4">Includes <strong>1 hour of RACE-approved CE</strong> — completely free.</p>
+                            <p className="text-white/90 text-sm mb-4">Walk through PetWise with <strong>Dr. Stacey Gastis</strong> and get real clinical use cases — completely free.</p>
                             <a
                                 href="https://calendar.app.google/msd3h7YsD4qK3Rvo7"
                                 target="_blank"
