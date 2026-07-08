@@ -350,9 +350,16 @@ app.post('/api/quickquery', async (req, res) => {
         // Use axios instead of node-fetch for better reliability
         const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
 
-        let response;
-        try {
-            response = await axios.post('https://api.openai.com/v1/chat/completions', {
+        // gpt-5.x / reasoning models reject max_tokens and non-default sampling params
+        const isReasoningModel = /^(gpt-5|o\d)/.test(model);
+        const requestBody = isReasoningModel
+            ? {
+                model,
+                messages,
+                max_completion_tokens: max_tokens,
+                stream: false
+            }
+            : {
                 model,
                 messages,
                 max_tokens,
@@ -361,7 +368,11 @@ app.post('/api/quickquery', async (req, res) => {
                 frequency_penalty,
                 presence_penalty,
                 stream: false
-            }, {
+            };
+
+        let response;
+        try {
+            response = await axios.post('https://api.openai.com/v1/chat/completions', requestBody, {
                 headers: {
                     'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
                     'Content-Type': 'application/json'
