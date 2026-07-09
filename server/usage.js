@@ -14,8 +14,8 @@ const usageSupabase = createClient(
 );
 
 const FREE_LIMITS = {
-    soap: Number(process.env.FREE_SOAP_LIMIT || 35),   // QuickSOAP + PetSOAP combined pool
-    query: Number(process.env.FREE_QUERY_LIMIT || 40)  // PetQuery
+    soap: Number(process.env.FREE_SOAP_LIMIT || 15),   // QuickSOAP + PetSOAP combined pool
+    query: Number(process.env.FREE_QUERY_LIMIT || 30)  // PetQuery
 };
 
 // While false, requests that can't be attributed to a user (stale PWA bundles

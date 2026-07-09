@@ -5,8 +5,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 // Free-tier monthly limits — keep in sync with server/usage.js FREE_LIMITS
 export const FREE_LIMITS = {
-    soap: 35,   // QuickSOAP + PetSOAP combined pool
-    query: 40   // PetQuery
+    soap: 15,   // QuickSOAP + PetSOAP combined pool
+    query: 30   // PetQuery
 };
 
 // Compute the start of the current anniversary-anchored usage period.
