@@ -16,10 +16,11 @@ const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
 const emailRouter = require('./routes/emailRoutes');
 const cronRouter = require('./routes/cronRoutes');
-const { sendTrialActivatedEmail, sendSubscriptionConfirmedEmail } = require('./utils/emailService');
+const { sendSubscriptionConfirmedEmail } = require('./utils/emailService');
 // REMOVED: quicksoapTranscribe - using client-side chunking with /api/whisper-proxy instead
 const { correctTranscript } = require('./utils/vetCorrector');
 const { runMedicalCleanup } = require('./utils/medicalCleanup');
+const usage = require('./usage');
 
 // Load veterinary lexicon for Whisper boosting
 const lexiconPath = path.join(__dirname, 'lexicon', 'vetLexicon.txt');
@@ -245,19 +246,6 @@ const PRICE_IDS = {
         ? 'price_1Qdje9FpF2XskoMKcC5p3bwR'
         : 'price_1QcwYWFpF2XskoMKH9MJisoy'
 };
-// Trial mode: 'legacy' = 14-day no-CC in-house trial | 'stripe' = 14-day Stripe trial with CC
-// Keep both code paths working so we can flip back by changing this env var.
-// Frontend has a matching flag in src/utils/featureFlags.js
-const TRIAL_MODE = process.env.TRIAL_MODE || 'legacy';
-const TRIAL_DAYS = 14;  // Legacy in-house trial duration (no CC) - was 30, now matches Stripe trial length
-const STRIPE_TRIAL_DAYS = 14;  // Stripe trial duration (CC required)
-const REPORT_LIMITS = {
-    trial: Infinity,         // Legacy in-house trial - unlimited (matches Stripe trial UX)
-    stripe_trial: Infinity,  // Stripe trial - unlimited
-    monthly: Infinity,
-    yearly: Infinity
-};
-
 const ACCESS_CODES = {
     'NICKSECRETKEY5247': {
         organization: 'Petwise',
@@ -292,7 +280,9 @@ app.post('/api/quickquery', async (req, res) => {
             temperature = 0.7,
             top_p = 0.9,
             frequency_penalty = 0.5,
-            presence_penalty = 0.5
+            presence_penalty = 0.5,
+            user,                           // { sub } — required once USAGE_ENFORCE_STRICT
+            source                          // 'petsoap' | 'petquery' — picks the usage pool
         } = req.body || {};
 
         // Validate messages array
@@ -347,6 +337,27 @@ app.post('/api/quickquery', async (req, res) => {
             return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
         }
 
+        // Free-tier cap: this endpoint serves both PetSOAP ('petsoap' → soap pool)
+        // and PetQuery ('petquery' → query pool). Requests without user/source come
+        // from stale bundles — allowed until USAGE_ENFORCE_STRICT flips on.
+        const usageFeature = source === 'petsoap' ? 'soap' : source === 'petquery' ? 'query' : null;
+        if (!usageFeature) {
+            if (usage.USAGE_ENFORCE_STRICT) {
+                return res.status(400).json({ error: 'Missing source identifier' });
+            }
+            console.warn('[USAGE] /api/quickquery request without source — allowing (soft mode)');
+        } else {
+            const usageResult = await usage.checkAndConsume(user?.sub, usageFeature);
+            if (!usageResult.allowed) {
+                return res.status(403).json(usage.limitResponse(usageFeature, usageResult));
+            }
+            if (!usageResult.exempt) {
+                res.locals.usageConsumedFor = user.sub; // refund on failure
+                res.locals.usageFeature = usageFeature;
+                res.locals.usageInfo = { feature: usageFeature, used: usageResult.used, limit: usageResult.limit, resetsAt: usageResult.resetsAt };
+            }
+        }
+
         // Use axios instead of node-fetch for better reliability
         const OPENAI_TIMEOUT_MS = Number(process.env.OPENAI_TIMEOUT_MS || 55000);
 
@@ -388,6 +399,9 @@ app.post('/api/quickquery', async (req, res) => {
                 const status = axiosErr.response.status;
                 const errorText = axiosErr.response.data?.error?.message || JSON.stringify(axiosErr.response.data) || axiosErr.message;
                 console.error('OpenAI API Error:', status, errorText);
+                if (res.locals.usageConsumedFor) {
+                    await usage.refund(res.locals.usageConsumedFor, res.locals.usageFeature);
+                }
                 return res.status(status === 429 ? 429 : 502).json({
                     error: 'OpenAI request failed',
                     status: status,
@@ -402,14 +416,23 @@ app.post('/api/quickquery', async (req, res) => {
 
         if (!data?.choices?.[0]?.message?.content) {
             console.error('Invalid OpenAI response structure:', JSON.stringify(data).slice(0, 500));
+            if (res.locals.usageConsumedFor) {
+                await usage.refund(res.locals.usageConsumedFor, res.locals.usageFeature);
+            }
             return res.status(502).json({
                 error: 'Invalid response from OpenAI',
                 detail: 'Response missing expected data'
             });
         }
 
+        // Sibling key on the OpenAI-shaped response — clients only read `choices`
+        data.usage_petwise = res.locals.usageInfo || null;
         return res.status(200).json(data);
     } catch (err) {
+        // Generation failed after we consumed a free-tier unit — give it back
+        if (res.locals.usageConsumedFor) {
+            await usage.refund(res.locals.usageConsumedFor, res.locals.usageFeature);
+        }
         // Handle axios timeout errors
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
             console.error('OpenAI request timeout');
@@ -1398,6 +1421,17 @@ app.post('/api/generate-soap', async (req, res) => {
             return res.status(500).json({ error: 'Server configuration error: OpenAI API key not set' });
         }
 
+        // Free-tier cap: consume a SOAP unit up front (refunded on failure) so
+        // parallel requests can't slip past the limit.
+        const usageResult = await usage.checkAndConsume(user?.sub, 'soap');
+        if (!usageResult.allowed) {
+            return res.status(403).json(usage.limitResponse('soap', usageResult));
+        }
+        if (!usageResult.exempt) {
+            res.locals.usageConsumedFor = user.sub; // refund on failure (see catch)
+            res.locals.usageInfo = { feature: 'soap', used: usageResult.used, limit: usageResult.limit, resetsAt: usageResult.resetsAt };
+        }
+
         // Dynamic import for ESM module
         const { Agent, Runner } = await import('@openai/agents');
         const runner = new Runner();
@@ -1560,7 +1594,7 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
                 }
             }
 
-            return res.status(200).json({ report, petName, recordType });
+            return res.status(200).json({ report, petName, recordType, usage: res.locals.usageInfo || null });
         }
 
         // SOAP record type - use two-agent extraction + formatting approach
@@ -2037,6 +2071,9 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
 
         if (!fullResponse) {
             console.error('No response from SOAP agents');
+            if (res.locals.usageConsumedFor) {
+                await usage.refund(res.locals.usageConsumedFor, 'soap');
+            }
             return res.status(500).json({ error: 'No report generated' });
         }
 
@@ -2099,8 +2136,13 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             console.log('[SOAP] No user.sub provided, skipping counter increment');
         }
 
-        return res.status(200).json({ report, petName, recordType });
+        return res.status(200).json({ report, petName, recordType, usage: res.locals.usageInfo || null });
     } catch (err) {
+        // Generation failed after we consumed a free-tier unit — give it back
+        if (res.locals.usageConsumedFor) {
+            await usage.refund(res.locals.usageConsumedFor, 'soap');
+        }
+
         // Handle axios timeout errors
         if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
             console.error('OpenAI request timeout');
@@ -2210,112 +2252,6 @@ app.post('/create-checkout-session', async (req, res) => {
     }
 });
 
-// ================ STRIPE TRIAL CHECKOUT ENDPOINT ================
-// Creates a Stripe checkout session with 14-day free trial
-app.post('/create-trial-checkout-session', async (req, res) => {
-    try {
-        const { user, currency = 'usd' } = req.body;
-
-        // Validate currency
-        if (!['usd', 'cad'].includes(currency)) {
-            return res.status(400).json({ error: 'Invalid currency. Must be "usd" or "cad"' });
-        }
-
-        // Get the monthly price for the selected currency (trial converts to monthly)
-        const priceId = PRICE_IDS[`monthly_${currency}`];
-
-        if (!priceId) {
-            throw new Error('Invalid currency configuration');
-        }
-
-        // Check if user has already used Stripe trial
-        const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('has_activated_stripe_trial, email')
-            .eq('auth0_user_id', user.sub)
-            .single();
-
-        if (userError) {
-            console.error('Error fetching user:', userError);
-            throw new Error('Failed to verify user eligibility');
-        }
-
-        if (userData?.has_activated_stripe_trial) {
-            return res.status(400).json({
-                error: 'You have already used your free trial',
-                code: 'TRIAL_ALREADY_USED'
-            });
-        }
-
-        // Find or create Stripe customer
-        let customer;
-        const existingCustomers = await stripe.customers.list({
-            email: user.email,
-            limit: 1
-        });
-
-        if (existingCustomers.data.length > 0) {
-            customer = await stripe.customers.update(existingCustomers.data[0].id, {
-                email: user.email,
-                name: user.name || 'Valued Customer',
-                metadata: { auth0_user_id: user.sub }
-            });
-        } else {
-            customer = await stripe.customers.create({
-                email: user.email,
-                name: user.name || 'Valued Customer',
-                metadata: { auth0_user_id: user.sub }
-            });
-        }
-
-        // Create checkout session with 14-day trial
-        const session = await stripe.checkout.sessions.create({
-            customer: customer.id,
-            payment_method_types: ['card'],
-            mode: 'subscription',
-            allow_promotion_codes: true,  // Allow promo codes for first month after trial
-            billing_address_collection: 'required',
-            automatic_tax: { enabled: true },
-            tax_id_collection: { enabled: true },
-            customer_update: {
-                address: 'auto',
-                name: 'auto'
-            },
-            line_items: [{
-                price: priceId,
-                quantity: 1,
-            }],
-            subscription_data: {
-                trial_period_days: STRIPE_TRIAL_DAYS,  // 14-day free trial
-                metadata: {
-                    trial_type: 'stripe_trial',
-                    currency: currency
-                }
-            },
-            success_url: process.env.NODE_ENV === 'production'
-                ? 'https://app.petwise.vet/dashboard?trial_started=true'
-                : 'http://localhost:3000/dashboard?trial_started=true',
-            cancel_url: process.env.NODE_ENV === 'production'
-                ? 'https://app.petwise.vet/dashboard'
-                : 'http://localhost:3000/dashboard',
-            client_reference_id: user.sub
-        });
-
-        console.log('Created trial checkout session:', {
-            sessionId: session.id,
-            customerId: customer.id,
-            priceId: priceId,
-            trialDays: STRIPE_TRIAL_DAYS,
-            currency: currency
-        });
-
-        res.json({ id: session.id });
-    } catch (error) {
-        console.error('Trial checkout error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
 // ================ WEBHOOK HANDLER ================
 // Processes Stripe webhook events
 app.post('/webhook', async (req, res) => {
@@ -2352,35 +2288,19 @@ app.post('/webhook', async (req, res) => {
                 const priceId = subscription.items.data[0].price.id;
                 console.log('Price ID:', priceId);
 
-                // Check if this is a trial subscription
-                const isStripeTrial = subscription.status === 'trialing' && subscription.trial_end;
-                console.log('Is Stripe Trial:', isStripeTrial, 'Trial End:', subscription.trial_end);
+                // Paid-only checkout — trials no longer exist (free tier replaced them)
+                const subscriptionInterval =
+                    (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad)
+                        ? 'yearly'
+                        : 'monthly';
 
-                // Determine subscription interval
-                let subscriptionInterval;
-
-                if (isStripeTrial) {
-                    // This is a Stripe trial - set interval to stripe_trial
-                    subscriptionInterval = 'stripe_trial';
-                } else if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
-                    subscriptionInterval = 'yearly';
-                } else {
-                    subscriptionInterval = 'monthly';
-                }
-
-                // For trials, use trial_end as the subscription_end_date
-                // For regular subscriptions, use current_period_end
-                const endDate = isStripeTrial
-                    ? new Date(subscription.trial_end * 1000).toISOString()
-                    : new Date(subscription.current_period_end * 1000).toISOString();
+                const endDate = new Date(subscription.current_period_end * 1000).toISOString();
 
                 const updateData = {
                     subscription_status: 'active',
                     subscription_interval: subscriptionInterval,
                     stripe_customer_id: session.customer,
                     subscription_end_date: endDate,
-                    reports_used_today: 0,
-                    last_report_date: new Date().toISOString().split('T')[0],
                     cancel_at_period_end: false,
                     // Clear student fields on activation (but preserve graduation year)
                     plan_label: null,
@@ -2388,16 +2308,8 @@ app.post('/webhook', async (req, res) => {
                     student_last_student_redeem_at: null
                 };
 
-                // Set appropriate trial flags
-                if (isStripeTrial) {
-                    updateData.has_activated_stripe_trial = true;
-                } else {
-                    updateData.has_used_trial = true;  // Legacy flag for non-trial paid subscriptions
-                }
-
                 console.log('Updating user with data:', {
                     auth0_user_id: session.client_reference_id,
-                    isStripeTrial,
                     ...updateData
                 });
 
@@ -2414,39 +2326,22 @@ app.post('/webhook', async (req, res) => {
 
                 console.log('Update successful:', data);
 
-                // Send appropriate email based on subscription type
+                // Send subscription confirmation email
                 if (data && data[0] && data[0].email) {
                     try {
-                        if (isStripeTrial) {
-                            // Send trial activation email for Stripe trials
-                            console.log('Sending Stripe trial activation email to:', data[0].email);
-                            await sendTrialActivatedEmail(
-                                supabase,
-                                {
-                                    auth0_user_id: session.client_reference_id,
-                                    email: data[0].email,
-                                    nickname: data[0].nickname,
-                                    dvm_name: data[0].dvm_name
-                                },
-                                endDate
-                            );
-                            console.log('Stripe trial activation email sent successfully');
-                        } else {
-                            // Send subscription confirmation email for paid subscriptions
-                            console.log('Sending subscription confirmation email to:', data[0].email);
-                            await sendSubscriptionConfirmedEmail(
-                                supabase,
-                                {
-                                    auth0_user_id: session.client_reference_id,
-                                    email: data[0].email,
-                                    nickname: data[0].nickname,
-                                    dvm_name: data[0].dvm_name
-                                },
-                                subscriptionInterval,
-                                endDate
-                            );
-                            console.log('Subscription confirmation email sent successfully');
-                        }
+                        console.log('Sending subscription confirmation email to:', data[0].email);
+                        await sendSubscriptionConfirmedEmail(
+                            supabase,
+                            {
+                                auth0_user_id: session.client_reference_id,
+                                email: data[0].email,
+                                nickname: data[0].nickname,
+                                dvm_name: data[0].dvm_name
+                            },
+                            subscriptionInterval,
+                            endDate
+                        );
+                        console.log('Subscription confirmation email sent successfully');
                     } catch (err) {
                         console.error('Failed to send email:', err);
                     }
@@ -2738,113 +2633,7 @@ app.post('/cancel-subscription', async (req, res) => {
     }
 });
 
-// ================ LEGACY TRIAL ENDPOINT ================
-// 14-day in-house trial, no credit card required
-// Re-enabled to support TRIAL_MODE='legacy' (the default). Stripe trial remains
-// available via /create-trial-checkout-session if TRIAL_MODE flips to 'stripe'.
-app.post('/activate-trial', async (req, res) => {
-    try {
-        const { user_id } = req.body;
-        console.log('Trial activation request:', { user_id });
-
-        if (!user_id) {
-            return res.status(400).json({ error: 'user_id is required' });
-        }
-
-        // Block re-activation: user already used their trial (legacy or stripe)
-        const { data: existing, error: fetchErr } = await supabase
-            .from('users')
-            .select('has_used_trial, has_activated_stripe_trial, subscription_status, subscription_interval')
-            .eq('auth0_user_id', user_id)
-            .single();
-
-        if (fetchErr) {
-            console.error('Error fetching user for trial check:', fetchErr);
-            return res.status(500).json({ error: 'Failed to verify user eligibility' });
-        }
-
-        if (existing?.has_used_trial || existing?.has_activated_stripe_trial) {
-            return res.status(400).json({
-                error: 'You have already used your free trial',
-                code: 'TRIAL_ALREADY_USED'
-            });
-        }
-
-        const trialEndDate = new Date();
-        trialEndDate.setDate(trialEndDate.getDate() + TRIAL_DAYS);
-
-        const updateData = {
-            subscription_status: 'active',
-            subscription_interval: 'trial',
-            subscription_end_date: trialEndDate.toISOString(),
-            has_used_trial: true,
-            reports_used_today: 0,
-            last_report_date: new Date().toISOString().split('T')[0],
-            // Clear student fields when activating trial (but preserve graduation year)
-            plan_label: null,
-            student_school_email: null,
-            student_last_student_redeem_at: null
-        };
-
-        const { data, error } = await supabase
-            .from('users')
-            .update(updateData)
-            .eq('auth0_user_id', user_id)
-            .select('*, email, nickname, dvm_name');
-
-        if (error) {
-            console.error('Supabase update error:', error);
-            throw error;
-        }
-
-        console.log('Trial activation successful:', data);
-
-        if (data && data[0] && data[0].email) {
-            try {
-                await sendTrialActivatedEmail(supabase, {
-                    auth0_user_id: user_id,
-                    email: data[0].email,
-                    nickname: data[0].nickname,
-                    dvm_name: data[0].dvm_name
-                }, trialEndDate.toISOString());
-            } catch (err) {
-                console.error('Failed to send trial activation email:', err);
-            }
-        }
-
-        res.json(data);
-    } catch (error) {
-        console.error('Trial activation error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Add this new endpoint for canceling trials
-app.post('/cancel-trial', async (req, res) => {
-    try {
-        const { user_id } = req.body;
-
-        if (!user_id) {
-            return res.status(400).json({ error: 'user_id is required' });
-        }
-
-        // Update user's trial status
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({
-                subscription_status: 'inactive',
-                subscription_end_date: new Date().toISOString() // End trial immediately
-            })
-            .eq('auth0_user_id', user_id);
-
-        if (updateError) throw updateError;
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Cancel trial error:', error);
-        res.status(400).json({ error: error.message });
-    }
-});
+// (Trial endpoints removed — the free tier replaced trials.)
 
 // Cancel student plan endpoint
 app.post('/cancel-student', async (req, res) => {
@@ -2925,70 +2714,8 @@ app.post('/cancel-student', async (req, res) => {
 //     }
 // }
 
-// Add this new middleware function
-async function checkReportLimit(req, res, next) {
-    try {
-        const { user } = req.body;
-        if (!user?.sub) {
-            return res.status(400).json({ error: 'User ID required' });
-        }
-
-        const { data: userData, error } = await supabase
-            .from('users')
-            .select('subscription_interval, subscription_status, reports_used_today, last_report_date')
-            .eq('auth0_user_id', user.sub)
-            .single();
-
-        if (error) throw error;
-
-        // Check if user has access (active or past_due within grace period)
-        if (userData.subscription_status === 'inactive') {
-            return res.status(403).json({
-                error: 'Subscription inactive',
-                status: userData.subscription_status
-            });
-        }
-
-        // Only check limits for trial users
-        if (userData.subscription_interval === 'trial') {
-            if (userData.reports_used_today >= REPORT_LIMITS.trial) {
-                return res.status(403).json({
-                    error: 'Trial report limit reached',
-                    limit: REPORT_LIMITS.trial,
-                    used: userData.reports_used_today
-                });
-            }
-        }
-
-        req.reportData = {
-            currentCount: userData.reports_used_today,
-            limit: userData.subscription_interval === 'trial' ? REPORT_LIMITS.trial : Infinity
-        };
-        next();
-    } catch (error) {
-        console.error('Check report limit error:', error);
-        res.status(500).json({ error: error.message });
-    }
-}
-
-// Add to your existing report generation endpoint
-app.post('/generate-report', checkReportLimit, async (req, res) => {
-    try {
-        // Your existing report generation logic here
-
-        // After successful generation, increment the counter
-        await supabase
-            .from('users')
-            .update({
-                reports_used_today: req.reportData.currentCount + 1
-            })
-            .eq('auth0_user_id', req.body.user.sub);
-
-        res.json({ /* your response */ });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// (Legacy daily report limit middleware removed — monthly free-tier caps
+// are enforced in /api/generate-soap and /api/quickquery via server/usage.js.)
 
 // Debug endpoint to check user's subscription status
 app.get('/check-subscription/:userId', async (req, res) => {
@@ -3039,10 +2766,7 @@ app.get('/', (req, res) => {
             '/check-subscription/:userId',
             '/create-checkout-session',
             '/cancel-subscription',
-            '/cancel-trial',
-            '/activate-trial',
-            '/webhook',
-            '/generate-report'
+            '/webhook'
         ]
     });
 });

@@ -4,6 +4,11 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt, FaMicrophone, FaStop } from 'react-icons/fa';
+import { AnimatePresence } from 'framer-motion';
+import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
+import { UsageBar } from './UsageMeter';
+import UpgradeNudge from './UpgradeNudge';
+import UpgradeModal from './UpgradeModal';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -637,6 +642,22 @@ const QuickQuery = ({ isMobile = false }) => {
     const streamRef = useRef(null);
     const audioChunksRef = useRef([]);
 
+    // Free-tier usage state (percentages only in UI)
+    const usage = useUsage();
+    const [lastUsage, setLastUsage] = useState(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [nudgeDismissed, setNudgeDismissed] = useState(
+        () => sessionStorage.getItem('petquery-nudge-dismissed') === 'true'
+    );
+    const queryPct = lastUsage
+        ? Math.min(Math.round((lastUsage.used / lastUsage.limit) * 100), 100)
+        : usage.query.pct;
+    const showNudge = !usage.isUnlimited && !nudgeDismissed && queryPct >= 90 && queryPct < 100;
+    const dismissNudge = () => {
+        setNudgeDismissed(true);
+        sessionStorage.setItem('petquery-nudge-dismissed', 'true');
+    };
+
     // Check for tutorial flag from Help center
     useEffect(() => {
         const openTutorialFlag = localStorage.getItem('openPetQueryTutorial');
@@ -767,6 +788,12 @@ const QuickQuery = ({ isMobile = false }) => {
         e.preventDefault();
         if (!inputMessage.trim() || isLoading) return;
 
+        // Preemptive free-tier check — saves a wasted API round-trip at 100%
+        if (!usage.isUnlimited && usage.query.pct >= 100) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         // Get timestamp
         const timestamp = formatTimestamp();
 
@@ -788,27 +815,7 @@ const QuickQuery = ({ isMobile = false }) => {
         }
 
         try {
-            // Increment message count directly
-            if (user?.sub) {
-                try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('quick_query_messages_count')
-                        .eq('auth0_user_id', user.sub)
-                        .single();
-
-                    if (!error && data) {
-                        const currentCount = data.quick_query_messages_count || 0;
-                        await supabase
-                            .from('users')
-                            .update({ quick_query_messages_count: currentCount + 1 })
-                            .eq('auth0_user_id', user.sub);
-                    }
-                } catch (err) {
-                    console.error('Error updating message count:', err);
-                }
-            }
-
+            // Usage is counted server-side (free-tier monthly cap)
             const systemPrompt = isLongAnswerMode
                 ? `You are PetQuery, a **Veterinary Assistant AI** providing comprehensive, in-depth responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Give detailed, thorough answers that cover all relevant aspects of the question. Provide extensive clinical information, background context, differential diagnoses, treatment options, prognosis, and detailed explanations. Include comprehensive sources and references. ${userData?.dvm_name ? `You are speaking with Dr. ${userData.dvm_name}. Address them as such.` : ''}`
                 : ` You are PetQuery, a **Veterinary Assistant AI** providing concise, professional responses for **licensed veterinarians only**. IMPORTANT: Always assume you are speaking with a licensed veterinarian. Your responses should be **short, precise, and rich in clinical information** while adhering to the following formatting:
@@ -950,7 +957,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     temperature: 0.7,
                     top_p: 0.9,
                     frequency_penalty: 0.5,
-                    presence_penalty: 0.5
+                    presence_penalty: 0.5,
+                    user: { sub: user?.sub },
+                    source: 'petquery'
                 }
             );
 
@@ -958,6 +967,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 throw new Error(response.data.error);
             }
 
+            setLastUsage(response.data.usage_petwise || null);
+            notifyUsageUpdated();
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: response.data.choices[0].message.content,
@@ -967,7 +978,10 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             console.error('Error in QuickQuery:', error);
             let errorMessage = "I'm sorry, I encountered an error. Please try again.";
 
-            if (error.response?.status === 429) {
+            if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
+                setShowUpgradeModal(true);
+                errorMessage = "You've used 100% of your free PetQuery questions this month. Upgrade for unlimited access — your limit resets next month.";
+            } else if (error.response?.status === 429) {
                 // Check if it's a quota error from OpenAI
                 const detail = error.response?.data?.detail || '';
                 if (detail.includes('insufficient_quota') || detail.includes('quota')) {
@@ -1297,7 +1311,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     temperature: 0.7,
                     top_p: 0.9,
                     frequency_penalty: 0.5,
-                    presence_penalty: 0.5
+                    presence_penalty: 0.5,
+                    user: { sub: user?.sub },
+                    source: 'petquery'
                 }
             );
 
@@ -1305,6 +1321,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 throw new Error(response.data.error);
             }
 
+            setLastUsage(response.data.usage_petwise || null);
+            notifyUsageUpdated();
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: response.data.choices[0].message.content,
@@ -1314,7 +1332,10 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             console.error('Error in QuickQuery:', error);
             let errorMessage = "I'm sorry, I encountered an error. Please try again.";
 
-            if (error.response?.status === 429) {
+            if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
+                setShowUpgradeModal(true);
+                errorMessage = "You've used 100% of your free PetQuery questions this month. Upgrade for unlimited access — your limit resets next month.";
+            } else if (error.response?.status === 429) {
                 // Check if it's a quota error from OpenAI
                 const detail = error.response?.data?.detail || '';
                 if (detail.includes('insufficient_quota') || detail.includes('quota')) {
@@ -1445,16 +1466,33 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     color: #9ca3af;
                 }
             `}} />
+            <AnimatePresence>
+                {showUpgradeModal && (
+                    <UpgradeModal
+                        user={{ ...user, ...userData }}
+                        feature="query"
+                        resetsAt={lastUsage?.resetsAt || usage.resetsAt}
+                        onClose={() => setShowUpgradeModal(false)}
+                        onSubscribed={() => usage.refresh()}
+                    />
+                )}
+            </AnimatePresence>
             <div className={`${isMobile ? 'h-full overflow-hidden' : 'h-screen overflow-hidden'} bg-white flex flex-col`}>
                 {!isMobile && (
                     <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
                         <div className="flex items-center gap-3">
                             <h2 className="text-3xl font-bold text-primary-600">PetQuery</h2>
                         </div>
+                        {!usage.isUnlimited && usage.loaded && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-40">
+                                <UsageBar label="PetQuery" pct={usage.query.pct} isUnlimited={usage.isUnlimited} />
+                            </div>
+                        )}
                     </div>
                 )}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'px-3 py-3 pb-24 mobile-scroll-container' : 'px-4 py-6 pb-40'} space-y-4`}>
+                        <UpgradeNudge show={showNudge} feature="query" pct={queryPct} onDismiss={dismissNudge} />
                         {/* Mobile empty state - minimal */}
                         {messages.length === 0 && isMobile && (
                             <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">

@@ -12,6 +12,11 @@ import { Node } from 'slate';
 import { Link, useNavigate } from 'react-router-dom';
 import SOAPView from './SOAPView';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaFileAlt } from 'react-icons/fa';
+import { AnimatePresence } from 'framer-motion';
+import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
+import { UsageBar } from './UsageMeter';
+import UpgradeNudge from './UpgradeNudge';
+import UpgradeModal from './UpgradeModal';
 
 // Add this before PDFDocument component
 // const mainHeaders = [ ... ];
@@ -604,92 +609,21 @@ const ReportForm = () => {
         };
     });
 
-    const [reportsUsed, setReportsUsed] = useState(0);
-    const [reportLimit, setReportLimit] = useState(0);
-
-    const fetchReportUsage = async () => {
-        if (!user) return;
-
-        try {
-            const { data, error } = await supabase
-                .from('users')
-                .select('reports_used_today, subscription_interval, last_report_date')
-                .eq('auth0_user_id', user.sub)
-                .single();
-
-            if (error) throw error;
-
-            const today = new Date().toISOString().split('T')[0];
-
-            if (data.last_report_date !== today) {
-                const { error: updateError } = await supabase
-                    .from('users')
-                    .update({
-                        reports_used_today: 0,
-                        last_report_date: today
-                    })
-                    .eq('auth0_user_id', user.sub);
-
-                if (updateError) throw updateError;
-                setReportsUsed(0);
-            } else {
-                setReportsUsed(data.reports_used_today);
-            }
-
-            // Get limit from server
-            const response = await fetch(`${API_URL}/check-subscription/${user.sub}`);
-            const limitData = await response.json();
-
-            if (data.subscription_interval === 'trial') {
-                setReportLimit(50); // Server enforces 50 limit
-                // Only show warning if not loading a saved report
-                const loadedReportId = localStorage.getItem('currentReportId');
-                if (!loadedReportId) {
-                    setShowLimitWarning(data.reports_used_today >= 50);
-                }
-            } else {
-                setReportLimit(Infinity);
-                setShowLimitWarning(false);
-            }
-        } catch (error) {
-            console.error('Error fetching report usage:', error);
-        }
+    // Free-tier usage (server-enforced monthly cap, shared SOAP pool with QuickSOAP)
+    const usage = useUsage();
+    const [lastUsage, setLastUsage] = useState(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [nudgeDismissed, setNudgeDismissed] = useState(
+        () => sessionStorage.getItem('petsoap-nudge-dismissed') === 'true'
+    );
+    const soapPct = lastUsage
+        ? Math.min(Math.round((lastUsage.used / lastUsage.limit) * 100), 100)
+        : usage.soap.pct;
+    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapPct >= 90 && soapPct < 100;
+    const dismissNudge = () => {
+        setNudgeDismissed(true);
+        sessionStorage.setItem('petsoap-nudge-dismissed', 'true');
     };
-
-    // Add lastFetchTime to track when we last checked
-    const lastFetchTime = useRef(0);
-    const MIN_FETCH_INTERVAL = 30000; // 30 seconds minimum between fetches
-
-    const debouncedFetchReportUsage = () => {
-        const now = Date.now();
-        if (now - lastFetchTime.current > MIN_FETCH_INTERVAL) {
-            fetchReportUsage();
-            lastFetchTime.current = now;
-        }
-    };
-
-    useEffect(() => {
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === 'visible') {
-                debouncedFetchReportUsage();
-            }
-        };
-
-        // Initial fetch
-        fetchReportUsage();
-        lastFetchTime.current = Date.now();
-
-        // Add visibility change listener
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        // 5-minute interval check
-        const interval = setInterval(debouncedFetchReportUsage, 5 * 60 * 1000);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-            clearInterval(interval);
-        };
-    }, [user]);
 
     useEffect(() => {
         // First check if we have form_data
@@ -752,9 +686,8 @@ const ReportForm = () => {
                 });
             }, 100); // Small delay to ensure state updates have completed
 
-            // Set preview visible and clear warning banner
+            // Set preview visible
             setPreviewVisible(true);
-            setShowLimitWarning(false);
 
             // Clear form_data from localStorage after loading
             localStorage.removeItem('form_data');
@@ -814,14 +747,6 @@ const ReportForm = () => {
         setPatientInfoSubmitted(true);
     };
 
-    // Add useEffect to fetch when component loads
-    useEffect(() => {
-        if (user && !patientInfoSubmitted) {
-            fetchReportUsage();
-            lastFetchTime.current = Date.now();
-        }
-    }, [user, patientInfoSubmitted]); // Add patientInfoSubmitted to dependencies
-
     // Go back to patient info form
     const handleBackToPatientInfo = () => {
         setPatientInfoSubmitted(false);
@@ -835,10 +760,9 @@ const ReportForm = () => {
         e.preventDefault();
         if (isGenerating.current) return;
 
-        setShowLimitWarning(false);
-
-        if (reportsUsed >= reportLimit) {
-            setError('Report limit reached. Please upgrade your plan for more reports.');
+        // Preemptive free-tier check — saves a wasted API round-trip at 100%
+        if (!usage.isUnlimited && usage.soap.pct >= 100) {
+            setShowUpgradeModal(true);
             return;
         }
 
@@ -856,45 +780,23 @@ const ReportForm = () => {
                 naturopathicMedicine, patientVisitSummary, notes
             };
 
-            const generatedReport = await GenerateReport(inputs, enabledFields);
-            // console.log("Raw GPT Response:", generatedReport);
-            setReportText(generatedReport);
+            // Usage is counted server-side (free-tier monthly cap)
+            const generatedReport = await GenerateReport(inputs, enabledFields, user?.sub);
+            setReportText(generatedReport.text);
+            setLastUsage(generatedReport.usage);
+            notifyUsageUpdated();
             setPreviewVisible(true);
 
             // Force scroll to top immediately after state updates
             if (previewContentRef.current) {
                 previewContentRef.current.scrollTop = 0;
             }
-
-            // Update reports_used_today and weekly_reports_count
-            if (user?.sub) {
-                try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('reports_used_today, weekly_reports_count')
-                        .eq('auth0_user_id', user.sub)
-                        .single();
-
-                    if (!error && data) {
-                        const reportsUsed = data.reports_used_today || 0;
-                        const weeklyCount = data.weekly_reports_count || 0;
-
-                        await supabase
-                            .from('users')
-                            .update({
-                                reports_used_today: reportsUsed + 1,
-                                weekly_reports_count: weeklyCount + 1
-                            })
-                            .eq('auth0_user_id', user.sub);
-                    }
-                } catch (err) {
-                    console.error('Error updating report counts:', err);
-                }
-            }
-
-            setReportsUsed(prev => prev + 1);
         } catch (error) {
-            setError(error.message || 'An error occurred while generating the report.');
+            if (error.code === 'USAGE_LIMIT_REACHED') {
+                setShowUpgradeModal(true);
+            } else {
+                setError(error.message || 'An error occurred while generating the report.');
+            }
         } finally {
             setLoading(false);
             isGenerating.current = false;
@@ -1294,57 +1196,8 @@ const ReportForm = () => {
         }
     }, []);
 
-    // Add near your other state declarations
-    const [showLimitWarning, setShowLimitWarning] = useState(false);
-
-    // Update the useEffect that monitors report usage
-    useEffect(() => {
-        if (reportLimit !== Infinity) {
-            const loadedReportId = localStorage.getItem('currentReportId');
-            if (!loadedReportId) {  // Only show warning if not loading a saved report
-                const remainingReports = Math.max(0, reportLimit - reportsUsed);
-                setShowLimitWarning(remainingReports <= 3 || reportsUsed >= reportLimit);
-            } else {
-                setShowLimitWarning(false);
-            }
-        } else {
-            setShowLimitWarning(false);
-        }
-    }, [reportsUsed, reportLimit]);
-
     // Add this state to handle navigation
     const navigate = useNavigate(); // Add useNavigate import at the top
-
-    // Modify the LimitWarningPopup component
-    const LimitWarningPopup = () => {
-        const remainingReports = Math.max(0, reportLimit - reportsUsed);
-        const isAtLimit = reportsUsed >= reportLimit;
-
-        return (
-            <div className="limit-warning-popup">
-                <button
-                    className="close-warning"
-                    onClick={() => setShowLimitWarning(false)}
-                >
-                    ×
-                </button>
-                {isAtLimit ? (
-                    <p>You've reached your daily report limit. Sign up for unlimited reports!</p>
-                ) : (
-                    <p>You have {remainingReports} reports remaining today. Reports will reset tomorrow.</p>
-                )}
-                <p>Need more? <button
-                    className="upgrade-link"
-                    onClick={() => {
-                        setShowLimitWarning(false);
-                        navigate('/dashboard/profile', { state: { openCheckout: true } });
-                    }}
-                >
-                    Upgrade your plan
-                </button></p>
-            </div>
-        );
-    };
 
     const [loadingText, setLoadingText] = useState('Generating report...');
 
@@ -1584,6 +1437,17 @@ const ReportForm = () => {
 
     return (
         <div className="report-container">
+            <AnimatePresence>
+                {showUpgradeModal && (
+                    <UpgradeModal
+                        user={user}
+                        feature="soap"
+                        resetsAt={lastUsage?.resetsAt || usage.resetsAt}
+                        onClose={() => setShowUpgradeModal(false)}
+                        onSubscribed={() => usage.refresh()}
+                    />
+                )}
+            </AnimatePresence>
             {!patientInfoSubmitted ? (
                 <form className="report-form" onSubmit={handlePatientInfoSubmit}>
                     <h2 className="report-form-section-title">Patient Info</h2>
@@ -2008,6 +1872,12 @@ const ReportForm = () => {
                         </div>
                     </div>
 
+                    {!usage.isUnlimited && usage.loaded && (
+                        <div className="flex justify-center mb-2">
+                            <UsageBar label="SOAP notes" pct={soapPct} isUnlimited={usage.isUnlimited} resetsAt={usage.resetsAt} />
+                        </div>
+                    )}
+                    <UpgradeNudge show={showNudge} feature="soap" pct={soapPct} onDismiss={dismissNudge} />
                     <div className="button-container">
                         <button type="button" className="submit-button" onClick={handleBackToPatientInfo}>
                             Back to Patient Info
@@ -2015,11 +1885,10 @@ const ReportForm = () => {
                         <button
                             type="submit"
                             className="generate-report-button"
-                            disabled={loading || reportsUsed >= reportLimit}
+                            disabled={loading}
                         >
                             {loading ? 'Generating...' : 'Generate Record'}
                         </button>
-                        {showLimitWarning && <LimitWarningPopup />}
                         <button type="button" className="clear-button" onClick={resetEntireForm}>
                             Clear All
                         </button>

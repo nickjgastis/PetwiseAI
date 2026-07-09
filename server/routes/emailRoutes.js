@@ -1,10 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { 
-    sendWelcomeEmail, 
-    sendTrialActivatedEmail,
-    sendTrialMidwayEmail, 
-    sendTrialEndingEmail,
+const {
+    sendWelcomeEmail,
     sendSubscriptionConfirmedEmail
 } = require('../utils/emailService');
 
@@ -80,10 +77,6 @@ router.post('/test/:type', async (req, res) => {
         nickname
     };
 
-    // Mock dates for testing (14-day trial)
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + 7); // 7 days from now (midway point)
-
     const subscriptionEndDate = new Date();
     subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30); // 30 days from now
 
@@ -94,24 +87,13 @@ router.post('/test/:type', async (req, res) => {
             case 'welcome':
                 result = await sendWelcomeEmail(supabase, mockUser);
                 break;
-            case 'trial-activated':
-                result = await sendTrialActivatedEmail(supabase, mockUser, trialEndDate.toISOString());
-                break;
-            case 'trial-midway':
-                result = await sendTrialMidwayEmail(supabase, mockUser, 7, trialEndDate.toISOString());
-                break;
-            case 'trial-ending':
-                const endingSoon = new Date();
-                endingSoon.setDate(endingSoon.getDate() + 3);
-                result = await sendTrialEndingEmail(supabase, mockUser, 3, endingSoon.toISOString());
-                break;
             case 'subscription-confirmed':
                 result = await sendSubscriptionConfirmedEmail(supabase, mockUser, 'monthly', subscriptionEndDate.toISOString());
                 break;
             default:
-                return res.status(400).json({ 
+                return res.status(400).json({
                     error: 'Invalid email type',
-                    validTypes: ['welcome', 'trial-activated', 'trial-midway', 'trial-ending', 'subscription-confirmed']
+                    validTypes: ['welcome', 'subscription-confirmed']
                 });
         }
 

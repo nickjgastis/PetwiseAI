@@ -6,6 +6,11 @@ import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPa
 import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
+import { AnimatePresence } from 'framer-motion';
+import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
+import { UsageBar } from '../components/UsageMeter';
+import UpgradeNudge from '../components/UpgradeNudge';
+import UpgradeModal from '../components/UpgradeModal';
 
 // PDF Document component for print/export
 const QuickSOAPPDFDocument = ({ reportText, title }) => {
@@ -267,6 +272,22 @@ const QuickSOAP = () => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [needsSegmentation, setNeedsSegmentation] = useState(false);
     const [error, setError] = useState('');
+
+    // Free-tier usage state (percentages only in UI)
+    const usage = useUsage();
+    const [lastUsage, setLastUsage] = useState(null);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const [nudgeDismissed, setNudgeDismissed] = useState(
+        () => sessionStorage.getItem('quicksoap-nudge-dismissed') === 'true'
+    );
+    const soapPct = lastUsage
+        ? Math.min(Math.round((lastUsage.used / lastUsage.limit) * 100), 100)
+        : usage.soap.pct;
+    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapPct >= 90 && soapPct < 100;
+    const dismissNudge = () => {
+        setNudgeDismissed(true);
+        sessionStorage.setItem('quicksoap-nudge-dismissed', 'true');
+    };
     const [lastInput, setLastInput] = useState(() => {
         // Initialize lastInput synchronously from localStorage
         if (typeof window !== 'undefined') {
@@ -1611,6 +1632,12 @@ const QuickSOAP = () => {
             return;
         }
 
+        // Preemptive free-tier check — saves a wasted API round-trip at 100%
+        if (!usage.isUnlimited && usage.soap.pct >= 100) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         setIsGenerating(true);
         setError('');
         setLastInput(combinedInput);
@@ -1636,6 +1663,8 @@ const QuickSOAP = () => {
                     if (response.data.report) {
                         const generatedReport = response.data.report;
                         const extractedPetName = response.data.petName;
+                        setLastUsage(response.data.usage || null);
+                        notifyUsageUpdated();
                         setReport(generatedReport);
                         // Store pet name if extracted
                         if (extractedPetName) {
@@ -1671,7 +1700,11 @@ const QuickSOAP = () => {
                     }
                 } catch (err) {
                     console.error('SOAP generation error:', err);
-                    setError(err.response?.data?.error || 'Failed to generate SOAP report. Please try again.');
+                    if (err.response?.status === 403 && err.response?.data?.error === 'USAGE_LIMIT_REACHED') {
+                        setShowUpgradeModal(true);
+                    } else {
+                        setError(err.response?.data?.error || 'Failed to generate SOAP report. Please try again.');
+                    }
                     setIsReportTransitioning(false);
                 } finally {
                     setIsGenerating(false);
@@ -1689,6 +1722,8 @@ const QuickSOAP = () => {
                 if (response.data.report) {
                     const generatedReport = response.data.report;
                     const extractedPetName = response.data.petName;
+                    setLastUsage(response.data.usage || null);
+                    notifyUsageUpdated();
                     // Start transition - fade out loader smoothly
                     setIsTransitioning(true);
 
@@ -1734,7 +1769,11 @@ const QuickSOAP = () => {
                 }
             } catch (err) {
                 console.error('SOAP generation error:', err);
-                setError(err.response?.data?.error || 'Failed to generate SOAP report. Please try again.');
+                if (err.response?.status === 403 && err.response?.data?.error === 'USAGE_LIMIT_REACHED') {
+                    setShowUpgradeModal(true);
+                } else {
+                    setError(err.response?.data?.error || 'Failed to generate SOAP report. Please try again.');
+                }
                 setIsTransitioning(false);
                 setIsGenerating(false);
             }
@@ -2233,6 +2272,19 @@ const QuickSOAP = () => {
                 }
             `}</style>
 
+
+            {/* Free-tier out-of-usage upgrade screen */}
+            <AnimatePresence>
+                {showUpgradeModal && (
+                    <UpgradeModal
+                        user={user}
+                        feature="soap"
+                        resetsAt={lastUsage?.resetsAt || usage.resetsAt}
+                        onClose={() => setShowUpgradeModal(false)}
+                        onSubscribed={() => usage.refresh()}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Save Prompt Modal (Desktop - when loading new dictation with report open) */}
 
@@ -2834,6 +2886,14 @@ const QuickSOAP = () => {
                                                 `Generate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}`
                                             )}
                                         </button>
+                                    </div>
+                                )}
+
+                                {/* Free-tier usage: nudge at 90%, compact % bar */}
+                                <UpgradeNudge show={showNudge} feature="soap" pct={soapPct} onDismiss={dismissNudge} />
+                                {!usage.isUnlimited && usage.loaded && (
+                                    <div className="flex justify-center mt-3">
+                                        <UsageBar label="SOAP notes" pct={soapPct} isUnlimited={usage.isUnlimited} resetsAt={usage.resetsAt} />
                                     </div>
                                 )}
 

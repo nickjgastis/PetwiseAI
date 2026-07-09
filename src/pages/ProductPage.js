@@ -91,20 +91,20 @@ const ProductPage = () => {
 
                         <div className="pricing-card free highlight-card">
                             <div className="pricing-header">
-                                <h3>14-Day Free Trial</h3>
-                                <p className="price">$0<span>/14 days</span></p>
+                                <h3>Free Plan</h3>
+                                <p className="price">$0<span>/month</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>Full unlimited access</li>
-                                <li>Unlimited SOAP reports</li>
-                                <li>Quick Query included</li>
+                                <li>Monthly SOAP note allowance</li>
+                                <li>Monthly PetQuery allowance</li>
+                                <li>No credit card required</li>
                             </ul>
                             <div className="pricing-footer">
                                 <button
                                     onClick={() => loginWithRedirect(signUpOptions)}
                                     className="trial-button"
                                 >
-                                    Start Free Trial
+                                    Get Started Free
                                 </button>
                             </div>
                         </div>

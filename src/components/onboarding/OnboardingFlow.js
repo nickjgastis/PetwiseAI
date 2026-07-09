@@ -1,59 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
-import { STEP_ORDER } from './OnboardingLayout';
 import CongratsStep from './CongratsStep';
-import QuizStep from './QuizStep';
-import AffirmationStep from './AffirmationStep';
-import BenefitsStep from './BenefitsStep';
-import TestimonialStep from './TestimonialStep';
-import TrialStep from './TrialStep';
-import WelcomeToPetwise from '../WelcomeToPetwise';
-import TermsOfService from '../TermsOfService';
-import BookingStep from './BookingStep';
 import InstallPrompt from '../InstallPrompt';
 
-// Active flow: congrats(name+phone+terms) → benefits → testimonial → trial → welcome → complete
-// Removed for now (kept in repo in case we want to re-add): quiz1, quiz2, affirmation, booking, terms
-// Terms are now accepted inline on CongratsStep. Booking moved to in-app BookingBanner.
-const STEPS = ['congrats', 'benefits', 'testimonial', 'trial', 'welcome', 'complete'];
+// Active flow: congrats (name + phone + terms, all on one screen) → complete.
+// New users land straight in the app on the free tier — no plan/trial step.
+// Removed (kept in repo in case we want to re-add): quiz1, quiz2, affirmation,
+// booking, terms, benefits, testimonial, trial, welcome.
+const STEPS = ['congrats', 'complete'];
 
-// Steps that were removed — if a user has an in-flight onboarding row on one of these,
-// jump them back to 'congrats' so they aren't stuck.
-const REMOVED_STEPS = ['quiz1', 'quiz2', 'affirmation', 'booking', 'terms'];
+// Steps that were removed — if a user has an in-flight onboarding row on one of
+// these, bounce them forward (if we already have their name) or back to congrats.
+const REMOVED_STEPS = ['quiz1', 'quiz2', 'affirmation', 'booking', 'terms', 'benefits', 'testimonial', 'trial', 'welcome'];
 
 const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscription }) => {
     const { user } = useAuth0();
     const [currentStep, setCurrentStep] = useState(onboardingData?.current_step || 'congrats');
-    const [quizAnswers, setQuizAnswers] = useState(onboardingData?.quiz_answers || {});
 
     // Detect mobile for install gate
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-    // If trial step but user already has active subscription, skip to welcome
-    useEffect(() => {
-        if (currentStep === 'trial' && userData?.subscription_status === 'active') {
-            goToStep('welcome');
-        }
-    }, [currentStep, userData?.subscription_status]);
-
-    // Safety jump: if a user's saved current_step was removed from the flow, send them to congrats
+    // Safety jump: if a user's saved current_step was removed from the flow,
+    // finish onboarding if they already gave us their name, else restart congrats.
     useEffect(() => {
         if (REMOVED_STEPS.includes(currentStep)) {
-            goToStep('congrats');
+            if (userData?.dvm_name) {
+                markUserOnboarded();
+                goToStep('complete');
+            } else {
+                goToStep('congrats');
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const saveStep = async (step, extraData = {}) => {
         try {
-            const updates = { 
-                current_step: step, 
+            const updates = {
+                current_step: step,
                 updated_at: new Date().toISOString(),
-                ...extraData 
+                ...extraData
             };
-            
+
             if (step === 'complete') {
                 updates.status = 'completed';
                 updates.completed_at = new Date().toISOString();
@@ -74,36 +64,7 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
         window.scrollTo(0, 0);
     };
 
-    const nextStep = (extraData = {}) => {
-        const idx = STEPS.indexOf(currentStep);
-        if (idx < STEPS.length - 1) {
-            const next = STEPS[idx + 1];
-            goToStep(next, extraData);
-        }
-    };
-
-    const prevStep = () => {
-        const idx = STEPS.indexOf(currentStep);
-        if (idx > 0) {
-            goToStep(STEPS[idx - 1]);
-        }
-    };
-
-    const handleQuizNext = (updatedAnswers) => {
-        setQuizAnswers(updatedAnswers);
-        nextStep({ quiz_answers: updatedAnswers });
-    };
-
-    const handleTrialActivated = () => {
-        // Trial was activated via Stripe — when they come back from Stripe redirect,
-        // Dashboard will re-fetch subscription and the flow will continue.
-        // For student redeem or instant activation, advance to welcome.
-        if (refreshSubscription) refreshSubscription();
-        goToStep('welcome');
-    };
-
-    const handleWelcomeComplete = async () => {
-        // Welcome is now the final user-facing step. Mark onboarding complete here.
+    const markUserOnboarded = async () => {
         try {
             await supabase
                 .from('users')
@@ -112,7 +73,12 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
         } catch (err) {
             console.error('Error marking onboarding complete:', err);
         }
+    };
 
+    // Congrats collects everything (name, phone, terms) — completing it means
+    // onboarding is done and the user lands in the app on the free tier.
+    const handleCongratsComplete = async () => {
+        await markUserOnboarded();
         goToStep('complete');
 
         // Mobile browser users get the install gate before landing in the app
@@ -120,36 +86,6 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
             return;
         }
 
-        if (onComplete) onComplete();
-    };
-
-    // Kept for reference — terms now accepted inline on CongratsStep
-    // eslint-disable-next-line no-unused-vars
-    const handleTermsAccepted = async ({ emailOptOut }) => {
-        // Mark terms accepted and onboarding complete in users table
-        try {
-            await supabase
-                .from('users')
-                .update({ 
-                    has_accepted_terms: true, 
-                    email_opt_out: emailOptOut,
-                    has_completed_onboarding: true 
-                })
-                .eq('auth0_user_id', user.sub);
-        } catch (err) {
-            console.error('Error accepting terms:', err);
-        }
-        
-        // Mark onboarding table as completed (this ensures they never see it again)
-        goToStep('complete');
-
-        // Check if mobile + not standalone → show install gate
-        if (isMobile && !isStandalone && process.env.NODE_ENV !== 'development') {
-            // Don't call onComplete yet — show install gate
-            return;
-        }
-
-        // Desktop or already installed — done
         if (onComplete) onComplete();
     };
 
@@ -163,54 +99,7 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
         return null;
     }
 
-    // Can go back if not on the first step
-    const canGoBack = STEPS.indexOf(currentStep) > 0;
-
-    if (currentStep === 'congrats') {
-        return <CongratsStep onNext={() => nextStep()} />;
-    }
-
-    if (currentStep === 'quiz1' || currentStep === 'quiz2') {
-        return (
-            <QuizStep 
-                key={currentStep}
-                step={currentStep}
-                quizAnswers={quizAnswers}
-                onNext={handleQuizNext}
-                onBack={prevStep}
-            />
-        );
-    }
-
-    if (currentStep === 'affirmation') {
-        return <AffirmationStep quizAnswers={quizAnswers} onNext={() => nextStep()} onBack={prevStep} />;
-    }
-
-    if (currentStep === 'benefits') {
-        return <BenefitsStep onNext={() => nextStep()} onBack={prevStep} />;
-    }
-
-    if (currentStep === 'testimonial') {
-        return <TestimonialStep onNext={() => nextStep()} onBack={prevStep} />;
-    }
-
-    if (currentStep === 'trial') {
-        return <TrialStep user={{ ...user, sub: user.sub }} onTrialActivated={handleTrialActivated} onBack={prevStep} />;
-    }
-
-    if (currentStep === 'welcome') {
-        return <WelcomeToPetwise user={user} onComplete={handleWelcomeComplete} onBack={prevStep} />;
-    }
-
-    if (currentStep === 'booking') {
-        return <BookingStep onNext={() => nextStep()} onBack={prevStep} />;
-    }
-
-    if (currentStep === 'terms') {
-        return <TermsOfService onAccept={handleTermsAccepted} onBack={prevStep} />;
-    }
-
-    return null;
+    return <CongratsStep onNext={handleCongratsComplete} />;
 };
 
 export default OnboardingFlow;

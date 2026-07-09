@@ -97,7 +97,7 @@ const AboutPage = () => {
                             <h1>What is PetWise?</h1>
                             <p>An AI assistant built specifically for veterinarians, streamlining SOAP note generation and providing instant answers to clinical questions.</p>
                             <button className="trial-button" onClick={handleStartTrial}>
-                                Start Free Trial
+                                Get Started Free
                             </button>
                         </div>
                     </div>
@@ -195,10 +195,10 @@ const AboutPage = () => {
                     <div className="container">
                         <h2>Ready to Save Hours?</h2>
                         <p>Join hundreds of veterinarians using PetWise to work faster and smarter.</p>
-                        <p>Start your 30-day free trial today.</p>
+                        <p>Sign up free — SOAP notes and PetQuery included every month.</p>
                         <div className="cta-container">
                             <button className="cta-button" onClick={handleStartTrial}>
-                                Start Free Trial
+                                Get Started Free
                             </button>
                             <p className="no-card-text">No credit card required</p>
                         </div>

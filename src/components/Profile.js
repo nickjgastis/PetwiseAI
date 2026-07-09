@@ -1,17 +1,40 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useNavigate, useLocation } from 'react-router-dom'; // Import useNavigate and useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
+import { useUsage } from '../hooks/useUsage';
+import UsageMeter from './UsageMeter';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import ManageSubscription from './ManageSubscription';
-import { FaGraduationCap, FaMobile, FaTimes } from 'react-icons/fa';
+import {
+    FaUser, FaChartPie, FaCreditCard, FaShieldAlt, FaMobile,
+    FaGraduationCap, FaEnvelope, FaCircle
+} from 'react-icons/fa';
 import { clearAppLocalStorage } from '../utils/clearUserData';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
+
+// Row inside a settings card: label left, value right
+const InfoRow = ({ label, children }) => (
+    <div className="flex items-center justify-between py-3.5 border-b border-gray-100 last:border-b-0">
+        <span className="text-[13px] font-medium text-gray-500">{label}</span>
+        <span className="text-[13px] font-semibold text-gray-800 text-right">{children}</span>
+    </div>
+);
+
+const SectionCard = ({ title, subtitle, children, className = '' }) => (
+    <div className={`rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 ${className}`}>
+        {title && <h3 className="text-sm font-bold text-gray-900">{title}</h3>}
+        {subtitle && <p className="text-[13px] text-gray-500 mt-0.5 mb-4">{subtitle}</p>}
+        {!subtitle && title && <div className="mb-4" />}
+        {children}
+    </div>
+);
 
 const Profile = ({ isMobileSignup = false }) => {
     const { user, isAuthenticated, isLoading: auth0Loading, logout } = useAuth0();
@@ -19,45 +42,18 @@ const Profile = ({ isMobileSignup = false }) => {
     const location = useLocation();
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
     const [subscriptionEndDate, setSubscriptionEndDate] = useState(null);
-    const [showCheckout, setShowCheckout] = useState(false);
-    const { timeLeft, isSubscribed, cancelAtPeriodEnd } = useSubscription();
+    const { isSubscribed, cancelAtPeriodEnd } = useSubscription();
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
     const [userData, setUserData] = useState(null);
-    const [showManageAccount, setShowManageAccount] = useState(false);
+    const usage = useUsage();
+
+    // Settings navigation
+    const [activeSection, setActiveSection] = useState('profile');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
-    const [showQRModal, setShowQRModal] = useState(false);
 
-    const getOptimizedImageUrl = (url) => {
-        if (!url) return null;
-
-        // For Google profile pictures
-        if (url.includes('googleusercontent.com')) {
-            // Remove size parameter and add a new one
-            const baseUrl = url.split('=')[0];
-            return `${baseUrl}=s200-c`;
-        }
-
-        // For Gravatar URLs
-        if (url.includes('gravatar.com')) {
-            const hash = url.split('/').pop().split('?')[0];
-            return `https://secure.gravatar.com/avatar/${hash}?s=200&d=mp`;
-        }
-
-        // For Auth0 default avatars
-        if (url.includes('cdn.auth0.com')) {
-            return url.split('?')[0]; // Remove any query parameters
-        }
-
-        return url;
-    };
-
-    const getGracePeriodDays = () => {
-        if (userData?.grace_period_end && subscriptionStatus === 'past_due') {
-            const daysLeft = Math.ceil((new Date(userData.grace_period_end) - new Date()) / (1000 * 60 * 60 * 24));
-            return daysLeft > 0 ? daysLeft : 0;
-        }
-        return null;
-    };
+    // Mobile-only sub-pages
+    const [showCheckout, setShowCheckout] = useState(false);
+    const [showManageAccount, setShowManageAccount] = useState(false);
 
     // Helper function to check if user is in student mode
     const isStudentMode = () => {
@@ -68,29 +64,26 @@ const Profile = ({ isMobileSignup = false }) => {
 
     // Helper function to check if user can redeem student access
     const canRedeemStudentAccess = () => {
-        // If user has a graduation year set, check if it has passed
         if (userData?.student_grad_year) {
             const gradYear = userData.student_grad_year;
             const cutoffDate = new Date(Date.UTC(gradYear, 7, 31, 23, 59, 59, 999)); // Aug 31
             return new Date() < cutoffDate;
         }
-
-        // If no graduation year set, can redeem
         return true;
+    };
+
+    const getGracePeriodDays = () => {
+        if (userData?.grace_period_end && subscriptionStatus === 'past_due') {
+            const daysLeft = Math.ceil((new Date(userData.grace_period_end) - new Date()) / (1000 * 60 * 60 * 24));
+            return daysLeft > 0 ? daysLeft : 0;
+        }
+        return null;
     };
 
     const handleStudentRedeemSuccess = () => {
         setShowStudentRedeem(false);
-        // Refresh user data to show updated subscription
         window.location.reload();
     };
-
-    useEffect(() => {
-        if (user) {
-            // console.log('Auth0 user full object:', JSON.stringify(user, null, 2));
-            // console.log('Auth0 picture URL:', user.picture);
-        }
-    }, [user]);
 
     const checkSubscription = useCallback(async () => {
         if (!user?.sub) return;
@@ -103,7 +96,6 @@ const Profile = ({ isMobileSignup = false }) => {
                     subscription_status,
                     subscription_end_date,
                     stripe_customer_id,
-                    has_used_trial,
                     subscription_interval,
                     cancel_at_period_end,
                     dvm_name,
@@ -138,44 +130,25 @@ const Profile = ({ isMobileSignup = false }) => {
         }
     }, [isAuthenticated, user, checkSubscription]);
 
+    // Deep links from elsewhere in the app
     useEffect(() => {
         if (location.state?.openCheckout) {
-            setShowCheckout(true);
+            setActiveSection('billing');
+            setShowCheckout(true); // mobile path
+            navigate(location.pathname, { replace: true });
+        } else if (location.state?.scrollToUsage) {
+            setActiveSection('usage');
             navigate(location.pathname, { replace: true });
         }
     }, [location, navigate]);
-
-    useEffect(() => {
-        if (user) {
-            // console.log('Full user object:', user);
-            // console.log('Picture URL:', user?.picture);
-        }
-    }, [user]);
-
-    // Show loading state only when auth0 is loading or subscription is loading
-    if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-xl text-gray-600 font-medium">Loading ...</div>
-            </div>
-        );
-    }
-
-    const handleBillingClick = () => {
-        setShowCheckout(true);
-    };
 
     const handleBillingPortal = async () => {
         try {
             const response = await fetch(`${API_URL}/create-customer-portal`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: user.sub
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.sub }),
             });
 
             const data = await response.json();
@@ -184,7 +157,6 @@ const Profile = ({ isMobileSignup = false }) => {
                 throw new Error(data.error || 'Failed to access billing portal');
             }
 
-            // Redirect to Stripe Customer Portal
             window.location.href = data.url;
         } catch (error) {
             console.error('Billing portal error:', error);
@@ -194,459 +166,432 @@ const Profile = ({ isMobileSignup = false }) => {
 
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+            year: 'numeric', month: 'long', day: 'numeric'
         });
     };
 
-    const getSubscriptionDisplay = () => {
-        if (isSubscriptionLoading) {
-            return <span>Loading...</span>;
-        }
+    const planLabel = () => {
+        if (isStudentMode()) return 'Student';
+        if (subscriptionStatus === 'active' && userData?.subscription_interval === 'yearly') return 'Yearly';
+        if (subscriptionStatus === 'active' && userData?.subscription_interval === 'monthly') return 'Monthly';
+        return 'Free';
+    };
 
-        if (isStudentMode()) {
-            return <span className="text-purple-600 font-medium">🎓 Student Access</span>;
-        }
-
-        if (subscriptionStatus !== 'active') {
-            return <span>None</span>;
-        }
-
-        // Handle both legacy 'trial' and new 'stripe_trial'
-        const isAnyTrial = ['trial', 'stripe_trial'].includes(userData?.subscription_interval);
-        const planType = isAnyTrial ? 'Trial' : 'Full Access';
-        
-        // Format interval display
-        let planInterval = '';
-        if (userData?.subscription_interval === 'stripe_trial') {
-            planInterval = ' (14-Day Trial)';
-        } else if (userData?.subscription_interval === 'trial') {
-            planInterval = ' (Trial)';
-        } else if (userData?.subscription_interval) {
-            planInterval = ` (${userData.subscription_interval.charAt(0).toUpperCase() + userData.subscription_interval.slice(1)})`;
-        }
-
+    const planBadge = () => {
+        const label = planLabel();
+        const styles = {
+            Student: 'bg-purple-50 text-purple-700 border-purple-200',
+            Yearly: 'bg-amber-50 text-amber-700 border-amber-200',
+            Monthly: 'bg-blue-50 text-[#3468bd] border-blue-200',
+            Free: 'bg-gray-100 text-gray-600 border-gray-200'
+        };
         return (
-            <>
-                {planType}
-                <span className="text-primary-600 text-sm ml-1 font-medium">{planInterval}</span>
-            </>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${styles[label]}`}>
+                {label === 'Student' && <FaGraduationCap className="text-[10px]" />}
+                {label} plan
+            </span>
         );
     };
 
-    const getSubscriptionStatus = () => {
-        if (isSubscriptionLoading) {
-            return <span>Loading...</span>;
-        }
+    // Show loading state only when auth0 is loading or subscription is loading
+    if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
+        return (
+            <div className="min-h-screen bg-[#f7f8fb] flex items-center justify-center">
+                <div className="text-base text-gray-500 font-medium">Loading ...</div>
+            </div>
+        );
+    }
 
-        if (subscriptionStatus !== 'active') {
-            return <span className="text-red-600 font-medium">Inactive - Subscribe to access all features</span>;
-        }
+    if (!isAuthenticated) return null;
 
-        // Check if on any type of trial
-        const isAnyTrial = ['trial', 'stripe_trial'].includes(userData?.subscription_interval);
+    const manageSubscriptionUser = {
+        ...user,
+        ...userData,
+        cancel_at_period_end: cancelAtPeriodEnd
+    };
+
+    const pastDueBanner = subscriptionStatus === 'past_due' && (
+        <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 flex items-start gap-3"
+        >
+            <span className="text-xl">⚠️</span>
+            <div className="flex-1">
+                <h3 className="text-red-800 text-sm font-bold mb-0.5">Subscription Past Due</h3>
+                <p className="text-red-700 text-[13px]">
+                    Your payment is past due.
+                    {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && ` Your subscription will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless payment is resolved.`}
+                    {getGracePeriodDays() === 0 && ' Your grace period has expired. Please update your payment method immediately.'}
+                    {getGracePeriodDays() === null && ' Please update your payment method in Billing Settings.'}
+                </p>
+            </div>
+            {userData?.stripe_customer_id && (
+                <button
+                    className="bg-red-600 text-white px-4 py-2 rounded-xl font-semibold text-xs hover:bg-red-700 transition-all whitespace-nowrap"
+                    onClick={handleBillingPortal}
+                >
+                    Fix Payment
+                </button>
+            )}
+        </motion.div>
+    );
+
+    // ================ MOBILE (PWA) LAYOUT ================
+    if (isMobileSignup) {
+        if (showCheckout) {
+            return (
+                <div className="min-h-screen bg-[#f7f8fb] px-4 py-6">
+                    <ManageSubscription
+                        user={manageSubscriptionUser}
+                        subscriptionStatus={subscriptionStatus}
+                        subscriptionInterval={userData?.subscription_interval}
+                        onBack={() => setShowCheckout(false)}
+                        onSubscriptionChange={checkSubscription}
+                    />
+                </div>
+            );
+        }
+        if (showManageAccount) {
+            return (
+                <div className="min-h-screen bg-[#f7f8fb] px-4 py-6">
+                    <ManageAccount user={user} onBack={() => setShowManageAccount(false)} />
+                </div>
+            );
+        }
 
         return (
-            <>
-                <span className="text-green-600 font-medium">Active</span>
-                {subscriptionEndDate && (
-                    <span className="text-gray-500 text-sm ml-2">
-                        {' '}(Expires: {formatDate(subscriptionEndDate)}
-                        {userData?.subscription_interval === 'stripe_trial' ? (
-                            userData.cancel_at_period_end ?
-                                ' - Canceling' :
-                                ' - Auto-renews to monthly'
-                        ) : !isAnyTrial && userData?.stripe_customer_id ? (
-                            userData.cancel_at_period_end ?
-                                ' - Will not renew' :
-                                ' - Will renew automatically'
-                        ) : null}
-                        )
-                    </span>
-                )}
-            </>
+            <div className="min-h-screen bg-[#f7f8fb]">
+                <div className="px-4 py-6 space-y-4">
+                    {/* Profile Header Card */}
+                    <div className="bg-gradient-to-br from-[#3468bd] to-[#2a5298] rounded-2xl p-5 text-white shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                                <h2 className="text-xl font-bold truncate">
+                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name || 'Welcome'}
+                                </h2>
+                                <p className="text-white/80 text-sm truncate">{user?.email}</p>
+                                <div className="mt-1.5">{planBadge()}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {pastDueBanner}
+
+                    {/* Usage */}
+                    <div className="bg-white rounded-2xl border border-gray-200 p-5">
+                        <h3 className="text-sm font-bold text-gray-900 mb-4">Monthly Usage</h3>
+                        <UsageMeter usage={usage} onUpgrade={() => setShowCheckout(true)} />
+                    </div>
+
+                    {/* Subscription */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100">
+                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                <FaCircle className={`text-[8px] ${isSubscribed ? 'text-emerald-500' : 'text-gray-300'}`} />
+                                Your Plan
+                            </h3>
+                        </div>
+                        <div className="p-4 space-y-2.5">
+                            <div className="flex justify-between items-center">
+                                <span className="text-gray-500 text-[13px]">Plan</span>
+                                <span className="text-gray-800 font-semibold text-[13px]">{planLabel()}</span>
+                            </div>
+                            {subscriptionEndDate && subscriptionStatus === 'active' && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-gray-500 text-[13px]">{cancelAtPeriodEnd ? 'Ends' : 'Renews'}</span>
+                                    <span className="text-gray-800 font-semibold text-[13px]">{formatDate(subscriptionEndDate)}</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 pt-0">
+                            <button
+                                className="w-full bg-[#3468bd] text-white py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform"
+                                onClick={() => setShowCheckout(true)}
+                            >
+                                {planLabel() === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Account actions */}
+                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+                        <button
+                            className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                            onClick={() => setShowManageAccount(true)}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                                    <FaShieldAlt className="text-[#3468bd] text-sm" />
+                                </div>
+                                <div>
+                                    <p className="text-gray-800 font-medium text-sm">Account Settings</p>
+                                    <p className="text-gray-400 text-xs">Security and account management</p>
+                                </div>
+                            </div>
+                            <span className="text-gray-300">›</span>
+                        </button>
+                        <button
+                            className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                            onClick={() => {
+                                const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+                                    window.navigator.standalone === true;
+                                clearAppLocalStorage();
+                                localStorage.removeItem('auth0.is.authenticated');
+                                logout({
+                                    logoutParams: {
+                                        returnTo: isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet'
+                                    }
+                                });
+                            }}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                                    <FaUser className="text-red-500 text-sm" />
+                                </div>
+                                <div>
+                                    <p className="text-red-600 font-medium text-sm">Log Out</p>
+                                    <p className="text-gray-400 text-xs">Sign out of your account</p>
+                                </div>
+                            </div>
+                            <span className="text-gray-300">›</span>
+                        </button>
+                    </div>
+
+                    <p className="text-center text-gray-400 text-xs pt-2">Petwise.vet • Version 1.0</p>
+                </div>
+            </div>
         );
+    }
+
+    // ================ DESKTOP SETTINGS LAYOUT ================
+    const NAV_ITEMS = [
+        { id: 'profile', label: 'Profile', icon: FaUser },
+        { id: 'usage', label: 'Usage', icon: FaChartPie },
+        { id: 'billing', label: 'Plan & Billing', icon: FaCreditCard },
+        { id: 'account', label: 'Account', icon: FaShieldAlt },
+        { id: 'mobile', label: 'Mobile App', icon: FaMobile },
+    ];
+
+    const SECTION_TITLES = {
+        profile: { title: 'Profile', subtitle: 'Your details as they appear on reports' },
+        usage: { title: 'Usage', subtitle: 'Your monthly allowance at a glance' },
+        billing: { title: 'Plan & Billing', subtitle: 'Manage your plan, payment, and invoices' },
+        account: { title: 'Account', subtitle: 'Security and account management' },
+        mobile: { title: 'Mobile App', subtitle: 'Take PetWise into the exam room' },
     };
 
     return (
-        isAuthenticated && (
-            <div className={`min-h-screen ${isMobileSignup ? 'bg-gray-50' : 'bg-white'}`}>
-                <div className={`${isMobileSignup ? 'w-full' : 'max-w-6xl mx-auto px-6 py-6'}`}>
-                    {/* Removed mobile banner and subscription header for cleaner mobile experience */}
+        <div className="min-h-screen bg-[#f7f8fb]">
+            {/* Student redeem modal (desktop) */}
+            {showStudentRedeem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                    <StudentRedeem
+                        onSuccess={handleStudentRedeemSuccess}
+                        onCancel={() => setShowStudentRedeem(false)}
+                        userData={userData}
+                    />
+                </div>
+            )}
 
-                    {showCheckout ? (
-                        <ManageSubscription
-                            user={{
-                                ...user,
-                                ...userData,
-                                cancel_at_period_end: cancelAtPeriodEnd
-                            }}
-                            subscriptionStatus={subscriptionStatus}
-                            subscriptionInterval={userData?.subscription_interval}
-                            onBack={() => setShowCheckout(false)}
-                            onSubscriptionChange={checkSubscription}
-                        />
-                    ) : showManageAccount ? (
-                        <ManageAccount
-                            user={user}
-                            onBack={() => setShowManageAccount(false)}
-                        />
-                    ) : showStudentRedeem ? (
-                        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                            <StudentRedeem
-                                onSuccess={handleStudentRedeemSuccess}
-                                onCancel={() => setShowStudentRedeem(false)}
-                                userData={userData}
-                            />
+            <div className="max-w-6xl mx-auto px-6 py-10">
+                {/* Page header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="mb-8"
+                >
+                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Settings</h1>
+                    <p className="text-sm text-gray-500 mt-1">Manage your profile, plan, and account</p>
+                </motion.div>
+
+                <div className="grid grid-cols-1 md:grid-cols-[230px,1fr] gap-8 items-start">
+                    {/* Left nav */}
+                    <motion.nav
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="md:sticky md:top-8"
+                    >
+                        {/* User chip */}
+                        <div className="flex items-center gap-3 px-3 py-3 mb-4 rounded-2xl bg-white border border-gray-200">
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-bold text-gray-900 truncate">
+                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name}
+                                </p>
+                                <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
+                            </div>
                         </div>
-                    ) : (
-                        <>
-                            {!isSubscriptionLoading &&
-                                !isStudentMode() &&
-                                (!subscriptionStatus || subscriptionStatus === 'inactive' || subscriptionStatus === 'canceled') && (
-                                    <div className="py-12 bg-white">
-                                        <div className="max-w-lg mx-auto px-6">
-                                            <div className="bg-gradient-to-br from-[#3468bd] to-[#2a5298] rounded-2xl p-8 text-center text-white shadow-xl">
-                                                <h2 className="text-2xl font-bold mb-3">Get Started with PetWise</h2>
-                                                <p className="text-white/80 mb-6">
-                                                    {isMobileSignup
-                                                        ? "Start with a 14-day free trial. Full unlimited access."
-                                                        : "Choose the perfect plan for your veterinary practice."
-                                                    }
+
+                        <ul className="space-y-0.5">
+                            {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+                                const isActive = activeSection === id;
+                                return (
+                                    <li key={id} className="relative">
+                                        <button
+                                            onClick={() => setActiveSection(id)}
+                                            className={`relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
+                                                isActive ? 'text-[#3468bd]' : 'text-gray-500 hover:text-gray-800'
+                                            }`}
+                                        >
+                                            {isActive && (
+                                                <motion.span
+                                                    layoutId="settings-active-pill"
+                                                    className="absolute inset-0 rounded-xl bg-blue-50 border border-blue-100"
+                                                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                                                />
+                                            )}
+                                            <Icon className={`relative text-xs ${isActive ? 'text-[#3468bd]' : 'text-gray-400'}`} />
+                                            <span className="relative">{label}</span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </motion.nav>
+
+                    {/* Content panel */}
+                    <div className="min-w-0">
+                        {pastDueBanner}
+
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeSection}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -6 }}
+                                transition={{ duration: 0.22, ease: 'easeOut' }}
+                            >
+                                <div className="mb-5">
+                                    <h2 className="text-lg font-bold text-gray-900">{SECTION_TITLES[activeSection].title}</h2>
+                                    <p className="text-[13px] text-gray-500">{SECTION_TITLES[activeSection].subtitle}</p>
+                                </div>
+
+                                {/* ===== Profile ===== */}
+                                {activeSection === 'profile' && (
+                                    <div className="space-y-5">
+                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 flex items-center gap-5">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="text-lg font-bold text-gray-900 truncate">
+                                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name}
+                                                </h3>
+                                                <p className="text-[13px] text-gray-500 flex items-center gap-1.5 truncate">
+                                                    <FaEnvelope className="text-[10px] text-gray-400" />
+                                                    {user?.email}
                                                 </p>
-                                                <div className="flex flex-col gap-3">
-                                                    <button
-                                                        onClick={() => setShowCheckout(true)}
-                                                        className="w-full py-3 px-6 bg-white text-[#3468bd] font-semibold rounded-xl hover:bg-gray-100 transition-all shadow-lg"
-                                                    >
-                                                        View Plans & Start Free Trial
-                                                    </button>
+                                            </div>
+                                            {planBadge()}
+                                        </div>
+
+                                        <SectionCard>
+                                            <InfoRow label="DVM name">
+                                                {isStudentMode() ? 'Student Mode' : (userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set')}
+                                            </InfoRow>
+                                            <InfoRow label="Nickname">{user?.nickname || 'Not set'}</InfoRow>
+                                            <InfoRow label="Email">{user?.email}</InfoRow>
+                                            <InfoRow label="Last updated">
+                                                {user?.updated_at ? new Date(user.updated_at).toLocaleDateString() : '—'}
+                                            </InfoRow>
+                                            {isStudentMode() && (
+                                                <>
+                                                    <InfoRow label="Student email">{userData?.student_school_email || 'Not provided'}</InfoRow>
+                                                    <InfoRow label="Graduation year">{userData?.student_grad_year || 'Not set'}</InfoRow>
+                                                </>
+                                            )}
+                                        </SectionCard>
+                                    </div>
+                                )}
+
+                                {/* ===== Usage ===== */}
+                                {activeSection === 'usage' && (
+                                    <div className="space-y-5">
+                                        <SectionCard>
+                                            <UsageMeter usage={usage} onUpgrade={() => setActiveSection('billing')} />
+                                        </SectionCard>
+                                        {!usage.isUnlimited && (
+                                            <div className="rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#2a5298] p-6 text-white flex flex-wrap items-center justify-between gap-4">
+                                                <div>
+                                                    <h3 className="text-base font-bold">Go unlimited</h3>
+                                                    <p className="text-white/75 text-[13px] mt-0.5">
+                                                        Unlimited SOAP notes and PetQuery, every month.
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => setActiveSection('billing')}
+                                                    className="px-5 py-2.5 bg-white text-[#3468bd] font-bold rounded-xl text-sm hover:bg-blue-50 transition-colors"
+                                                >
+                                                    View plans
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* ===== Billing ===== */}
+                                {activeSection === 'billing' && (
+                                    <div className="space-y-5">
+                                        {subscriptionStatus === 'active' && subscriptionEndDate && (
+                                            <SectionCard>
+                                                <InfoRow label="Status">
+                                                    <span className="text-emerald-600">● Active</span>
+                                                </InfoRow>
+                                                <InfoRow label={cancelAtPeriodEnd ? 'Access ends' : 'Renews'}>
+                                                    {formatDate(subscriptionEndDate)}
+                                                    {cancelAtPeriodEnd && <span className="text-amber-600 ml-1.5">(will not renew)</span>}
+                                                </InfoRow>
+                                            </SectionCard>
+                                        )}
+                                        <ManageSubscription
+                                            user={manageSubscriptionUser}
+                                            subscriptionStatus={subscriptionStatus}
+                                            subscriptionInterval={userData?.subscription_interval}
+                                            onSubscriptionChange={checkSubscription}
+                                        />
+                                    </div>
+                                )}
+
+                                {/* ===== Account ===== */}
+                                {activeSection === 'account' && (
+                                    <ManageAccount user={user} />
+                                )}
+
+                                {/* ===== Mobile App ===== */}
+                                {activeSection === 'mobile' && (
+                                    <SectionCard>
+                                        <div className="flex flex-col sm:flex-row items-center gap-8">
+                                            <img
+                                                src="/PW QR CODE.png"
+                                                alt="PetWise Mobile App QR Code"
+                                                className="w-52 h-52 rounded-2xl border border-gray-200 shadow-sm"
+                                            />
+                                            <div className="text-center sm:text-left">
+                                                <h3 className="text-base font-bold text-gray-900 mb-2">PetWise on your phone</h3>
+                                                <p className="text-[13px] text-gray-500 leading-relaxed mb-4 max-w-sm">
+                                                    Scan the QR code with your phone's camera, or go to{' '}
+                                                    <span className="font-semibold text-[#3468bd]">petwise.vet</span>{' '}
+                                                    on your phone and log in. Dictate in the exam room and your notes
+                                                    appear here on desktop.
+                                                </p>
+                                                {canRedeemStudentAccess() && !isStudentMode() && (
                                                     <button
                                                         onClick={() => setShowStudentRedeem(true)}
-                                                        className="w-full py-3 px-6 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all flex items-center justify-center gap-2"
+                                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-700 font-semibold rounded-xl text-sm hover:bg-purple-100 transition-all border border-purple-100"
                                                     >
                                                         <FaGraduationCap />
                                                         Student Access
                                                     </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                            {!isMobileSignup && (
-                                <>
-                                    {/* Past Due Warning Banner */}
-                                    {subscriptionStatus === 'past_due' && (
-                                        <div className="bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-2xl p-5 mb-6 shadow-lg">
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-3xl flex-shrink-0">⚠️</div>
-                                                <div className="flex-1">
-                                                    <h3 className="text-red-800 text-lg font-bold mb-2">Subscription Past Due</h3>
-                                                    <p className="text-red-700 font-medium leading-relaxed">
-                                                        Your subscription payment is past due.
-                                                        {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && (
-                                                            ` Your subscription will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless payment is resolved.`
-                                                        )}
-                                                        {getGracePeriodDays() === 0 && (
-                                                            ` Your grace period has expired. Please update your payment method immediately.`
-                                                        )}
-                                                        {getGracePeriodDays() === null && (
-                                                            ` To continue with the service, please update your payment method or pay your outstanding invoice using Billing Management.`
-                                                        )}
-                                                    </p>
-                                                </div>
-                                                {userData?.stripe_customer_id && (
-                                                    <button
-                                                        className="bg-gradient-to-r from-red-600 to-red-700 text-white px-5 py-3 rounded-xl font-semibold hover:from-red-700 hover:to-red-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg whitespace-nowrap"
-                                                        onClick={handleBillingPortal}
-                                                    >
-                                                        Go to Billing Management
-                                                    </button>
                                                 )}
                                             </div>
                                         </div>
-                                    )}
-
-                                    <div className="text-center mb-6">
-                                        <div className="inline-block mb-4">
-                                            <img
-                                                src={getOptimizedImageUrl(user?.picture)}
-                                                alt={userData?.dvm_name || user?.name || 'User'}
-                                                className="w-20 h-20 rounded-full object-cover border-3 border-primary-100 shadow-lg hover:scale-105 transition-all duration-300 bg-gray-100"
-                                                crossOrigin="anonymous"
-                                                referrerPolicy="no-referrer"
-                                                onError={(e) => {
-                                                    console.log('Profile image error, falling back to SVG');
-                                                    e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/%3E%3C/svg%3E";
-                                                }}
-                                            />
-                                        </div>
-                                        <h2 className="text-2xl font-bold text-gray-800 mb-1">{userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user.name}</h2>
-                                        <p className="text-gray-600 font-medium">{user.email}</p>
-                                    </div>
-                                    <div className="flex justify-center gap-4 mb-6">
-                                        {!isStudentMode() && (
-                                            <button
-                                                className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-                                                onClick={handleBillingClick}
-                                            >
-                                                Manage Subscription
-                                            </button>
-                                        )}
-                                        {isStudentMode() && (
-                                            <button
-                                                className="px-7 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-                                                onClick={handleBillingClick}
-                                            >
-                                                Upgrade to Paid Plan
-                                            </button>
-                                        )}
-                                        {canRedeemStudentAccess() && (
-                                            <button
-                                                className="px-7 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-                                                onClick={() => setShowStudentRedeem(true)}
-                                            >
-                                                🎓 Student Access
-                                            </button>
-                                        )}
-                                        <button
-                                            className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg"
-                                            onClick={() => setShowManageAccount(true)}
-                                        >
-                                            Manage Account
-                                        </button>
-                                        <button
-                                            className="px-7 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:-translate-y-0.5 shadow-lg flex items-center gap-2"
-                                            onClick={() => setShowQRModal(true)}
-                                        >
-                                            <FaMobile /> Mobile App
-                                        </button>
-                                    </div>
-                                    <div className="bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm">
-                                        <h3 className="text-primary-600 text-xl font-semibold border-b-2 border-primary-100 pb-2 mb-4">Profile Information</h3>
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                <span className="font-semibold text-gray-700">DVM Name:</span>
-                                                <span className="text-gray-800 font-medium">
-                                                    {isStudentMode() ? 'Student Mode' : (userData?.dvm_name ? `Dr. ${userData.dvm_name}` : 'Not set')}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                <span className="font-semibold text-gray-700">Nickname:</span>
-                                                <span className="text-gray-800 font-medium">{user.nickname || 'Not set'}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                <span className="font-semibold text-gray-700">Last Updated:</span>
-                                                <span className="text-gray-800 font-medium">{new Date(user.updated_at).toLocaleDateString()}</span>
-                                            </div>
-                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                <span className="font-semibold text-gray-700">Subscription Status:</span>
-                                                <span className="text-gray-800 font-medium">
-                                                    {getSubscriptionStatus()}
-                                                </span>
-                                            </div>
-                                            <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl border border-gray-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                <span className="font-semibold text-gray-700">Subscription Type:</span>
-                                                <span className="text-gray-800 font-medium">
-                                                    {getSubscriptionDisplay()}
-                                                </span>
-                                            </div>
-                                            {isStudentMode() && (
-                                                <>
-                                                    <div className="flex justify-between items-center p-4 bg-purple-50 rounded-xl border border-purple-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                        <span className="font-semibold text-purple-700">Student Email:</span>
-                                                        <span className="text-purple-800 font-medium">
-                                                            {userData?.student_school_email || 'Not provided'}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between items-center p-4 bg-purple-50 rounded-xl border border-purple-200 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200">
-                                                        <span className="font-semibold text-purple-700">Graduation Year:</span>
-                                                        <span className="text-purple-800 font-medium">
-                                                            {userData?.student_grad_year || 'Not set'}
-                                                        </span>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Mobile Profile Page - Modern Design */}
-                            {isMobileSignup && (
-                                <div className="px-4 py-6 space-y-4">
-                                    {/* Profile Header Card */}
-                                    <div className="bg-gradient-to-br from-[#3468bd] to-[#2a5298] rounded-2xl p-5 text-white shadow-lg">
-                                        <div className="flex items-center gap-4">
-                                            <img
-                                                src={getOptimizedImageUrl(user?.picture)}
-                                                alt="Profile"
-                                                className="w-16 h-16 rounded-full border-3 border-white/30 shadow-md object-cover"
-                                            />
-                                            <div className="flex-1 min-w-0">
-                                                <h2 className="text-xl font-bold truncate">
-                                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name || 'Welcome'}
-                                                </h2>
-                                                <p className="text-white/80 text-sm truncate">{user?.email}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Past Due Warning */}
-                                    {subscriptionStatus === 'past_due' && (
-                                        <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
-                                            <div className="flex items-start gap-3">
-                                                <span className="text-xl">⚠️</span>
-                                                <div className="flex-1">
-                                                    <h3 className="text-red-800 font-bold mb-1">Payment Past Due</h3>
-                                                    <p className="text-red-700 text-sm mb-3">
-                                                        {getGracePeriodDays() !== null && getGracePeriodDays() > 0
-                                                            ? `Service will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'}.`
-                                                            : 'Please update your payment method.'}
-                                                    </p>
-                                                    {userData?.stripe_customer_id && (
-                                                        <button
-                                                            className="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm w-full"
-                                                            onClick={handleBillingPortal}
-                                                        >
-                                                            Fix Payment Issue
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Subscription Card */}
-                                    {isSubscribed && (
-                                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                                            <div className="p-4 border-b border-gray-100">
-                                                <h3 className="text-gray-800 font-semibold flex items-center gap-2">
-                                                    <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                                                    Your Subscription
-                                                </h3>
-                                            </div>
-                                            <div className="p-4 space-y-3">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-500 text-sm">Status</span>
-                                                    <span className="text-gray-800 font-medium text-sm">{getSubscriptionStatus()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center">
-                                                    <span className="text-gray-500 text-sm">Plan</span>
-                                                    <span className="text-gray-800 font-medium text-sm">{getSubscriptionDisplay()}</span>
-                                                </div>
-                                            </div>
-                                            <div className="p-4 bg-gray-50">
-                                                <button
-                                                    className="w-full bg-[#3468bd] text-white py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform"
-                                                    onClick={handleBillingClick}
-                                                >
-                                                    Manage Subscription
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Quick Actions */}
-                                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                                        <div className="p-4 border-b border-gray-100">
-                                            <h3 className="text-gray-800 font-semibold">Account</h3>
-                                        </div>
-                                        <div className="divide-y divide-gray-100">
-                                            <button
-                                                className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
-                                                onClick={() => setShowManageAccount(true)}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
-                                                        <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        </svg>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-gray-800 font-medium">Account Settings</p>
-                                                        <p className="text-gray-500 text-xs">Manage your account details</p>
-                                                    </div>
-                                                </div>
-                                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </button>
-                                            <button
-                                                className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
-                                                onClick={() => {
-                                                    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                                                        window.navigator.standalone === true;
-                                                    clearAppLocalStorage();
-                                                    localStorage.removeItem('auth0.is.authenticated');
-                                                    logout({
-                                                        logoutParams: {
-                                                            returnTo: isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet'
-                                                        }
-                                                    });
-                                                }}
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                                                        <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                                        </svg>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-red-600 font-medium">Log Out</p>
-                                                        <p className="text-gray-500 text-xs">Sign out of your account</p>
-                                                    </div>
-                                                </div>
-                                                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* App Version */}
-                                    <p className="text-center text-gray-400 text-xs pt-4">
-                                        Petwise.vet • Version 1.0
-                                    </p>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                {/* QR Code Modal */}
-                {showQRModal && (
-                    <div
-                        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-                        onClick={() => setShowQRModal(false)}
-                    >
-                        <div
-                            className="bg-gradient-to-b from-primary-600 to-primary-700 rounded-2xl shadow-2xl p-8 max-w-md w-full"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-bold text-white">Mobile App</h2>
-                                <button
-                                    onClick={() => setShowQRModal(false)}
-                                    className="text-white hover:text-gray-200 transition-colors"
-                                >
-                                    <FaTimes className="text-xl" />
-                                </button>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-white mb-6">Scan this QR code or go to <span className="font-semibold text-accent-300">petwise.vet</span> on your phone and click log in</p>
-                                <div className="flex justify-center mb-4">
-                                    <img src="/PW QR CODE.png" alt="QuickSOAP Mobile App QR Code" className="w-64 h-64 border-4 border-white rounded-lg shadow-lg" />
-                                </div>
-                            </div>
-                        </div>
+                                    </SectionCard>
+                                )}
+                            </motion.div>
+                        </AnimatePresence>
                     </div>
-                )}
+                </div>
             </div>
-        )
+        </div>
     );
 };
 

@@ -1,8 +1,8 @@
 import React from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 
-// Active flow only — removed steps (quiz1, quiz2, affirmation, booking, terms) are not shown in progress
-const STEP_ORDER = ['congrats', 'benefits', 'testimonial', 'trial', 'welcome'];
+// Active flow only — onboarding is now a single congrats screen (name + phone + terms)
+const STEP_ORDER = ['congrats'];
 
 const OnboardingLayout = ({ currentStep, children, showProgress = true, wide = false, onBack }) => {
     const stepIndex = STEP_ORDER.indexOf(currentStep);

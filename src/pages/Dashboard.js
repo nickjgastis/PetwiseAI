@@ -12,15 +12,15 @@ import QuickSOAP from '../pages/QuickSOAP';
 import Help from '../components/Help';
 import Welcome from '../components/Welcome';
 import Templates from '../components/Templates';
-import PlanSelection from '../components/PlanSelection';
-import WelcomeToPetwise from '../components/WelcomeToPetwise';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import InstallPrompt from '../components/InstallPrompt';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
-import TrialEnded from '../components/TrialEnded';
+import AppTour from '../components/onboarding/AppTour';
+import UsageRing from '../components/UsageRing';
+import { useUsage } from '../hooks/useUsage';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -76,7 +76,6 @@ const slideDownStyle = `
 const Dashboard = () => {
     // ================ STATE AND HOOKS ================
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-    const [isSubscribed, setIsSubscribed] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [subscriptionStatus, setSubscriptionStatus] = useState(null);
     const [userData, setUserData] = useState(null);
@@ -89,8 +88,23 @@ const Dashboard = () => {
     const [mobileAppVisible, setMobileAppVisible] = useState(false); // For PWA fade-in animation
     const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default true for existing users
-    const [showWelcomePage, setShowWelcomePage] = useState(false); // Show welcome after plan selection
     const [onboardingData, setOnboardingData] = useState(null); // New onboarding flow data (null = no row = skip)
+    const [showAppTour, setShowAppTour] = useState(false); // First-run tutorial for brand-new users
+    const [showAccountMenu, setShowAccountMenu] = useState(false); // Sidebar footer account popup
+    const accountMenuRef = useRef(null);
+    const usage = useUsage(); // Free-tier usage (drives the sidebar ring)
+
+    // Close the sidebar account popup on any outside click
+    useEffect(() => {
+        if (!showAccountMenu) return;
+        const handler = (e) => {
+            if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
+                setShowAccountMenu(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showAccountMenu]);
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
     const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
@@ -109,18 +123,12 @@ const Dashboard = () => {
             new Date(userData.subscription_end_date) > new Date();
     };
 
-    // Helper function to check if user has any active plan (trial, subscription, or student)
-    const hasActivePlan = () => {
+    // Free tier gives everyone app access — this only decides whether to show
+    // upgrade UI / usage meters (paid or student = unlimited).
+    const hasPaidPlan = () => {
         if (isStudentMode()) return true;
-
-        // Check for active subscription
-        const hasActiveSubscription = ['active', 'past_due'].includes(userData?.subscription_status);
-
-        // Check for trial - both legacy 'trial' and new 'stripe_trial'
-        const hasTrial = userData?.subscription_status === 'active' &&
-            ['trial', 'stripe_trial'].includes(userData?.subscription_interval);
-
-        return hasActiveSubscription || hasTrial;
+        return ['active', 'past_due'].includes(userData?.subscription_status) &&
+            ['monthly', 'yearly'].includes(userData?.subscription_interval);
     };
 
     // ================ USER CHANGE DETECTION ================
@@ -698,7 +706,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour')
                 .eq('auth0_user_id', user.sub)
                 .single();
             let userData = data;
@@ -737,7 +745,7 @@ const Dashboard = () => {
                             // Fetch the existing user
                             const { data: existingUser, error: fetchError } = await supabase
                                 .from('users')
-                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at')
+                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour')
                                 .eq('auth0_user_id', user.sub)
                                 .single();
                             
@@ -817,17 +825,9 @@ const Dashboard = () => {
 
             setHasAcceptedTerms(userData.has_accepted_terms);
             setSubscriptionStatus(userData.subscription_status);
-
-            // Check if user has active subscription OR student access OR trial (legacy or Stripe)
-            const hasActiveSubscription = ['active', 'past_due'].includes(userData.subscription_status);
-            const hasTrial = userData.subscription_status === 'active' && 
-                ['trial', 'stripe_trial'].includes(userData.subscription_interval);
-            const isStudentMode = userData.plan_label === 'student' &&
-                userData.subscription_end_date &&
-                new Date(userData.subscription_end_date) > new Date();
-
-            setIsSubscribed(hasActiveSubscription || hasTrial || isStudentMode);
             setUserData(userData);
+            // First-run tutorial for brand-new users (backfilled true for existing users)
+            setShowAppTour(userData.has_seen_app_tour === false);
 
             // Check new onboarding flow table (find or create for new users)
             try {
@@ -869,11 +869,7 @@ const Dashboard = () => {
                     console.error('Error fetching onboarding:', onboardingError);
                     setOnboardingData(null);
                 } else if (onboarding && onboarding.status === 'in_progress') {
-                    // If user came back from Stripe with active subscription, advance trial step to welcome
-                    if (onboarding.current_step === 'trial' && (hasActiveSubscription || hasTrial || isStudentMode)) {
-                        onboarding.current_step = 'welcome';
-                        await supabase.from('onboarding').update({ current_step: 'welcome', updated_at: new Date().toISOString() }).eq('auth0_user_id', user.sub);
-                    }
+                    // (Trial step removed — OnboardingFlow bounces stale steps itself)
                     setOnboardingData(onboarding);
                 } else {
                     setOnboardingData(null); // Completed or no row — skip
@@ -937,20 +933,6 @@ const Dashboard = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [location.pathname, isAuthenticated, user]);
 
-    // Redirect mobile users from QuickSOAP to profile if they don't have an active plan
-    useEffect(() => {
-        if (isMobile && location.pathname === '/dashboard/quicksoap' && !isLoading && userData) {
-            // Wait a bit for subscription status to update after trial activation
-            const timer = setTimeout(() => {
-                if (!hasActivePlan()) {
-                    navigate('/dashboard/profile', { replace: true });
-                }
-            }, 1000); // Give time for subscription check to complete
-            return () => clearTimeout(timer);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isMobile, location.pathname, isLoading, userData]);
-
     const handleAcceptTerms = async ({ emailOptOut }) => {
         try {
             const { data, error } = await supabase
@@ -1009,48 +991,9 @@ const Dashboard = () => {
         }} />;
     }
 
-    // Check if user needs to complete onboarding (select plan + see welcome page)
-    if (!hasCompletedOnboarding) {
-        if (!subscriptionStatus || subscriptionStatus === 'inactive') {
-            return <PlanSelection 
-                user={{ ...user, sub: user.sub }} 
-                onTrialActivated={() => {
-                    setShowWelcomePage(true);
-                    setSubscriptionStatus('active');
-                    checkSubscription();
-                }}
-            />;
-        }
-        
-        return <WelcomeToPetwise 
-            user={user}
-            onComplete={() => {
-                setHasCompletedOnboarding(true);
-                setShowWelcomePage(false);
-            }}
-        />;
-    }
-
-    // If showWelcomePage is true (just activated trial), show welcome
-    if (showWelcomePage) {
-        return <WelcomeToPetwise 
-            user={user}
-            onComplete={() => {
-                setHasCompletedOnboarding(true);
-                setShowWelcomePage(false);
-            }}
-        />;
-    }
-
-    // ================ TRIAL ENDED GATE ================
-    // User finished onboarding, used their trial (legacy or stripe), and no longer has an active plan.
-    // Show a full-screen paywall reassuring them their data is safe.
-    const trialEnded = !isStudentMode()
-        && (userData?.has_used_trial === true || userData?.has_activated_stripe_trial === true)
-        && !['active', 'past_due'].includes(userData?.subscription_status);
-    if (trialEnded) {
-        return <TrialEnded user={{ ...user, ...userData }} onSubscribed={checkSubscription} />;
-    }
+    // Terms accepted + DVM name set ⇒ straight into the app on the free tier.
+    // (Old PlanSelection / WelcomeToPetwise / TrialEnded gates removed — access
+    // is no longer plan-gated; usage caps are enforced per-feature instead.)
 
     // PWA install gate — mobile browser users must install to home screen
     // For legacy users who somehow end up here on mobile browser
@@ -1071,13 +1014,9 @@ const Dashboard = () => {
             return null;
         }
 
-        // Check QuickSOAP route - only allow if user has active plan
+        // QuickSOAP route — available to all users (free tier included)
         const isQuickSOAPRoute = window.location.pathname.includes('/quicksoap');
         if (isQuickSOAPRoute) {
-            // Don't render if no active plan - useEffect will handle redirect
-            if (!hasActivePlan()) {
-                return null;
-            }
             // Render QuickSOAP with mobile header and bottom nav
             return (
                 <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
@@ -1130,13 +1069,9 @@ const Dashboard = () => {
             );
         }
 
-        // Check PetQuery route - only allow if user has active plan
+        // PetQuery route — available to all users (free tier included)
         const isPetQueryRoute = window.location.pathname.includes('/quick-query');
         if (isPetQueryRoute) {
-            // Don't render if no active plan - useEffect will handle redirect
-            if (!hasActivePlan()) {
-                return null;
-            }
             // Render PetQuery with mobile header and bottom nav
             return (
                 <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
@@ -1187,14 +1122,9 @@ const Dashboard = () => {
             );
         }
 
-        // Redirect based on subscription status if not on a specific route
+        // Default mobile route — everyone lands on QuickSOAP
         if (!window.location.pathname.includes('/profile') && !window.location.pathname.includes('/quicksoap') && !window.location.pathname.includes('/quick-query')) {
-            // Route to QuickSOAP if user has active plan, otherwise route to Profile
-            if (hasActivePlan()) {
-                navigate('/dashboard/quicksoap', { replace: true });
-            } else {
-                navigate('/dashboard/profile', { replace: true });
-            }
+            navigate('/dashboard/quicksoap', { replace: true });
             return null;
         }
 
@@ -1218,30 +1148,26 @@ const Dashboard = () => {
                     </div>
                     {/* Bottom Navigation Bar */}
                     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className={`flex items-center ${hasActivePlan() ? 'justify-around' : 'justify-center'} h-16`}>
-                            {hasActivePlan() && (
-                                <>
-                                    <Link
-                                        to="/dashboard/quicksoap"
-                                        className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
-                                    >
-                                        <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                        <span className="text-xs font-medium">QuickSOAP</span>
-                                    </Link>
-                                    {/* PetQuery hidden for now - keeping code
-                                    <Link
-                                        to="/dashboard/quick-query"
-                                        className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
-                                    >
-                                        <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                        <span className="text-xs font-medium">PetQuery</span>
-                                    </Link>
-                                    */}
-                                </>
-                            )}
+                        <div className="flex items-center justify-around h-16">
+                            <Link
+                                to="/dashboard/quicksoap"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">QuickSOAP</span>
+                            </Link>
+                            {/* PetQuery hidden for now - keeping code
+                            <Link
+                                to="/dashboard/quick-query"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
+                            >
+                                <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
+                                <span className="text-xs font-medium">PetQuery</span>
+                            </Link>
+                            */}
                             <Link
                                 to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center ${hasActivePlan() ? 'flex-1' : 'px-8'} h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
                             >
                                 <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
                                 <span className="text-xs font-medium">Profile</span>
@@ -1265,6 +1191,43 @@ const Dashboard = () => {
     const closeMobileMenu = () => {
         setIsMobileMenuOpen(false);
     };
+
+    // Sidebar footer account popup (Profile / Usage / Billing / Log out).
+    // positionClass positions it relative to whichever trigger opened it.
+    const renderAccountMenu = (positionClass) => (
+        <div className={`absolute ${positionClass} rounded-2xl bg-white shadow-[0_16px_48px_-8px_rgba(15,23,42,0.45)] border border-gray-100 overflow-hidden py-1.5 z-[70]`}>
+            {[
+                { Icon: FaUser, label: 'Profile', navState: undefined },
+                { Icon: FaChartPie, label: 'Usage', navState: { scrollToUsage: true } },
+                { Icon: FaCreditCard, label: 'Billing', navState: { openCheckout: true } },
+            ].map(({ Icon, label, navState }) => (
+                <button
+                    key={label}
+                    onClick={() => {
+                        setShowAccountMenu(false);
+                        closeMobileMenu();
+                        navigate('/dashboard/profile', navState ? { state: navState } : undefined);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-transparent border-none cursor-pointer text-left"
+                >
+                    <Icon className="text-[#3468bd] text-xs w-4 flex-shrink-0" />
+                    {label}
+                </button>
+            ))}
+            <div className="h-px bg-gray-100 my-1" />
+            <button
+                onClick={() => {
+                    setShowAccountMenu(false);
+                    closeMobileMenu();
+                    handleLogout();
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-red-600 hover:bg-red-50 transition-colors bg-transparent border-none cursor-pointer text-left"
+            >
+                <FaSignOutAlt className="text-xs w-4 flex-shrink-0" />
+                Log out
+            </button>
+        </div>
+    );
 
     // ================ RENDER COMPONENT ================
     return (
@@ -1338,6 +1301,14 @@ const Dashboard = () => {
                     }
                 }
             `}} />
+            {/* First-run tutorial — brand-new users only, shown once */}
+            {showAppTour && (
+                <AppTour
+                    dvmName={userData?.dvm_name}
+                    isMobile={isMobile}
+                    onComplete={() => setShowAppTour(false)}
+                />
+            )}
             <div className="flex h-screen bg-white">
                 {/* Mobile Header */}
                 {window.innerWidth <= 768 && (
@@ -1391,44 +1362,15 @@ const Dashboard = () => {
                             </span>
                         </Link>
                     </div>
-                    {/* User Info Section */}
-                    {isStudentMode() ? (
-                        <div className={`mx-3 my-3 p-3 rounded-xl ${isSidebarCollapsed ? 'hidden' : 'block'}`} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div className="flex items-center gap-2 mb-2.5">
-                                <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                                    <span className="text-white text-xs">🎓</span>
-                                </div>
-                                <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase">Student</div>
-                            </div>
-                            <div className="text-white text-sm font-semibold mb-0.5">{userData?.nickname || 'Student'}</div>
-                            <div className="text-white/50 text-[11px]">
-                                Access until {new Date(userData.subscription_end_date).toLocaleDateString()}
-                            </div>
-                        </div>
-                    ) : (
-                        userData?.dvm_name && (
-                            <div className={`mx-3 my-3 p-3 rounded-xl ${isSidebarCollapsed ? 'hidden' : 'block'}`} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                                <div className="flex items-center gap-3">
-                                    {hasActivePlan() && (
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(92,204,240,0.2)' }}>
-                                            <span className="text-white text-xs font-bold">Dr.</span>
-                                        </div>
-                                    )}
-                                    <div className="text-white text-sm font-medium">{userData.dvm_name}</div>
-                                </div>
-                            </div>
-                        )
-                    )}
-                    {/* Navigation Menu */}
+                    {/* Navigation Menu (user info now lives in the footer below) */}
                     <ul className="list-none p-0 m-0 flex-1 mt-1">
-                        {hasActivePlan() && (
-                            <>
-                                {/* QuickSOAP */}
-                                <li className="mx-3 my-0.5 relative">
+                        {/* QuickSOAP */}
+                        <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/quicksoap"
                                         onClick={closeMobileMenu}
                                         data-tooltip="QuickSOAP"
+                                        data-tour="quicksoap"
                                         className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'text-white' : 'hover:text-white'}`}
                                         style={location.pathname === '/dashboard/quicksoap' ? { background: 'rgba(255,255,255,0.12)' } : {}}
                                         onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
@@ -1450,10 +1392,6 @@ const Dashboard = () => {
                                         </span>
                                     </Link>
                                 </li>
-                            </>
-                        )}
-                        {isSubscribed && (
-                            <>
                                 <li className="mx-3 my-0.5 relative">
                                     <Link
                                         to="/dashboard/report-form"
@@ -1475,6 +1413,7 @@ const Dashboard = () => {
                                         to="/dashboard/quick-query"
                                         onClick={closeMobileMenu}
                                         data-tooltip="QuickMed Query"
+                                        data-tour="petquery"
                                         className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quick-query' ? 'text-white' : 'hover:text-white'}`}
                                         style={location.pathname === '/dashboard/quick-query' ? { background: 'rgba(255,255,255,0.12)' } : {}}
                                         onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
@@ -1526,24 +1465,6 @@ const Dashboard = () => {
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>My Templates</span>
                                     </Link>
                                 </li>
-                            </>
-                        )}
-                        <li className="mx-3 my-0.5 relative">
-                            <Link
-                                to="/dashboard/profile"
-                                onClick={closeMobileMenu}
-                                data-tooltip="Profile"
-                                className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/profile' ? 'text-white' : 'hover:text-white'}`}
-                                style={location.pathname === '/dashboard/profile' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                onMouseEnter={(e) => { if (location.pathname !== '/dashboard/profile') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                onMouseLeave={(e) => { if (location.pathname !== '/dashboard/profile') e.currentTarget.style.background = 'transparent'; }}
-                            >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/profile' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
-                                    <FaUser className="text-xs" />
-                                </div>
-                                <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Profile</span>
-                            </Link>
-                        </li>
                         {subscriptionStatus === 'past_due' && (
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
                                 <Link
@@ -1558,7 +1479,7 @@ const Dashboard = () => {
                                 </Link>
                             </li>
                         )}
-                        <li className="mx-3 my-0.5 relative">
+                        <li className="mx-3 my-0.5 relative" style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                             <Link
                                 to="/dashboard/help"
                                 onClick={closeMobileMenu}
@@ -1577,37 +1498,78 @@ const Dashboard = () => {
                                 )}
                             </Link>
                         </li>
-                        <li className="mx-3 my-0.5 relative" style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                            <button
-                                onClick={() => {
-                                    closeMobileMenu();
-                                    handleLogout();
-                                }}
-                                className={`flex items-center text-white/50 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap hover:text-red-300 group bg-transparent border-none cursor-pointer ${isSidebarCollapsed ? 'justify-center' : 'text-left'}`}
-                                data-tooltip="Logout"
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                            >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                                    <FaSignOutAlt className="text-xs" />
-                                </div>
-                                <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Logout</span>
-                            </button>
-                        </li>
                     </ul>
 
-                    {/* Toggle Button */}
-                    <div className="flex justify-center py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                        <button
-                            className="w-7 h-7 rounded-lg text-white/40 hover:text-white/70 text-[10px] flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
-                            style={{ background: 'rgba(255,255,255,0.06)' }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-                            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                            onClick={toggleSidebar}
-                            aria-label="Toggle Sidebar"
-                        >
-                            {isSidebarCollapsed ? '›' : '‹'}
-                        </button>
+                    {/* User Footer — name, plan, usage ring */}
+                    <div className="mt-auto" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        {isSidebarCollapsed ? (
+                            <div className="flex flex-col items-center gap-2 py-3 relative" ref={accountMenuRef}>
+                                <UsageRing usage={usage} size={36} onNavigate={closeMobileMenu} />
+                                <button
+                                    onClick={() => setShowAccountMenu((v) => !v)}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all cursor-pointer border-none"
+                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.08)' }}
+                                    data-tooltip="Account"
+                                    aria-label="Account menu"
+                                >
+                                    <span className="flex flex-col items-center justify-center leading-none">
+                                        <FaChevronUp className="text-[8px]" />
+                                        <FaChevronDown className="text-[8px] mt-[1px]" />
+                                    </span>
+                                </button>
+                                {showAccountMenu && renderAccountMenu('left-full bottom-0 ml-2 w-44')}
+                            </div>
+                        ) : (
+                            <div className="mx-3 my-3 relative" ref={accountMenuRef}>
+                                <div
+                                    className="p-3 rounded-xl flex items-center gap-3 transition-colors duration-200"
+                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)' }}
+                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
+                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                >
+                                    <button
+                                        onClick={() => setShowAccountMenu((v) => !v)}
+                                        className="flex items-center gap-2 flex-1 min-w-0 bg-transparent border-none cursor-pointer text-left p-0"
+                                        aria-label="Account menu"
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-white text-sm font-semibold truncate">
+                                                {isStudentMode()
+                                                    ? (userData?.nickname || 'Student')
+                                                    : (userData?.dvm_name ? `Dr. ${userData.dvm_name}` : (user?.email || ''))}
+                                            </div>
+                                            <div className="text-white/50 text-[11px] mt-0.5 truncate">
+                                                {isStudentMode()
+                                                    ? `🎓 Student · until ${new Date(userData.subscription_end_date).toLocaleDateString()}`
+                                                    : hasPaidPlan()
+                                                        ? `${userData?.subscription_interval === 'yearly' ? 'Yearly' : 'Monthly'} plan`
+                                                        : 'Free plan'}
+                                            </div>
+                                        </div>
+                                        <span className={`flex flex-col items-center justify-center leading-none flex-shrink-0 transition-colors ${showAccountMenu ? 'text-white' : 'text-white/40'}`}>
+                                            <FaChevronUp className="text-[8px]" />
+                                            <FaChevronDown className="text-[8px] mt-[1px]" />
+                                        </span>
+                                    </button>
+                                    <UsageRing usage={usage} size={40} onNavigate={closeMobileMenu} />
+                                </div>
+                                {showAccountMenu && renderAccountMenu('bottom-full left-0 right-0 mb-2')}
+                            </div>
+                        )}
+
+                        {/* Toggle Button */}
+                        <div className="flex justify-center py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <button
+                                className="w-7 h-7 rounded-lg text-white/40 hover:text-white/70 text-[10px] flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
+                                style={{ background: 'rgba(255,255,255,0.06)' }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                                onClick={toggleSidebar}
+                                aria-label="Toggle Sidebar"
+                            >
+                                {isSidebarCollapsed ? '›' : '‹'}
+                            </button>
+                        </div>
                     </div>
                 </aside>
 
@@ -1691,60 +1653,27 @@ const Dashboard = () => {
                     )}
 
                     <Routes>
+                        {/* All features are open to every authenticated user — free tier
+                            caps are enforced per-generation, not at the route level. */}
                         <Route
                             path="/"
                             element={
-                                <Navigate to={
-                                    isMobile
-                                        ? "/dashboard/profile"
-                                        : (hasActivePlan() ? "/dashboard/quicksoap" : "/dashboard/profile")
-                                } replace />
+                                <Navigate to={isMobile ? "/dashboard/profile" : "/dashboard/quicksoap"} replace />
                             }
                         />
-                        <Route
-                            path="quick-query"
-                            element={
-                                isSubscribed ?
-                                    <QuickQuery /> :
-                                    <Navigate to="/dashboard/profile" replace />
-                            }
-                        />
-                        <Route
-                            path="quicksoap"
-                            element={
-                                // Only allow QuickSOAP if user has an active plan (trial, paid, or student)
-                                hasActivePlan() ?
-                                    <QuickSOAP /> :
-                                    <Navigate to="/dashboard/profile" replace />
-                            }
-                        />
+                        <Route path="quick-query" element={<QuickQuery />} />
+                        <Route path="quicksoap" element={<QuickSOAP />} />
                         <Route
                             path="report-form"
                             element={
-                                isSubscribed ?
-                                    <ReportForm
-                                        subscriptionType={userData?.subscription_type}
-                                        subscriptionStatus={subscriptionStatus}
-                                    /> :
-                                    <Navigate to="/dashboard/profile" replace />
+                                <ReportForm
+                                    subscriptionType={userData?.subscription_type}
+                                    subscriptionStatus={subscriptionStatus}
+                                />
                             }
                         />
-                        <Route
-                            path="saved-reports"
-                            element={
-                                isSubscribed ?
-                                    <SavedReports /> :
-                                    <Navigate to="/dashboard/profile" replace />
-                            }
-                        />
-                        <Route
-                            path="templates"
-                            element={
-                                isSubscribed ?
-                                    <Templates /> :
-                                    <Navigate to="/dashboard/profile" replace />
-                            }
-                        />
+                        <Route path="saved-reports" element={<SavedReports />} />
+                        <Route path="templates" element={<Templates />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="help" element={<Help />} />
                     </Routes>

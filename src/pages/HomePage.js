@@ -112,9 +112,9 @@ const HomePage = () => {
                                 onClick={() => loginWithRedirect(signUpOptions)}
                                 className="hero-cta-button"
                             >
-                                Start 14-Day Free Trial
+                                Get Started Free
                             </button>
-                            <p className="no-card-text">Full unlimited access • Cancel anytime</p>
+                            <p className="no-card-text">Free every month • No credit card required</p>
                         </div>
                     </div>
 
@@ -206,8 +206,8 @@ const HomePage = () => {
                 <section className="cta-banner-section">
                     <div className="cta-banner-container">
                         <h2>Less paperwork. More pets!</h2>
-                        <p className="cta-banner-text">Get 14 days free with unlimited PetQuery and unlimited SOAP reports!</p>
-                        <p className="cta-banner-subtext">Full access • Cancel anytime</p>
+                        <p className="cta-banner-text">Free plan with SOAP notes and PetQuery every month — upgrade anytime for unlimited!</p>
+                        <p className="cta-banner-subtext">No credit card required</p>
                         <button
                             onClick={() => loginWithRedirect(signUpOptions)}
                             className="hero-cta-button"
@@ -316,20 +316,20 @@ const HomePage = () => {
 
                         <div className="pricing-card free highlight-card">
                             <div className="pricing-header">
-                                <h3>14-Day Free Trial</h3>
-                                <p className="price">$0<span>/14 days</span></p>
+                                <h3>Free Plan</h3>
+                                <p className="price">$0<span>/month</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>Full unlimited access</li>
-                                <li>Unlimited SOAP reports</li>
-                                <li>Quick Query included</li>
+                                <li>Monthly SOAP note allowance</li>
+                                <li>Monthly PetQuery allowance</li>
+                                <li>No credit card required</li>
                             </ul>
                             <div className="pricing-footer">
                                 <button
                                     onClick={() => loginWithRedirect(signUpOptions)}
                                     className="trial-button"
                                 >
-                                    Start Free Trial
+                                    Get Started Free
                                 </button>
                             </div>
                         </div>

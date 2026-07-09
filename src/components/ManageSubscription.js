@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
-import { FaCheck, FaCrown, FaArrowLeft, FaCreditCard, FaGraduationCap } from 'react-icons/fa';
+import { motion } from 'framer-motion';
+import { FaCheck, FaCrown, FaArrowLeft, FaCreditCard, FaGraduationCap, FaBolt } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,31 +15,21 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
+// Inline billing panel — rendered inside the Profile settings layout (desktop)
+// or as a full page on mobile (pass onBack to show the back row).
 const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, onBack, onSubscriptionChange }) => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(null);
     const [currency, setCurrency] = useState('usd');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
 
-    const isStudentPlan = user?.plan_label === 'student' && 
-        user?.subscription_end_date && 
+    const isStudentPlan = user?.plan_label === 'student' &&
+        user?.subscription_end_date &&
         new Date(user.subscription_end_date) > new Date();
 
     const PRICES = {
-        usd: {
-            monthly: 79,
-            yearly: 69,
-            yearlyTotal: 828,
-            symbol: '$',
-            code: 'USD'
-        },
-        cad: {
-            monthly: 109,
-            yearly: 96,
-            yearlyTotal: 1152,
-            symbol: '$',
-            code: 'CAD'
-        }
+        usd: { monthly: 79, yearly: 69, yearlyTotal: 828, symbol: '$', code: 'USD' },
+        cad: { monthly: 109, yearly: 96, yearlyTotal: 1152, symbol: '$', code: 'CAD' }
     };
 
     const handleCheckout = async (planType) => {
@@ -50,14 +41,8 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             const response = await fetch(`${API_URL}/create-checkout-session`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user,
-                    planType,
-                    currency
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user, planType, currency }),
             });
 
             const session = await response.json();
@@ -78,58 +63,14 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         }
     };
 
-    // Stripe Trial Checkout (14-day free trial with card)
-    const handleStripeTrialCheckout = async (trialCurrency) => {
-        setIsLoading(`trial_${trialCurrency}`);
-        try {
-            const stripe = await stripePromise;
-            if (!stripe) throw new Error('Stripe failed to initialize');
-
-            const response = await fetch(`${API_URL}/create-trial-checkout-session`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user,
-                    currency: trialCurrency
-                }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                if (data.code === 'TRIAL_ALREADY_USED') {
-                    throw new Error('You have already used your free trial');
-                }
-                throw new Error(data.error || 'Failed to start trial checkout');
-            }
-
-            const result = await stripe.redirectToCheckout({ sessionId: data.id });
-            if (result.error) {
-                console.error(result.error.message);
-                setIsLoading(null);
-            }
-        } catch (error) {
-            console.error('Trial checkout error:', error);
-            alert(error.message);
-            setIsLoading(null);
-        }
-    };
-
     const handleBillingPortal = async () => {
         setIsLoading('portal');
         try {
             const response = await fetch(`${API_URL}/create-customer-portal`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: user.sub
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.sub }),
             });
 
             const data = await response.json();
@@ -138,7 +79,6 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                 throw new Error(data.error || 'Failed to access billing portal');
             }
 
-            // Redirect to Stripe Customer Portal
             window.location.href = data.url;
         } catch (error) {
             console.error('Billing portal error:', error);
@@ -149,20 +89,13 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
     const handleStudentRedeemSuccess = () => {
         setShowStudentRedeem(false);
-        // Refresh subscription data in parent component if callback provided
         if (onSubscriptionChange) {
-            setTimeout(() => {
-                onSubscriptionChange();
-            }, 300);
+            setTimeout(() => { onSubscriptionChange(); }, 300);
         }
-        // Dispatch event to notify Dashboard and other components
         setTimeout(() => {
             window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
         }, 300);
-        // Small delay to ensure database has updated, then navigate to QuickSOAP
-        setTimeout(() => {
-            navigate('/dashboard/quicksoap');
-        }, 500);
+        setTimeout(() => { navigate('/dashboard/quicksoap'); }, 500);
     };
 
     const handleCancelStudent = async () => {
@@ -175,12 +108,8 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             const response = await fetch(`${API_URL}/cancel-student`, {
                 method: 'POST',
                 credentials: 'include',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    user_id: user.sub
-                }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: user.sub }),
             });
 
             const data = await response.json();
@@ -189,14 +118,9 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                 throw new Error(data.error || 'Failed to deactivate student access');
             }
 
-            // Refresh subscription data
-            if (onSubscriptionChange) {
-                onSubscriptionChange();
-            }
-            
-            // Dispatch event to notify other components
+            if (onSubscriptionChange) onSubscriptionChange();
             window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
-            
+
             alert('Student access has been deactivated.');
             window.location.reload();
         } catch (error) {
@@ -210,7 +134,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
     const features = [
         'Unlimited SOAP reports',
         'QuickSOAP voice dictation',
-        'Quick Query AI assistant',
+        'Unlimited PetQuery AI assistant',
         'Saved reports library',
         'Custom templates',
         'Priority support'
@@ -218,25 +142,20 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
     const getCurrentPlanLabel = () => {
         if (isStudentPlan) return '🎓 Student Access';
-        if (subscriptionInterval === 'stripe_trial') return '14-Day Trial';
-        if (subscriptionInterval === 'trial') return 'Free Trial (Legacy)';
         if (subscriptionInterval === 'monthly') return 'Monthly Plan';
         if (subscriptionInterval === 'yearly') return 'Yearly Plan';
-        return 'No Active Plan';
+        return 'Free Plan';
     };
 
     const isCurrentPlan = (planType) => {
         return subscriptionInterval === planType && subscriptionStatus === 'active';
     };
 
-    // Check if user has already used Stripe trial
-    const hasUsedStripeTrial = user?.has_activated_stripe_trial;
     const hasStripeCustomer = user?.stripe_customer_id;
-    // Check if currently on any trial (legacy or Stripe)
-    const isOnAnyTrial = subscriptionInterval === 'trial' || subscriptionInterval === 'stripe_trial';
+    const onFreePlan = !isStudentPlan && !['monthly', 'yearly'].includes(subscriptionInterval);
 
     return (
-        <div className="fixed inset-0 z-50 bg-gradient-to-br from-[#2a5298] via-[#3468bd] to-[#1e3a6e] flex flex-col items-center p-4 sm:p-8 overflow-y-auto">
+        <div>
             {/* Student Redeem Modal */}
             {showStudentRedeem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
@@ -248,250 +167,202 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                 </div>
             )}
 
-            {/* Header with back button */}
-            <div className="w-full max-w-5xl mb-6">
+            {onBack && (
                 <button
                     onClick={onBack}
-                    className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors mb-5 text-sm font-medium"
                 >
-                    <FaArrowLeft />
+                    <FaArrowLeft className="text-xs" />
                     <span>Back to Profile</span>
                 </button>
-            </div>
+            )}
 
-            {/* Title */}
-            <div className="text-center mb-6 sm:mb-8">
-                <div className="flex items-center justify-center gap-3 mb-4">
-                    <img src="/PW.png" alt="Petwise" className="w-10 h-10 sm:w-12 sm:h-12" />
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                        Manage Subscription
-                    </h1>
+            {/* Current plan summary */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+                <div>
+                    <p className="text-sm text-gray-500">Current plan</p>
+                    <p className="text-lg font-bold text-gray-900">{getCurrentPlanLabel()}</p>
                 </div>
-                <p className="text-white/80 text-sm sm:text-base">
-                    Current Plan: <span className="font-semibold">{getCurrentPlanLabel()}</span>
-                </p>
+                <div className="flex items-center gap-1.5 bg-gray-100 rounded-full p-1">
+                    <button
+                        onClick={() => setCurrency('usd')}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                            currency === 'usd' ? 'bg-white text-[#3468bd] shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                        }`}
+                    >
+                        USD
+                    </button>
+                    <button
+                        onClick={() => setCurrency('cad')}
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                            currency === 'cad' ? 'bg-white text-[#3468bd] shadow-sm' : 'text-gray-500 hover:text-gray-800'
+                        }`}
+                    >
+                        CAD
+                    </button>
+                </div>
             </div>
 
-            {/* Currency Toggle */}
-            <div className="flex items-center gap-2 mb-6 bg-white/10 rounded-full p-1">
-                <button
-                    onClick={() => setCurrency('usd')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        currency === 'usd' 
-                            ? 'bg-white text-[#3468bd]' 
-                            : 'text-white/80 hover:text-white'
+            {/* Plan cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6 items-start">
+                {/* Monthly */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`rounded-3xl border p-7 bg-white relative flex flex-col ${
+                        isCurrentPlan('monthly') ? 'border-[#3468bd] ring-1 ring-[#3468bd]' : 'border-gray-200 hover:border-gray-300 hover:shadow-md transition-all'
                     }`}
                 >
-                    USD
-                </button>
-                <button
-                    onClick={() => setCurrency('cad')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                        currency === 'cad' 
-                            ? 'bg-white text-[#3468bd]' 
-                            : 'text-white/80 hover:text-white'
-                    }`}
-                >
-                    CAD
-                </button>
-            </div>
-
-            {/* Plan Cards */}
-            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 w-full max-w-5xl mb-8">
-                {/* Monthly Plan */}
-                <div className={`flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl transition-all duration-300 relative ${
-                    isCurrentPlan('monthly') ? 'ring-4 ring-yellow-400' : 'hover:shadow-2xl hover:-translate-y-1'
-                }`}>
                     {isCurrentPlan('monthly') && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-xs font-bold">
+                        <div className="absolute -top-2.5 left-6 bg-[#3468bd] text-white px-3 py-0.5 rounded-full text-[11px] font-bold">
                             CURRENT PLAN
                         </div>
                     )}
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">Monthly</h3>
-                    <div className="mb-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
+
+                    <div className="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
+                        <FaBolt className="text-[#3468bd] text-lg" />
+                    </div>
+
+                    <h3 className="text-lg font-bold text-gray-900">Monthly</h3>
+                    <p className="text-[13px] text-gray-500 mb-5">Flexible, cancel anytime</p>
+
+                    <div className="flex items-end gap-2 mb-6">
+                        <span className="text-4xl font-extrabold text-gray-900 leading-none">
                             {PRICES[currency].symbol}{PRICES[currency].monthly}
                         </span>
-                        <span className="text-gray-500 ml-1">/{PRICES[currency].code}/mo</span>
+                        <span className="text-gray-500 text-xs leading-tight pb-0.5">
+                            {PRICES[currency].code} / month<br />billed monthly
+                        </span>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">Billed monthly, cancel anytime</p>
-                    
-                    <ul className="space-y-3 mb-8">
-                        {features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
-                                <FaCheck className="text-green-500 flex-shrink-0" />
-                                {feature}
-                            </li>
-                        ))}
-                    </ul>
 
                     <button
                         onClick={() => handleCheckout('monthly')}
                         disabled={isLoading !== null || isCurrentPlan('monthly')}
-                        className={`w-full py-3 px-6 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                        className={`w-full py-3 px-6 font-semibold rounded-xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6 ${
                             isCurrentPlan('monthly')
-                                ? 'bg-yellow-100 text-yellow-700 cursor-default'
+                                ? 'bg-blue-50 text-[#3468bd] cursor-default'
                                 : 'bg-[#3468bd] text-white hover:bg-[#2a5298]'
                         }`}
                     >
-                        {isLoading === 'monthly' ? 'Processing...' : isCurrentPlan('monthly') ? 'Current Plan' : 'Switch to Monthly'}
+                        {isLoading === 'monthly' ? 'Processing...' : isCurrentPlan('monthly') ? 'Current Plan' : (onFreePlan ? 'Get Monthly plan' : 'Switch to Monthly')}
                     </button>
-                </div>
 
-                {/* 14-Day Stripe Trial */}
-                <div className={`flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl transition-all duration-300 relative ${
-                    isOnAnyTrial ? 'ring-4 ring-yellow-400' : hasUsedStripeTrial ? 'opacity-60' : 'hover:shadow-2xl hover:-translate-y-1'
-                } order-first lg:order-none`}>
-                    {isOnAnyTrial && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-xs font-bold">
-                            CURRENT PLAN
-                        </div>
-                    )}
-                    {!hasUsedStripeTrial && !isOnAnyTrial && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white px-4 py-1 rounded-full text-xs font-bold">
-                            14 DAYS FREE
-                        </div>
-                    )}
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Free Trial</h3>
-                    <div className="mb-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
-                            $0
-                        </span>
-                        <span className="text-gray-500 ml-1">/14 days</span>
+                    <div className="border-t border-gray-100 pt-5">
+                        <p className="text-[13px] font-semibold text-gray-900 mb-3">Everything in Free, plus:</p>
+                        <ul className="space-y-2.5">
+                            {features.map((feature, idx) => (
+                                <li key={idx} className="flex items-center gap-2.5 text-gray-600 text-[13px]">
+                                    <FaCheck className="text-[#3468bd] flex-shrink-0 text-[11px]" />
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">
-                        {hasUsedStripeTrial ? 'Trial already used' : 'Full unlimited access • Cancel anytime'}
-                    </p>
-                    
-                    <ul className="space-y-3 mb-6">
-                        {features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
-                                <FaCheck className="text-green-500 flex-shrink-0" />
-                                {feature}
-                            </li>
-                        ))}
-                    </ul>
+                </motion.div>
 
-                    {isOnAnyTrial ? (
-                        <button
-                            disabled
-                            className="w-full py-3 px-6 font-semibold rounded-xl bg-yellow-100 text-yellow-700 cursor-default"
-                        >
-                            Current Plan
-                        </button>
-                    ) : hasUsedStripeTrial ? (
-                        <button
-                            disabled
-                            className="w-full py-3 px-6 font-semibold rounded-xl bg-gray-200 text-gray-500 cursor-not-allowed"
-                        >
-                            Trial Already Used
-                        </button>
-                    ) : (
-                        <div className="space-y-2">
-                            <button
-                                onClick={() => handleStripeTrialCheckout(currency)}
-                                disabled={isLoading !== null}
-                                className="w-full py-3 px-6 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-[#3468bd] to-[#2a5298] text-white hover:from-[#2a5298] hover:to-[#1e3a6e] shadow-lg"
-                            >
-                                {isLoading?.startsWith('trial_') ? 'Loading...' : 'Start Free Trial'}
-                            </button>
-                            <p className="text-xs text-gray-400 text-center mt-2">
-                                Auto-renews to monthly after 14 days. Cancel anytime.
-                            </p>
-                        </div>
-                    )}
-                </div>
-
-                {/* Yearly Plan */}
-                <div className={`flex-1 bg-white rounded-2xl p-6 sm:p-8 shadow-xl transition-all duration-300 relative ${
-                    isCurrentPlan('yearly') ? 'ring-4 ring-yellow-400' : 'hover:shadow-2xl hover:-translate-y-1'
-                }`}>
-                    {isCurrentPlan('yearly') && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-yellow-900 px-4 py-1 rounded-full text-xs font-bold z-10">
+                {/* Yearly */}
+                <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: 0.06 }}
+                    className={`rounded-3xl border p-7 relative flex flex-col ${
+                        isCurrentPlan('yearly')
+                            ? 'border-[#3468bd] ring-1 ring-[#3468bd] bg-white'
+                            : 'border-amber-300 bg-gradient-to-b from-amber-50/60 to-white hover:shadow-md transition-all'
+                    }`}
+                >
+                    {isCurrentPlan('yearly') ? (
+                        <div className="absolute -top-2.5 left-6 bg-[#3468bd] text-white px-3 py-0.5 rounded-full text-[11px] font-bold">
                             CURRENT PLAN
                         </div>
-                    )}
-                    {!isCurrentPlan('yearly') && (
-                        <div className="absolute -top-3 right-4 bg-gradient-to-r from-amber-400 to-amber-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1">
-                            <FaCrown className="text-[10px]" /> BEST VALUE
+                    ) : (
+                        <div className="absolute -top-2.5 right-6 bg-gradient-to-r from-amber-400 to-amber-500 text-white px-3 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1">
+                            <FaCrown className="text-[9px]" /> BEST VALUE
                         </div>
                     )}
-                    <h3 className="text-xl font-bold text-gray-800 mb-2 mt-2">Yearly</h3>
-                    <div className="mb-4">
-                        <span className="text-4xl font-extrabold text-gray-900">
+
+                    <div className="w-11 h-11 rounded-2xl bg-amber-100 flex items-center justify-center mb-4">
+                        <FaCrown className="text-amber-600 text-lg" />
+                    </div>
+
+                    <h3 className="text-lg font-bold text-gray-900">Yearly</h3>
+                    <p className="text-[13px] text-gray-500 mb-5">Best value, save ~12%</p>
+
+                    <div className="flex items-end gap-2 mb-6">
+                        <span className="text-4xl font-extrabold text-gray-900 leading-none">
                             {PRICES[currency].symbol}{PRICES[currency].yearly}
                         </span>
-                        <span className="text-gray-500 ml-1">/{PRICES[currency].code}/mo</span>
+                        <span className="text-gray-500 text-xs leading-tight pb-0.5">
+                            {PRICES[currency].code} / month<br />
+                            {PRICES[currency].symbol}{PRICES[currency].yearlyTotal} billed yearly
+                        </span>
                     </div>
-                    <p className="text-gray-500 text-sm mb-6">
-                        {PRICES[currency].symbol}{PRICES[currency].yearlyTotal}/{PRICES[currency].code} billed yearly
-                    </p>
-                    
-                    <ul className="space-y-3 mb-8">
-                        {features.map((feature, idx) => (
-                            <li key={idx} className="flex items-center gap-3 text-gray-700 text-sm">
-                                <FaCheck className="text-green-500 flex-shrink-0" />
-                                {feature}
-                            </li>
-                        ))}
-                    </ul>
 
                     <button
                         onClick={() => handleCheckout('yearly')}
                         disabled={isLoading !== null || isCurrentPlan('yearly')}
-                        className={`w-full py-3 px-6 font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                        className={`w-full py-3 px-6 font-semibold rounded-xl text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed mb-6 ${
                             isCurrentPlan('yearly')
-                                ? 'bg-yellow-100 text-yellow-700 cursor-default'
-                                : 'bg-[#3468bd] text-white hover:bg-[#2a5298]'
+                                ? 'bg-blue-50 text-[#3468bd] cursor-default'
+                                : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700'
                         }`}
                     >
-                        {isLoading === 'yearly' ? 'Processing...' : isCurrentPlan('yearly') ? 'Current Plan' : 'Switch to Yearly'}
+                        {isLoading === 'yearly' ? 'Processing...' : isCurrentPlan('yearly') ? 'Current Plan' : (onFreePlan ? 'Get Yearly plan' : 'Switch to Yearly')}
                     </button>
-                </div>
+
+                    <div className="border-t border-amber-200/70 pt-5">
+                        <p className="text-[13px] font-semibold text-gray-900 mb-3">Everything in Monthly, plus:</p>
+                        <ul className="space-y-2.5">
+                            {features.map((feature, idx) => (
+                                <li key={idx} className="flex items-center gap-2.5 text-gray-600 text-[13px]">
+                                    <FaCheck className="text-amber-500 flex-shrink-0 text-[11px]" />
+                                    {feature}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </motion.div>
             </div>
 
-            {/* Action Buttons - Student Access & Billing Settings */}
-            <div className="w-full max-w-5xl flex justify-center gap-4 flex-wrap">
-                {/* Student Access Button - Show if not already on student plan */}
+            {/* Secondary actions */}
+            <div className="flex flex-wrap gap-3">
                 {!isStudentPlan && (
                     <button
                         onClick={() => setShowStudentRedeem(true)}
                         disabled={isLoading !== null}
-                        className="flex items-center justify-center gap-2 px-8 py-3 bg-purple-100 text-purple-700 font-semibold rounded-xl hover:bg-purple-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-700 font-semibold rounded-xl text-sm hover:bg-purple-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-purple-100"
                     >
                         <FaGraduationCap />
                         Student Access
                     </button>
                 )}
 
-                {/* Deactivate Student Access - Only for student plan users */}
                 {isStudentPlan && (
                     <button
                         onClick={handleCancelStudent}
                         disabled={isLoading !== null}
-                        className="flex items-center justify-center gap-2 px-8 py-3 bg-red-100 text-red-700 font-semibold rounded-xl hover:bg-red-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-red-50 text-red-700 font-semibold rounded-xl text-sm hover:bg-red-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-red-100"
                     >
                         <FaGraduationCap />
                         {isLoading === 'cancelStudent' ? 'Deactivating...' : 'Deactivate Student Access'}
                     </button>
                 )}
-                
-                {/* Billing Settings - Only for Stripe customers */}
+
                 {hasStripeCustomer && (
                     <button
                         onClick={handleBillingPortal}
                         disabled={isLoading !== null}
-                        className="flex items-center justify-center gap-2 px-8 py-3 bg-white text-[#3468bd] font-semibold rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-gray-200"
                     >
-                        <FaCreditCard />
+                        <FaCreditCard className="text-[#3468bd]" />
                         {isLoading === 'portal' ? 'Loading...' : 'Billing Settings'}
                     </button>
                 )}
             </div>
 
-            {/* Footer note */}
-            <p className="text-white/60 text-xs mt-8 text-center max-w-md">
-                Changes to your subscription will take effect immediately. You can manage payment methods and view invoices in Billing Settings.
+            <p className="text-gray-400 text-xs mt-5">
+                Changes take effect immediately. Manage payment methods and view invoices in Billing Settings.
             </p>
         </div>
     );

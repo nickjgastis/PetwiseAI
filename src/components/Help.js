@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import Footer from './Footer';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaSave, FaFileAlt, FaClipboardList, FaPhoneAlt, FaBolt, FaBrain, FaRocket, FaMagic, FaColumns } from 'react-icons/fa';
+import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaFileAlt, FaClipboardList, FaPhoneAlt, FaBolt, FaBrain, FaRocket, FaMagic, FaColumns, FaChevronDown, FaSearch, FaRegLightbulb } from 'react-icons/fa';
 
 const Help = () => {
     const { isAuthenticated } = useAuth0();
@@ -166,26 +166,24 @@ const Help = () => {
     const formatContent = (item, index) => {
         if (item.isTrainingSection) {
             return (
-                <div key={index} className="p-6 border-t border-gray-100">
-                    <h3 className="text-primary-700 mb-4 text-xl font-bold">{item.question}</h3>
-                    <div className="flex flex-col gap-3 mt-4">
+                <div key={index} className="px-5 sm:px-6 py-4 border-t border-gray-100">
+                    <h3 className="text-[13px] font-bold text-gray-900 mb-3">{item.question}</h3>
+                    <div className="flex flex-col gap-2.5">
                         {item.trainingSections.map((training) => (
                             <div
                                 key={training.id}
-                                className="border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
+                                className="border border-gray-200 rounded-xl overflow-hidden"
                             >
-                                <h4
+                                <button
                                     onClick={() => toggleSection(training.id)}
-                                    className="cursor-pointer p-4 m-0 bg-gradient-to-r from-gray-50 to-white flex justify-between items-center text-base font-semibold text-gray-800 hover:from-gray-100 hover:to-gray-50 transition-all duration-200"
+                                    className="w-full cursor-pointer px-4 py-3 flex justify-between items-center text-left text-[13px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors bg-transparent border-none"
                                 >
                                     {training.title}
-                                    <span className={`text-primary-600 text-sm transition-transform duration-300 ${expandedSections[training.id] ? 'rotate-180' : ''}`}>
-                                        ▼
-                                    </span>
-                                </h4>
-                                <div className={`overflow-hidden transition-all duration-300 ${expandedSections[training.id] ? 'max-h-[1000px] opacity-100 p-4' : 'max-h-0 opacity-0 p-0'}`}>
-                                    <p className="text-gray-700 mb-4 leading-relaxed">{training.description}</p>
-                                    <img src={training.image} alt={training.title} className="w-full h-auto mt-4 rounded-lg shadow-md" />
+                                    <FaChevronDown className={`text-gray-400 text-[11px] transition-transform duration-300 ${expandedSections[training.id] ? 'rotate-180' : ''}`} />
+                                </button>
+                                <div className={`overflow-hidden transition-all duration-300 ${expandedSections[training.id] ? 'max-h-[1200px] opacity-100 px-4 pb-4' : 'max-h-0 opacity-0'}`}>
+                                    <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">{training.description}</p>
+                                    <img src={training.image} alt={training.title} className="w-full h-auto rounded-xl border border-gray-100" />
                                 </div>
                             </div>
                         ))}
@@ -194,97 +192,115 @@ const Help = () => {
             );
         }
         return (
-            <div key={index} className="p-6 border-t border-gray-100">
-                <h3 className="text-primary-700 mb-3 text-xl font-bold">{item.question}</h3>
-                <p className="text-gray-700 leading-relaxed m-0">{formatText(item.answer)}</p>
+            <div key={index} className="px-5 sm:px-6 py-4 border-t border-gray-100">
+                <h3 className="text-[13px] sm:text-sm font-bold text-gray-900 mb-1.5">{item.question}</h3>
+                <p className="text-[13px] text-gray-600 leading-relaxed m-0">{formatText(item.answer)}</p>
             </div>
         );
     };
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-                <div className="max-w-5xl mx-auto px-5 py-12">
-                    {/* Header */}
-                    <div className="text-center mb-12">
-                        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-3">Help Center</h1>
-                        <p className="text-gray-600 text-lg">Everything you need to get the most out of Petwise</p>
-                    </div>
-                    
-                    {/* Tutorial Buttons */}
-                    <div className="mb-10 flex flex-wrap justify-center gap-3">
-                        <button
-                            onClick={() => setShowWhatsNew(true)}
-                            className="px-5 py-2.5 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 rounded-xl font-semibold shadow-lg hover:from-yellow-500 hover:to-yellow-600 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
-                        >
-                            <span>See What's New!</span>
-                        </button>
-                        <button
-                            onClick={() => openTutorial('QuickSOAP')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
-                        >
-                            <FaMicrophone className="text-sm" />
-                            <span>QuickSOAP Tutorial</span>
-                        </button>
-                        <button
-                            onClick={() => openTutorial('PetQuery')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
-                        >
-                            <span>PetQuery Tutorial</span>
-                        </button>
-                        <button
-                            onClick={() => openTutorial('PetSOAP')}
-                            className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
-                        >
-                            <FaFileAlt className="text-sm" />
-                            <span>PetSOAP Tutorial</span>
-                        </button>
-                        <button
-                            onClick={() => setShowQRModal(true)}
-                            className="px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-xl font-semibold shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-200 hover:scale-105 hover:shadow-xl flex items-center gap-2"
-                        >
-                            <FaMobile className="text-sm" />
-                            <span>Mobile App</span>
-                        </button>
+            <div className="min-h-screen bg-[#f7f8fb]">
+                <div className="max-w-4xl mx-auto px-6 py-10">
+                    {/* Page header */}
+                    <div className="mb-8">
+                        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Help Center</h1>
+                        <p className="text-sm text-gray-500 mt-1">Everything you need to get the most out of PetWise</p>
                     </div>
 
-                    <div className="flex flex-col gap-4">
-                        {helpSections.map(section => (
-                            <section key={section.id} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300">
-                                <h2
-                                    onClick={() => toggleSection(section.id)}
-                                    className="cursor-pointer p-6 m-0 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex justify-between items-center text-xl font-bold text-gray-800 hover:from-gray-100 hover:to-gray-50 transition-all duration-200"
-                                >
-                                    {section.title}
-                                    <span className={`text-primary-600 transition-transform duration-300 ${expandedSections[section.id] ? 'rotate-180' : ''}`}>
-                                        ▼
-                                    </span>
-                                </h2>
-                                <div className={`overflow-hidden transition-all duration-500 ${expandedSections[section.id] ? (section.id === 'sourced-material' ? 'max-h-[3000px]' : 'max-h-[2000px]') + ' opacity-100' : 'max-h-0 opacity-0'}`}>
-                                    {section.content.map((item, index) => formatContent(item, index))}
-                                </div>
-                            </section>
-                        ))}
-
-                        {/* Book a Demo CTA */}
-                        <section className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl shadow-xl p-8 text-center">
-                            <h2 className="text-2xl font-bold text-white mb-2">Book a Complimentary 1-on-1 Demo</h2>
-                            <p className="text-white/90 text-sm mb-4">Walk through PetWise with <strong>Dr. Stacey Gastis</strong> and get real clinical use cases — completely free.</p>
-                            <a
-                                href="https://calendar.app.google/msd3h7YsD4qK3Rvo7"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-block px-6 py-3 bg-white text-amber-700 font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200"
+                    {/* Tutorials & guides */}
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 mb-5">
+                        <h3 className="text-sm font-bold text-gray-900">Tutorials &amp; guides</h3>
+                        <p className="text-[13px] text-gray-500 mt-0.5 mb-4">Interactive walkthroughs for each tool</p>
+                        <div className="flex flex-wrap gap-2.5">
+                            <button
+                                onClick={() => setShowWhatsNew(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold rounded-xl text-sm hover:bg-amber-100 transition-all border border-amber-200"
                             >
-                                Book a Demo →
-                            </a>
-                        </section>
+                                <FaRegLightbulb className="text-xs" />
+                                What's New
+                            </button>
+                            <button
+                                onClick={() => openTutorial('QuickSOAP')}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
+                            >
+                                <FaMicrophone className="text-[#3468bd] text-xs" />
+                                QuickSOAP
+                            </button>
+                            <button
+                                onClick={() => openTutorial('PetQuery')}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
+                            >
+                                <FaSearch className="text-[#3468bd] text-xs" />
+                                PetQuery
+                            </button>
+                            <button
+                                onClick={() => openTutorial('PetSOAP')}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
+                            >
+                                <FaFileAlt className="text-[#3468bd] text-xs" />
+                                PetSOAP
+                            </button>
+                            <button
+                                onClick={() => setShowQRModal(true)}
+                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
+                            >
+                                <FaMobile className="text-[#3468bd] text-xs" />
+                                Mobile App
+                            </button>
+                        </div>
+                    </div>
 
-                        <section className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-2xl shadow-xl p-8 text-center">
-                            <h2 className="text-2xl font-bold text-white mb-3">Contact Support</h2>
-                            <p className="text-white/90 mb-2">Need additional help? Email us at <a href="mailto:support@petwise.vet" className="text-white font-semibold hover:underline no-underline">support@petwise.vet</a></p>
-                            <p className="text-white/80 text-sm">View our <Link to="/privacy" className="text-white hover:underline no-underline font-medium">Privacy Policy</Link> and <Link to="/terms" className="text-white hover:underline no-underline font-medium">Terms of Service</Link></p>
-                        </section>
+                    {/* FAQ accordions */}
+                    <div className="mb-5">
+                        <h2 className="text-lg font-bold text-gray-900 mb-1">Frequently asked</h2>
+                        <p className="text-[13px] text-gray-500 mb-4">Tap a topic to expand</p>
+                        <div className="space-y-3">
+                            {helpSections.map(section => (
+                                <div key={section.id} className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                                    <button
+                                        onClick={() => toggleSection(section.id)}
+                                        className="w-full cursor-pointer px-5 sm:px-6 py-4 flex justify-between items-center text-left text-sm font-bold text-gray-900 hover:bg-gray-50 transition-colors bg-transparent border-none"
+                                    >
+                                        {section.title}
+                                        <FaChevronDown className={`text-gray-400 text-xs transition-transform duration-300 ${expandedSections[section.id] ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    <div className={`overflow-hidden transition-all duration-500 ${expandedSections[section.id] ? (section.id === 'sourced-material' ? 'max-h-[3000px]' : 'max-h-[2000px]') + ' opacity-100' : 'max-h-0 opacity-0'}`}>
+                                        {section.content.map((item, index) => formatContent(item, index))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Book a Demo CTA */}
+                    <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 p-6 text-white flex flex-wrap items-center justify-between gap-4 mb-4">
+                        <div>
+                            <h3 className="text-base font-bold">Book a complimentary 1-on-1 demo</h3>
+                            <p className="text-white/85 text-[13px] mt-0.5">
+                                Walk through PetWise with <strong>Dr. Stacey Gastis</strong> — real clinical use cases, completely free.
+                            </p>
+                        </div>
+                        <a
+                            href="https://calendar.app.google/msd3h7YsD4qK3Rvo7"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-5 py-2.5 bg-white text-amber-700 font-bold rounded-xl text-sm hover:bg-amber-50 transition-colors whitespace-nowrap no-underline"
+                        >
+                            Book a demo →
+                        </a>
+                    </div>
+
+                    {/* Contact Support */}
+                    <div className="rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#2a5298] p-6 text-white">
+                        <h3 className="text-base font-bold mb-1">Contact support</h3>
+                        <p className="text-white/85 text-[13px]">
+                            Need more help? Email us at <a href="mailto:support@petwise.vet" className="font-semibold underline underline-offset-2 text-white">support@petwise.vet</a>
+                        </p>
+                        <p className="text-white/70 text-[12px] mt-2">
+                            View our <Link to="/privacy" className="text-white/90 hover:underline no-underline font-medium">Privacy Policy</Link> and <Link to="/terms" className="text-white/90 hover:underline no-underline font-medium">Terms of Service</Link>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -751,23 +767,26 @@ const Help = () => {
                     onClick={() => setShowQRModal(false)}
                 >
                     <div
-                        className="bg-gradient-to-b from-primary-600 to-primary-700 rounded-2xl shadow-2xl p-8 max-w-md w-full"
+                        className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-md w-full"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-white">Mobile App</h2>
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">Mobile App</h2>
+                                <p className="text-[13px] text-gray-500 mt-0.5">Take PetWise into the exam room</p>
+                            </div>
                             <button
                                 onClick={() => setShowQRModal(false)}
-                                className="text-white hover:text-gray-200 transition-colors"
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
                             >
-                                <FaTimes className="text-xl" />
+                                <FaTimes className="text-lg" />
                             </button>
                         </div>
-                        <div className="text-center">
-                            <p className="text-white mb-6">Scan this QR code or go to <span className="font-semibold text-accent-300">petwise.vet</span> on your phone and click log in</p>
-                            <div className="flex justify-center mb-4">
-                                <img src="/PW QR CODE.png" alt="QuickSOAP Mobile App QR Code" className="w-64 h-64 border-4 border-white rounded-lg shadow-lg" />
-                            </div>
+                        <div className="flex flex-col items-center text-center">
+                            <img src="/PW QR CODE.png" alt="PetWise Mobile App QR Code" className="w-52 h-52 rounded-2xl border border-gray-200 shadow-sm mb-4" />
+                            <p className="text-[13px] text-gray-500 leading-relaxed max-w-xs">
+                                Scan this code, or go to <span className="font-semibold text-[#3468bd]">petwise.vet</span> on your phone and log in.
+                            </p>
                         </div>
                     </div>
                 </div>

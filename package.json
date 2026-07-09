@@ -20,6 +20,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "form-data": "^4.0.4",
+    "framer-motion": "^12.42.2",
     "https-browserify": "^1.0.0",
     "jspdf": "^2.5.2",
     "multer": "^2.0.2",

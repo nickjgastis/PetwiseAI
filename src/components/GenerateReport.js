@@ -5,7 +5,7 @@ const API_URL = process.env.NODE_ENV === 'production'
       ? 'https://api.petwise.vet'
       : 'http://localhost:3001';
 
-const GenerateReport = async (inputs, enabledFields) => {
+const GenerateReport = async (inputs, enabledFields, userSub) => {
       // console.log('enabledFields received:', enabledFields);
 
       const getEnabledContent = (fieldName, content) => {
@@ -408,12 +408,23 @@ CRITICAL SPACING RULE: Each content line should end with two spaces and appear o
                               }
                         ],
                         temperature: 0.7,
-                        max_tokens: 2500
+                        max_tokens: 2500,
+                        user: { sub: userSub },
+                        source: 'petsoap'
                   }
             );
 
-            return response.data.choices[0].message.content;
+            return {
+                  text: response.data.choices[0].message.content,
+                  usage: response.data.usage_petwise || null
+            };
       } catch (error) {
+            if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
+                  const limitError = new Error('Monthly SOAP limit reached');
+                  limitError.code = 'USAGE_LIMIT_REACHED';
+                  limitError.usage = error.response.data;
+                  throw limitError;
+            }
             console.error('Error generating report:', error);
             throw new Error('Failed to generate report. Please try again.');
       }

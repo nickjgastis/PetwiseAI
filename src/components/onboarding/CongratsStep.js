@@ -7,7 +7,6 @@ import OnboardingLayout from './OnboardingLayout';
 const CongratsStep = ({ onNext }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [dvmName1, setDvmName1] = useState('');
-    const [dvmName2, setDvmName2] = useState('');
     const [isStudentMode, setIsStudentMode] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [error, setError] = useState('');
@@ -18,10 +17,6 @@ const CongratsStep = ({ onNext }) => {
         e.preventDefault();
         setError('');
 
-        if (dvmName1.trim() !== dvmName2.trim()) {
-            setError('Names do not match. Please check spelling.');
-            return;
-        }
         if (!dvmName1.trim()) {
             setError('Please enter your name.');
             return;
@@ -53,7 +48,7 @@ const CongratsStep = ({ onNext }) => {
     };
 
     return (
-        <OnboardingLayout currentStep="congrats">
+        <OnboardingLayout currentStep="congrats" showProgress={false}>
             <div className="animate-fade-in text-center">
                 {/* Big congrats */}
                 <div className="mb-5 sm:mb-10">
@@ -111,23 +106,6 @@ const CongratsStep = ({ onNext }) => {
                         </div>
                     </div>
 
-                    {/* Confirm */}
-                    <div>
-                        <div className="flex rounded-lg overflow-hidden border border-white/20 bg-white/10 backdrop-blur-sm focus-within:border-[#3db6fd] focus-within:bg-white/15 transition-all">
-                            <div className="flex items-center px-3.5 py-3 bg-white/10 text-white font-semibold text-sm border-r border-white/10">
-                                {isStudentMode ? 'Student' : 'Dr.'}
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Confirm your name"
-                                value={dvmName2}
-                                onChange={(e) => setDvmName2(e.target.value)}
-                                className="flex-1 px-3.5 py-3 bg-transparent text-white placeholder-white/40 focus:outline-none text-sm sm:text-base"
-                                required
-                            />
-                        </div>
-                    </div>
-
                     <p className="text-white/30 text-[11px] text-center">
                         This appears as <span className="text-white/50">{isStudentMode ? 'Student' : 'Dr.'} {dvmName1 || 'Your Name'}</span> on reports and can't be changed.
                     </p>
@@ -159,7 +137,7 @@ const CongratsStep = ({ onNext }) => {
 
                     <button
                         type="submit"
-                        disabled={isSubmitting || !phoneNumber.trim() || !dvmName1.trim() || !dvmName2.trim() || !acceptedTerms}
+                        disabled={isSubmitting || !phoneNumber.trim() || !dvmName1.trim() || !acceptedTerms}
                         className="w-full py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-sm sm:text-base"
                     >
                         {isSubmitting ? 'Saving...' : 'Continue'}
