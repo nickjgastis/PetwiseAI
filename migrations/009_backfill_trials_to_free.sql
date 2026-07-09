@@ -4,7 +4,17 @@
 -- isn't active/past_due — running this early would lock out mid-trial users.
 -- Once the new frontend is live, 'inactive' simply means "free tier".
 
--- All legacy (no-card) trial users — expired AND in-flight — become free tier.
+-- Students who redeemed while on a trial still carry a stale 'trial' interval
+-- (student redeem never cleared it). Keep them active — just clear the interval
+-- so the trial value disappears from the database entirely.
+UPDATE users
+SET subscription_interval = NULL
+WHERE subscription_interval = 'trial'
+  AND plan_label = 'student'
+  AND subscription_end_date > NOW();
+
+-- All remaining legacy (no-card) trial users — expired AND in-flight — become
+-- free tier. (Expired students fall through to here and become free too.)
 UPDATE users
 SET subscription_status = 'inactive',
     subscription_interval = NULL

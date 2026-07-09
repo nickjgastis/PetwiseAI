@@ -91,6 +91,7 @@ const Dashboard = () => {
     const [onboardingData, setOnboardingData] = useState(null); // New onboarding flow data (null = no row = skip)
     const [showAppTour, setShowAppTour] = useState(false); // First-run tutorial for brand-new users
     const [showAccountMenu, setShowAccountMenu] = useState(false); // Sidebar footer account popup
+    const [showQRModal, setShowQRModal] = useState(false); // Mobile app QR popup
     const accountMenuRef = useRef(null);
     const usage = useUsage(); // Free-tier usage (drives the sidebar ring)
 
@@ -1214,6 +1215,17 @@ const Dashboard = () => {
                     {label}
                 </button>
             ))}
+            <button
+                onClick={() => {
+                    setShowAccountMenu(false);
+                    closeMobileMenu();
+                    setShowQRModal(true);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors bg-transparent border-none cursor-pointer text-left"
+            >
+                <FaMobile className="text-[#3468bd] text-xs w-4 flex-shrink-0" />
+                Mobile App
+            </button>
             <div className="h-px bg-gray-100 my-1" />
             <button
                 onClick={() => {
@@ -1308,6 +1320,37 @@ const Dashboard = () => {
                     isMobile={isMobile}
                     onComplete={() => setShowAppTour(false)}
                 />
+            )}
+            {/* Mobile app QR popup (from sidebar account menu) */}
+            {showQRModal && (
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 z-[80] flex items-center justify-center p-4"
+                    onClick={() => setShowQRModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-md w-full"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between mb-5">
+                            <div>
+                                <h2 className="text-lg font-bold text-gray-900">Mobile App</h2>
+                                <p className="text-[13px] text-gray-500 mt-0.5">Take PetWise into the exam room</p>
+                            </div>
+                            <button
+                                onClick={() => setShowQRModal(false)}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <FaTimes className="text-lg" />
+                            </button>
+                        </div>
+                        <div className="flex flex-col items-center text-center">
+                            <img src="/PW QR CODE.png" alt="PetWise Mobile App QR Code" className="w-52 h-52 rounded-2xl border border-gray-200 shadow-sm mb-4" />
+                            <p className="text-[13px] text-gray-500 leading-relaxed max-w-xs">
+                                Scan this code, or go to <span className="font-semibold text-[#3468bd]">petwise.vet</span> on your phone and log in.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             )}
             <div className="flex h-screen bg-white">
                 {/* Mobile Header */}
