@@ -1437,22 +1437,6 @@ const Dashboard = () => {
                                 </li>
                                 <li className="mx-3 my-0.5 relative">
                                     <Link
-                                        to="/dashboard/report-form"
-                                        onClick={closeMobileMenu}
-                                        data-tooltip="Report Generator"
-                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'text-white' : 'hover:text-white'}`}
-                                        style={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'transparent'; }}
-                                    >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
-                                            <FaFileAlt className="text-xs" />
-                                        </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetSOAP</span>
-                                    </Link>
-                                </li>
-                                <li className="mx-3 my-0.5 relative">
-                                    <Link
                                         to="/dashboard/quick-query"
                                         onClick={closeMobileMenu}
                                         data-tooltip="QuickMed Query"
@@ -1523,6 +1507,22 @@ const Dashboard = () => {
                             </li>
                         )}
                         <li className="mx-3 my-0.5 relative" style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                            <Link
+                                to="/dashboard/report-form"
+                                onClick={closeMobileMenu}
+                                data-tooltip="Report Generator"
+                                className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'text-white' : 'hover:text-white'}`}
+                                style={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                onMouseEnter={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                onMouseLeave={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'transparent'; }}
+                            >
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)' }}>
+                                    <FaFileAlt className="text-xs" />
+                                </div>
+                                <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetSOAP</span>
+                            </Link>
+                        </li>
+                        <li className="mx-3 my-0.5 relative">
                             <Link
                                 to="/dashboard/help"
                                 onClick={closeMobileMenu}
