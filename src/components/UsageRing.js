@@ -25,9 +25,9 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
     const radius = (size - stroke) / 2;
     const circumference = 2 * Math.PI * radius;
 
-    const resetLabel = usage.resetsAt
-        ? usage.resetsAt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-        : null;
+    const resetLabel = usage.hoursUntilReset
+        ? `at midnight (in ${usage.hoursUntilReset}h)`
+        : 'at midnight';
 
     const handleClick = () => {
         navigate('/dashboard/profile', { state: { scrollToUsage: true } });
@@ -87,7 +87,7 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                         className="absolute left-full bottom-0 ml-3 w-52 p-3.5 rounded-2xl bg-white border border-gray-100 shadow-[0_12px_40px_-8px_rgba(15,23,42,0.25)] z-[60] pointer-events-none"
                     >
                         <div className="flex items-center justify-between mb-2.5">
-                            <span className="text-[12px] font-bold text-gray-900">Monthly usage</span>
+                            <span className="text-[12px] font-bold text-gray-900">Today's usage</span>
                             <span
                                 className="text-[11px] font-bold px-1.5 py-0.5 rounded-md"
                                 style={{ color, background: `${color}1a` }}
@@ -98,16 +98,16 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
 
                         <div className="space-y-2.5">
                             {[
-                                { label: 'SOAP notes', p: usage.soap.pct, maxed: soapMaxed },
-                                { label: 'PetQuery', p: usage.query.pct, maxed: queryMaxed }
-                            ].map(({ label, p, maxed }) => (
+                                { label: 'SOAP notes', p: usage.soap.pct, maxed: soapMaxed, used: usage.soap.used, limit: usage.soap.limit },
+                                { label: 'PetQuery', p: usage.query.pct, maxed: queryMaxed, used: usage.query.used, limit: usage.query.limit }
+                            ].map(({ label, p, maxed, used, limit }) => (
                                 <div key={label}>
                                     <div className="flex items-center justify-between mb-1">
                                         <span className="text-[11px] font-medium text-gray-500">{label}</span>
                                         {maxed ? (
-                                            <span className="text-[10px] font-bold text-amber-600">Limit reached</span>
+                                            <span className="text-[10px] font-bold text-amber-600">Done for today</span>
                                         ) : (
-                                            <span className="text-[11px] font-semibold text-gray-700">{p}%</span>
+                                            <span className="text-[11px] font-semibold text-gray-700">{used} of {limit}</span>
                                         )}
                                     </div>
                                     <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
@@ -120,11 +120,9 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                             ))}
                         </div>
 
-                        {resetLabel && (
-                            <div className="text-[10px] text-gray-400 mt-2.5 pt-2.5 border-t border-gray-100">
-                                Resets {resetLabel}
-                            </div>
-                        )}
+                        <div className="text-[10px] text-gray-400 mt-2.5 pt-2.5 border-t border-gray-100">
+                            Resets {resetLabel}
+                        </div>
 
                         {/* Arrow pointing left toward the ring (aligned to the ring's row) */}
                         <div

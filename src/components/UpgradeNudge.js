@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowUp, FaTimes } from 'react-icons/fa';
 
-const FEATURE_LABELS = {
-    soap: 'SOAP notes',
-    query: 'PetQuery questions'
-};
-
-// 90%-usage nudge banner. Non-blocking, dismissible for the session.
-// show/pct/feature come from the page's usage state; parent owns visibility.
-const UpgradeNudge = ({ show, feature = 'soap', pct = 90, onDismiss }) => {
+// Almost-out-of-quota banner (fires at ~80% of the daily allowance — the last
+// SOAP / last few queries). Non-blocking, dismissible for the rest of the day.
+// Copy is count-based: "You have 1 free SOAP note remaining today."
+const UpgradeNudge = ({ show, feature = 'soap', remaining = 1, onDismiss }) => {
     const navigate = useNavigate();
+
+    const label = feature === 'soap'
+        ? (remaining === 1 ? 'free SOAP note' : 'free SOAP notes')
+        : (remaining === 1 ? 'free PetQuery question' : 'free PetQuery questions');
 
     return (
         <AnimatePresence>
@@ -27,8 +27,8 @@ const UpgradeNudge = ({ show, feature = 'soap', pct = 90, onDismiss }) => {
                         <FaArrowUp className="text-white text-xs" />
                     </div>
                     <p className="flex-1 text-sm text-amber-900">
-                        You've used <span className="font-bold">{pct}%</span> of your free {FEATURE_LABELS[feature]} this month.
-                        Upgrade for unlimited access.
+                        You have <span className="font-bold">{remaining} {label}</span> remaining today.
+                        Upgrade for unlimited use.
                     </p>
                     <button
                         onClick={() => navigate('/dashboard/profile', { state: { openCheckout: true } })}

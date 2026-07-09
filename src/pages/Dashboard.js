@@ -109,6 +109,8 @@ const Dashboard = () => {
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
     const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
+    const [draftsWaitingForLimit, setDraftsWaitingForLimit] = useState(0); // Mobile drafts blocked by the daily free cap
+    const limitBlockedUntilRef = useRef(0); // Backoff so we don't hammer the API with 403s while capped
     const [mobileReportTypes, setMobileReportTypes] = useState({ soap: 0, summary: 0, callback: 0 }); // Track types being generated
     const isProcessingQueueRef = useRef(false);
     const processingDraftIdsRef = useRef(new Set()); // Track which drafts are currently being processed
@@ -273,7 +275,8 @@ const Dashboard = () => {
                 const response = await axios.post(`${API_URL}/api/generate-soap`, {
                     input: combinedInput.trim(),
                     user: user ? { sub: user.sub } : null,
-                    recordType: draftRecordType
+                    recordType: draftRecordType,
+                    tz: Intl.DateTimeFormat().resolvedOptions().timeZone
                 });
 
                 if (!response.data || !response.data.report) {
@@ -359,6 +362,12 @@ const Dashboard = () => {
                 console.log('Successfully processed mobile dictation:', draftId, 'Report ID:', savedReport.id);
                 return true;
             } catch (genError) {
+                // Daily free cap reached — the draft is safe, it just has to wait
+                // for the local-midnight reset (or an upgrade). Signal the queue to stop.
+                if (genError.response?.status === 403 && genError.response?.data?.error === 'USAGE_LIMIT_REACHED') {
+                    console.log('Daily free limit reached — parking mobile drafts until reset/upgrade');
+                    return 'limit';
+                }
                 console.error('Error generating SOAP from mobile dictation:', genError, 'Draft ID:', draftId);
                 // Don't delete draft on error so it can retry
                 return false;
@@ -411,6 +420,9 @@ const Dashboard = () => {
         const processQueue = async () => {
             // Don't start processing if already processing
             if (isProcessingQueueRef.current) return;
+            // While capped, don't retry every poll — the backoff clears on
+            // upgrade (subscriptionUpdated) and naturally after it expires.
+            if (Date.now() < limitBlockedUntilRef.current) return;
 
             try {
                 const { data: userData, error: userError } = await supabase
@@ -482,13 +494,26 @@ const Dashboard = () => {
                     const remaining = sentDrafts.length - i;
                     setMobileReportsGenerating(remaining);
 
-                    const success = await processMobileDictation(draft);
+                    const result = await processMobileDictation(draft);
+
+                    if (result === 'limit') {
+                        // Park the rest of the queue: show the waiting banner and
+                        // back off for 10 minutes (or until upgrade clears it).
+                        setDraftsWaitingForLimit(sentDrafts.length - i);
+                        setMobileReportsGenerating(0);
+                        setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
+                        limitBlockedUntilRef.current = Date.now() + 10 * 60 * 1000;
+                        return;
+                    }
 
                     // Small delay between processing to avoid overwhelming the API
                     if (i < sentDrafts.length - 1) {
                         await new Promise(resolve => setTimeout(resolve, 500));
                     }
                 }
+
+                // Full pass without hitting the cap — nothing is parked
+                setDraftsWaitingForLimit(0);
 
                 // Check if there are more after processing
                 const { data: remainingDrafts } = await supabase
@@ -541,8 +566,17 @@ const Dashboard = () => {
             processQueue();
         }, 5000);
 
+        // Upgrading lifts the cap immediately — clear the backoff and retry
+        const handleSubscriptionUpdated = () => {
+            limitBlockedUntilRef.current = 0;
+            setDraftsWaitingForLimit(0);
+            processQueue();
+        };
+        window.addEventListener('subscriptionUpdated', handleSubscriptionUpdated);
+
         return () => {
             clearInterval(pollingInterval);
+            window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdated);
         };
     }, [isMobile, isAuthenticated, user]);
 
@@ -1652,6 +1686,33 @@ const Dashboard = () => {
                                     <p className="text-sm opacity-90">Will appear in Saved Records when complete</p>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Mobile drafts parked by the daily free limit */}
+                    {draftsWaitingForLimit > 0 && !isMobile && (
+                        <div className="bg-amber-50 border border-amber-300 text-amber-900 px-6 py-4 shadow-sm mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between gap-4" style={{ animation: 'fadeUp 0.5s ease-out' }}>
+                            <div className="flex items-center gap-3">
+                                <FaMobile className="text-xl flex-shrink-0 text-amber-500" />
+                                <div>
+                                    <p className="font-semibold text-base">
+                                        {draftsWaitingForLimit === 1
+                                            ? '1 mobile dictation waiting'
+                                            : `${draftsWaitingForLimit} mobile dictations waiting`}
+                                        {' '}— you've finished today's free SOAP notes
+                                    </p>
+                                    <p className="text-sm opacity-80">
+                                        Your dictations are saved. They'll generate automatically after your allowance resets at midnight
+                                        {usage.hoursUntilReset ? ` (in ${usage.hoursUntilReset}h)` : ''}, or upgrade now for unlimited use.
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => navigate('/dashboard/profile', { state: { openCheckout: true } })}
+                                className="flex-shrink-0 px-4 py-2 bg-[#3468bd] text-white text-sm font-semibold rounded-lg hover:bg-[#2a5298] transition-colors whitespace-nowrap"
+                            >
+                                Upgrade
+                            </button>
                         </div>
                     )}
 

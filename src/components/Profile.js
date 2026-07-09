@@ -280,7 +280,7 @@ const Profile = ({ isMobileSignup = false }) => {
 
                     {/* Usage */}
                     <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                        <h3 className="text-sm font-bold text-gray-900 mb-4">Monthly Usage</h3>
+                        <h3 className="text-sm font-bold text-gray-900 mb-4">Today's Usage</h3>
                         <UsageMeter usage={usage} onUpgrade={() => setShowCheckout(true)} />
                     </div>
 
@@ -375,7 +375,7 @@ const Profile = ({ isMobileSignup = false }) => {
 
     const SECTION_TITLES = {
         profile: { title: 'Profile', subtitle: 'Your details as they appear on reports' },
-        usage: { title: 'Usage', subtitle: 'Your monthly allowance at a glance' },
+        usage: { title: 'Usage', subtitle: 'Your daily allowance at a glance — resets at midnight' },
         billing: { title: 'Plan & Billing', subtitle: 'Manage your plan, payment, and invoices' },
         account: { title: 'Account', subtitle: 'Security and account management' },
         mobile: { title: 'Mobile App', subtitle: 'Take PetWise into the exam room' },
@@ -514,7 +514,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 <div>
                                                     <h3 className="text-base font-bold">Go unlimited</h3>
                                                     <p className="text-white/75 text-[13px] mt-0.5">
-                                                        Unlimited SOAP notes and PetQuery, every month.
+                                                        Unlimited SOAP notes and PetQuery, every day.
                                                     </p>
                                                 </div>
                                                 <button

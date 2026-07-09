@@ -95,8 +95,8 @@ const ProductPage = () => {
                                 <p className="price">$0<span>/month</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>Monthly SOAP note allowance</li>
-                                <li>Monthly PetQuery allowance</li>
+                                <li>Free SOAP notes every day</li>
+                                <li>Free PetQuery questions every day</li>
                                 <li>No credit card required</li>
                             </ul>
                             <div className="pricing-footer">

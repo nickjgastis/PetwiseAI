@@ -14,7 +14,6 @@ import SOAPView from './SOAPView';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaFileAlt } from 'react-icons/fa';
 import { AnimatePresence } from 'framer-motion';
 import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
-import { UsageBar } from './UsageMeter';
 import UpgradeNudge from './UpgradeNudge';
 import UpgradeModal from './UpgradeModal';
 
@@ -609,20 +608,22 @@ const ReportForm = () => {
         };
     });
 
-    // Free-tier usage (server-enforced monthly cap, shared SOAP pool with QuickSOAP)
+    // Free-tier daily usage (server-enforced, shared SOAP pool with QuickSOAP).
+    // Show nothing below 80%, banner at 1 left, upgrade screen at 0.
     const usage = useUsage();
     const [lastUsage, setLastUsage] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const nudgeKey = `petsoap-nudge-dismissed-${new Date().toDateString()}`;
     const [nudgeDismissed, setNudgeDismissed] = useState(
-        () => sessionStorage.getItem('petsoap-nudge-dismissed') === 'true'
+        () => sessionStorage.getItem(nudgeKey) === 'true'
     );
-    const soapPct = lastUsage
-        ? Math.min(Math.round((lastUsage.used / lastUsage.limit) * 100), 100)
-        : usage.soap.pct;
-    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapPct >= 90 && soapPct < 100;
+    const soapRemaining = lastUsage
+        ? Math.max(lastUsage.limit - lastUsage.used, 0)
+        : usage.soap.remaining;
+    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
     const dismissNudge = () => {
         setNudgeDismissed(true);
-        sessionStorage.setItem('petsoap-nudge-dismissed', 'true');
+        sessionStorage.setItem(nudgeKey, 'true');
     };
 
     useEffect(() => {
@@ -761,7 +762,7 @@ const ReportForm = () => {
         if (isGenerating.current) return;
 
         // Preemptive free-tier check — saves a wasted API round-trip at 100%
-        if (!usage.isUnlimited && usage.soap.pct >= 100) {
+        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
             setShowUpgradeModal(true);
             return;
         }
@@ -1872,12 +1873,7 @@ const ReportForm = () => {
                         </div>
                     </div>
 
-                    {!usage.isUnlimited && usage.loaded && (
-                        <div className="flex justify-center mb-2">
-                            <UsageBar label="SOAP notes" pct={soapPct} isUnlimited={usage.isUnlimited} resetsAt={usage.resetsAt} />
-                        </div>
-                    )}
-                    <UpgradeNudge show={showNudge} feature="soap" pct={soapPct} onDismiss={dismissNudge} />
+                    <UpgradeNudge show={showNudge} feature="soap" remaining={soapRemaining} onDismiss={dismissNudge} />
                     <div className="button-container">
                         <button type="button" className="submit-button" onClick={handleBackToPatientInfo}>
                             Back to Patient Info

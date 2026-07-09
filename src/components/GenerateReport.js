@@ -1,5 +1,6 @@
 import React from 'react';
 import axios from 'axios';
+import { getBrowserTimezone } from '../hooks/useUsage';
 
 const API_URL = process.env.NODE_ENV === 'production'
       ? 'https://api.petwise.vet'
@@ -410,7 +411,8 @@ CRITICAL SPACING RULE: Each content line should end with two spaces and appear o
                         temperature: 0.7,
                         max_tokens: 2500,
                         user: { sub: userSub },
-                        source: 'petsoap'
+                        source: 'petsoap',
+                        tz: getBrowserTimezone()
                   }
             );
 

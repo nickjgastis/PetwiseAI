@@ -282,7 +282,8 @@ app.post('/api/quickquery', async (req, res) => {
             frequency_penalty = 0.5,
             presence_penalty = 0.5,
             user,                           // { sub } — required once USAGE_ENFORCE_STRICT
-            source                          // 'petsoap' | 'petquery' — picks the usage pool
+            source,                         // 'petsoap' | 'petquery' — picks the usage pool
+            tz                              // IANA timezone — drives the local-midnight daily reset
         } = req.body || {};
 
         // Validate messages array
@@ -347,7 +348,7 @@ app.post('/api/quickquery', async (req, res) => {
             }
             console.warn('[USAGE] /api/quickquery request without source — allowing (soft mode)');
         } else {
-            const usageResult = await usage.checkAndConsume(user?.sub, usageFeature);
+            const usageResult = await usage.checkAndConsume(user?.sub, usageFeature, tz);
             if (!usageResult.allowed) {
                 return res.status(403).json(usage.limitResponse(usageFeature, usageResult));
             }
@@ -1407,7 +1408,7 @@ app.post('/api/generate-soap', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     try {
-        const { input, user, recordType = 'soap' } = req.body;
+        const { input, user, recordType = 'soap', tz } = req.body;
 
         console.log('[SOAP] Received request, input length:', input?.length || 0, 'recordType:', recordType);
 
@@ -1423,7 +1424,7 @@ app.post('/api/generate-soap', async (req, res) => {
 
         // Free-tier cap: consume a SOAP unit up front (refunded on failure) so
         // parallel requests can't slip past the limit.
-        const usageResult = await usage.checkAndConsume(user?.sub, 'soap');
+        const usageResult = await usage.checkAndConsume(user?.sub, 'soap', tz);
         if (!usageResult.allowed) {
             return res.status(403).json(usage.limitResponse('soap', usageResult));
         }

@@ -33,9 +33,9 @@ const FEATURE_LABELS = {
     query: 'PetQuery questions'
 };
 
-// Out-of-usage upgrade screen for free-tier users. Unlike the old TrialEnded
-// paywall this is dismissible — free users keep the app, they've just used
-// 100% of this month's allowance.
+// Out-of-usage upgrade screen for free-tier users. Dismissible and friendly —
+// they've just finished today's free allowance; it comes back at their local
+// midnight (resetsAt), or they can upgrade for unlimited use right now.
 const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed }) => {
     const [isLoading, setIsLoading] = useState(null);
     const [currency, setCurrency] = useState('usd');
@@ -78,9 +78,15 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed 
     };
 
     const savingsAmount = PRICES[currency].monthlyAnnual - PRICES[currency].yearlyTotal;
-    const resetDateLabel = resetsAt
-        ? new Date(resetsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })
-        : 'next month';
+    // "resets in 11 hours" — live distance to the user's local midnight
+    const hoursUntilReset = resetsAt
+        ? Math.max(1, Math.ceil((new Date(resetsAt) - new Date()) / (1000 * 60 * 60)))
+        : null;
+    const resetLabel = hoursUntilReset === null
+        ? 'tomorrow'
+        : hoursUntilReset <= 1
+            ? 'in less than an hour'
+            : `in ${hoursUntilReset} hours`;
 
     return (
         <motion.div
@@ -122,10 +128,10 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed 
                         <FaChartPie className="text-white text-xl" />
                     </div>
                     <h1 className="text-xl sm:text-2xl font-extrabold text-white mb-1.5 tracking-tight leading-tight">
-                        You've used all your free {FEATURE_LABELS[feature]} this month
+                        You've finished today's free {FEATURE_LABELS[feature]}
                     </h1>
                     <p className="text-white/80 text-sm">
-                        Resets <span className="text-emerald-300 font-semibold">{resetDateLabel}</span> — your work is saved. Upgrade for unlimited access, no waiting.
+                        Your free allowance resets <span className="text-emerald-300 font-semibold">{resetLabel}</span> — and everything you've created is saved. Upgrade anytime for unlimited use.
                     </p>
                 </motion.div>
 

@@ -1,6 +1,7 @@
 // Free-tier usage enforcement helpers.
-// Counters live on the users table; consume_usage/refund_usage (migration 008)
-// handle the atomic check-increment and lazy anniversary-based monthly reset.
+// Counters live on the users table; consume_usage/refund_usage (migrations
+// 008/011) handle the atomic check-increment and the lazy DAILY reset at
+// midnight in the user's local timezone.
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -13,9 +14,10 @@ const usageSupabase = createClient(
     || process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
+// Daily allowances (reset at the user's local midnight, no rollover)
 const FREE_LIMITS = {
-    soap: Number(process.env.FREE_SOAP_LIMIT || 15),   // QuickSOAP + PetSOAP combined pool
-    query: Number(process.env.FREE_QUERY_LIMIT || 30)  // PetQuery
+    soap: Number(process.env.FREE_SOAP_LIMIT || 5),    // QuickSOAP + PetSOAP combined pool
+    query: Number(process.env.FREE_QUERY_LIMIT || 15)  // PetQuery
 };
 
 // While false, requests that can't be attributed to a user (stale PWA bundles
@@ -42,8 +44,9 @@ function getTier(userRow) {
 }
 
 // Check the cap and consume one unit if allowed. feature: 'soap' | 'query'.
+// tz: IANA timezone from the client (drives the local-midnight daily reset).
 // Returns { allowed, exempt?, used?, limit?, resetsAt? }.
-async function checkAndConsume(sub, feature) {
+async function checkAndConsume(sub, feature, tz) {
     if (!sub) {
         if (USAGE_ENFORCE_STRICT) {
             return { allowed: false, reason: 'MISSING_USER' };
@@ -72,7 +75,8 @@ async function checkAndConsume(sub, feature) {
     const { data, error: rpcError } = await usageSupabase.rpc('consume_usage', {
         p_auth0_user_id: sub,
         p_feature: feature,
-        p_limit: limit
+        p_limit: limit,
+        p_tz: typeof tz === 'string' && tz ? tz : null
     });
 
     if (rpcError) {

@@ -195,7 +195,7 @@ const AboutPage = () => {
                     <div className="container">
                         <h2>Ready to Save Hours?</h2>
                         <p>Join hundreds of veterinarians using PetWise to work faster and smarter.</p>
-                        <p>Sign up free — SOAP notes and PetQuery included every month.</p>
+                        <p>Sign up free — SOAP notes and PetQuery included every day.</p>
                         <div className="cta-container">
                             <button className="cta-button" onClick={handleStartTrial}>
                                 Get Started Free

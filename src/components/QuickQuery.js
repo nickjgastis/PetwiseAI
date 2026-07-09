@@ -5,8 +5,7 @@ import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt, FaMicrophone, FaStop } from 'react-icons/fa';
 import { AnimatePresence } from 'framer-motion';
-import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
-import { UsageBar } from './UsageMeter';
+import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from './UpgradeNudge';
 import UpgradeModal from './UpgradeModal';
 
@@ -642,20 +641,22 @@ const QuickQuery = ({ isMobile = false }) => {
     const streamRef = useRef(null);
     const audioChunksRef = useRef([]);
 
-    // Free-tier usage state (percentages only in UI)
+    // Free-tier daily usage: show nothing below 80%, banner at 3 queries left,
+    // upgrade screen at 0. Dismissal is keyed to the local date so it resets daily.
     const usage = useUsage();
     const [lastUsage, setLastUsage] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const nudgeKey = `petquery-nudge-dismissed-${new Date().toDateString()}`;
     const [nudgeDismissed, setNudgeDismissed] = useState(
-        () => sessionStorage.getItem('petquery-nudge-dismissed') === 'true'
+        () => sessionStorage.getItem(nudgeKey) === 'true'
     );
-    const queryPct = lastUsage
-        ? Math.min(Math.round((lastUsage.used / lastUsage.limit) * 100), 100)
-        : usage.query.pct;
-    const showNudge = !usage.isUnlimited && !nudgeDismissed && queryPct >= 90 && queryPct < 100;
+    const queryRemaining = lastUsage
+        ? Math.max(lastUsage.limit - lastUsage.used, 0)
+        : usage.query.remaining;
+    const showNudge = !usage.isUnlimited && !nudgeDismissed && queryRemaining > 0 && queryRemaining <= 3;
     const dismissNudge = () => {
         setNudgeDismissed(true);
-        sessionStorage.setItem('petquery-nudge-dismissed', 'true');
+        sessionStorage.setItem(nudgeKey, 'true');
     };
 
     // Check for tutorial flag from Help center
@@ -789,7 +790,7 @@ const QuickQuery = ({ isMobile = false }) => {
         if (!inputMessage.trim() || isLoading) return;
 
         // Preemptive free-tier check — saves a wasted API round-trip at 100%
-        if (!usage.isUnlimited && usage.query.pct >= 100) {
+        if (!usage.isUnlimited && usage.query.remaining <= 0) {
             setShowUpgradeModal(true);
             return;
         }
@@ -959,7 +960,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     frequency_penalty: 0.5,
                     presence_penalty: 0.5,
                     user: { sub: user?.sub },
-                    source: 'petquery'
+                    source: 'petquery',
+                    tz: getBrowserTimezone()
                 }
             );
 
@@ -980,7 +982,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
                 setShowUpgradeModal(true);
-                errorMessage = "You've used 100% of your free PetQuery questions this month. Upgrade for unlimited access — your limit resets next month.";
+                errorMessage = "You've finished today's free PetQuery questions. Your free allowance resets at midnight — or upgrade anytime for unlimited use.";
             } else if (error.response?.status === 429) {
                 // Check if it's a quota error from OpenAI
                 const detail = error.response?.data?.detail || '';
@@ -1313,7 +1315,8 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     frequency_penalty: 0.5,
                     presence_penalty: 0.5,
                     user: { sub: user?.sub },
-                    source: 'petquery'
+                    source: 'petquery',
+                    tz: getBrowserTimezone()
                 }
             );
 
@@ -1334,7 +1337,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
                 setShowUpgradeModal(true);
-                errorMessage = "You've used 100% of your free PetQuery questions this month. Upgrade for unlimited access — your limit resets next month.";
+                errorMessage = "You've finished today's free PetQuery questions. Your free allowance resets at midnight — or upgrade anytime for unlimited use.";
             } else if (error.response?.status === 429) {
                 // Check if it's a quota error from OpenAI
                 const detail = error.response?.data?.detail || '';
@@ -1483,16 +1486,11 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         <div className="flex items-center gap-3">
                             <h2 className="text-3xl font-bold text-primary-600">PetQuery</h2>
                         </div>
-                        {!usage.isUnlimited && usage.loaded && (
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 w-40">
-                                <UsageBar label="PetQuery" pct={usage.query.pct} isUnlimited={usage.isUnlimited} />
-                            </div>
-                        )}
                     </div>
                 )}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <div ref={scrollContainerRef} className={`flex-1 overflow-y-auto ${isMobile ? 'px-3 py-3 pb-24 mobile-scroll-container' : 'px-4 py-6 pb-40'} space-y-4`}>
-                        <UpgradeNudge show={showNudge} feature="query" pct={queryPct} onDismiss={dismissNudge} />
+                        <UpgradeNudge show={showNudge} feature="query" remaining={queryRemaining} onDismiss={dismissNudge} />
                         {/* Mobile empty state - minimal */}
                         {messages.length === 0 && isMobile && (
                             <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">

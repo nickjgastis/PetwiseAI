@@ -7,8 +7,7 @@ import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { AnimatePresence } from 'framer-motion';
-import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
-import { UsageBar } from '../components/UsageMeter';
+import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
 
@@ -273,20 +272,22 @@ const QuickSOAP = () => {
     const [needsSegmentation, setNeedsSegmentation] = useState(false);
     const [error, setError] = useState('');
 
-    // Free-tier usage state (percentages only in UI)
+    // Free-tier daily usage: show nothing below 80%, banner at 1 SOAP left,
+    // upgrade screen at 0. Dismissal is keyed to the local date so it resets daily.
     const usage = useUsage();
     const [lastUsage, setLastUsage] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+    const nudgeKey = `quicksoap-nudge-dismissed-${new Date().toDateString()}`;
     const [nudgeDismissed, setNudgeDismissed] = useState(
-        () => sessionStorage.getItem('quicksoap-nudge-dismissed') === 'true'
+        () => sessionStorage.getItem(nudgeKey) === 'true'
     );
-    const soapPct = lastUsage
-        ? Math.min(Math.round((lastUsage.used / lastUsage.limit) * 100), 100)
-        : usage.soap.pct;
-    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapPct >= 90 && soapPct < 100;
+    const soapRemaining = lastUsage
+        ? Math.max(lastUsage.limit - lastUsage.used, 0)
+        : usage.soap.remaining;
+    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
     const dismissNudge = () => {
         setNudgeDismissed(true);
-        sessionStorage.setItem('quicksoap-nudge-dismissed', 'true');
+        sessionStorage.setItem(nudgeKey, 'true');
     };
     const [lastInput, setLastInput] = useState(() => {
         // Initialize lastInput synchronously from localStorage
@@ -1062,6 +1063,13 @@ const QuickSOAP = () => {
 
     // NEW: Chunked recording system (replaces old single-blob recording)
     const startRecording = async () => {
+        // Free-tier gate: no recording at all once today's SOAPs are used up —
+        // otherwise mobile dictations pile up as drafts that can never generate.
+        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
+            setShowUpgradeModal(true);
+            return;
+        }
+
         try {
             console.log('[QuickSOAP] Starting chunked recording...');
             setError('');
@@ -1632,8 +1640,8 @@ const QuickSOAP = () => {
             return;
         }
 
-        // Preemptive free-tier check — saves a wasted API round-trip at 100%
-        if (!usage.isUnlimited && usage.soap.pct >= 100) {
+        // Preemptive free-tier check — saves a wasted API round-trip at 0 left
+        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
             setShowUpgradeModal(true);
             return;
         }
@@ -1650,7 +1658,8 @@ const QuickSOAP = () => {
                     const response = await axios.post(`${API_URL}/api/generate-soap`, {
                         input: combinedInput.trim(),
                         user: user ? { sub: user.sub } : null,
-                        recordType
+                        recordType,
+                        tz: getBrowserTimezone()
                     });
 
                     console.log('[QuickSOAP] Server response:', {
@@ -1716,7 +1725,8 @@ const QuickSOAP = () => {
                 const response = await axios.post(`${API_URL}/api/generate-soap`, {
                     input: combinedInput.trim(),
                     user: user ? { sub: user.sub } : null,
-                    recordType
+                    recordType,
+                    tz: getBrowserTimezone()
                 });
 
                 if (response.data.report) {
@@ -2084,6 +2094,11 @@ const QuickSOAP = () => {
     // Send to desktop directly (mobile only) - no confirmation modal
     const handleSendToDesktopClick = () => {
         if (!isAuthenticated || !user || !isMobile) return;
+        // Free-tier gate: don't queue drafts the desktop can't generate today
+        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
+            setShowUpgradeModal(true);
+            return;
+        }
         sendToDesktop();
     };
 
@@ -2889,13 +2904,8 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
 
-                                {/* Free-tier usage: nudge at 90%, compact % bar */}
-                                <UpgradeNudge show={showNudge} feature="soap" pct={soapPct} onDismiss={dismissNudge} />
-                                {!usage.isUnlimited && usage.loaded && (
-                                    <div className="flex justify-center mt-3">
-                                        <UsageBar label="SOAP notes" pct={soapPct} isUnlimited={usage.isUnlimited} resetsAt={usage.resetsAt} />
-                                    </div>
-                                )}
+                                {/* Free-tier daily usage: banner only when 1 SOAP left */}
+                                <UpgradeNudge show={showNudge} feature="soap" remaining={soapRemaining} onDismiss={dismissNudge} />
 
                             </div>
                         </div>

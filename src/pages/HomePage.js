@@ -114,7 +114,7 @@ const HomePage = () => {
                             >
                                 Get Started Free
                             </button>
-                            <p className="no-card-text">Free every month • No credit card required</p>
+                            <p className="no-card-text">Free every day • No credit card required</p>
                         </div>
                     </div>
 
@@ -206,7 +206,7 @@ const HomePage = () => {
                 <section className="cta-banner-section">
                     <div className="cta-banner-container">
                         <h2>Less paperwork. More pets!</h2>
-                        <p className="cta-banner-text">Free plan with SOAP notes and PetQuery every month — upgrade anytime for unlimited!</p>
+                        <p className="cta-banner-text">Free plan with SOAP notes and PetQuery every day — upgrade anytime for unlimited!</p>
                         <p className="cta-banner-subtext">No credit card required</p>
                         <button
                             onClick={() => loginWithRedirect(signUpOptions)}
@@ -320,8 +320,8 @@ const HomePage = () => {
                                 <p className="price">$0<span>/month</span></p>
                             </div>
                             <ul className="pricing-features">
-                                <li>Monthly SOAP note allowance</li>
-                                <li>Monthly PetQuery allowance</li>
+                                <li>Free SOAP notes every day</li>
+                                <li>Free PetQuery questions every day</li>
                                 <li>No credit card required</li>
                             </ul>
                             <div className="pricing-footer">
