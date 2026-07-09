@@ -1,6 +1,6 @@
 // src/routes.js
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
 import HomePage from './pages/HomePage';  // Make sure this import matches your file name
@@ -15,6 +15,10 @@ import Help from './components/Help';
 import AdminDashboard from './components/AdminDashboard';
 import AutoLogin from './components/AutoLogin';
 import PWALogin from './components/PWALogin';
+
+// Public marketing / campaign landing pages — code-split so they don't bloat
+// the authenticated app bundle.
+const VetsLanding = lazy(() => import('./pages/landing/VetsLanding'));
 
 // Check if running as installed PWA
 const isStandalone = () => {
@@ -60,6 +64,7 @@ const AppRoutes = () => {
             <Route path="/login" element={isPWA ? <PWALogin /> : <AutoLogin />} />
             <Route path="/signup" element={isPWA ? <PWALogin /> : <AutoLogin mode="signup" />} />
             <Route path="/callback" element={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#3cb6fd' }}>Loading...</div>} />
+            <Route path="/vets" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><VetsLanding /></Suspense>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />

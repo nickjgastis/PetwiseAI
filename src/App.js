@@ -14,7 +14,7 @@ const AppContent = () => {
   const location = useLocation();
 
   // Hide navbar on login/callback routes and admin
-  const hideNavbar = ['/login', '/signup', '/callback', '/admin'].includes(location.pathname) ||
+  const hideNavbar = ['/login', '/signup', '/callback', '/admin', '/vets'].includes(location.pathname) ||
     (!isAuthenticated && location.pathname === '/');
 
   // Add Meta Pixel tracking
