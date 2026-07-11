@@ -185,25 +185,36 @@ function generateWelcomeEmail(userName) {
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             I wanted to personally welcome you to PetWise and thank you for giving the platform a try.
         </p>
-        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            PetWise was built to help veterinarians save time on documentation while maintaining high clinical 
-            quality and consistency. During your trial, you'll have full access to explore the core features 
-            and see how it fits into your workflow.
+        <p style="margin: 0 0 12px; font-size: 16px; color: #374151; line-height: 1.6;">
+            One important thing to know: <strong>PetWise is a desktop app.</strong> Your patient records,
+            templates, and completed SOAP reports all live on your computer at
+            <a href="https://petwise.vet" style="color: #3db6fd; text-decoration: none; font-weight: 600;">petwise.vet</a>.
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            If you have any questions as you get started, you can reach us anytime at 
-            <a href="mailto:info@petwise.vet" style="color: #3db6fd; text-decoration: none;">info@petwise.vet</a>, 
+            <strong>Your phone is your portable microphone.</strong> If you signed up on your phone, perfect —
+            use it to record visits with QuickSOAP, and everything flows straight into your records on desktop.
+        </p>
+        <div style="margin: 0 0 16px; padding: 16px 20px; background: #f0f7ff; border-radius: 12px;">
+            <p style="margin: 0; font-size: 15px; color: #374151; line-height: 1.6;">
+                🖥️ <strong>To get started on desktop:</strong> open
+                <a href="https://petwise.vet" style="color: #3db6fd; text-decoration: none; font-weight: 600;">petwise.vet</a>
+                on your computer and log in with the same email and password you used to sign up.
+            </p>
+        </div>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            If you have any questions as you get started, you can reach us anytime at
+            <a href="mailto:support@petwise.vet" style="color: #3db6fd; text-decoration: none;">support@petwise.vet</a>,
             and our team will be happy to help.
         </p>
         <div style="text-align: center;">
-            ${ctaButton('Get Started', `${APP_URL}/dashboard`)}
+            ${ctaButton('Open Petwise on Desktop', 'https://petwise.vet')}
         </div>
         <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
             All the best,<br>
             Nick
         </p>`;
 
-    return emailWrapper(content, 'Welcome to PetWise! Thanks for giving the platform a try.');
+    return emailWrapper(content, 'Welcome to PetWise! Log in on your computer at petwise.vet to access the full app.');
 }
 
 /**

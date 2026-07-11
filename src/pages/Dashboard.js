@@ -16,7 +16,6 @@ import Templates from '../components/Templates';
 import { supabase } from '../supabaseClient';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
-import InstallPrompt from '../components/InstallPrompt';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
 import UsageRing from '../components/UsageRing';
@@ -1029,16 +1028,6 @@ const Dashboard = () => {
     // Terms accepted + DVM name set ⇒ straight into the app on the free tier.
     // (Old PlanSelection / WelcomeToPetwise / TrialEnded gates removed — access
     // is no longer plan-gated; usage caps are enforced per-feature instead.)
-
-    // PWA install gate — mobile browser users must install to home screen
-    // For legacy users who somehow end up here on mobile browser
-    if (isMobile && process.env.NODE_ENV !== 'development') {
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                             window.navigator.standalone === true;
-        if (!isStandalone) {
-            return <InstallPrompt />;
-        }
-    }
 
     // After onboarding, check if on mobile
     if (isMobile && !isLoading) {

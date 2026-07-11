@@ -1,44 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
 import '../styles/InstallPrompt.css';
 
-// Check conditions synchronously to avoid flash
-const getInitialGateState = () => {
-  // DEV ONLY: Skip gate in development
-  if (process.env.NODE_ENV === 'development') return false;
-  
-  // DEV ONLY: Allow forcing mobile view via localStorage
-  const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
-  
-  // Only check user agent - don't use width to avoid triggering on split-screen desktops
-  const isMobileDevice = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-  if (!isMobileDevice) return false;
-
-  const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
-
-  if (isStandalone) return false;
-
-  return true;
-};
-
-const InstallPrompt = () => {
-  const { logout } = useAuth0();
-  const [showGate] = useState(getInitialGateState);
+// User-invoked install instructions overlay (opened from the mobile Profile's
+// "Get the App" row). Formerly a hard gate — now always dismissible via onClose.
+const InstallPrompt = ({ onClose }) => {
   // Check for early-captured prompt from index.html
   const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredInstallPrompt || null);
-
-  const handleLogout = () => {
-    localStorage.removeItem('auth0.is.authenticated');
-    logout({
-      logoutParams: {
-        returnTo: window.location.origin.includes('app.petwise.vet')
-          ? 'https://petwise.vet'
-          : window.location.origin
-      }
-    });
-  };
 
   // Detect platform
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -48,7 +15,7 @@ const InstallPrompt = () => {
   const isAndroid = /Android/.test(navigator.userAgent);
 
   useEffect(() => {
-    if (!showGate || isIOS) return;
+    if (isIOS) return;
 
     // Check again for early-captured prompt (in case it was captured after initial state)
     if (window.deferredInstallPrompt && !deferredPrompt) {
@@ -66,7 +33,7 @@ const InstallPrompt = () => {
     const handleInstalled = () => {
       setDeferredPrompt(null);
       window.deferredInstallPrompt = null;
-      window.location.reload(); // Reload to exit gate
+      if (onClose) onClose();
     };
 
     window.addEventListener('appinstalled', handleInstalled);
@@ -75,7 +42,7 @@ const InstallPrompt = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
       window.removeEventListener('appinstalled', handleInstalled);
     };
-  }, [showGate, isIOS, deferredPrompt]);
+  }, [isIOS, deferredPrompt, onClose]);
 
   const handleAndroidInstall = async () => {
     if (!deferredPrompt) return;
@@ -83,15 +50,20 @@ const InstallPrompt = () => {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
 
-    if (outcome === 'accepted') {
-      window.location.reload();
-    }
-
     setDeferredPrompt(null);
     window.deferredInstallPrompt = null;
+
+    if (outcome === 'accepted' && onClose) {
+      onClose();
+    }
   };
 
-  if (!showGate) return null;
+  const closeButtons = (
+    <>
+      <button onClick={onClose} className="install-gate-close" aria-label="Close">✕</button>
+      <button onClick={onClose} className="install-gate-later">Maybe later</button>
+    </>
+  );
 
   // iOS but NOT Safari - tell them to open in Safari
   if (isIOSChrome || isIOSOtherBrowser) {
@@ -118,7 +90,7 @@ const InstallPrompt = () => {
           </div>
 
           <p className="install-gate-footer">Only Safari supports app installation on iOS</p>
-          <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
+          {closeButtons}
         </div>
       </div>
     );
@@ -156,8 +128,8 @@ const InstallPrompt = () => {
             </div>
           </div>
 
-          <p className="install-gate-footer">Works offline • Fast • Secure</p>
-          <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
+          <p className="install-gate-footer">Must be opened in <strong>Safari</strong> — if you're in the Instagram or Facebook browser, open Safari and go to <strong>app.petwise.vet</strong></p>
+          {closeButtons}
         </div>
       </div>
     );
@@ -199,8 +171,8 @@ const InstallPrompt = () => {
             )}
           </div>
 
-          <p className="install-gate-footer">Works offline • Fast • Secure</p>
-          <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
+          <p className="install-gate-footer">Must be opened in a web browser like <strong>Chrome</strong> — if you're in the Instagram or Facebook browser, open Chrome and go to <strong>app.petwise.vet</strong></p>
+          {closeButtons}
         </div>
       </div>
     );
@@ -229,8 +201,8 @@ const InstallPrompt = () => {
           </div>
         </div>
 
-        <p className="install-gate-footer">Works offline • Fast • Secure</p>
-        <button onClick={handleLogout} className="install-gate-logout">Log Out</button>
+        <p className="install-gate-footer">Must be opened in a web browser like <strong>Safari</strong> or <strong>Chrome</strong> — not the Instagram or Facebook browser</p>
+        {closeButtons}
       </div>
     </div>
   );

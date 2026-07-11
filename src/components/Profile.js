@@ -9,6 +9,7 @@ import UsageMeter from './UsageMeter';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import ManageSubscription from './ManageSubscription';
+import InstallPrompt from './InstallPrompt';
 import {
     FaUser, FaChartPie, FaCreditCard, FaShieldAlt, FaMobile,
     FaGraduationCap, FaEnvelope, FaCircle
@@ -54,6 +55,7 @@ const Profile = ({ isMobileSignup = false }) => {
     // Mobile-only sub-pages
     const [showCheckout, setShowCheckout] = useState(false);
     const [showManageAccount, setShowManageAccount] = useState(false);
+    const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
     // Helper function to check if user is in student mode
     const isStudentMode = () => {
@@ -259,6 +261,12 @@ const Profile = ({ isMobileSignup = false }) => {
                 </div>
             );
         }
+        if (showInstallPrompt) {
+            return <InstallPrompt onClose={() => setShowInstallPrompt(false)} />;
+        }
+
+        const isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true;
 
         return (
             <div className="min-h-screen bg-[#f7f8fb]">
@@ -316,6 +324,23 @@ const Profile = ({ isMobileSignup = false }) => {
 
                     {/* Account actions */}
                     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+                        {!isStandaloneApp && (
+                            <button
+                                className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                                onClick={() => setShowInstallPrompt(true)}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                                        <FaMobile className="text-emerald-600 text-sm" />
+                                    </div>
+                                    <div>
+                                        <p className="text-gray-800 font-medium text-sm">Get the App</p>
+                                        <p className="text-gray-400 text-xs">Install Petwise on your home screen</p>
+                                    </div>
+                                </div>
+                                <span className="text-gray-300">›</span>
+                            </button>
+                        )}
                         <button
                             className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
                             onClick={() => setShowManageAccount(true)}

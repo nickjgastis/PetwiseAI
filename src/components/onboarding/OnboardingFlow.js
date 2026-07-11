@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
 import CongratsStep from './CongratsStep';
-import InstallPrompt from '../InstallPrompt';
+import DesktopBridgeStep from './DesktopBridgeStep';
 
 // Active flow: congrats (name + phone + terms, all on one screen) → complete.
 // New users land straight in the app on the free tier — no plan/trial step.
@@ -18,9 +18,9 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
     const { user } = useAuth0();
     const [currentStep, setCurrentStep] = useState(onboardingData?.current_step || 'congrats');
 
-    // Detect mobile for install gate
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    // Detect mobile for the desktop-bridge step (user agent only; forceMobile is a dev escape hatch)
+    const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
+    const isMobile = forceMobile || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     // Safety jump: if a user's saved current_step was removed from the flow,
     // finish onboarding if they already gave us their name, else restart congrats.
@@ -81,18 +81,19 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
         await markUserOnboarded();
         goToStep('complete');
 
-        // Mobile browser users get the install gate before landing in the app
-        if (isMobile && !isStandalone && process.env.NODE_ENV !== 'development') {
+        // Mobile users see the desktop-bridge step before landing in the app
+        if (isMobile) {
             return;
         }
 
         if (onComplete) onComplete();
     };
 
-    // If step is 'complete' and on mobile browser, show install gate
+    // Step 'complete': mobile users get a one-time screen explaining the
+    // phone/desktop split; desktop users go straight into the app.
     if (currentStep === 'complete') {
-        if (isMobile && !isStandalone && process.env.NODE_ENV !== 'development') {
-            return <InstallPrompt />;
+        if (isMobile) {
+            return <DesktopBridgeStep onNext={() => onComplete && onComplete()} />;
         }
         // Desktop — should have called onComplete, but just in case
         if (onComplete) onComplete();

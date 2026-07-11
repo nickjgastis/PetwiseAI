@@ -237,7 +237,31 @@ html.android .install-gate-footer {
   font-size: 16px;
 }
 
-.install-gate-logout {
+/* Close (✕) button - top right corner */
+.install-gate-close {
+  position: fixed;
+  top: calc(16px + env(safe-area-inset-top));
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.install-gate-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* "Maybe later" dismiss link */
+.install-gate-later {
   background: none;
   border: none;
   color: rgba(255, 255, 255, 0.5);
@@ -250,6 +274,6 @@ html.android .install-gate-footer {
   transition: color 0.2s;
 }
 
-.install-gate-logout:hover {
+.install-gate-later:hover {
   color: rgba(255, 255, 255, 0.8);
 }
