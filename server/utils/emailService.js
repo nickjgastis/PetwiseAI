@@ -404,6 +404,59 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
     return emailWrapper(content, `Your PetWise trial ends in ${daysLeft} days — book a free demo before it's over.`);
 }
 
+/**
+ * Internal admin notification - sent to the team when a new free account is created.
+ * Plain, utilitarian layout (no marketing branding needed).
+ */
+function generateAdminSignupNotification({ email, nickname, auth0_user_id, createdAt }) {
+    const when = new Date(createdAt || Date.now()).toLocaleString('en-US', {
+        timeZone: 'America/Denver',
+        dateStyle: 'medium',
+        timeStyle: 'short',
+    });
+    const row = (label, value) => `
+        <tr>
+            <td style="padding: 6px 0; font-size: 14px; color: #6b7280; width: 120px;">${label}</td>
+            <td style="padding: 6px 0; font-size: 14px; color: #111827; font-weight: 600;">${value || '—'}</td>
+        </tr>`;
+
+    const content = `
+        <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 700; color: #111827;">
+            New free signup 🎉
+        </h1>
+        <p style="margin: 0 0 20px; font-size: 14px; color: #6b7280; line-height: 1.5;">
+            A new user just created a Petwise account.
+        </p>
+        <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="border-top: 1px solid #eef0f4;">
+            ${row('Name', nickname)}
+            ${row('Email', email)}
+            ${row('Auth0 ID', auth0_user_id)}
+            ${row('Signed up', when + ' MT')}
+        </table>`;
+
+    return emailWrapper(content, `New free signup: ${email}`);
+}
+
+function adminNotifyRecipients() {
+    return (process.env.ADMIN_NOTIFY_EMAILS || 'nick@petwise.vet,drgastis@petwise.vet')
+        .split(',')
+        .map(e => e.trim())
+        .filter(Boolean);
+}
+
+/**
+ * Notify the team about a new free signup. Best-effort — never blocks signup.
+ */
+async function sendAdminSignupNotification({ email, nickname, auth0_user_id, createdAt }) {
+    const to = adminNotifyRecipients();
+    if (!to.length) return { success: false, error: 'No admin recipients configured' };
+    return sendEmail({
+        to,
+        subject: `New Petwise signup: ${nickname || email}`,
+        html: generateAdminSignupNotification({ email, nickname, auth0_user_id, createdAt }),
+    });
+}
+
 // ============================================
 // SEND FUNCTIONS (with opt-out checking)
 // ============================================
@@ -452,6 +505,7 @@ module.exports = {
     sendEmail,
     hasOptedOut,
     sendWelcomeEmail,
+    sendAdminSignupNotification,
     sendTrialActivatedEmail,
     sendSubscriptionConfirmedEmail,
     sendTrialMidwayEmail,

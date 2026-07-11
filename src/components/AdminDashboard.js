@@ -1,5 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    FaChartPie, FaChartLine, FaUsers, FaCopy, FaCheck, FaSyncAlt,
+    FaSearch, FaTimes, FaSignOutAlt, FaLock,
+} from 'react-icons/fa';
 import axios from 'axios';
 import '../styles/AdminDashboard.css';
 
@@ -8,435 +13,357 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const FILTERS = [
-    { key: 'all', label: 'All', color: 'bg-gray-800', ring: 'ring-gray-800' },
-    { key: 'trial', label: 'Trial', color: 'bg-blue-500', ring: 'ring-blue-500' },
-    { key: 'monthly', label: 'Monthly', color: 'bg-green-500', ring: 'ring-green-500' },
-    { key: 'yearly', label: 'Yearly', color: 'bg-purple-500', ring: 'ring-purple-500' },
-    { key: 'paid', label: 'All Paid', color: 'bg-emerald-600', ring: 'ring-emerald-600' },
-    { key: 'canceling', label: 'Canceling', color: 'bg-amber-500', ring: 'ring-amber-500' },
-    { key: 'inactive', label: 'Inactive', color: 'bg-gray-500', ring: 'ring-gray-500' },
-    { key: 'not_onboarded', label: 'Not Onboarded', color: 'bg-red-500', ring: 'ring-red-500' },
+const BROWSER_TZ = (() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Denver'; }
+    catch { return 'America/Denver'; }
+})();
+
+const BRAND = '#3468bd';
+
+// Range presets → { start, end } + the granularity we default the chart to.
+const RANGES = [
+    { key: 'today', label: 'Today', gran: 'day' },
+    { key: '7d', label: '7 days', gran: 'day' },
+    { key: '30d', label: '30 days', gran: 'day' },
+    { key: '90d', label: '90 days', gran: 'week' },
+    { key: '1y', label: '1 year', gran: 'month' },
+    { key: 'all', label: 'All time', gran: 'month' },
 ];
 
-// ─── Icons (inline SVGs for zero deps) ──────────────────────────────────────
-const CopyIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    </svg>
-);
-const CheckIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-    </svg>
-);
-const RefreshIcon = () => (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-    </svg>
-);
-const SearchIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-    </svg>
-);
-const ChevronIcon = ({ open }) => (
-    <svg className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-    </svg>
-);
+function rangeToDates(key) {
+    const end = new Date();
+    let start;
+    if (key === 'today') { start = new Date(); start.setHours(0, 0, 0, 0); }
+    else if (key === '7d') { start = new Date(end.getTime() - 7 * 864e5); }
+    else if (key === '30d') { start = new Date(end.getTime() - 30 * 864e5); }
+    else if (key === '90d') { start = new Date(end.getTime() - 90 * 864e5); }
+    else if (key === '1y') { start = new Date(end.getTime() - 365 * 864e5); }
+    else { start = new Date('2020-01-01T00:00:00Z'); } // all
+    return { start, end };
+}
 
-// ─── Collapsible Section ─────────────────────────────────────────────────────
-const Section = ({ title, isOpen, onToggle, children, badge, noPad }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <button
-            onClick={onToggle}
-            className="w-full flex items-center justify-between px-4 py-3.5 sm:p-4 active:bg-gray-50 transition-colors"
-        >
-            <div className="flex items-center gap-2">
-                <h2 className="text-[15px] sm:text-lg font-semibold text-gray-900">{title}</h2>
-                {badge !== undefined && (
-                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] font-bold tabular-nums">
-                        {badge}
-                    </span>
-                )}
-            </div>
-            <ChevronIcon open={isOpen} />
-        </button>
-        {isOpen && <div className={`border-t border-gray-100 ${noPad ? '' : ''}`}>{children}</div>}
-    </div>
-);
+const SERIES = [
+    { key: 'signups', label: 'Signups', color: BRAND },
+    { key: 'quicksoap', label: 'QuickSOAP', color: '#10b981' },
+    { key: 'petsoap', label: 'PetSOAP', color: '#f59e0b' },
+    { key: 'petquery', label: 'PetQuery', color: '#8b5cf6' },
+];
 
-// ─── KPI Card (horizontal-scroll friendly) ──────────────────────────────────
-const KPICard = ({ title, value, subtitle, trend, accent }) => (
-    <div className={`
-        flex-shrink-0 w-[140px] sm:w-auto sm:flex-1
-        bg-white rounded-2xl p-4 shadow-sm border border-gray-100
-        ${accent ? 'ring-1 ring-inset ring-blue-100' : ''}
-    `}>
-        <p className="text-[11px] font-medium text-gray-500 leading-tight">{title}</p>
-        <p className="text-[22px] sm:text-3xl font-bold text-gray-900 mt-1 tabular-nums leading-none">{value}</p>
-        {subtitle && <p className="text-[10px] text-gray-400 mt-1.5">{subtitle}</p>}
-        {trend !== undefined && trend !== null && (
-            <p className={`text-[11px] font-semibold mt-1.5 ${trend >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {trend >= 0 ? '+' : ''}{trend.toFixed(1)}%
-            </p>
-        )}
-    </div>
-);
+// ─── Effective tier (mirrors server/usage.js) ────────────────────────────────
+function tierOf(u) {
+    const now = Date.now();
+    const end = u.subscription_end_date ? new Date(u.subscription_end_date).getTime() : 0;
+    if (u.plan_label === 'student' && end > now) return 'student';
+    const active = u.subscription_status === 'active' || u.subscription_status === 'past_due';
+    if (active && (u.subscription_interval === 'monthly' || u.subscription_interval === 'yearly')) return 'paid';
+    return 'free';
+}
 
-// ─── Stat Pill (subscription type) ──────────────────────────────────────────
-const StatPill = ({ title, value, gradient }) => (
-    <div className={`flex-shrink-0 bg-gradient-to-br ${gradient} rounded-2xl px-5 py-4 text-white min-w-[120px] sm:flex-1`}>
-        <p className="text-[11px] font-medium opacity-80">{title}</p>
-        <p className="text-2xl font-bold mt-0.5 tabular-nums">{value}</p>
-    </div>
-);
+function statusLabel(u) {
+    if (u.cancel_at_period_end) return 'Canceling';
+    const t = tierOf(u);
+    if (t === 'student') return 'Student';
+    if (t === 'paid') return u.subscription_interval === 'yearly' ? 'Yearly' : 'Monthly';
+    return 'Free';
+}
 
-// ─── Chart Component ─────────────────────────────────────────────────────────
-const MonthlyChart = ({ data }) => {
-    if (!data || data.length === 0) {
-        return <div className="text-gray-500 text-center py-8">No data available</div>;
-    }
-    const maxVal = Math.max(...data.map(d => Math.max(d.newUsers, d.newReports)));
-    const scale = maxVal > 0 ? 160 / maxVal : 1;
-
-    return (
-        <div className="flex flex-col items-center w-full">
-            <div className="flex justify-around items-end w-full h-52 pb-4 overflow-x-auto scrollbar-none">
-                {data.map((month, i) => (
-                    <div key={i} className="flex flex-col items-center min-w-[48px]">
-                        <div className="flex gap-1 h-44 items-end">
-                            <div className="flex flex-col items-center">
-                                <span className="text-[10px] text-gray-500 mb-1">{month.newUsers}</span>
-                                <div className="w-5 sm:w-6 bg-blue-500 rounded-t" style={{ height: `${Math.max(month.newUsers * scale, 4)}px` }} />
-                            </div>
-                            <div className="flex flex-col items-center">
-                                <span className="text-[10px] text-gray-500 mb-1">{month.newReports}</span>
-                                <div className="w-5 sm:w-6 bg-amber-500 rounded-t" style={{ height: `${Math.max(month.newReports * scale, 4)}px` }} />
-                            </div>
-                        </div>
-                        <span className="text-[10px] text-gray-400 mt-2">{month.month}</span>
-                    </div>
-                ))}
-            </div>
-            <div className="flex gap-6 mt-3">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded" /><span className="text-xs text-gray-500">Users</span></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-amber-500 rounded" /><span className="text-xs text-gray-500">Reports</span></div>
-            </div>
-        </div>
-    );
+const STATUS_STYLES = {
+    Canceling: 'bg-amber-100 text-amber-700',
+    Student: 'bg-purple-100 text-purple-700',
+    Yearly: 'bg-purple-100 text-purple-700',
+    Monthly: 'bg-emerald-100 text-emerald-700',
+    Free: 'bg-gray-100 text-gray-500',
 };
 
-// ─── Expandable User Card (mobile CRM style) ────────────────────────────────
-const UserCard = ({ user, rCol, sCol, qCol, formatDate, getStatusBadge, getOnboardingBadge }) => {
-    const [open, setOpen] = useState(false);
+const FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'free', label: 'Free' },
+    { key: 'monthly', label: 'Monthly' },
+    { key: 'yearly', label: 'Yearly' },
+    { key: 'paid', label: 'All Paid' },
+    { key: 'student', label: 'Student' },
+    { key: 'canceling', label: 'Canceling' },
+    { key: 'not_onboarded', label: 'Not Onboarded' },
+];
+
+const isOnboarded = (u) => u.has_completed_onboarding === true || u.onboarding_status === 'completed';
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Reusable bits (match Profile/Usage/Billing styling)
+// ═════════════════════════════════════════════════════════════════════════════
+const StatCard = ({ label, value, sub, accent }) => (
+    <div className={`rounded-2xl border bg-white p-5 ${accent ? 'border-[#3468bd]/30 ring-1 ring-[#3468bd]/10' : 'border-gray-200'}`}>
+        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">{label}</p>
+        <p className="text-3xl font-extrabold text-gray-900 mt-1.5 tabular-nums leading-none">{value}</p>
+        {sub && <p className="text-[12px] text-gray-400 mt-1.5">{sub}</p>}
+    </div>
+);
+
+const SectionHeader = ({ title, subtitle, right }) => (
+    <div className="flex items-end justify-between gap-3 mb-4">
+        <div>
+            <h2 className="text-lg font-bold text-gray-900 tracking-tight">{title}</h2>
+            {subtitle && <p className="text-[13px] text-gray-500 mt-0.5">{subtitle}</p>}
+        </div>
+        {right}
+    </div>
+);
+
+const Spinner = ({ label }) => (
+    <div className="min-h-[100dvh] bg-[#f7f8fb] flex items-center justify-center">
+        <div className="text-center">
+            <div className="w-10 h-10 border-[3px] border-[#3468bd] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-sm text-gray-500">{label}</p>
+        </div>
+    </div>
+);
+
+// ─── SVG multi-series trend chart (zero deps) ────────────────────────────────
+const TrendChart = ({ data, granularity, visible }) => {
+    const [hover, setHover] = useState(null);
+    const W = 1000, H = 320, padL = 44, padR = 16, padT = 16, padB = 34;
+    const innerW = W - padL - padR, innerH = H - padT - padB;
+
+    const active = SERIES.filter(s => visible[s.key]);
+    const maxVal = useMemo(() => {
+        let m = 0;
+        data.forEach(d => active.forEach(s => { if (d[s.key] > m) m = d[s.key]; }));
+        return Math.max(m, 1);
+    }, [data, active]);
+
+    if (!data.length) {
+        return <div className="text-center text-gray-400 text-sm py-16">No data in this range yet.</div>;
+    }
+
+    const n = data.length;
+    const x = (i) => padL + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+    const y = (v) => padT + innerH - (v / maxVal) * innerH;
+
+    const fmtBucket = (b) => {
+        const d = new Date(b);
+        if (granularity === 'month') return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit', timeZone: BROWSER_TZ });
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: BROWSER_TZ });
+    };
+
+    // y gridlines (4 steps)
+    const ticks = 4;
+    const gridVals = Array.from({ length: ticks + 1 }, (_, i) => Math.round((maxVal / ticks) * i));
+
+    // sparse x labels (~8 max)
+    const labelStep = Math.max(1, Math.ceil(n / 8));
 
     return (
-        <div
-            className={`bg-white rounded-2xl border transition-all duration-200 ${open ? 'border-blue-200 shadow-md' : 'border-gray-100 shadow-sm'}`}
-        >
-            <button
-                onClick={() => setOpen(!open)}
-                className="w-full text-left p-4 active:bg-gray-50 transition-colors"
-            >
-                <div className="flex items-center gap-3">
-                    {/* Avatar circle */}
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center flex-shrink-0">
-                        <span className="text-sm font-bold text-blue-600">
-                            {(user.dvm_name || user.nickname || user.email || '?')[0].toUpperCase()}
-                        </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate">
-                            {user.dvm_name || user.nickname || '—'}
-                        </p>
-                        <p className="text-[11px] text-gray-500 truncate">{user.email}</p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                        {getStatusBadge(user)}
-                        {getOnboardingBadge(user)}
-                    </div>
-                </div>
+        <div className="relative">
+            <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 'auto' }} preserveAspectRatio="none"
+                onMouseLeave={() => setHover(null)}>
+                {gridVals.map((v, i) => (
+                    <g key={i}>
+                        <line x1={padL} x2={W - padR} y1={y(v)} y2={y(v)} stroke="#eef0f4" strokeWidth={1} />
+                        <text x={padL - 8} y={y(v) + 4} textAnchor="end" fontSize={11} fill="#9ca3af">{v}</text>
+                    </g>
+                ))}
+                {data.map((d, i) => (
+                    (i % labelStep === 0 || i === n - 1) && (
+                        <text key={i} x={x(i)} y={H - 12} textAnchor="middle" fontSize={11} fill="#9ca3af">{fmtBucket(d.bucket)}</text>
+                    )
+                ))}
+                {active.map(s => {
+                    const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d[s.key])}`).join(' ');
+                    return <path key={s.key} d={path} fill="none" stroke={s.color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />;
+                })}
+                {hover !== null && (
+                    <line x1={x(hover)} x2={x(hover)} y1={padT} y2={padT + innerH} stroke="#cbd5e1" strokeWidth={1} strokeDasharray="4 3" />
+                )}
+                {hover !== null && active.map(s => (
+                    <circle key={s.key} cx={x(hover)} cy={y(data[hover][s.key])} r={4} fill="#fff" stroke={s.color} strokeWidth={2.5} />
+                ))}
+                {/* hover hit areas */}
+                {data.map((d, i) => (
+                    <rect key={i} x={x(i) - (innerW / n) / 2} y={padT} width={Math.max(innerW / n, 2)} height={innerH}
+                        fill="transparent" onMouseEnter={() => setHover(i)} />
+                ))}
+            </svg>
 
-                {/* Always-visible stats row */}
-                <div className="flex gap-4 mt-3 ml-[52px]">
-                    <div>
-                        <span className="text-base font-bold text-gray-900 tabular-nums">{user[sCol] || 0}</span>
-                        <span className="text-[10px] text-gray-400 ml-1">SOAP</span>
-                    </div>
-                    <div>
-                        <span className="text-base font-bold text-gray-900 tabular-nums">{user[rCol] || 0}</span>
-                        <span className="text-[10px] text-gray-400 ml-1">Recs</span>
-                    </div>
-                    <div>
-                        <span className="text-base font-bold text-gray-900 tabular-nums">{user[qCol] || 0}</span>
-                        <span className="text-[10px] text-gray-400 ml-1">Queries</span>
-                    </div>
-                </div>
-            </button>
-
-            {/* Expandable detail */}
-            {open && (
-                <div className="px-4 pb-4 pt-0 space-y-2 animate-[fadeIn_150ms_ease-out]">
-                    <div className="h-px bg-gray-100" />
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px] ml-[52px]">
-                        <div>
-                            <span className="text-gray-400">Joined</span>
-                            <p className="font-medium text-gray-700">{formatDate(user.created_at)}</p>
+            {hover !== null && (
+                <div className="absolute top-2 right-2 bg-white rounded-xl border border-gray-200 shadow-lg px-3 py-2 text-[12px] pointer-events-none">
+                    <p className="font-bold text-gray-900 mb-1">{fmtBucket(data[hover].bucket)}</p>
+                    {active.map(s => (
+                        <div key={s.key} className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                            <span className="text-gray-500">{s.label}</span>
+                            <span className="ml-auto font-semibold text-gray-900 tabular-nums">{data[hover][s.key]}</span>
                         </div>
-                        <div>
-                            <span className="text-gray-400">Expires</span>
-                            <p className="font-medium text-gray-700">{formatDate(user.subscription_end_date)}</p>
-                        </div>
-                        <div>
-                            <span className="text-gray-400">Plan</span>
-                            <p className="font-medium text-gray-700 capitalize">{user.subscription_interval || '—'}</p>
-                        </div>
-                        <div>
-                            <span className="text-gray-400">Onboarding</span>
-                            <p className="font-medium text-gray-700">
-                                {user.has_completed_onboarding || user.onboarding_status === 'completed'
-                                    ? 'Completed'
-                                    : user.onboarding_step || '—'
-                                }
-                            </p>
-                        </div>
-                    </div>
-                    {user.email && (
-                        <button
-                            onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(user.email); }}
-                            className="ml-[52px] text-[11px] text-blue-600 font-medium active:text-blue-800"
-                        >
-                            Copy email
-                        </button>
-                    )}
+                    ))}
                 </div>
             )}
         </div>
     );
 };
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// MAIN DASHBOARD
-// ═══════════════════════════════════════════════════════════════════════════════
+// ═════════════════════════════════════════════════════════════════════════════
+// MAIN
+// ═════════════════════════════════════════════════════════════════════════════
 const AdminDashboard = () => {
     const { isAuthenticated, isLoading: authLoading, user, loginWithRedirect, logout, getAccessTokenSilently } = useAuth0();
     const isAdmin = isAuthenticated && user?.sub === ADMIN_USER_ID;
 
+    const [nav, setNav] = useState('overview');
     const [users, setUsers] = useState([]);
+    const [metrics, setMetrics] = useState(null);
+    const [series, setSeries] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [seriesLoading, setSeriesLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [timeframe, setTimeframe] = useState('all');
+
+    const [range, setRange] = useState('30d');
+    const [granularity, setGranularity] = useState('day');
+    const [visible, setVisible] = useState({ signups: true, quicksoap: true, petsoap: true, petquery: true });
+
     const [subscriptionFilter, setSubscriptionFilter] = useState('all');
     const [sortBy, setSortBy] = useState('newest');
-    const [minQuickSOAP, setMinQuickSOAP] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
-    const [advancedMetrics, setAdvancedMetrics] = useState(null);
-    const [showSection, setShowSection] = useState({
-        overview: true,
-        subscriptions: false,
-        users: true,
-        charts: false,
-    });
-    const [userDisplayCount, setUserDisplayCount] = useState(30);
-    const [copiedField, setCopiedField] = useState(null);
+    const [displayCount, setDisplayCount] = useState(40);
+    const [copied, setCopied] = useState(null);
+    const [selected, setSelected] = useState(null); // user drill-down
 
-    const pillStripRef = useRef(null);
-
-    const rCol = 'weekly_reports_count';
-    const sCol = 'quicksoap_count';
-    const qCol = 'quick_query_messages_count';
-
-    // ─── Data (all server-side, Auth0 token protected) ───────────────────────
     const getAuthHeaders = useCallback(async () => {
         const token = await getAccessTokenSilently();
         return { Authorization: `Bearer ${token}` };
     }, [getAccessTokenSilently]);
 
-    const fetchServerMetrics = useCallback(async () => {
-        try {
-            const headers = await getAuthHeaders();
-            const res = await axios.get(`${API_URL}/admin-metrics`, { headers });
-            setAdvancedMetrics(res.data);
-        } catch (err) { console.error('Server metrics error:', err); }
-    }, [getAuthHeaders]);
-
-    const fetchData = useCallback(async () => {
+    const fetchCore = useCallback(async () => {
         try {
             setLoading(true);
             const headers = await getAuthHeaders();
-            const res = await axios.get(`${API_URL}/admin/users`, { headers });
-            setUsers(res.data.users || []);
+            const [u, m] = await Promise.all([
+                axios.get(`${API_URL}/admin/users`, { headers }),
+                axios.get(`${API_URL}/admin-metrics`, { headers }),
+            ]);
+            setUsers(u.data.users || []);
+            setMetrics(m.data);
+            setError(null);
         } catch (err) {
             setError('Failed to load: ' + (err.response?.data?.error || err.message));
         } finally { setLoading(false); }
     }, [getAuthHeaders]);
 
-    useEffect(() => {
-        if (isAdmin) { fetchData(); fetchServerMetrics(); }
-    }, [isAdmin, fetchData, fetchServerMetrics]);
+    const fetchSeries = useCallback(async () => {
+        try {
+            setSeriesLoading(true);
+            const { start, end } = rangeToDates(range);
+            const headers = await getAuthHeaders();
+            const res = await axios.get(`${API_URL}/admin/analytics/timeseries`, {
+                headers,
+                params: { granularity, start: start.toISOString(), end: end.toISOString(), tz: BROWSER_TZ },
+            });
+            setSeries(res.data.series || []);
+        } catch (err) {
+            console.error('Series error:', err);
+            setSeries([]);
+        } finally { setSeriesLoading(false); }
+    }, [getAuthHeaders, range, granularity]);
 
-    const refresh = () => { fetchData(); fetchServerMetrics(); };
+    useEffect(() => { if (isAdmin) fetchCore(); }, [isAdmin, fetchCore]);
+    useEffect(() => { if (isAdmin) fetchSeries(); }, [isAdmin, fetchSeries]);
 
-    // ─── Derived data ────────────────────────────────────────────────────────
-    const timeframeUsers = useMemo(() => {
-        if (timeframe === 'all') return users;
-        const now = new Date();
-        let cutoff = new Date();
-        if (timeframe === 'today') cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        else if (timeframe === 'week') cutoff.setDate(now.getDate() - 7);
-        else if (timeframe === 'month') cutoff.setMonth(now.getMonth() - 1);
-        else if (timeframe === 'year') cutoff.setFullYear(now.getFullYear() - 1);
-        return users.filter(u => new Date(u.created_at) >= cutoff);
-    }, [users, timeframe]);
+    const refresh = () => { fetchCore(); fetchSeries(); };
 
-    const counts = useMemo(() => {
-        const all = timeframeUsers;
-        const trial = all.filter(u => u.subscription_status === 'active' && (u.subscription_interval === 'trial' || u.subscription_interval === 'stripe_trial'));
-        const monthly = all.filter(u => u.subscription_status === 'active' && u.subscription_interval === 'monthly');
-        const yearly = all.filter(u => u.subscription_status === 'active' && u.subscription_interval === 'yearly');
-        const canceling = all.filter(u => u.cancel_at_period_end === true);
-        const inactive = all.filter(u => u.subscription_status === 'inactive');
-        const notOnboarded = all.filter(u => u.has_completed_onboarding !== true && u.onboarding_status !== 'completed');
+    const pickRange = (key) => {
+        setRange(key);
+        const g = RANGES.find(r => r.key === key)?.gran;
+        if (g) setGranularity(g);
+    };
 
-        const now = new Date();
-        const fom = new Date(now.getFullYear(), now.getMonth(), 1);
+    // ── Derived ──────────────────────────────────────────────────────────────
+    const rangeStart = useMemo(() => rangeToDates(range).start, [range]);
+
+    const rangeUsers = useMemo(() => {
+        if (range === 'all') return users;
+        return users.filter(u => new Date(u.created_at) >= rangeStart);
+    }, [users, range, rangeStart]);
+
+    const seriesTotals = useMemo(() => {
+        const t = { signups: 0, quicksoap: 0, petsoap: 0, petquery: 0 };
+        series.forEach(d => SERIES.forEach(s => { t[s.key] += d[s.key] || 0; }));
+        return t;
+    }, [series]);
+
+    const tierCounts = useMemo(() => {
+        const c = { total: users.length, paid: 0, free: 0, student: 0, canceling: 0 };
+        users.forEach(u => {
+            const t = tierOf(u);
+            c[t] = (c[t] || 0) + 1;
+            if (u.cancel_at_period_end) c.canceling++;
+        });
+        return c;
+    }, [users]);
+
+    const filterCounts = useMemo(() => {
+        const base = rangeUsers;
         return {
-            total: all.length,
-            trial: trial.length,
-            monthly: monthly.length,
-            yearly: yearly.length,
-            paid: monthly.length + yearly.length,
-            canceling: canceling.length,
-            inactive: inactive.length,
-            notOnboarded: notOnboarded.length,
-            totalReports: all.reduce((s, u) => s + (u[rCol] || 0), 0),
-            totalSOAP: all.reduce((s, u) => s + (u[sCol] || 0), 0),
-            totalQueries: all.reduce((s, u) => s + (u[qCol] || 0), 0),
-            newTrials: all.filter(u => (u.subscription_interval === 'trial' || u.subscription_interval === 'stripe_trial') && new Date(u.created_at) >= fom).length,
-            newSubs: all.filter(u => (u.subscription_interval === 'monthly' || u.subscription_interval === 'yearly') && u.subscription_status === 'active' && new Date(u.created_at) >= fom).length,
+            all: base.length,
+            free: base.filter(u => tierOf(u) === 'free').length,
+            monthly: base.filter(u => tierOf(u) === 'paid' && u.subscription_interval === 'monthly').length,
+            yearly: base.filter(u => tierOf(u) === 'paid' && u.subscription_interval === 'yearly').length,
+            paid: base.filter(u => tierOf(u) === 'paid').length,
+            student: base.filter(u => tierOf(u) === 'student').length,
+            canceling: base.filter(u => u.cancel_at_period_end).length,
+            not_onboarded: base.filter(u => !isOnboarded(u)).length,
         };
-    }, [timeframeUsers]);
+    }, [rangeUsers]);
 
-    const filterCounts = useMemo(() => ({
-        all: counts.total, trial: counts.trial, monthly: counts.monthly,
-        yearly: counts.yearly, paid: counts.paid, canceling: counts.canceling,
-        inactive: counts.inactive, not_onboarded: counts.notOnboarded,
-    }), [counts]);
-
-    const filteredUsers = useMemo(() => {
-        let f = [...timeframeUsers];
-        const filterFns = {
-            trial: u => u.subscription_status === 'active' && (u.subscription_interval === 'trial' || u.subscription_interval === 'stripe_trial'),
-            monthly: u => u.subscription_status === 'active' && u.subscription_interval === 'monthly',
-            yearly: u => u.subscription_status === 'active' && u.subscription_interval === 'yearly',
-            paid: u => u.subscription_status === 'active' && (u.subscription_interval === 'monthly' || u.subscription_interval === 'yearly'),
+    const filtered = useMemo(() => {
+        let f = [...rangeUsers];
+        const fns = {
+            free: u => tierOf(u) === 'free',
+            monthly: u => tierOf(u) === 'paid' && u.subscription_interval === 'monthly',
+            yearly: u => tierOf(u) === 'paid' && u.subscription_interval === 'yearly',
+            paid: u => tierOf(u) === 'paid',
+            student: u => tierOf(u) === 'student',
             canceling: u => u.cancel_at_period_end === true,
-            inactive: u => u.subscription_status === 'inactive',
-            not_onboarded: u => u.has_completed_onboarding !== true && u.onboarding_status !== 'completed',
+            not_onboarded: u => !isOnboarded(u),
         };
-        if (filterFns[subscriptionFilter]) f = f.filter(filterFns[subscriptionFilter]);
-        if (minQuickSOAP > 0) f = f.filter(u => (u[sCol] || 0) >= minQuickSOAP);
+        if (fns[subscriptionFilter]) f = f.filter(fns[subscriptionFilter]);
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
             f = f.filter(u => (u.email || '').toLowerCase().includes(q) || (u.dvm_name || '').toLowerCase().includes(q) || (u.nickname || '').toLowerCase().includes(q));
         }
         const sorts = {
-            most_queries: (a, b) => (b[qCol] || 0) - (a[qCol] || 0),
-            most_quicksoap: (a, b) => (b[sCol] || 0) - (a[sCol] || 0),
-            most_records: (a, b) => (b[rCol] || 0) - (a[rCol] || 0),
-            oldest: (a, b) => new Date(a.created_at) - new Date(b.created_at),
             newest: (a, b) => new Date(b.created_at) - new Date(a.created_at),
+            oldest: (a, b) => new Date(a.created_at) - new Date(b.created_at),
+            most_quicksoap: (a, b) => (b.quicksoap_count || 0) - (a.quicksoap_count || 0),
+            most_petquery: (a, b) => (b.petquery_count || 0) - (a.petquery_count || 0),
+            most_petsoap: (a, b) => (b.petsoap_count || 0) - (a.petsoap_count || 0),
         };
         f.sort(sorts[sortBy] || sorts.newest);
         return f;
-    }, [timeframeUsers, subscriptionFilter, sortBy, minQuickSOAP, searchQuery]);
+    }, [rangeUsers, subscriptionFilter, searchQuery, sortBy]);
 
-    const visibleUsers = useMemo(() => filteredUsers.slice(0, userDisplayCount), [filteredUsers, userDisplayCount]);
+    const visibleUsers = useMemo(() => filtered.slice(0, displayCount), [filtered, displayCount]);
 
-    // ─── Helpers ─────────────────────────────────────────────────────────────
     const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '—';
-    const toggleSection = (s) => setShowSection(p => ({ ...p, [s]: !p[s] }));
 
     const copyField = (field) => {
-        const vals = filteredUsers.map(u => field === 'emails' ? u.email : (u.dvm_name || u.nickname || '')).filter(Boolean);
+        const vals = filtered.map(u => field === 'emails' ? u.email : (u.dvm_name || u.nickname || '')).filter(Boolean);
         navigator.clipboard.writeText(vals.join(', '));
-        setCopiedField(field);
-        setTimeout(() => setCopiedField(null), 2000);
+        setCopied(field);
+        setTimeout(() => setCopied(null), 2000);
     };
 
-    const getStatusBadge = (user) => {
-        const base = 'px-2 py-0.5 rounded-full text-[10px] font-bold leading-tight';
-        if (user.cancel_at_period_end) return <span className={`${base} bg-amber-100 text-amber-700`}>Canceling</span>;
-        if (user.subscription_status === 'active') {
-            if (user.subscription_interval === 'trial' || user.subscription_interval === 'stripe_trial')
-                return <span className={`${base} bg-blue-100 text-blue-700`}>Trial</span>;
-            if (user.subscription_interval === 'monthly')
-                return <span className={`${base} bg-green-100 text-green-700`}>Monthly</span>;
-            if (user.subscription_interval === 'yearly')
-                return <span className={`${base} bg-purple-100 text-purple-700`}>Yearly</span>;
-            return <span className={`${base} bg-green-100 text-green-700`}>Active</span>;
-        }
-        return <span className={`${base} bg-gray-100 text-gray-500`}>Inactive</span>;
-    };
+    // ═══ Auth gates ═══════════════════════════════════════════════════════════
+    if (authLoading) return <Spinner label="Authenticating…" />;
 
-    const getOnboardingBadge = (user) => {
-        if (user.has_completed_onboarding || user.onboarding_status === 'completed') return null;
-        if (user.onboarding_step)
-            return <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] font-bold leading-tight">{user.onboarding_step}</span>;
-        return null;
-    };
-
-    const getStatusColor = (user) => {
-        if (user.cancel_at_period_end) return 'text-amber-600';
-        if (user.subscription_status === 'active' && user.subscription_interval === 'monthly') return 'text-green-600';
-        if (user.subscription_status === 'active' && user.subscription_interval === 'yearly') return 'text-purple-600';
-        if (user.subscription_status === 'active' && (user.subscription_interval === 'trial' || user.subscription_interval === 'stripe_trial')) return 'text-blue-600';
-        return 'text-gray-400';
-    };
-
-    const getStatusLabel = (user) => {
-        if (user.cancel_at_period_end) return 'Canceling';
-        if (user.subscription_status === 'active') {
-            const labels = { trial: 'Trial', stripe_trial: 'Stripe Trial', monthly: 'Monthly', yearly: 'Yearly' };
-            return labels[user.subscription_interval] || 'Active';
-        }
-        return 'Inactive';
-    };
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // RENDER
-    // ═════════════════════════════════════════════════════════════════════════
-
-    // ─── Auth loading ────────────────────────────────────────────────────────
-    if (authLoading) {
-        return (
-            <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-10 h-10 border-[3px] border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">Authenticating...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // ─── Not logged in ───────────────────────────────────────────────────────
     if (!isAuthenticated) {
         return (
-            <div className="min-h-[100dvh] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center">
-                    <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+            <div className="min-h-[100dvh] bg-[#f7f8fb] flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-sm text-center">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: BRAND }}>
+                        <FaLock className="text-white text-lg" />
                     </div>
-                    <h1 className="text-xl font-bold text-gray-900 mb-2">PetWise Admin</h1>
-                    <p className="text-sm text-gray-500 mb-6">Sign in with your admin account to continue</p>
-                    <button
-                        onClick={() => loginWithRedirect({ appState: { returnTo: '/admin' } })}
-                        className="w-full py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl active:scale-[0.98] transition-transform shadow-lg shadow-blue-500/30"
-                    >
+                    <h1 className="text-xl font-extrabold text-gray-900 mb-1">PetWise Admin</h1>
+                    <p className="text-[13px] text-gray-500 mb-6">Sign in with your admin account to continue</p>
+                    <button onClick={() => loginWithRedirect({ appState: { returnTo: '/admin' } })}
+                        className="w-full py-3 text-white font-semibold rounded-xl transition-colors" style={{ background: BRAND }}>
                         Sign In
                     </button>
                 </div>
@@ -444,22 +371,17 @@ const AdminDashboard = () => {
         );
     }
 
-    // ─── Authenticated but not admin ─────────────────────────────────────────
     if (!isAdmin) {
         return (
-            <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 w-full max-w-sm text-center">
+            <div className="min-h-[100dvh] bg-[#f7f8fb] flex items-center justify-center p-4">
+                <div className="bg-white rounded-2xl border border-gray-200 p-8 w-full max-w-sm text-center">
                     <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                        </svg>
+                        <FaTimes className="text-red-500 text-lg" />
                     </div>
-                    <h1 className="text-xl font-bold text-gray-900 mb-2">Access Denied</h1>
-                    <p className="text-sm text-gray-500 mb-6">This account doesn't have admin access.</p>
-                    <button
-                        onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-                        className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl active:bg-gray-200 transition-colors"
-                    >
+                    <h1 className="text-xl font-extrabold text-gray-900 mb-1">Access Denied</h1>
+                    <p className="text-[13px] text-gray-500 mb-6">This account doesn't have admin access.</p>
+                    <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                        className="w-full py-3 bg-gray-100 text-gray-700 font-medium rounded-xl hover:bg-gray-200 transition-colors">
                         Sign Out
                     </button>
                 </div>
@@ -467,369 +389,375 @@ const AdminDashboard = () => {
         );
     }
 
-    // ─── Data loading ────────────────────────────────────────────────────────
-    if (loading) {
-        return (
-            <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-10 h-10 border-[3px] border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">Loading dashboard...</p>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <Spinner label="Loading dashboard…" />;
 
-    // ─── Dashboard ───────────────────────────────────────────────────────────
+    const NAV = [
+        { id: 'overview', label: 'Overview', icon: FaChartPie },
+        { id: 'analytics', label: 'Analytics', icon: FaChartLine },
+        { id: 'users', label: 'Users', icon: FaUsers },
+    ];
+
     return (
-        <div className="min-h-[100dvh] bg-gray-50 pb-20 sm:pb-6">
-            {/* ── Sticky Header ──────────────────────────────────────────── */}
-            <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 sticky top-0 z-20">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                    <div className="flex items-center justify-between h-14 sm:h-16">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                                </svg>
-                            </div>
-                            <div className="leading-tight">
-                                <h1 className="text-[15px] font-bold text-gray-900">PetWise</h1>
-                                <p className="text-[10px] text-gray-400 font-medium">{counts.total} users</p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <button onClick={refresh} className="p-2.5 rounded-xl text-gray-400 active:bg-gray-100 transition-colors" title="Refresh">
-                                <RefreshIcon />
-                            </button>
-                            <button
-                                onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
-                                className="px-3 py-2 text-[13px] text-gray-500 active:bg-gray-100 rounded-xl transition-colors"
-                            >
-                                Logout
-                            </button>
-                        </div>
+        <div className="min-h-[100dvh] bg-[#f7f8fb]">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Admin</h1>
+                        <p className="text-[13px] text-gray-500 mt-0.5">{tierCounts.total} users · {tierCounts.paid} paid · {tierCounts.free} free</p>
                     </div>
-
-                    {/* Timeframe strip — always visible under header */}
-                    <div className="flex gap-1 pb-3 -mx-4 px-4 overflow-x-auto scrollbar-none">
-                        {[
-                            { value: 'today', label: 'Today' },
-                            { value: 'week', label: '7d' },
-                            { value: 'month', label: '30d' },
-                            { value: 'year', label: '1y' },
-                            { value: 'all', label: 'All Time' },
-                        ].map(t => (
-                            <button
-                                key={t.value}
-                                onClick={() => setTimeframe(t.value)}
-                                className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-all whitespace-nowrap ${
-                                    timeframe === t.value
-                                        ? 'bg-gray-900 text-white'
-                                        : 'text-gray-500 active:bg-gray-100'
-                                }`}
-                            >
-                                {t.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </header>
-
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-5">
-                {error && (
-                    <div className="bg-red-50 border border-red-100 rounded-2xl p-3 flex items-center justify-between">
-                        <p className="text-red-700 text-xs flex-1">{error}</p>
-                        <button onClick={fetchData} className="ml-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-medium active:bg-red-200 flex-shrink-0">
-                            Retry
+                    <div className="flex items-center gap-2">
+                        <button onClick={refresh} className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                            <FaSyncAlt className="text-xs" /> Refresh
+                        </button>
+                        <button onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold text-gray-500 hover:bg-gray-100 transition-colors">
+                            <FaSignOutAlt className="text-xs" /> Logout
                         </button>
                     </div>
+                </div>
+
+                {error && (
+                    <div className="mb-6 bg-red-50 border border-red-200 rounded-2xl p-3.5 flex items-center justify-between">
+                        <p className="text-red-700 text-[13px]">{error}</p>
+                        <button onClick={fetchCore} className="ml-2 px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-xs font-semibold hover:bg-red-200">Retry</button>
+                    </div>
                 )}
 
-                {/* ── Overview ─────────────────────────────────────────────── */}
-                <Section title="Overview" isOpen={showSection.overview} onToggle={() => toggleSection('overview')}>
-                    {/* Horizontal scroll on mobile, grid on desktop */}
-                    <div className="p-3 sm:p-4">
-                        <div className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-3 overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0 snap-x snap-mandatory">
-                            <KPICard title="Total Users" value={counts.total} accent />
-                            <KPICard title="Paid" value={counts.paid} subtitle={`${counts.monthly} mo · ${counts.yearly} yr`} />
-                            <KPICard title="Trials" value={counts.trial} />
-                            <KPICard title="Records" value={counts.totalReports} />
-                            <KPICard title="QuickSOAPs" value={counts.totalSOAP} />
-                            <KPICard title="Growth" value={advancedMetrics ? `${advancedMetrics.growthRate > 0 ? '+' : ''}${advancedMetrics.growthRate.toFixed(1)}%` : '—'} trend={advancedMetrics?.growthRate} />
-                        </div>
-                    </div>
+                <div className="grid md:grid-cols-[210px,1fr] gap-8">
+                    {/* Sidebar */}
+                    <nav className="flex md:flex-col gap-1.5 overflow-x-auto scrollbar-none">
+                        {NAV.map(({ id, label, icon: Icon }) => {
+                            const activeItem = nav === id;
+                            return (
+                                <button key={id} onClick={() => setNav(id)}
+                                    className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold whitespace-nowrap transition-colors ${activeItem ? 'text-[#3468bd]' : 'text-gray-500 hover:text-gray-800'}`}>
+                                    {activeItem && (
+                                        <motion.span layoutId="admin-active-pill"
+                                            className="absolute inset-0 rounded-xl bg-blue-50 border border-blue-100"
+                                            transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
+                                    )}
+                                    <Icon className={`relative text-xs ${activeItem ? 'text-[#3468bd]' : 'text-gray-400'}`} />
+                                    <span className="relative">{label}</span>
+                                </button>
+                            );
+                        })}
+                    </nav>
 
-                    {/* Highlight badges */}
-                    <div className="px-3 sm:px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-none">
-                        <span className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                            {counts.newTrials} new trials
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                            {counts.newSubs} new subs
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                            {counts.canceling} canceling
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                            {counts.notOnboarded} not onboarded
-                        </span>
-                    </div>
-                </Section>
-
-                {/* ── Subscriptions ────────────────────────────────────────── */}
-                <Section title="Subscriptions" isOpen={showSection.subscriptions} onToggle={() => toggleSection('subscriptions')}>
-                    <div className="p-3 sm:p-4">
-                        <div className="flex sm:grid sm:grid-cols-5 gap-3 overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0 snap-x snap-mandatory">
-                            <StatPill title="Monthly" value={advancedMetrics?.subscriptionsByType?.monthly ?? counts.monthly} gradient="from-green-500 to-green-600" />
-                            <StatPill title="Yearly" value={advancedMetrics?.subscriptionsByType?.yearly ?? counts.yearly} gradient="from-purple-500 to-purple-600" />
-                            <StatPill title="Trials" value={advancedMetrics?.subscriptionsByType?.trial ?? counts.trial} gradient="from-blue-500 to-blue-600" />
-                            <StatPill title="Canceling" value={advancedMetrics?.subscriptionsByType?.canceling ?? counts.canceling} gradient="from-amber-500 to-amber-600" />
-                            <StatPill title="Inactive" value={advancedMetrics?.subscriptionsByType?.inactive ?? counts.inactive} gradient="from-gray-500 to-gray-600" />
-                        </div>
-                    </div>
-                    {counts.total > 0 && (
-                        <div className="px-3 sm:px-4 pb-3 sm:pb-4">
-                            <div className="bg-gray-50 rounded-2xl p-4">
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Conversion</p>
-                                <div className="grid grid-cols-4 gap-2 text-center">
-                                    {[
-                                        { val: ((counts.paid / counts.total) * 100).toFixed(1), label: 'Paid' },
-                                        { val: ((counts.trial / counts.total) * 100).toFixed(1), label: 'Trial' },
-                                        { val: ((counts.inactive / counts.total) * 100).toFixed(1), label: 'Churned' },
-                                        { val: counts.paid > 0 ? ((counts.yearly / counts.paid) * 100).toFixed(0) : '0', label: 'Yr/Paid' },
-                                    ].map(s => (
-                                        <div key={s.label}>
-                                            <p className="text-lg sm:text-xl font-bold text-gray-900 tabular-nums">{s.val}%</p>
-                                            <p className="text-[10px] text-gray-400">{s.label}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </Section>
-
-                {/* ── Chart ────────────────────────────────────────────────── */}
-                {advancedMetrics?.monthlyMetrics && (
-                    <Section title="Growth Chart" isOpen={showSection.charts} onToggle={() => toggleSection('charts')}>
-                        <div className="p-4 overflow-x-auto">
-                            <MonthlyChart data={advancedMetrics.monthlyMetrics.slice().reverse()} />
-                        </div>
-                    </Section>
-                )}
-
-                {/* ── Users ────────────────────────────────────────────────── */}
-                <Section title="Users" isOpen={showSection.users} onToggle={() => toggleSection('users')} badge={filteredUsers.length}>
-                    <div className="space-y-0">
-                        {/* Filter pill strip — horizontal scroll */}
-                        <div className="px-3 sm:px-4 pt-3 sm:pt-4">
-                            <div ref={pillStripRef} className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0 pb-2">
-                                {FILTERS.map(f => (
-                                    <button
-                                        key={f.key}
-                                        onClick={() => setSubscriptionFilter(f.key)}
-                                        className={`
-                                            inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[12px] font-semibold
-                                            whitespace-nowrap transition-all active:scale-95
-                                            ${subscriptionFilter === f.key
-                                                ? `${f.color} text-white shadow-sm`
-                                                : 'bg-gray-100 text-gray-600'
-                                            }
-                                        `}
-                                    >
-                                        {f.label}
-                                        <span className={`
-                                            min-w-[22px] h-[22px] px-1.5 rounded-full text-[10px] font-bold
-                                            inline-flex items-center justify-center
-                                            ${subscriptionFilter === f.key ? 'bg-white/20 text-white' : 'bg-gray-200/80 text-gray-600'}
-                                        `}>
-                                            {filterCounts[f.key]}
-                                        </span>
+                    {/* Content */}
+                    <div className="min-w-0">
+                        {/* Range control — shared across Overview & Analytics */}
+                        {nav !== 'users' && (
+                            <div className="flex flex-wrap gap-1.5 mb-5">
+                                {RANGES.map(r => (
+                                    <button key={r.key} onClick={() => pickRange(r.key)}
+                                        className={`px-3.5 py-1.5 rounded-full text-[12px] font-semibold transition-colors ${range === r.key ? 'bg-[#3468bd] text-white' : 'bg-white border border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                                        {r.label}
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        )}
 
-                        {/* Search + controls */}
-                        <div className="px-3 sm:px-4 space-y-2 pb-3">
-                            <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"><SearchIcon /></div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Search name or email..."
-                                    className="w-full pl-10 pr-4 py-3 bg-gray-50 border-0 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-colors"
-                                />
-                            </div>
-
-                            <div className="flex gap-2">
-                                <select
-                                    value={sortBy}
-                                    onChange={e => setSortBy(e.target.value)}
-                                    className="flex-1 px-3 py-2.5 bg-gray-50 border-0 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 appearance-none"
-                                >
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="most_quicksoap">Most QuickSOAP</option>
-                                    <option value="most_queries">Most Queries</option>
-                                    <option value="most_records">Most Records</option>
-                                </select>
-                                <div className="flex items-center bg-gray-50 rounded-xl px-3 gap-2">
-                                    <span className="text-[11px] text-gray-400 whitespace-nowrap">Min SOAP</span>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={minQuickSOAP}
-                                        onChange={e => setMinQuickSOAP(parseInt(e.target.value) || 0)}
-                                        className="w-12 text-[13px] text-center bg-transparent border-0 focus:outline-none tabular-nums"
-                                    />
+                        {/* ═══ OVERVIEW ═══ */}
+                        {nav === 'overview' && (
+                            <div className="space-y-6">
+                                <div>
+                                    <SectionHeader title="This period" subtitle={`New activity in the selected range (${BROWSER_TZ})`} />
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <StatCard label="New signups" value={seriesLoading ? '…' : seriesTotals.signups} accent />
+                                        <StatCard label="QuickSOAP" value={seriesLoading ? '…' : seriesTotals.quicksoap} />
+                                        <StatCard label="PetSOAP" value={seriesLoading ? '…' : seriesTotals.petsoap} />
+                                        <StatCard label="PetQuery" value={seriesLoading ? '…' : seriesTotals.petquery} />
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Count + copy row */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-[11px] text-gray-400 tabular-nums">
-                                    {Math.min(userDisplayCount, filteredUsers.length)} of {filteredUsers.length}
-                                </p>
-                                <div className="flex gap-1.5 ml-auto">
-                                    <button
-                                        onClick={() => copyField('emails')}
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all active:scale-95 ${
-                                            copiedField === 'emails' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                                        }`}
-                                    >
-                                        {copiedField === 'emails' ? <CheckIcon /> : <CopyIcon />}
-                                        {copiedField === 'emails' ? 'Copied!' : 'Emails'}
-                                    </button>
-                                    <button
-                                        onClick={() => copyField('names')}
-                                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all active:scale-95 ${
-                                            copiedField === 'names' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                                        }`}
-                                    >
-                                        {copiedField === 'names' ? <CheckIcon /> : <CopyIcon />}
-                                        {copiedField === 'names' ? 'Copied!' : 'Names'}
-                                    </button>
+                                <div>
+                                    <SectionHeader title="All-time totals" subtitle="Current account base" />
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <StatCard label="Total users" value={tierCounts.total} />
+                                        <StatCard label="Paid" value={tierCounts.paid} sub={`${metrics?.subscriptionsByType?.monthly ?? 0} mo · ${metrics?.subscriptionsByType?.yearly ?? 0} yr`} />
+                                        <StatCard label="Free" value={tierCounts.free} />
+                                        <StatCard label="Growth (MoM)" value={metrics ? `${metrics.growthRate > 0 ? '+' : ''}${metrics.growthRate.toFixed(0)}%` : '—'} />
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* ── Desktop Table ──────────────────────────────────── */}
-                        <div className="hidden lg:block overflow-x-auto">
-                            <table className="w-full text-sm">
-                                <thead>
-                                    <tr className="bg-gray-50/80 text-left border-y border-gray-100">
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs">Name</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs">Email</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs">Status</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs text-right">Records</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs text-right">SOAP</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs text-right">Queries</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs">Onboarding</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs">Joined</th>
-                                        <th className="px-4 py-3 font-semibold text-gray-500 text-xs">Expires</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {visibleUsers.map(user => (
-                                        <tr key={user.id} className="hover:bg-blue-50/30 transition-colors">
-                                            <td className="px-4 py-3 font-medium text-gray-900 max-w-[180px] truncate">{user.dvm_name || user.nickname || '—'}</td>
-                                            <td className="px-4 py-3 text-gray-600 max-w-[220px] truncate">{user.email}</td>
-                                            <td className={`px-4 py-3 font-semibold text-xs ${getStatusColor(user)}`}>{getStatusLabel(user)}</td>
-                                            <td className="px-4 py-3 text-gray-600 text-right tabular-nums">{user[rCol] || 0}</td>
-                                            <td className="px-4 py-3 text-blue-700 font-semibold text-right tabular-nums">{user[sCol] || 0}</td>
-                                            <td className="px-4 py-3 text-gray-600 text-right tabular-nums">{user[qCol] || 0}</td>
-                                            <td className="px-4 py-3 text-xs">
-                                                {user.has_completed_onboarding || user.onboarding_status === 'completed'
-                                                    ? <span className="text-green-600 font-medium">Done</span>
-                                                    : user.onboarding_step
-                                                        ? <span className="text-amber-600 font-medium">{user.onboarding_step}</span>
-                                                        : <span className="text-gray-300">—</span>
-                                                }
-                                            </td>
-                                            <td className="px-4 py-3 text-gray-400 text-xs tabular-nums">{formatDate(user.created_at)}</td>
-                                            <td className="px-4 py-3 text-gray-400 text-xs tabular-nums">{formatDate(user.subscription_end_date)}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        {/* ── Mobile / Tablet Cards ──────────────────────────── */}
-                        <div className="lg:hidden px-3 sm:px-4 pb-3 space-y-2">
-                            {visibleUsers.map(user => (
-                                <UserCard
-                                    key={user.id}
-                                    user={user}
-                                    rCol={rCol}
-                                    sCol={sCol}
-                                    qCol={qCol}
-                                    formatDate={formatDate}
-                                    getStatusBadge={getStatusBadge}
-                                    getOnboardingBadge={getOnboardingBadge}
-                                />
-                            ))}
-                        </div>
-
-                        {/* Load more */}
-                        {filteredUsers.length > userDisplayCount && (
-                            <div className="text-center py-3 px-3">
-                                <button
-                                    onClick={() => setUserDisplayCount(p => p + 30)}
-                                    className="w-full sm:w-auto px-8 py-3 bg-gray-100 text-gray-700 rounded-2xl text-sm font-medium active:bg-gray-200 transition-colors"
-                                >
-                                    Load more ({filteredUsers.length - userDisplayCount} remaining)
-                                </button>
+                                {/* Subscription breakdown */}
+                                <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+                                    <h3 className="text-sm font-bold text-gray-900 mb-4">Subscriptions</h3>
+                                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                                        {[
+                                            { label: 'Monthly', v: metrics?.subscriptionsByType?.monthly, c: 'text-emerald-600' },
+                                            { label: 'Yearly', v: metrics?.subscriptionsByType?.yearly, c: 'text-purple-600' },
+                                            { label: 'Student', v: metrics?.subscriptionsByType?.student, c: 'text-purple-600' },
+                                            { label: 'Free', v: metrics?.subscriptionsByType?.free, c: 'text-gray-500' },
+                                            { label: 'Canceling', v: metrics?.subscriptionsByType?.canceling, c: 'text-amber-600' },
+                                        ].map(s => (
+                                            <div key={s.label} className="rounded-xl bg-gray-50 p-3.5 text-center">
+                                                <p className={`text-2xl font-extrabold tabular-nums ${s.c}`}>{s.v ?? 0}</p>
+                                                <p className="text-[11px] text-gray-500 mt-0.5">{s.label}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {tierCounts.total > 0 && (
+                                        <p className="text-[12px] text-gray-400 mt-4">
+                                            {((tierCounts.paid / tierCounts.total) * 100).toFixed(1)}% paid conversion ·
+                                            {' '}{tierCounts.paid > 0 ? (((metrics?.subscriptionsByType?.yearly || 0) / tierCounts.paid) * 100).toFixed(0) : 0}% of paid on yearly
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         )}
 
-                        {filteredUsers.length === 0 && (
-                            <div className="text-center py-16 px-4">
-                                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                                    <SearchIcon />
+                        {/* ═══ ANALYTICS ═══ */}
+                        {nav === 'analytics' && (
+                            <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6">
+                                <SectionHeader
+                                    title="Trends"
+                                    subtitle="Signups & feature usage over time"
+                                    right={
+                                        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+                                            {['day', 'week', 'month'].map(g => (
+                                                <button key={g} onClick={() => setGranularity(g)}
+                                                    className={`px-3 py-1.5 rounded-md text-[12px] font-semibold capitalize transition-colors ${granularity === g ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}>
+                                                    {g}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    }
+                                />
+
+                                {/* legend / toggles with per-series totals */}
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {SERIES.map(s => (
+                                        <button key={s.key} onClick={() => setVisible(v => ({ ...v, [s.key]: !v[s.key] }))}
+                                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] font-semibold transition-all ${visible[s.key] ? 'bg-white border-gray-200 text-gray-700' : 'bg-gray-50 border-gray-100 text-gray-300'}`}>
+                                            <span className="w-2.5 h-2.5 rounded-full" style={{ background: visible[s.key] ? s.color : '#d1d5db' }} />
+                                            {s.label}
+                                            <span className="tabular-nums text-gray-400">{seriesTotals[s.key]}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                                <p className="text-gray-500 font-medium">No users found</p>
-                                <button
-                                    onClick={() => { setSubscriptionFilter('all'); setMinQuickSOAP(0); setSearchQuery(''); }}
-                                    className="mt-2 text-blue-600 text-sm font-medium active:underline"
-                                >
-                                    Clear all filters
-                                </button>
+
+                                {seriesLoading
+                                    ? <div className="h-[320px] flex items-center justify-center text-gray-400 text-sm">Loading…</div>
+                                    : <TrendChart data={series} granularity={granularity} visible={visible} />}
+                            </div>
+                        )}
+
+                        {/* ═══ USERS ═══ */}
+                        {nav === 'users' && (
+                            <div className="space-y-4">
+                                <SectionHeader title="Users" subtitle={`${filtered.length} matching · click a row for usage detail`}
+                                    right={
+                                        <div className="flex gap-1.5">
+                                            <button onClick={() => copyField('emails')}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${copied === 'emails' ? 'bg-emerald-100 text-emerald-700' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                                {copied === 'emails' ? <FaCheck className="text-[10px]" /> : <FaCopy className="text-[10px]" />} Emails
+                                            </button>
+                                            <button onClick={() => copyField('names')}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${copied === 'names' ? 'bg-emerald-100 text-emerald-700' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                                {copied === 'names' ? <FaCheck className="text-[10px]" /> : <FaCopy className="text-[10px]" />} Names
+                                            </button>
+                                        </div>
+                                    }
+                                />
+
+                                {/* filters */}
+                                <div className="flex flex-wrap gap-1.5">
+                                    {FILTERS.map(f => (
+                                        <button key={f.key} onClick={() => setSubscriptionFilter(f.key)}
+                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold transition-colors ${subscriptionFilter === f.key ? 'bg-[#3468bd] text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+                                            {f.label}
+                                            <span className={`tabular-nums ${subscriptionFilter === f.key ? 'text-white/70' : 'text-gray-400'}`}>{filterCounts[f.key]}</span>
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* search + sort + signup range */}
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <div className="relative flex-1">
+                                        <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
+                                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search name or email…"
+                                            className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#3468bd]/20" />
+                                    </div>
+                                    <select value={sortBy} onChange={e => setSortBy(e.target.value)}
+                                        className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#3468bd]/20">
+                                        <option value="newest">Newest first</option>
+                                        <option value="oldest">Oldest first</option>
+                                        <option value="most_quicksoap">Most QuickSOAP</option>
+                                        <option value="most_petsoap">Most PetSOAP</option>
+                                        <option value="most_petquery">Most PetQuery</option>
+                                    </select>
+                                    <select value={range} onChange={e => setRange(e.target.value)}
+                                        className="px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#3468bd]/20">
+                                        {RANGES.map(r => <option key={r.key} value={r.key}>Joined: {r.label}</option>)}
+                                    </select>
+                                </div>
+
+                                {/* table */}
+                                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-[13px]">
+                                            <thead>
+                                                <tr className="text-left border-b border-gray-100 bg-gray-50/60">
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide">Name</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide">Email</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide">Status</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide text-right">QuickSOAP</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide text-right">PetSOAP</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide text-right">PetQuery</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide">Onboarding</th>
+                                                    <th className="px-4 py-3 font-semibold text-gray-500 text-[11px] uppercase tracking-wide">Joined</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {visibleUsers.map(u => (
+                                                    <tr key={u.id} onClick={() => setSelected(u)}
+                                                        className="hover:bg-blue-50/40 cursor-pointer transition-colors">
+                                                        <td className="px-4 py-3 font-semibold text-gray-900 max-w-[160px] truncate">{u.dvm_name || u.nickname || '—'}</td>
+                                                        <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">{u.email}</td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLES[statusLabel(u)] || 'bg-gray-100 text-gray-500'}`}>{statusLabel(u)}</span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right tabular-nums font-semibold text-[#3468bd]">{u.quicksoap_count || 0}</td>
+                                                        <td className="px-4 py-3 text-right tabular-nums text-gray-600">{u.petsoap_count || 0}</td>
+                                                        <td className="px-4 py-3 text-right tabular-nums text-gray-600">{u.petquery_count || 0}</td>
+                                                        <td className="px-4 py-3 text-[12px]">
+                                                            {isOnboarded(u) ? <span className="text-emerald-600 font-medium">Done</span>
+                                                                : u.onboarding_step ? <span className="text-amber-600 font-medium">{u.onboarding_step}</span>
+                                                                    : <span className="text-gray-300">—</span>}
+                                                        </td>
+                                                        <td className="px-4 py-3 text-gray-400 text-[12px] tabular-nums">{formatDate(u.created_at)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {filtered.length === 0 && (
+                                        <div className="text-center py-16">
+                                            <p className="text-gray-500 font-medium">No users found</p>
+                                            <button onClick={() => { setSubscriptionFilter('all'); setSearchQuery(''); }}
+                                                className="mt-2 text-[#3468bd] text-[13px] font-semibold hover:underline">Clear filters</button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {filtered.length > displayCount && (
+                                    <button onClick={() => setDisplayCount(c => c + 40)}
+                                        className="w-full py-3 bg-white border border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:bg-gray-50 transition-colors">
+                                        Load more ({filtered.length - displayCount} remaining)
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>
-                </Section>
-
-                <p className="text-center text-[10px] text-gray-300 pb-2">
-                    Updated {new Date().toLocaleTimeString()}
-                </p>
-            </main>
-
-            {/* ── Mobile Bottom Bar (copy actions) ─────────────────────── */}
-            <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-200/60 px-4 py-2.5 z-20 safe-area-bottom">
-                <div className="flex gap-2">
-                    <button
-                        onClick={refresh}
-                        className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-gray-100 rounded-xl text-[13px] font-semibold text-gray-700 active:bg-gray-200 transition-colors"
-                    >
-                        <RefreshIcon /> Refresh
-                    </button>
-                    <button
-                        onClick={() => copyField('emails')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] ${
-                            copiedField === 'emails' ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'
-                        }`}
-                    >
-                        {copiedField === 'emails' ? <><CheckIcon /> Copied!</> : <><CopyIcon /> Copy Emails</>}
-                    </button>
                 </div>
             </div>
+
+            {/* ═══ Per-user drill-down drawer ═══ */}
+            <AnimatePresence>
+                {selected && (
+                    <UserDrawer user={selected} onClose={() => setSelected(null)}
+                        getAuthHeaders={getAuthHeaders} formatDate={formatDate} />
+                )}
+            </AnimatePresence>
         </div>
+    );
+};
+
+// ─── Drawer ──────────────────────────────────────────────────────────────────
+const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
+    const [usage, setUsage] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                setLoading(true);
+                const headers = await getAuthHeaders();
+                const res = await axios.get(`${API_URL}/admin/user-usage`, { headers, params: { sub: user.auth0_user_id } });
+                if (alive) setUsage(res.data.usage);
+            } catch (e) { if (alive) setUsage(null); }
+            finally { if (alive) setLoading(false); }
+        })();
+        return () => { alive = false; };
+    }, [user.auth0_user_id, getAuthHeaders]);
+
+    const row = (label, value) => (
+        <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+            <span className="text-[13px] font-medium text-gray-500">{label}</span>
+            <span className="text-[13px] font-semibold text-gray-800 text-right">{value}</span>
+        </div>
+    );
+
+    const usageCard = (label, color, u) => (
+        <div className="rounded-xl border border-gray-200 p-4">
+            <div className="flex items-center gap-2 mb-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                <span className="text-[13px] font-bold text-gray-900">{label}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+                <div><p className="text-lg font-extrabold text-gray-900 tabular-nums">{u?.total ?? 0}</p><p className="text-[10px] text-gray-400">Lifetime</p></div>
+                <div><p className="text-lg font-extrabold text-gray-900 tabular-nums">{u?.last30d ?? 0}</p><p className="text-[10px] text-gray-400">30 days</p></div>
+                <div><p className="text-lg font-extrabold text-gray-900 tabular-nums">{u?.last7d ?? 0}</p><p className="text-[10px] text-gray-400">7 days</p></div>
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            <motion.div className="fixed inset-0 bg-black/30 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+            <motion.div className="fixed top-0 right-0 h-full w-full sm:max-w-md bg-white z-50 shadow-2xl overflow-y-auto"
+                initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 420, damping: 40 }}>
+                <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+                    <h3 className="text-base font-bold text-gray-900 truncate">{user.dvm_name || user.nickname || user.email}</h3>
+                    <button onClick={onClose} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100"><FaTimes /></button>
+                </div>
+
+                <div className="p-5 space-y-5">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg" style={{ background: BRAND }}>
+                            {(user.dvm_name || user.nickname || user.email || '?')[0].toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-[13px] font-semibold text-gray-900 truncate">{user.email}</p>
+                            <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLES[statusLabel(user)] || 'bg-gray-100 text-gray-500'}`}>{statusLabel(user)}</span>
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 p-4">
+                        {row('Joined', formatDate(user.created_at))}
+                        {row('Plan', user.subscription_interval || 'Free')}
+                        {row('Renews / expires', formatDate(user.subscription_end_date))}
+                        {row('Onboarding', isOnboarded(user) ? 'Completed' : (user.onboarding_step || '—'))}
+                        {row('Auth0 ID', <span className="font-mono text-[11px]">{user.auth0_user_id}</span>)}
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-bold text-gray-900 mb-3">Usage</p>
+                        {loading ? (
+                            <div className="py-8 text-center text-gray-400 text-[13px]">Loading usage…</div>
+                        ) : (
+                            <div className="space-y-3">
+                                {usageCard('QuickSOAP', '#10b981', usage?.quicksoap)}
+                                {usageCard('PetSOAP', '#f59e0b', usage?.petsoap)}
+                                {usageCard('PetQuery', '#8b5cf6', usage?.petquery)}
+                                <p className="text-[11px] text-gray-400">PetSOAP & PetQuery counts started when event logging shipped; QuickSOAP lifetime includes historical data.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {user.email && (
+                        <button onClick={() => navigator.clipboard.writeText(user.email)}
+                            className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-700 text-[13px] font-semibold hover:bg-gray-200 transition-colors">
+                            Copy email
+                        </button>
+                    )}
+                </div>
+            </motion.div>
+        </>
     );
 };
 

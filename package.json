@@ -55,7 +55,7 @@
     "test": "craco test",
     "eject": "react-scripts eject",
     "server": "cd server && node server.js",
-    "client": "react-scripts start",
+    "client": "PORT=3000 react-scripts start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "dev:verbose": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"red,blue\" \"npm run server\" \"npm run client\""
   },

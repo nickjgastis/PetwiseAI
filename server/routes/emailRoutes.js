@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {
     sendWelcomeEmail,
-    sendSubscriptionConfirmedEmail
+    sendSubscriptionConfirmedEmail,
+    sendAdminSignupNotification
 } = require('../utils/emailService');
 
 /**
@@ -38,6 +39,13 @@ router.post('/welcome', async (req, res) => {
                 .eq('auth0_user_id', auth0_user_id)
                 .then(() => console.log('Marked welcome email as sent'))
                 .catch(err => console.error('Failed to mark welcome email sent:', err));
+
+            // Notify the team of the new free signup (best-effort, non-blocking).
+            // Gated by the same one-shot path as the welcome email, so admins get
+            // exactly one notice per new account.
+            sendAdminSignupNotification({ auth0_user_id, email, nickname, createdAt: new Date().toISOString() })
+                .then(r => console.log('Admin signup notification:', r.success ? 'sent' : r.error))
+                .catch(err => console.error('Admin signup notification failed:', err));
 
             return res.json({ success: true, message: 'Welcome email sent' });
         } else {

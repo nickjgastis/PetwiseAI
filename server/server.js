@@ -86,6 +86,19 @@ const supabase = createClient(
     process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
+// Fire-and-forget usage event log for admin time-series analytics.
+// Never blocks or fails the originating request — analytics are best-effort.
+// eventType: 'quicksoap' | 'petsoap' | 'petquery'
+function logUsageEvent(sub, eventType) {
+    if (!sub || !eventType) return;
+    supabase
+        .from('usage_events')
+        .insert([{ auth0_user_id: sub, event_type: eventType }])
+        .then(({ error }) => {
+            if (error) console.error('[usage_events] insert failed:', error.message);
+        }, err => console.error('[usage_events] insert threw:', err?.message || err));
+}
+
 // Middleware setup
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
@@ -428,6 +441,11 @@ app.post('/api/quickquery', async (req, res) => {
 
         // Sibling key on the OpenAI-shaped response — clients only read `choices`
         data.usage_petwise = res.locals.usageInfo || null;
+
+        if (source === 'petsoap' || source === 'petquery') {
+            logUsageEvent(user?.sub, source);
+        }
+
         return res.status(200).json(data);
     } catch (err) {
         // Generation failed after we consumed a free-tier unit — give it back
@@ -2137,6 +2155,8 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             console.log('[SOAP] No user.sub provided, skipping counter increment');
         }
 
+        logUsageEvent(user?.sub, 'quicksoap');
+
         return res.status(200).json({ report, petName, recordType, usage: res.locals.usageInfo || null });
     } catch (err) {
         // Generation failed after we consumed a free-tier unit — give it back
@@ -3207,9 +3227,10 @@ app.post('/manual-reset', async (req, res) => {
 // ================ ADMIN ENDPOINTS (Auth0 protected) ================
 app.get('/admin/users', requireAdmin, async (req, res) => {
     try {
-        const [usersRes, onboardingRes] = await Promise.all([
+        const [usersRes, onboardingRes, usageRes] = await Promise.all([
             supabase.from('users').select('*').order('created_at', { ascending: false }),
             supabase.from('onboarding').select('auth0_user_id, status, current_step'),
+            supabase.rpc('admin_usage_by_user'),
         ]);
 
         if (usersRes.error) throw usersRes.error;
@@ -3217,24 +3238,39 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
         const obMap = {};
         (onboardingRes.data || []).forEach(o => { obMap[o.auth0_user_id] = o; });
 
-        const users = (usersRes.data || []).map(u => ({
-            id: u.id,
-            email: u.email,
-            nickname: u.nickname,
-            dvm_name: u.dvm_name,
-            created_at: u.created_at,
-            subscription_status: u.subscription_status,
-            subscription_interval: u.subscription_interval,
-            subscription_end_date: u.subscription_end_date,
-            cancel_at_period_end: u.cancel_at_period_end,
-            has_completed_onboarding: u.has_completed_onboarding,
-            weekly_reports_count: u.weekly_reports_count,
-            quicksoap_count: u.quicksoap_count,
-            quick_query_messages_count: u.quick_query_messages_count,
-            plan_label: u.plan_label,
-            onboarding_status: obMap[u.auth0_user_id]?.status || null,
-            onboarding_step: obMap[u.auth0_user_id]?.current_step || null,
-        }));
+        // Per-user event rollup (quicksoap/petsoap/petquery) from usage_events.
+        // Non-fatal if the migration hasn't run yet — columns just come back 0.
+        const usageMap = {};
+        if (usageRes.error) {
+            console.error('admin_usage_by_user RPC error (defaulting to 0):', usageRes.error.message);
+        } else {
+            (usageRes.data || []).forEach(r => { usageMap[r.auth0_user_id] = r; });
+        }
+
+        const users = (usersRes.data || []).map(u => {
+            const usage = usageMap[u.auth0_user_id] || {};
+            return {
+                id: u.id,
+                auth0_user_id: u.auth0_user_id,
+                email: u.email,
+                nickname: u.nickname,
+                dvm_name: u.dvm_name,
+                created_at: u.created_at,
+                subscription_status: u.subscription_status,
+                subscription_interval: u.subscription_interval,
+                subscription_end_date: u.subscription_end_date,
+                cancel_at_period_end: u.cancel_at_period_end,
+                has_completed_onboarding: u.has_completed_onboarding,
+                plan_label: u.plan_label,
+                // Lifetime QuickSOAP keeps its historical counter; PetSOAP/PetQuery
+                // come from usage_events (start at 0, accrue going forward).
+                quicksoap_count: Math.max(u.quicksoap_count || 0, Number(usage.quicksoap || 0)),
+                petsoap_count: Number(usage.petsoap || 0),
+                petquery_count: Number(usage.petquery || 0),
+                onboarding_status: obMap[u.auth0_user_id]?.status || null,
+                onboarding_step: obMap[u.auth0_user_id]?.current_step || null,
+            };
+        });
 
         res.json({ users });
     } catch (error) {
@@ -3243,122 +3279,121 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
     }
 });
 
+// Time-series for signups + usage events, bucketed by day/week/month.
+// Query: ?granularity=day|week|month&start=ISO&end=ISO&tz=IANA
+app.get('/admin/analytics/timeseries', requireAdmin, async (req, res) => {
+    try {
+        const granularity = ['day', 'week', 'month'].includes(req.query.granularity)
+            ? req.query.granularity : 'day';
+        const tz = typeof req.query.tz === 'string' && req.query.tz ? req.query.tz : 'America/Denver';
+        const end = req.query.end ? new Date(req.query.end) : new Date();
+        const start = req.query.start
+            ? new Date(req.query.start)
+            : new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+        const { data, error } = await supabase.rpc('admin_usage_timeseries', {
+            p_granularity: granularity,
+            p_start: start.toISOString(),
+            p_end: end.toISOString(),
+            p_tz: tz,
+        });
+        if (error) throw error;
+
+        const series = (data || []).map(r => ({
+            bucket: r.bucket,
+            signups: Number(r.signups) || 0,
+            quicksoap: Number(r.quicksoap) || 0,
+            petsoap: Number(r.petsoap) || 0,
+            petquery: Number(r.petquery) || 0,
+        }));
+
+        res.json({ granularity, tz, start: start.toISOString(), end: end.toISOString(), series });
+    } catch (error) {
+        console.error('Analytics timeseries error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Per-user usage drill-down (lifetime + last 30d / 7d, split by feature).
+// Query: ?sub=<auth0_user_id>
+app.get('/admin/user-usage', requireAdmin, async (req, res) => {
+    try {
+        const sub = req.query.sub;
+        if (!sub) return res.status(400).json({ error: 'Missing sub' });
+
+        const { data, error } = await supabase.rpc('admin_user_usage', { p_auth0_user_id: sub });
+        if (error) throw error;
+
+        const usage = { quicksoap: {}, petsoap: {}, petquery: {} };
+        (data || []).forEach(r => {
+            usage[r.event_type] = {
+                total: Number(r.total) || 0,
+                last30d: Number(r.last_30d) || 0,
+                last7d: Number(r.last_7d) || 0,
+            };
+        });
+        ['quicksoap', 'petsoap', 'petquery'].forEach(k => {
+            if (!usage[k].total) usage[k] = { total: 0, last30d: 0, last7d: 0 };
+        });
+
+        res.json({ sub, usage });
+    } catch (error) {
+        console.error('User usage error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/admin-metrics', requireAdmin, async (req, res) => {
     try {
-
-        // Get users
         const { data: users, error: userError } = await supabase
             .from('users')
             .select('*');
-
         if (userError) throw userError;
 
-        // Get reports
-        const { data: reports, error: reportError } = await supabase
-            .from('reports')
-            .select('*');
-
-        if (reportError) throw reportError;
-
-        // Calculate metrics
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        // User metrics
-        const totalUsers = users.length;
-        const activeUsers = users.filter(u => u.subscription_status === 'active').length;
-        const trialUsers = users.filter(u => u.subscription_interval === 'trial').length;
-
-        // Time-based metrics
-        const newUsersThisMonth = users.filter(
-            u => new Date(u.created_at) >= firstDayOfMonth
-        ).length;
-
-        const newUsersLastMonth = users.filter(
-            u => new Date(u.created_at) >= firstDayOfLastMonth &&
-                new Date(u.created_at) < firstDayOfMonth
-        ).length;
-
-        // Subscription metrics
-        const subscriptionsByType = {
-            monthly: users.filter(u =>
-                u.subscription_status === 'active' &&
-                u.subscription_interval === 'monthly'
-            ).length,
-            yearly: users.filter(u =>
-                u.subscription_status === 'active' &&
-                u.subscription_interval === 'yearly'
-            ).length,
-            trial: trialUsers,
-            inactive: users.filter(u => u.subscription_status === 'inactive').length,
-            canceling: users.filter(u => u.cancel_at_period_end === true).length
+        // Effective tier (mirrors server/usage.js getTier): free = no active plan.
+        const tierOf = (u) => {
+            const endDate = u.subscription_end_date ? new Date(u.subscription_end_date) : null;
+            if (u.plan_label === 'student' && endDate && endDate > now) return 'student';
+            const activeStatus = ['active', 'past_due'].includes(u.subscription_status);
+            if (activeStatus && ['monthly', 'yearly'].includes(u.subscription_interval)) return 'paid';
+            return 'free';
         };
 
-        // Report metrics
-        const totalReports = reports.length;
-        const reportsThisMonth = reports.filter(
-            r => new Date(r.created_at) >= firstDayOfMonth
+        const totalUsers = users.length;
+        const paidUsers = users.filter(u => tierOf(u) === 'paid').length;
+        const studentUsers = users.filter(u => tierOf(u) === 'student').length;
+        const freeUsers = users.filter(u => tierOf(u) === 'free').length;
+
+        const newUsersThisMonth = users.filter(u => new Date(u.created_at) >= firstDayOfMonth).length;
+        const newUsersLastMonth = users.filter(
+            u => new Date(u.created_at) >= firstDayOfLastMonth && new Date(u.created_at) < firstDayOfMonth
         ).length;
 
-        // Quick query metrics (sum from user counts)
-        const totalQuickQueries = users.reduce(
-            (sum, user) => sum + (user.quick_query_count || 0),
-            0
-        );
-
-        // QuickSOAP metrics (sum from user counts)
-        const totalQuickSOAPs = users.reduce(
-            (sum, user) => sum + (user.quicksoap_count || 0),
-            0
-        );
-
-        // Metrics by month
-        const last6Months = Array.from({ length: 6 }, (_, i) => {
-            const date = new Date();
-            date.setMonth(date.getMonth() - i);
-            return {
-                month: date.toLocaleString('default', { month: 'short' }),
-                year: date.getFullYear()
-            };
-        });
-
-        const monthlyMetrics = last6Months.map(({ month, year }) => {
-            const startOfMonth = new Date(year, new Date().getMonth() - last6Months.findIndex(m => m.month === month), 1);
-            const endOfMonth = new Date(year, new Date().getMonth() - last6Months.findIndex(m => m.month === month) + 1, 0);
-
-            return {
-                month,
-                year,
-                newUsers: users.filter(u =>
-                    new Date(u.created_at) >= startOfMonth &&
-                    new Date(u.created_at) <= endOfMonth
-                ).length,
-                newReports: reports.filter(r =>
-                    new Date(r.created_at) >= startOfMonth &&
-                    new Date(r.created_at) <= endOfMonth
-                ).length
-            };
-        });
+        const subscriptionsByType = {
+            monthly: users.filter(u => u.subscription_status === 'active' && u.subscription_interval === 'monthly').length,
+            yearly: users.filter(u => u.subscription_status === 'active' && u.subscription_interval === 'yearly').length,
+            student: studentUsers,
+            free: freeUsers,
+            canceling: users.filter(u => u.cancel_at_period_end === true).length,
+        };
 
         res.json({
             totalUsers,
-            activeUsers,
-            trialUsers,
+            paidUsers,
+            studentUsers,
+            freeUsers,
             newUsersThisMonth,
             newUsersLastMonth,
             growthRate: newUsersLastMonth > 0
                 ? ((newUsersThisMonth - newUsersLastMonth) / newUsersLastMonth) * 100
                 : 0,
             subscriptionsByType,
-            totalReports,
-            reportsThisMonth,
-            totalQuickQueries,
-            totalQuickSOAPs,
-            monthlyMetrics,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
         });
-
     } catch (error) {
         console.error('Admin metrics error:', error);
         res.status(500).json({ error: error.message });
