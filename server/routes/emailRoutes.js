@@ -32,20 +32,29 @@ router.post('/welcome', async (req, res) => {
         });
 
         if (result.success) {
-            // Update the database to mark email as sent (fire and forget)
-            supabase
-                .from('users')
-                .update({ welcome_email_sent_at: new Date().toISOString() })
-                .eq('auth0_user_id', auth0_user_id)
-                .then(() => console.log('Marked welcome email as sent'))
-                .catch(err => console.error('Failed to mark welcome email sent:', err));
+            // Mark email as sent. Awaited so it persists on Vercel serverless (the
+            // function freezes after the response, dropping non-awaited writes) —
+            // this is the one-shot guard that prevents duplicate welcome/admin emails.
+            try {
+                await supabase
+                    .from('users')
+                    .update({ welcome_email_sent_at: new Date().toISOString() })
+                    .eq('auth0_user_id', auth0_user_id);
+                console.log('Marked welcome email as sent');
+            } catch (err) {
+                console.error('Failed to mark welcome email sent:', err);
+            }
 
-            // Notify the team of the new free signup (best-effort, non-blocking).
-            // Gated by the same one-shot path as the welcome email, so admins get
-            // exactly one notice per new account.
-            sendAdminSignupNotification({ auth0_user_id, email, nickname, createdAt: new Date().toISOString() })
-                .then(r => console.log('Admin signup notification:', r.success ? 'sent' : r.error))
-                .catch(err => console.error('Admin signup notification failed:', err));
+            // Notify the team of the new free signup. Awaited (not fire-and-forget)
+            // so it actually sends on Vercel serverless, which freezes the function
+            // after the response is returned. Wrapped so a failure never breaks signup.
+            // Gated by the same one-shot path as the welcome email → one notice per account.
+            try {
+                const notify = await sendAdminSignupNotification({ auth0_user_id, email, nickname, createdAt: new Date().toISOString() });
+                console.log('Admin signup notification:', notify.success ? 'sent' : notify.error);
+            } catch (err) {
+                console.error('Admin signup notification failed:', err);
+            }
 
             return res.json({ success: true, message: 'Welcome email sent' });
         } else {

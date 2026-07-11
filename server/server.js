@@ -86,17 +86,21 @@ const supabase = createClient(
     process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
-// Fire-and-forget usage event log for admin time-series analytics.
-// Never blocks or fails the originating request — analytics are best-effort.
+// Usage event log for admin time-series analytics. Awaited before responding so
+// the insert completes on Vercel serverless (functions freeze after res is sent,
+// dropping non-awaited async work). Swallows its own errors — never fails or
+// blocks the originating request beyond the insert round-trip.
 // eventType: 'quicksoap' | 'petsoap' | 'petquery'
-function logUsageEvent(sub, eventType) {
+async function logUsageEvent(sub, eventType) {
     if (!sub || !eventType) return;
-    supabase
-        .from('usage_events')
-        .insert([{ auth0_user_id: sub, event_type: eventType }])
-        .then(({ error }) => {
-            if (error) console.error('[usage_events] insert failed:', error.message);
-        }, err => console.error('[usage_events] insert threw:', err?.message || err));
+    try {
+        const { error } = await supabase
+            .from('usage_events')
+            .insert([{ auth0_user_id: sub, event_type: eventType }]);
+        if (error) console.error('[usage_events] insert failed:', error.message);
+    } catch (err) {
+        console.error('[usage_events] insert threw:', err?.message || err);
+    }
 }
 
 // Middleware setup
@@ -443,7 +447,7 @@ app.post('/api/quickquery', async (req, res) => {
         data.usage_petwise = res.locals.usageInfo || null;
 
         if (source === 'petsoap' || source === 'petquery') {
-            logUsageEvent(user?.sub, source);
+            await logUsageEvent(user?.sub, source);
         }
 
         return res.status(200).json(data);
@@ -2155,7 +2159,7 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
             console.log('[SOAP] No user.sub provided, skipping counter increment');
         }
 
-        logUsageEvent(user?.sub, 'quicksoap');
+        await logUsageEvent(user?.sub, 'quicksoap');
 
         return res.status(200).json({ report, petName, recordType, usage: res.locals.usageInfo || null });
     } catch (err) {
