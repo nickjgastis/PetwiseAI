@@ -34,7 +34,7 @@ router.post('/welcome', async (req, res) => {
         if (result.success) {
             // Mark email as sent. Awaited so it persists on Vercel serverless (the
             // function freezes after the response, dropping non-awaited writes) —
-            // this is the one-shot guard that prevents duplicate welcome/admin emails.
+            // this is the one-shot guard that prevents duplicate welcome emails.
             try {
                 await supabase
                     .from('users')
@@ -43,17 +43,6 @@ router.post('/welcome', async (req, res) => {
                 console.log('Marked welcome email as sent');
             } catch (err) {
                 console.error('Failed to mark welcome email sent:', err);
-            }
-
-            // Notify the team of the new free signup. Awaited (not fire-and-forget)
-            // so it actually sends on Vercel serverless, which freezes the function
-            // after the response is returned. Wrapped so a failure never breaks signup.
-            // Gated by the same one-shot path as the welcome email → one notice per account.
-            try {
-                const notify = await sendAdminSignupNotification({ auth0_user_id, email, nickname, createdAt: new Date().toISOString() });
-                console.log('Admin signup notification:', notify.success ? 'sent' : notify.error);
-            } catch (err) {
-                console.error('Admin signup notification failed:', err);
             }
 
             return res.json({ success: true, message: 'Welcome email sent' });
@@ -65,6 +54,39 @@ router.post('/welcome', async (req, res) => {
         }
     } catch (err) {
         console.error('Welcome email error:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+/**
+ * POST /email/admin-signup
+ * Internal team notification. Fired after onboarding (name + phone collected),
+ * not at Auth0 signup — phone isn't available until CongratsStep.
+ */
+router.post('/admin-signup', async (req, res) => {
+    const { auth0_user_id, email, nickname, phone_number } = req.body;
+
+    if (!auth0_user_id || !email) {
+        return res.status(400).json({
+            error: 'Missing required fields: auth0_user_id, email'
+        });
+    }
+
+    try {
+        const notify = await sendAdminSignupNotification({
+            auth0_user_id,
+            email,
+            nickname,
+            phone_number,
+            createdAt: new Date().toISOString(),
+        });
+        console.log('Admin signup notification:', notify.success ? 'sent' : notify.error);
+        if (!notify.success) {
+            return res.status(500).json({ error: 'Failed to send admin notification', details: notify.error });
+        }
+        return res.json({ success: true });
+    } catch (err) {
+        console.error('Admin signup notification failed:', err);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });

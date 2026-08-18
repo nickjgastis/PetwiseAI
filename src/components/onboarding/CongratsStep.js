@@ -4,6 +4,10 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
 import OnboardingLayout from './OnboardingLayout';
 
+const API_URL = process.env.NODE_ENV === 'production'
+    ? 'https://api.petwise.vet'
+    : 'http://localhost:3001';
+
 const CongratsStep = ({ onNext }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [dvmName1, setDvmName1] = useState('');
@@ -39,6 +43,20 @@ const CongratsStep = ({ onNext }) => {
                 .update(updates)
                 .eq('auth0_user_id', user.sub);
             if (updateError) throw updateError;
+
+            // Internal team email — phone isn't available at Auth0 signup, only here.
+            // Fire-and-forget so a notify failure never blocks onboarding.
+            fetch(`${API_URL}/email/admin-signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    auth0_user_id: user.sub,
+                    email: user.email,
+                    nickname: dvmName1.trim(),
+                    phone_number: phoneNumber.trim(),
+                }),
+            }).catch(err => console.error('Admin signup notification error:', err));
+
             onNext();
         } catch (err) {
             console.error('Error saving profile:', err);

@@ -207,7 +207,7 @@ const AdminDashboard = () => {
     const { isAuthenticated, isLoading: authLoading, user, loginWithRedirect, logout, getAccessTokenSilently } = useAuth0();
     const isAdmin = isAuthenticated && user?.sub === ADMIN_USER_ID;
 
-    const [nav, setNav] = useState('overview');
+    const [nav, setNav] = useState('users');
     const [users, setUsers] = useState([]);
     const [metrics, setMetrics] = useState(null);
     const [series, setSeries] = useState([]);
@@ -326,7 +326,12 @@ const AdminDashboard = () => {
         if (fns[subscriptionFilter]) f = f.filter(fns[subscriptionFilter]);
         if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            f = f.filter(u => (u.email || '').toLowerCase().includes(q) || (u.dvm_name || '').toLowerCase().includes(q) || (u.nickname || '').toLowerCase().includes(q));
+            f = f.filter(u =>
+                (u.email || '').toLowerCase().includes(q)
+                || (u.dvm_name || '').toLowerCase().includes(q)
+                || (u.nickname || '').toLowerCase().includes(q)
+                || (u.phone_number || '').toLowerCase().includes(q)
+            );
         }
         const sorts = {
             newest: (a, b) => new Date(b.created_at) - new Date(a.created_at),
@@ -392,9 +397,9 @@ const AdminDashboard = () => {
     if (loading) return <Spinner label="Loading dashboard…" />;
 
     const NAV = [
+        { id: 'users', label: 'Users', icon: FaUsers },
         { id: 'overview', label: 'Overview', icon: FaChartPie },
         { id: 'analytics', label: 'Analytics', icon: FaChartLine },
-        { id: 'users', label: 'Users', icon: FaUsers },
     ];
 
     return (
@@ -577,7 +582,7 @@ const AdminDashboard = () => {
                                 <div className="flex flex-col sm:flex-row gap-2">
                                     <div className="relative flex-1">
                                         <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-                                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search name or email…"
+                                        <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search name, email, or phone…"
                                             className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] focus:outline-none focus:ring-2 focus:ring-[#3468bd]/20" />
                                     </div>
                                     <select value={sortBy} onChange={e => setSortBy(e.target.value)}
@@ -670,6 +675,7 @@ const AdminDashboard = () => {
 const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
     const [usage, setUsage] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(null);
 
     useEffect(() => {
         let alive = true;
@@ -685,12 +691,32 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
         return () => { alive = false; };
     }, [user.auth0_user_id, getAuthHeaders]);
 
-    const row = (label, value) => (
-        <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
-            <span className="text-[13px] font-medium text-gray-500">{label}</span>
-            <span className="text-[13px] font-semibold text-gray-800 text-right">{value}</span>
+    const copy = (key, text) => {
+        if (!text) return;
+        navigator.clipboard.writeText(text);
+        setCopied(key);
+        setTimeout(() => setCopied(null), 1500);
+    };
+
+    const dash = (v) => (v === 0 || v === false) ? v : (v || '—');
+    const yn = (v) => v ? 'Yes' : 'No';
+
+    const row = (label, value, extra) => (
+        <div className="flex items-start justify-between gap-3 py-3 border-b border-gray-100 last:border-b-0">
+            <span className="text-[13px] font-medium text-gray-500 shrink-0">{label}</span>
+            <span className="text-[13px] font-semibold text-gray-800 text-right min-w-0 break-all flex items-start gap-1.5">
+                <span className="min-w-0">{value ?? '—'}</span>
+                {extra}
+            </span>
         </div>
     );
+
+    const CopyBtn = ({ k, text }) => text ? (
+        <button type="button" onClick={() => copy(k, text)}
+            className="p-1 rounded text-gray-400 hover:text-[#3468bd] hover:bg-blue-50 shrink-0" title="Copy">
+            {copied === k ? <FaCheck className="text-[10px] text-emerald-500" /> : <FaCopy className="text-[10px]" />}
+        </button>
+    ) : null;
 
     const usageCard = (label, color, u) => (
         <div className="rounded-xl border border-gray-200 p-4">
@@ -705,6 +731,8 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
             </div>
         </div>
     );
+
+    const contactBlob = [user.dvm_name, user.email, user.phone_number].filter(Boolean).join('\n');
 
     return (
         <>
@@ -722,18 +750,70 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                             {(user.dvm_name || user.nickname || user.email || '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-gray-900 truncate">{user.email}</p>
+                            <p className="text-[13px] font-semibold text-gray-900 truncate">{user.dvm_name || user.nickname || '—'}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLES[statusLabel(user)] || 'bg-gray-100 text-gray-500'}`}>{statusLabel(user)}</span>
                         </div>
                     </div>
 
-                    <div className="rounded-2xl border border-gray-200 p-4">
-                        {row('Joined', formatDate(user.created_at))}
-                        {row('Plan', user.subscription_interval || 'Free')}
-                        {row('Renews / expires', formatDate(user.subscription_end_date))}
-                        {row('Onboarding', isOnboarded(user) ? 'Completed' : (user.onboarding_step || '—'))}
-                        {row('Auth0 ID', <span className="font-mono text-[11px]">{user.auth0_user_id}</span>)}
+                    <div>
+                        <p className="text-sm font-bold text-gray-900 mb-2">Contact</p>
+                        <div className="rounded-2xl border border-gray-200 p-4">
+                            {row('Name', dash(user.dvm_name), <CopyBtn k="name" text={user.dvm_name} />)}
+                            {row('Nickname', dash(user.nickname))}
+                            {row('Email', user.email
+                                ? <a href={`mailto:${user.email}`} className="text-[#3468bd] hover:underline">{user.email}</a>
+                                : '—',
+                            <CopyBtn k="email" text={user.email} />)}
+                            {row('Phone', user.phone_number
+                                ? <a href={`tel:${user.phone_number}`} className="text-[#3468bd] hover:underline">{user.phone_number}</a>
+                                : '—',
+                            <CopyBtn k="phone" text={user.phone_number} />)}
+                        </div>
                     </div>
+
+                    <div>
+                        <p className="text-sm font-bold text-gray-900 mb-2">Account</p>
+                        <div className="rounded-2xl border border-gray-200 p-4">
+                            {row('Joined', formatDate(user.created_at))}
+                            {row('Onboarding', isOnboarded(user) ? 'Completed' : (user.onboarding_step || '—'))}
+                            {row('Terms accepted', yn(user.has_accepted_terms))}
+                            {row('App tour', yn(user.has_seen_app_tour))}
+                            {row('Welcome email', formatDate(user.welcome_email_sent_at))}
+                            {row('Email opt-out', yn(user.email_opt_out))}
+                            {row('Auth0 ID', <span className="font-mono text-[11px]">{user.auth0_user_id}</span>,
+                                <CopyBtn k="auth0" text={user.auth0_user_id} />)}
+                        </div>
+                    </div>
+
+                    <div>
+                        <p className="text-sm font-bold text-gray-900 mb-2">Plan</p>
+                        <div className="rounded-2xl border border-gray-200 p-4">
+                            {row('Status', user.subscription_status || '—')}
+                            {row('Plan', user.subscription_interval || 'Free')}
+                            {row('Plan label', dash(user.plan_label))}
+                            {row('Renews / expires', formatDate(user.subscription_end_date))}
+                            {row('Canceling', yn(user.cancel_at_period_end))}
+                            {row('Grace period', formatDate(user.grace_period_end))}
+                            {row('Used trial', yn(user.has_used_trial))}
+                            {row('Stripe trial', yn(user.has_activated_stripe_trial))}
+                            {row('Stripe ID', user.stripe_customer_id
+                                ? <span className="font-mono text-[11px]">{user.stripe_customer_id}</span>
+                                : '—',
+                            <CopyBtn k="stripe" text={user.stripe_customer_id} />)}
+                        </div>
+                    </div>
+
+                    {(user.student_school_email || user.student_grad_year || user.plan_label === 'student') && (
+                        <div>
+                            <p className="text-sm font-bold text-gray-900 mb-2">Student</p>
+                            <div className="rounded-2xl border border-gray-200 p-4">
+                                {row('School email', user.student_school_email
+                                    ? <a href={`mailto:${user.student_school_email}`} className="text-[#3468bd] hover:underline">{user.student_school_email}</a>
+                                    : '—')}
+                                {row('Grad year', dash(user.student_grad_year))}
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <p className="text-sm font-bold text-gray-900 mb-3">Usage</p>
@@ -749,10 +829,24 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                         )}
                     </div>
 
-                    {user.email && (
-                        <button onClick={() => navigator.clipboard.writeText(user.email)}
+                    <div className="flex gap-2">
+                        {user.email && (
+                            <button onClick={() => copy('emailBtn', user.email)}
+                                className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-[13px] font-semibold hover:bg-gray-200 transition-colors">
+                                {copied === 'emailBtn' ? 'Copied' : 'Copy email'}
+                            </button>
+                        )}
+                        {user.phone_number && (
+                            <button onClick={() => copy('phoneBtn', user.phone_number)}
+                                className="flex-1 py-2.5 rounded-xl bg-gray-100 text-gray-700 text-[13px] font-semibold hover:bg-gray-200 transition-colors">
+                                {copied === 'phoneBtn' ? 'Copied' : 'Copy phone'}
+                            </button>
+                        )}
+                    </div>
+                    {contactBlob && (
+                        <button onClick={() => copy('all', contactBlob)}
                             className="w-full py-2.5 rounded-xl bg-gray-100 text-gray-700 text-[13px] font-semibold hover:bg-gray-200 transition-colors">
-                            Copy email
+                            {copied === 'all' ? 'Copied' : 'Copy name + email + phone'}
                         </button>
                     )}
                 </div>

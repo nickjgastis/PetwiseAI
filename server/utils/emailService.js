@@ -416,10 +416,10 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
 }
 
 /**
- * Internal admin notification - sent to the team when a new free account is created.
+ * Internal admin notification - sent to the team when onboarding finishes (name + phone).
  * Plain, utilitarian layout (no marketing branding needed).
  */
-function generateAdminSignupNotification({ email, nickname, auth0_user_id, createdAt }) {
+function generateAdminSignupNotification({ email, nickname, phone_number, auth0_user_id, createdAt }) {
     const when = new Date(createdAt || Date.now()).toLocaleString('en-US', {
         timeZone: 'America/Denver',
         dateStyle: 'medium',
@@ -430,22 +430,26 @@ function generateAdminSignupNotification({ email, nickname, auth0_user_id, creat
             <td style="padding: 6px 0; font-size: 14px; color: #6b7280; width: 120px;">${label}</td>
             <td style="padding: 6px 0; font-size: 14px; color: #111827; font-weight: 600;">${value || '—'}</td>
         </tr>`;
+    const phoneCell = phone_number
+        ? `<a href="tel:${phone_number}" style="color: #3db6fd; text-decoration: none;">${phone_number}</a>`
+        : '—';
 
     const content = `
         <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 700; color: #111827;">
             New free signup 🎉
         </h1>
         <p style="margin: 0 0 20px; font-size: 14px; color: #6b7280; line-height: 1.5;">
-            A new user just created a Petwise account.
+            A new user just finished onboarding.
         </p>
         <table role="presentation" cellspacing="0" cellpadding="0" width="100%" style="border-top: 1px solid #eef0f4;">
             ${row('Name', nickname)}
             ${row('Email', email)}
+            ${row('Phone', phoneCell)}
             ${row('Auth0 ID', auth0_user_id)}
-            ${row('Signed up', when + ' MT')}
+            ${row('Onboarded', when + ' MT')}
         </table>`;
 
-    return emailWrapper(content, `New free signup: ${email}`);
+    return emailWrapper(content, `New free signup: ${nickname || email}${phone_number ? ` · ${phone_number}` : ''}`);
 }
 
 function adminNotifyRecipients() {
@@ -458,13 +462,17 @@ function adminNotifyRecipients() {
 /**
  * Notify the team about a new free signup. Best-effort — never blocks signup.
  */
-async function sendAdminSignupNotification({ email, nickname, auth0_user_id, createdAt }) {
+async function sendAdminSignupNotification({ email, nickname, phone_number, auth0_user_id, createdAt }) {
     const to = adminNotifyRecipients();
     if (!to.length) return { success: false, error: 'No admin recipients configured' };
+    const who = nickname || email;
+    const subject = phone_number
+        ? `New Petwise signup: ${who} · ${phone_number}`
+        : `New Petwise signup: ${who}`;
     return sendEmail({
         to,
-        subject: `New Petwise signup: ${nickname || email}`,
-        html: generateAdminSignupNotification({ email, nickname, auth0_user_id, createdAt }),
+        subject,
+        html: generateAdminSignupNotification({ email, nickname, phone_number, auth0_user_id, createdAt }),
     });
 }
 

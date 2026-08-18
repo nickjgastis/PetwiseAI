@@ -1,6 +1,6 @@
 // src/App.js
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
@@ -139,6 +139,9 @@ const AppContent = () => {
 
 const App = () => {
   const navigate = useNavigate();
+  const onRedirectCallback = useCallback((appState) => {
+    navigate(appState?.returnTo || '/dashboard', { replace: true });
+  }, [navigate]);
 
   return (
     <Auth0Provider
@@ -150,12 +153,10 @@ const App = () => {
           : window.location.origin + '/callback',
         scope: "openid profile email"
       }}
-      onRedirectCallback={(appState) => {
-        const targetUrl = appState?.returnTo || '/dashboard';
-        navigate(targetUrl);
-      }}
+      onRedirectCallback={onRedirectCallback}
       cacheLocation="localstorage"
       useRefreshTokens={true}
+      useRefreshTokensFallback={true}
     >
       <AppContent />
     </Auth0Provider>
