@@ -16,6 +16,7 @@ import AdminDashboard from './components/AdminDashboard';
 import AutoLogin from './components/AutoLogin';
 import PWALogin from './components/PWALogin';
 import Callback from './pages/Callback';
+import Refresh from './pages/Refresh';
 
 // Public marketing / campaign landing pages — code-split so they don't bloat
 // the authenticated app bundle.
@@ -65,6 +66,7 @@ const AppRoutes = () => {
             <Route path="/login" element={isPWA ? <PWALogin /> : <AutoLogin />} />
             <Route path="/signup" element={isPWA ? <PWALogin /> : <AutoLogin mode="signup" />} />
             <Route path="/callback" element={<Callback />} />
+            <Route path="/refresh" element={<Refresh />} />
             <Route path="/vets" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><VetsLanding /></Suspense>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />

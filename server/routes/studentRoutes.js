@@ -6,14 +6,16 @@ const studentRouter = express.Router();
 
 // Use existing auth system - students must be logged in
 
-// Use the same Supabase client as the main server (anon key)
+// Use the service role so student redeem still works after RLS locks the anon key.
 const getSupabaseClient = () => {
     if (!process.env.REACT_APP_SUPABASE_URL || !process.env.REACT_APP_SUPABASE_ANON_KEY) {
         throw new Error('Missing Supabase environment variables');
     }
     return createClient(
         process.env.REACT_APP_SUPABASE_URL,
-        process.env.REACT_APP_SUPABASE_ANON_KEY
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+            || process.env.REACT_APP_SUPABASE_SERVICE_ROLE_KEY
+            || process.env.REACT_APP_SUPABASE_ANON_KEY
     );
 };
 

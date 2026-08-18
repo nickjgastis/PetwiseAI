@@ -6,15 +6,24 @@ import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
 import Navbar from './components/Navbar';
 import UpdateBanner from './components/UpdateBanner';
-import { supabase } from './supabaseClient';
+import { supabase, bindSupabaseAccessToken } from './supabaseClient';
 import "./styles/global.css";
 
 const AppContent = () => {
-  const { user, isAuthenticated, isLoading } = useAuth0();
+  const { user, isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const location = useLocation();
 
+  // Every supabase.from() call now goes to /api/db with this access token.
+  // Auth0 stays the identity provider; the API uses the service role.
+  useEffect(() => {
+    bindSupabaseAccessToken(async () => {
+      if (!isAuthenticated) return null;
+      return getAccessTokenSilently();
+    });
+  }, [isAuthenticated, getAccessTokenSilently]);
+
   // Hide navbar on login/callback routes and admin
-  const hideNavbar = ['/login', '/signup', '/callback', '/admin', '/vets'].includes(location.pathname) ||
+  const hideNavbar = ['/login', '/signup', '/callback', '/refresh', '/admin', '/vets'].includes(location.pathname) ||
     (!isAuthenticated && location.pathname === '/');
 
   // Add Meta Pixel tracking

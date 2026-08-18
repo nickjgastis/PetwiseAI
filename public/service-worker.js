@@ -1,6 +1,6 @@
 // PetWise Service Worker
 // Version-based cache for easy invalidation on deploys
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `petwise-${CACHE_VERSION}`;
 
 // Assets to cache on install (app shell)
@@ -20,6 +20,8 @@ const NETWORK_ONLY_PATTERNS = [
   /supabase/,
   /\.supabase\.co/,
   /\/callback/,
+  /\/refresh/,
+  /refresh\.html/,
   /\/login/,
   /\/signup/,
   /stripe\.com/,

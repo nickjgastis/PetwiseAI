@@ -16,6 +16,7 @@ const ffprobeStatic = require('ffprobe-static');
 const studentRouter = require('./routes/studentRoutes');
 const emailRouter = require('./routes/emailRoutes');
 const cronRouter = require('./routes/cronRoutes');
+const meDbRouter = require('./routes/meDb');
 const { sendSubscriptionConfirmedEmail } = require('./utils/emailService');
 // REMOVED: quicksoapTranscribe - using client-side chunking with /api/whisper-proxy instead
 const { correctTranscript } = require('./utils/vetCorrector');
@@ -81,9 +82,15 @@ const stripe = Stripe(
         ? process.env.STRIPE_SECRET_KEY_LIVE
         : process.env.STRIPE_SECRET_KEY
 );
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.REACT_APP_SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('WARNING: SUPABASE_SERVICE_ROLE_KEY is not set — /api/db and webhooks will fail once anon RLS is locked');
+}
+
 const supabase = createClient(
     process.env.REACT_APP_SUPABASE_URL,
-    process.env.REACT_APP_SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+        || process.env.REACT_APP_SUPABASE_SERVICE_ROLE_KEY
+        || process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
 // Usage event log for admin time-series analytics. Awaited before responding so
@@ -185,7 +192,7 @@ app.use(cors({
 
 // ================ ADMIN AUTH MIDDLEWARE ================
 const ADMIN_USER_ID = process.env.ADMIN_USER_ID || process.env.REACT_APP_ADMIN_USER_ID;
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
+const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || process.env.REACT_APP_AUTH0_DOMAIN;
 
 if (!ADMIN_USER_ID) console.warn('WARNING: ADMIN_USER_ID is not set — admin endpoints will reject all requests');
 if (!AUTH0_DOMAIN) console.warn('WARNING: AUTH0_DOMAIN is not set — admin auth will fail');
@@ -239,6 +246,7 @@ const requireAdmin = async (req, res, next) => {
 app.use('/student', studentRouter);
 app.use('/email', emailRouter);
 app.use('/cron', cronRouter);
+app.use('/api/db', meDbRouter);
 
 // Make supabase available to routes via app.locals
 app.locals.supabase = supabase;

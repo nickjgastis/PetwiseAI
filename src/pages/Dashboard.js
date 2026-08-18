@@ -985,6 +985,7 @@ const Dashboard = () => {
             setNeedsWelcome(true);
         } catch (err) {
             console.error('Error accepting terms:', err);
+            alert('Couldn’t save terms: ' + (err?.message || 'please try again'));
         }
     };
 
