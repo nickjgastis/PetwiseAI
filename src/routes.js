@@ -21,6 +21,7 @@ import Refresh from './pages/Refresh';
 // Public marketing / campaign landing pages — code-split so they don't bloat
 // the authenticated app bundle.
 const VetsLanding = lazy(() => import('./pages/landing/VetsLanding'));
+const IntroductionLanding = lazy(() => import('./pages/landing/IntroductionLanding'));
 
 // Check if running as installed PWA
 const isStandalone = () => {
@@ -68,6 +69,7 @@ const AppRoutes = () => {
             <Route path="/callback" element={<Callback />} />
             <Route path="/refresh" element={<Refresh />} />
             <Route path="/vets" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><VetsLanding /></Suspense>} />
+            <Route path="/introduction" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><IntroductionLanding /></Suspense>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
             <Route path="/product" element={<ProductPage />} />

@@ -7,6 +7,7 @@ import {
     FaFileAlt, FaClipboardList, FaListUl, FaNotesMedical, FaUserMd,
     FaCheckCircle, FaTimesCircle, FaRegClock, FaMapMarkedAlt
 } from 'react-icons/fa';
+import YoutubeEmbed from './YoutubeEmbed';
 
 // Cold Meta traffic gets ~2–5s. Sell the outcome (time / going home earlier),
 // not the feature (SOAP). One decision on the page: enter email, start free.
@@ -248,7 +249,7 @@ const VetsLanding = () => {
                     </div>
                     <button
                         onClick={logIn}
-                        className="text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                        className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-white text-[#3468bd] text-sm font-bold hover:bg-amber-50 hover:text-[#20447f] transition-all shadow-md"
                     >
                         Log in
                     </button>
@@ -319,77 +320,13 @@ const VetsLanding = () => {
                         </motion.div>
                     </motion.div>
 
-                    {/* Right — SOAP note building itself, section by section */}
+                    {/* Right — founder video */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
-                        className="rounded-3xl bg-white p-5 shadow-[0_40px_100px_-30px_rgba(10,25,60,0.75)] ring-1 ring-black/5"
                     >
-                        <div className="flex items-center gap-2.5 mb-4">
-                            <div className="w-9 h-9 rounded-full bg-[#3468bd] flex items-center justify-center flex-shrink-0">
-                                <FaMicrophone className="text-white text-xs" />
-                            </div>
-                            <div className="h-8 flex-1 rounded-lg bg-gray-50 border border-gray-200 flex items-center px-3 min-w-0">
-                                <span className="text-[11px] text-gray-400 italic truncate">Dictating appointment…</span>
-                            </div>
-                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md flex-shrink-0">SOAP</span>
-                        </div>
-
-                        <motion.div
-                            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.4, delayChildren: 0.4 } } }}
-                            initial="hidden"
-                            animate="show"
-                        >
-                            {[
-                                {
-                                    label: 'S — Subjective', c: 'from-blue-500 to-blue-600',
-                                    lines: [
-                                        '3yo MN Labrador presented for vomiting x2 days.',
-                                        'Owner reports 4–5 episodes daily, still drinking, no diarrhea. Got into trash 3 days ago.'
-                                    ]
-                                },
-                                {
-                                    label: 'O — Objective', c: 'from-emerald-500 to-emerald-600',
-                                    lines: [
-                                        'T 39.1°C · HR 96 · RR 24 · BW 31.2 kg',
-                                        'BAR, ~5% dehydrated, tacky mm. Abdomen soft, mild cranial discomfort on palpation.'
-                                    ]
-                                },
-                                {
-                                    label: 'A — Assessment', c: 'from-amber-500 to-amber-600',
-                                    lines: [
-                                        'Acute gastroenteritis, likely dietary indiscretion.',
-                                        'R/O foreign body, pancreatitis, toxin exposure.'
-                                    ]
-                                },
-                                {
-                                    label: 'P — Plan', c: 'from-rose-500 to-rose-600',
-                                    lines: [
-                                        'SQ fluids 120 mL/kg/day · maropitant 1 mg/kg SQ.',
-                                        'Bland diet 3–5 days, recheck 48h or sooner if worsening. Discharge notes sent to owner.'
-                                    ]
-                                }
-                            ].map((s) => (
-                                <motion.div
-                                    key={s.label}
-                                    variants={{
-                                        hidden: { opacity: 0, y: -14 },
-                                        show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 320, damping: 22 } }
-                                    }}
-                                    className="mb-2.5 last:mb-0"
-                                >
-                                    <div className={`h-6 rounded-md bg-gradient-to-r ${s.c} text-white text-[11px] font-semibold flex items-center px-3`}>
-                                        {s.label}
-                                    </div>
-                                    <div className="mt-1 rounded-md bg-gray-50 border border-gray-100 px-3 py-2 space-y-1">
-                                        {s.lines.map((line, i) => (
-                                            <p key={i} className="text-[11px] text-gray-500 leading-snug">{line}</p>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </motion.div>
+                        <YoutubeEmbed />
                     </motion.div>
                 </div>
             </section>
@@ -501,6 +438,85 @@ const VetsLanding = () => {
                                 <span className="flex items-center gap-1.5"><FaRegClock className="text-amber-200 text-xs" /> Ready in under a minute</span>
                             </div>
                         </div>
+                    </div>
+                </Reveal>
+            </section>
+
+            {/* SOAP graphic — moved down from the hero */}
+            <section className="max-w-3xl mx-auto px-5 sm:px-6 pb-12 sm:pb-20">
+                <Reveal className="text-center">
+                    <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                        SOAP notes that write themselves
+                    </h2>
+                    <p className="text-white/75 text-lg leading-relaxed mb-7 max-w-xl mx-auto">
+                        Dictate the appointment. PetWise builds a clean, structured record in seconds.
+                    </p>
+                    <div className="rounded-3xl bg-white p-5 shadow-[0_40px_100px_-30px_rgba(10,25,60,0.75)] ring-1 ring-black/5 text-left">
+                        <div className="flex items-center gap-2.5 mb-4">
+                            <div className="w-9 h-9 rounded-full bg-[#3468bd] flex items-center justify-center flex-shrink-0">
+                                <FaMicrophone className="text-white text-xs" />
+                            </div>
+                            <div className="h-8 flex-1 rounded-lg bg-gray-50 border border-gray-200 flex items-center px-3 min-w-0">
+                                <span className="text-[11px] text-gray-400 italic truncate">Dictating appointment…</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-md flex-shrink-0">SOAP</span>
+                        </div>
+
+                        <motion.div
+                            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.4, delayChildren: 0.4 } } }}
+                            initial="hidden"
+                            whileInView="show"
+                            viewport={{ once: true, amount: 0.3 }}
+                        >
+                            {[
+                                {
+                                    label: 'S — Subjective', c: 'from-blue-500 to-blue-600',
+                                    lines: [
+                                        '3yo MN Labrador presented for vomiting x2 days.',
+                                        'Owner reports 4–5 episodes daily, still drinking, no diarrhea. Got into trash 3 days ago.'
+                                    ]
+                                },
+                                {
+                                    label: 'O — Objective', c: 'from-emerald-500 to-emerald-600',
+                                    lines: [
+                                        'T 39.1°C · HR 96 · RR 24 · BW 31.2 kg',
+                                        'BAR, ~5% dehydrated, tacky mm. Abdomen soft, mild cranial discomfort on palpation.'
+                                    ]
+                                },
+                                {
+                                    label: 'A — Assessment', c: 'from-amber-500 to-amber-600',
+                                    lines: [
+                                        'Acute gastroenteritis, likely dietary indiscretion.',
+                                        'R/O foreign body, pancreatitis, toxin exposure.'
+                                    ]
+                                },
+                                {
+                                    label: 'P — Plan', c: 'from-rose-500 to-rose-600',
+                                    lines: [
+                                        'SQ fluids 120 mL/kg/day · maropitant 1 mg/kg SQ.',
+                                        'Bland diet 3–5 days, recheck 48h or sooner if worsening. Discharge notes sent to owner.'
+                                    ]
+                                }
+                            ].map((s) => (
+                                <motion.div
+                                    key={s.label}
+                                    variants={{
+                                        hidden: { opacity: 0, y: -14 },
+                                        show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 320, damping: 22 } }
+                                    }}
+                                    className="mb-2.5 last:mb-0"
+                                >
+                                    <div className={`h-6 rounded-md bg-gradient-to-r ${s.c} text-white text-[11px] font-semibold flex items-center px-3`}>
+                                        {s.label}
+                                    </div>
+                                    <div className="mt-1 rounded-md bg-gray-50 border border-gray-100 px-3 py-2 space-y-1">
+                                        {s.lines.map((line, i) => (
+                                            <p key={i} className="text-[11px] text-gray-500 leading-snug">{line}</p>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </motion.div>
                     </div>
                 </Reveal>
             </section>
