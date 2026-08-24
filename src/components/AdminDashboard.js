@@ -779,6 +779,8 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                             {row('Terms accepted', yn(user.has_accepted_terms))}
                             {row('App tour', yn(user.has_seen_app_tour))}
                             {row('Welcome email', formatDate(user.welcome_email_sent_at))}
+                            {row('Drip: get started', formatDate(user.drip_get_started_email_sent_at))}
+                            {row('Drip: discount', formatDate(user.drip_discount_email_sent_at))}
                             {row('Email opt-out', yn(user.email_opt_out))}
                             {row('Auth0 ID', <span className="font-mono text-[11px]">{user.auth0_user_id}</span>,
                                 <CopyBtn k="auth0" text={user.auth0_user_id} />)}

@@ -3281,6 +3281,8 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
                 grace_period_end: u.grace_period_end || null,
                 email_opt_out: u.email_opt_out === true,
                 welcome_email_sent_at: u.welcome_email_sent_at || null,
+                drip_get_started_email_sent_at: u.drip_get_started_email_sent_at || null,
+                drip_discount_email_sent_at: u.drip_discount_email_sent_at || null,
                 has_used_trial: u.has_used_trial === true,
                 has_activated_stripe_trial: u.has_activated_stripe_trial === true,
                 student_school_email: u.student_school_email || null,

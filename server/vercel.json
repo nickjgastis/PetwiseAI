@@ -11,5 +11,11 @@
       "src": "/(.*)",
       "dest": "server.js"
     }
+  ],
+  "crons": [
+    {
+      "path": "/cron/drip-emails",
+      "schedule": "0 15 * * *"
+    }
   ]
 }

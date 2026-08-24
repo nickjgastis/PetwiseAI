@@ -5,6 +5,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Petwise <hello@petwise.vet>';
 const APP_URL = process.env.APP_URL || 'https://app.petwise.vet';
+const DEMO_BOOKING_URL = 'https://calendar.app.google/DMBqn9TYvu5Rry1X8';
+const WALKTHROUGH_URL = 'https://youtu.be/YbRBR5DsBS4';
+const DRIP_DISCOUNT_CODE = process.env.DRIP_DISCOUNT_CODE || 'FIRSTMONTH50';
 // Always use production URL for logo so it works in email clients (they can't reach localhost)
 const LOGO_URL = 'https://app.petwise.vet/PW.png';
 
@@ -205,7 +208,7 @@ function generateWelcomeEmail(userName) {
             We also offer a complimentary demo with Dr. Gastis. Book a time here:
         </p>
         <div style="text-align: center;">
-            ${ctaButton('Book a complimentary demo', 'https://calendar.app.google/DMBqn9TYvu5Rry1X8')}
+            ${ctaButton('Book a complimentary demo', DEMO_BOOKING_URL)}
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             If you have any questions as you get started, you can reach us anytime at
@@ -221,6 +224,85 @@ function generateWelcomeEmail(userName) {
         </p>`;
 
     return emailWrapper(content, 'Welcome to PetWise! Log in on your computer at petwise.vet to access the full app.');
+}
+
+/**
+ * Day 2 drip — get started reminder + walkthrough + demo
+ */
+function generateGetStartedEmail() {
+    const content = `
+        <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
+            Ready to get going with PetWise?
+        </h1>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Hi there,
+        </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Just checking in. If you haven't had a chance to try PetWise on a real case yet,
+            this is the fastest way to get started.
+        </p>
+        <p style="margin: 0 0 8px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Watch this short get-started walkthrough with me:
+        </p>
+        <div style="text-align: center;">
+            ${ctaButton('Watch the walkthrough', WALKTHROUGH_URL)}
+        </div>
+        <p style="margin: 0 0 8px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Prefer a live session? We offer a complimentary demo with Dr. Gastis to help
+            you get set up and using the platform.
+        </p>
+        <div style="text-align: center;">
+            ${ctaButton('Book a complimentary demo', DEMO_BOOKING_URL)}
+        </div>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Open PetWise on your computer at
+            <a href="https://petwise.vet" style="color: #3db6fd; text-decoration: none; font-weight: 600;">petwise.vet</a>
+            and log in with the same email you used to sign up.
+        </p>
+        <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+            All the best,<br>
+            Nick
+        </p>`;
+
+    return emailWrapper(content, 'A quick walkthrough and a free demo to help you get started with PetWise.');
+}
+
+/**
+ * Day 8 drip — 50% off first month
+ */
+function generateDiscountEmail() {
+    const content = `
+        <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; color: #111827; text-align: center;">
+            50% off your first month
+        </h1>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Hi there,
+        </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            If you're ready to unlock the full PetWise plan, here's an offer for this week only:
+            <strong>50% off your first month on our monthly plan</strong> when you upgrade in the next 7 days.
+        </p>
+        <div style="margin: 0 0 16px; padding: 20px; background: #fff7ed; border-radius: 12px; text-align: center;">
+            <p style="margin: 0 0 6px; font-size: 13px; color: #9a3412; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">
+                Use this code at checkout
+            </p>
+            <p style="margin: 0; font-size: 28px; font-weight: 800; color: #9a3412; letter-spacing: 0.06em;">
+                ${DRIP_DISCOUNT_CODE}
+            </p>
+        </div>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            Open PetWise, choose our monthly plan, and enter the code at checkout.
+            It applies to your first month only — not the yearly plan.
+        </p>
+        <div style="text-align: center;">
+            ${ctaButton('Upgrade on Petwise', 'https://petwise.vet')}
+        </div>
+        <p style="margin: 24px 0 0; font-size: 14px; color: #6b7280; line-height: 1.6;">
+            All the best,<br>
+            Nick
+        </p>`;
+
+    return emailWrapper(content, `50% off your first month on our monthly plan — use ${DRIP_DISCOUNT_CODE} at checkout this week.`);
 }
 
 /**
@@ -494,6 +576,28 @@ async function sendWelcomeEmail(supabase, user) {
     });
 }
 
+async function sendGetStartedEmail(supabase, user) {
+    if (supabase && user.auth0_user_id && await hasOptedOut(supabase, user.auth0_user_id)) {
+        return { success: false, skipped: true, error: 'opted_out' };
+    }
+    return sendEmail({
+        to: user.email,
+        subject: 'A quick way to get started with Petwise',
+        html: generateGetStartedEmail(),
+    });
+}
+
+async function sendDiscountEmail(supabase, user) {
+    if (supabase && user.auth0_user_id && await hasOptedOut(supabase, user.auth0_user_id)) {
+        return { success: false, skipped: true, error: 'opted_out' };
+    }
+    return sendEmail({
+        to: user.email,
+        subject: '50% off your first month of Petwise',
+        html: generateDiscountEmail(),
+    });
+}
+
 async function sendTrialActivatedEmail(supabase, user, trialEndDate) {
     return sendEmail({
         to: user.email,
@@ -530,6 +634,8 @@ module.exports = {
     sendEmail,
     hasOptedOut,
     sendWelcomeEmail,
+    sendGetStartedEmail,
+    sendDiscountEmail,
     sendAdminSignupNotification,
     sendTrialActivatedEmail,
     sendSubscriptionConfirmedEmail,
@@ -537,6 +643,8 @@ module.exports = {
     sendTrialEndingEmail,
     // Export template generators for testing
     generateWelcomeEmail,
+    generateGetStartedEmail,
+    generateDiscountEmail,
     generateTrialActivatedEmail,
     generateSubscriptionConfirmedEmail,
     generateTrialMidwayEmail,

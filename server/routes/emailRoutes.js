@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const {
     sendWelcomeEmail,
+    sendGetStartedEmail,
+    sendDiscountEmail,
     sendSubscriptionConfirmedEmail,
     sendAdminSignupNotification
 } = require('../utils/emailService');
@@ -126,13 +128,19 @@ router.post('/test/:type', async (req, res) => {
             case 'welcome':
                 result = await sendWelcomeEmail(supabase, mockUser);
                 break;
+            case 'get-started':
+                result = await sendGetStartedEmail(supabase, mockUser);
+                break;
+            case 'discount':
+                result = await sendDiscountEmail(supabase, mockUser);
+                break;
             case 'subscription-confirmed':
                 result = await sendSubscriptionConfirmedEmail(supabase, mockUser, 'monthly', subscriptionEndDate.toISOString());
                 break;
             default:
                 return res.status(400).json({
                     error: 'Invalid email type',
-                    validTypes: ['welcome', 'subscription-confirmed']
+                    validTypes: ['welcome', 'get-started', 'discount', 'subscription-confirmed']
                 });
         }
 
