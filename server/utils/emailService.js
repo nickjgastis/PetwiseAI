@@ -201,6 +201,12 @@ function generateWelcomeEmail(userName) {
                 on your computer and log in with the same email and password you used to sign up.
             </p>
         </div>
+        <p style="margin: 0 0 8px; font-size: 16px; color: #374151; line-height: 1.6;">
+            We also offer a complimentary demo with Dr. Gastis. Book a time here:
+        </p>
+        <div style="text-align: center;">
+            ${ctaButton('Book a complimentary demo', 'https://calendar.app.google/DMBqn9TYvu5Rry1X8')}
+        </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             If you have any questions as you get started, you can reach us anytime at
             <a href="mailto:support@petwise.vet" style="color: #3db6fd; text-decoration: none;">support@petwise.vet</a>,
