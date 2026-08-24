@@ -229,7 +229,7 @@ const VetsLanding = () => {
     const logIn = () => loginWithRedirect({ appState: { returnTo: '/dashboard' } });
 
     return (
-        <div className="relative min-h-screen text-white overflow-x-hidden bg-gradient-to-b from-[#3d70c6] via-[#3468bd] to-[#20447f]">
+        <div className="relative min-h-screen text-white overflow-x-clip bg-gradient-to-b from-[#3d70c6] via-[#3468bd] to-[#20447f]">
             {/* Warm ambient glows layered over the blue for depth + warmth */}
             <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
                 <div className="absolute -top-44 -right-40 w-[44rem] h-[44rem] rounded-full bg-amber-300/25 blur-[140px]" />
