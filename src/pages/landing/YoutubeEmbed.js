@@ -1,7 +1,7 @@
 import React from 'react';
 
 const YOUTUBE_SRC =
-    'https://www.youtube.com/embed/g6z64gwyzcc?si=ea_3z4_7a-cKMZr9&rel=0&modestbranding=1';
+    'https://www.youtube.com/embed/uDIvgrXXi58?si=ptgUPuZgkk6oCLEH&rel=0&modestbranding=1';
 
 const YoutubeEmbed = ({ className = '' }) => (
     <div
