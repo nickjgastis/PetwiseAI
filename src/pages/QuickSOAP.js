@@ -7,7 +7,7 @@ import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { AnimatePresence } from 'framer-motion';
-import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
+import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
 
@@ -275,6 +275,7 @@ const QuickSOAP = () => {
     // Free-tier daily usage: show nothing below 80%, banner at 1 SOAP left,
     // upgrade screen at 0. Dismissal is keyed to the local date so it resets daily.
     const usage = useUsage();
+    const trialPrompt = useTrialUpgradePrompt(usage);
     const [lastUsage, setLastUsage] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const nudgeKey = `quicksoap-nudge-dismissed-${new Date().toDateString()}`;
@@ -2290,12 +2291,16 @@ const QuickSOAP = () => {
 
             {/* Free-tier out-of-usage upgrade screen */}
             <AnimatePresence>
-                {showUpgradeModal && (
+                {(showUpgradeModal || trialPrompt.show) && (
                     <UpgradeModal
                         user={user}
                         feature="soap"
+                        reason={trialPrompt.show ? trialPrompt.reason : 'limit'}
                         resetsAt={lastUsage?.resetsAt || usage.resetsAt}
-                        onClose={() => setShowUpgradeModal(false)}
+                        onClose={() => {
+                            setShowUpgradeModal(false);
+                            trialPrompt.dismiss();
+                        }}
                         onSubscribed={() => usage.refresh()}
                     />
                 )}

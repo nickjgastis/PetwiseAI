@@ -17,7 +17,7 @@ const STEPS = [
         icon: FaPaw,
         iconBg: 'from-emerald-400 to-emerald-600',
         title: (dvmName) => `Welcome to PetWise${dvmName ? `, Dr. ${dvmName}` : ''}!`,
-        body: () => "Let's take a quick tour so you can get started. It'll only take a few seconds."
+        body: () => "You have 10 free days of unlimited PetWise — no credit card, no limits. Let's take a quick tour so you can get started. It'll only take a few seconds."
     },
     {
         id: 'quicksoap',

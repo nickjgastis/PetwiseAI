@@ -33,10 +33,35 @@ const FEATURE_LABELS = {
     query: 'PetQuery questions'
 };
 
+const REASON_COPY = {
+    limit: {
+        title: (feature) => `You've finished today's free ${FEATURE_LABELS[feature]}`,
+        body: (resetLabel) => (
+            <>Your free allowance resets <span className="text-emerald-300 font-semibold">{resetLabel}</span> — and everything you've created is saved. Upgrade anytime for unlimited use.</>
+        ),
+        dismiss: 'Maybe later'
+    },
+    'last-day': {
+        title: () => 'Last day of unlimited',
+        body: () => (
+            <>Your 10 free days end in the next 24 hours. Upgrade to stay unlimited, or continue with PetWise Free — 5 SOAPs and 15 PetQuery questions a day.</>
+        ),
+        dismiss: 'Keep using unlimited today'
+    },
+    expired: {
+        title: () => 'Your 10 free days are up',
+        body: () => (
+            <>Choose a plan to stay unlimited, or continue with PetWise Free — 5 SOAPs and 15 PetQuery questions a day. No credit card required to stay on Free.</>
+        ),
+        dismiss: 'Continue with PetWise Free'
+    }
+};
+
 // Out-of-usage upgrade screen for free-tier users. Dismissible and friendly —
 // they've just finished today's free allowance; it comes back at their local
 // midnight (resetsAt), or they can upgrade for unlimited use right now.
-const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed }) => {
+// reason: 'limit' (daily cap) | 'last-day' | 'expired'
+const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onClose, onSubscribed }) => {
     const [isLoading, setIsLoading] = useState(null);
     const [currency, setCurrency] = useState('usd');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
@@ -87,6 +112,7 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed 
         : hoursUntilReset <= 1
             ? 'in less than an hour'
             : `in ${hoursUntilReset} hours`;
+    const copy = REASON_COPY[reason] || REASON_COPY.limit;
 
     return (
         <motion.div
@@ -103,7 +129,7 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed 
                 className="fixed top-4 right-4 flex items-center gap-2 px-3 py-2 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all text-sm z-20"
             >
                 <FaTimes />
-                <span className="hidden sm:inline">Maybe later</span>
+                <span className="hidden sm:inline">{copy.dismiss}</span>
             </button>
 
             {showStudentRedeem && (
@@ -128,10 +154,10 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, onClose, onSubscribed 
                         <FaChartPie className="text-white text-xl" />
                     </div>
                     <h1 className="text-xl sm:text-2xl font-extrabold text-white mb-1.5 tracking-tight leading-tight">
-                        You've finished today's free {FEATURE_LABELS[feature]}
+                        {copy.title(feature)}
                     </h1>
                     <p className="text-white/80 text-sm">
-                        Your free allowance resets <span className="text-emerald-300 font-semibold">{resetLabel}</span> — and everything you've created is saved. Upgrade anytime for unlimited use.
+                        {copy.body(resetLabel)}
                     </p>
                 </motion.div>
 

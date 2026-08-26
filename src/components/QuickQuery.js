@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt, FaMicrophone, FaStop } from 'react-icons/fa';
 import { AnimatePresence } from 'framer-motion';
-import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
+import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from './UpgradeNudge';
 import UpgradeModal from './UpgradeModal';
 
@@ -644,6 +644,7 @@ const QuickQuery = ({ isMobile = false }) => {
     // Free-tier daily usage: show nothing below 80%, banner at 3 queries left,
     // upgrade screen at 0. Dismissal is keyed to the local date so it resets daily.
     const usage = useUsage();
+    const trialPrompt = useTrialUpgradePrompt(usage);
     const [lastUsage, setLastUsage] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const nudgeKey = `petquery-nudge-dismissed-${new Date().toDateString()}`;
@@ -1470,12 +1471,16 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                 }
             `}} />
             <AnimatePresence>
-                {showUpgradeModal && (
+                {(showUpgradeModal || trialPrompt.show) && (
                     <UpgradeModal
                         user={{ ...user, ...userData }}
                         feature="query"
+                        reason={trialPrompt.show ? trialPrompt.reason : 'limit'}
                         resetsAt={lastUsage?.resetsAt || usage.resetsAt}
-                        onClose={() => setShowUpgradeModal(false)}
+                        onClose={() => {
+                            setShowUpgradeModal(false);
+                            trialPrompt.dismiss();
+                        }}
                         onSubscribed={() => usage.refresh()}
                     />
                 )}

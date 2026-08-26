@@ -36,6 +36,60 @@ export function getTier(userRow) {
     return 'free';
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// phase: 'none' | 'active' | 'last-day' | 'expired'
+// last-day = still unlimited, ≤24h left. expired = interval still trial, date passed.
+export function getTrialPhase(userRow) {
+    if (!userRow) return { phase: 'none', daysLeft: 0, endDate: null };
+
+    const tier = getTier(userRow);
+    if (tier === 'paid' || tier === 'student') return { phase: 'none', daysLeft: 0, endDate: null };
+
+    const endDate = userRow.subscription_end_date ? new Date(userRow.subscription_end_date) : null;
+    const isTrialInterval = ['trial', 'stripe_trial'].includes(userRow.subscription_interval);
+    if (!isTrialInterval || !endDate) return { phase: 'none', daysLeft: 0, endDate: null };
+
+    const msLeft = endDate.getTime() - Date.now();
+    if (msLeft <= 0) return { phase: 'expired', daysLeft: 0, endDate };
+
+    const lastDay = msLeft <= DAY_MS;
+    const daysLeft = Math.max(1, Math.ceil(msLeft / DAY_MS));
+    return { phase: lastDay ? 'last-day' : 'active', daysLeft, endDate };
+}
+
+export function trialPlanLabel(usageOrPhase) {
+    const phase = usageOrPhase?.trialPhase || usageOrPhase?.phase;
+    const daysLeft = usageOrPhase?.trialDaysLeft ?? usageOrPhase?.daysLeft ?? 0;
+    if (phase === 'last-day') return 'Unlimited · last day';
+    if (phase === 'active') return `Unlimited · ${daysLeft} day${daysLeft === 1 ? '' : 's'}`;
+    return null;
+}
+
+// Once per phase: last day of trial, or first SOAP/PetQuery after it ends.
+export function useTrialUpgradePrompt(usage) {
+    const { user } = useAuth0();
+    const [reason, setReason] = useState(null);
+
+    useEffect(() => {
+        if (!usage?.loaded || !user?.sub) return;
+        const phase = usage.trialPhase;
+        if (phase !== 'last-day' && phase !== 'expired') return;
+        const key = `trial-upgrade-${phase}-${user.sub}`;
+        if (localStorage.getItem(key) === 'true') return;
+        setReason(phase);
+    }, [usage?.loaded, usage?.trialPhase, user?.sub]);
+
+    const dismiss = useCallback(() => {
+        if (reason && user?.sub) {
+            localStorage.setItem(`trial-upgrade-${reason}-${user.sub}`, 'true');
+        }
+        setReason(null);
+    }, [reason, user?.sub]);
+
+    return { show: !!reason, reason, dismiss };
+}
+
 // Same-tab refresh signal: generation flows dispatch this right after the server
 // confirms a consume, so every mounted useUsage (sidebar ring, banners, Profile)
 // refetches immediately without relying on Supabase realtime configuration.
@@ -94,6 +148,7 @@ export function useUsage() {
 
     const tier = getTier(usageData);
     const isUnlimited = tier !== 'free';
+    const trial = getTrialPhase(usageData);
 
     // Start of today, local time (the browser is authoritative for display)
     const now = new Date();
@@ -117,6 +172,9 @@ export function useUsage() {
         loaded: usageData !== null,
         tier,
         isUnlimited,
+        trialPhase: trial.phase,
+        trialDaysLeft: trial.daysLeft,
+        trialEndDate: trial.endDate,
         soap: buildFeature(usageData?.soap_notes_used, FREE_LIMITS.soap),
         query: buildFeature(usageData?.pet_queries_used, FREE_LIMITS.query),
         resetsAt,

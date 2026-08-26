@@ -13,7 +13,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import SOAPView from './SOAPView';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaFileAlt } from 'react-icons/fa';
 import { AnimatePresence } from 'framer-motion';
-import { useUsage, notifyUsageUpdated } from '../hooks/useUsage';
+import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated } from '../hooks/useUsage';
 import UpgradeNudge from './UpgradeNudge';
 import UpgradeModal from './UpgradeModal';
 
@@ -611,6 +611,7 @@ const ReportForm = () => {
     // Free-tier daily usage (server-enforced, shared SOAP pool with QuickSOAP).
     // Show nothing below 80%, banner at 1 left, upgrade screen at 0.
     const usage = useUsage();
+    const trialPrompt = useTrialUpgradePrompt(usage);
     const [lastUsage, setLastUsage] = useState(null);
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const nudgeKey = `petsoap-nudge-dismissed-${new Date().toDateString()}`;
@@ -1439,12 +1440,16 @@ const ReportForm = () => {
     return (
         <div className="report-container">
             <AnimatePresence>
-                {showUpgradeModal && (
+                {(showUpgradeModal || trialPrompt.show) && (
                     <UpgradeModal
                         user={user}
                         feature="soap"
+                        reason={trialPrompt.show ? trialPrompt.reason : 'limit'}
                         resetsAt={lastUsage?.resetsAt || usage.resetsAt}
-                        onClose={() => setShowUpgradeModal(false)}
+                        onClose={() => {
+                            setShowUpgradeModal(false);
+                            trialPrompt.dismiss();
+                        }}
                         onSubscribed={() => usage.refresh()}
                     />
                 )}

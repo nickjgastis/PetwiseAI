@@ -19,7 +19,8 @@ import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clear
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
 import UsageRing from '../components/UsageRing';
-import { useUsage } from '../hooks/useUsage';
+import { useUsage, trialPlanLabel } from '../hooks/useUsage';
+import UpgradeModal from '../components/UpgradeModal';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -108,6 +109,7 @@ const Dashboard = () => {
     const [mobileSOAPCount, setMobileSOAPCount] = useState(0);
     const [showMobileSOAPNotification, setShowMobileSOAPNotification] = useState(false);
     const [mobileReportsGenerating, setMobileReportsGenerating] = useState(0);
+    const [showTrialUpgrade, setShowTrialUpgrade] = useState(false);
     const [draftsWaitingForLimit, setDraftsWaitingForLimit] = useState(0); // Mobile drafts blocked by the daily free cap
     const limitBlockedUntilRef = useRef(0); // Backoff so we don't hammer the API with 403s while capped
     const [mobileReportTypes, setMobileReportTypes] = useState({ soap: 0, summary: 0, callback: 0 }); // Track types being generated
@@ -873,9 +875,8 @@ const Dashboard = () => {
                 
                 if (onboardingError && onboardingError.code === 'PGRST116') {
                     // No onboarding row — check if this is a brand new user
-                    const isNewUser = !userData.has_accepted_terms && !userData.dvm_name && 
-                                      (!userData.subscription_status || userData.subscription_status === 'inactive') &&
-                                      !userData.has_completed_onboarding && !userData.has_used_trial;
+                    const isNewUser = !userData.has_accepted_terms && !userData.dvm_name &&
+                                      !userData.has_completed_onboarding;
                     
                     if (isNewUser) {
                         // Create onboarding row now (upsert to handle race conditions)
@@ -913,10 +914,10 @@ const Dashboard = () => {
                 setOnboardingData(null);
             }
 
-            // Onboarding is complete if:
-            // 1. has_completed_onboarding is explicitly true, OR
-            // 2. User has previously used trial (they went through flow before, just expired/canceled)
-            const hasCompletedOnboardingBefore = userData.has_completed_onboarding === true || userData.has_used_trial === true;
+            // Auto-started trials set has_used_trial on insert — that is not
+            // onboarding. Old click-to-trial users already have a dvm_name.
+            const hasCompletedOnboardingBefore = userData.has_completed_onboarding === true
+                || (userData.has_used_trial === true && !!userData.dvm_name);
             setHasCompletedOnboarding(hasCompletedOnboardingBefore);
 
             if (!userData.dvm_name || userData.dvm_name === null || userData.dvm_name === '') {
@@ -1610,7 +1611,7 @@ const Dashboard = () => {
                                                     ? `🎓 Student · until ${new Date(userData.subscription_end_date).toLocaleDateString()}`
                                                     : hasPaidPlan()
                                                         ? `${userData?.subscription_interval === 'yearly' ? 'Yearly' : 'Monthly'} plan`
-                                                        : 'Free plan'}
+                                                        : (trialPlanLabel(usage) || 'Free plan')}
                                             </div>
                                         </div>
                                         <span className={`flex flex-col items-center justify-center leading-none flex-shrink-0 transition-colors ${showAccountMenu ? 'text-white' : 'text-white/40'}`}>
@@ -1676,6 +1677,23 @@ const Dashboard = () => {
                                     <p className="text-sm opacity-90">Will appear in Saved Records when complete</p>
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {usage.trialPhase === 'last-day' && (
+                        <div className="bg-[#3468bd] text-white px-6 py-4 shadow-sm mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between gap-4" style={{ animation: 'fadeUp 0.5s ease-out' }}>
+                            <div>
+                                <p className="font-semibold text-base">Last day of unlimited</p>
+                                <p className="text-sm text-white/80">
+                                    Tomorrow you move to PetWise Free. Upgrade to stay unlimited — or keep using Free after today. No credit card required to stay on Free.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => setShowTrialUpgrade(true)}
+                                className="flex-shrink-0 px-4 py-2 bg-white text-[#3468bd] text-sm font-semibold rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+                            >
+                                See plans
+                            </button>
                         </div>
                     )}
 
@@ -1773,6 +1791,18 @@ const Dashboard = () => {
                     </Routes>
                 </main>
             </div>
+            {showTrialUpgrade && (
+                <UpgradeModal
+                    user={user}
+                    feature="soap"
+                    reason="last-day"
+                    onClose={() => setShowTrialUpgrade(false)}
+                    onSubscribed={() => {
+                        setShowTrialUpgrade(false);
+                        usage.refresh();
+                    }}
+                />
+            )}
             {/* Book-a-demo nudge — disabled for now. Re-enable by uncommenting below.
                 File at src/components/BookingBanner.js is kept in repo.
                 {hasCompletedOnboarding

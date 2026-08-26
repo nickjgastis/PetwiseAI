@@ -1,5 +1,6 @@
 const express = require('express');
 const fetch = require('node-fetch');
+const { TRIAL_DAYS } = require('../usage');
 
 const router = express.Router();
 
@@ -174,10 +175,14 @@ router.post('/', requireUser, async (req, res) => {
             if (method === 'select') {
                 q = supabase.from('users').select(cols).eq('auth0_user_id', sub);
             } else if (method === 'insert') {
+                const trialEnd = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
                 const payload = rows.map((row) => ({
                     ...pick(row, USERS_WRITE),
                     auth0_user_id: sub,
-                    subscription_status: 'inactive',
+                    subscription_status: 'active',
+                    subscription_interval: 'trial',
+                    subscription_end_date: trialEnd,
+                    has_used_trial: true,
                 }));
                 q = supabase.from('users').insert(payload).select(cols);
             } else if (method === 'update') {

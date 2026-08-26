@@ -20,6 +20,9 @@ const FREE_LIMITS = {
     query: Number(process.env.FREE_QUERY_LIMIT || 15)  // PetQuery
 };
 
+// No-card trial granted on signup. After this, getTier() falls through to free.
+const TRIAL_DAYS = Number(process.env.TRIAL_DAYS || 10);
+
 // While false, requests that can't be attributed to a user (stale PWA bundles
 // that don't send user/source yet) are allowed with a warning instead of 403'd.
 const USAGE_ENFORCE_STRICT = process.env.USAGE_ENFORCE_STRICT === 'true';
@@ -116,4 +119,4 @@ function limitResponse(feature, result) {
     };
 }
 
-module.exports = { FREE_LIMITS, USAGE_ENFORCE_STRICT, getTier, checkAndConsume, refund, limitResponse };
+module.exports = { FREE_LIMITS, TRIAL_DAYS, USAGE_ENFORCE_STRICT, getTier, checkAndConsume, refund, limitResponse };

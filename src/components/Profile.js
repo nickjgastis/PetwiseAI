@@ -4,8 +4,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useSubscription } from '../hooks/useSubscription';
-import { useUsage } from '../hooks/useUsage';
+import { useUsage, useTrialUpgradePrompt, getTrialPhase, trialPlanLabel } from '../hooks/useUsage';
 import UsageMeter from './UsageMeter';
+import UpgradeModal from './UpgradeModal';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
 import ManageSubscription from './ManageSubscription';
@@ -47,6 +48,7 @@ const Profile = ({ isMobileSignup = false }) => {
     const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(true);
     const [userData, setUserData] = useState(null);
     const usage = useUsage();
+    const trialPrompt = useTrialUpgradePrompt(usage);
 
     // Settings navigation
     const [activeSection, setActiveSection] = useState('profile');
@@ -176,21 +178,25 @@ const Profile = ({ isMobileSignup = false }) => {
         if (isStudentMode()) return 'Student';
         if (subscriptionStatus === 'active' && userData?.subscription_interval === 'yearly') return 'Yearly';
         if (subscriptionStatus === 'active' && userData?.subscription_interval === 'monthly') return 'Monthly';
+        const trial = getTrialPhase(userData);
+        if (trial.phase === 'active' || trial.phase === 'last-day') return 'Trial';
         return 'Free';
     };
 
     const planBadge = () => {
         const label = planLabel();
+        const trialLabel = trialPlanLabel(getTrialPhase(userData));
         const styles = {
             Student: 'bg-purple-50 text-purple-700 border-purple-200',
             Yearly: 'bg-amber-50 text-amber-700 border-amber-200',
             Monthly: 'bg-blue-50 text-[#3468bd] border-blue-200',
+            Trial: 'bg-sky-50 text-sky-700 border-sky-200',
             Free: 'bg-gray-100 text-gray-600 border-gray-200'
         };
         return (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${styles[label]}`}>
                 {label === 'Student' && <FaGraduationCap className="text-[10px]" />}
-                {label} plan
+                {trialLabel || `${label} plan`}
             </span>
         );
     };
@@ -408,6 +414,18 @@ const Profile = ({ isMobileSignup = false }) => {
 
     return (
         <div className="min-h-screen bg-[#f7f8fb]">
+            {trialPrompt.show && (
+                <UpgradeModal
+                    user={user}
+                    feature="soap"
+                    reason={trialPrompt.reason}
+                    onClose={trialPrompt.dismiss}
+                    onSubscribed={() => {
+                        trialPrompt.dismiss();
+                        usage.refresh();
+                    }}
+                />
+            )}
             {/* Student redeem modal (desktop) */}
             {showStudentRedeem && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
@@ -556,7 +574,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                 {/* ===== Billing ===== */}
                                 {activeSection === 'billing' && (
                                     <div className="space-y-5">
-                                        {subscriptionStatus === 'active' && subscriptionEndDate && (
+                                        {subscriptionStatus === 'active' && subscriptionEndDate && ['monthly', 'yearly'].includes(userData?.subscription_interval) && (
                                             <SectionCard>
                                                 <InfoRow label="Status">
                                                     <span className="text-emerald-600">● Active</span>

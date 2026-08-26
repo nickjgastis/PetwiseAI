@@ -5,7 +5,8 @@ import CongratsStep from './CongratsStep';
 import DesktopBridgeStep from './DesktopBridgeStep';
 
 // Active flow: congrats (name + phone + terms, all on one screen) → complete.
-// New users land straight in the app on the free tier — no plan/trial step.
+// New users land straight in the app. A 10-day unlimited trial starts on
+// signup (server insert). No plan/trial step here.
 // Removed (kept in repo in case we want to re-add): quiz1, quiz2, affirmation,
 // booking, terms, benefits, testimonial, trial, welcome.
 const STEPS = ['congrats', 'complete'];

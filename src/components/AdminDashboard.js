@@ -56,6 +56,7 @@ function tierOf(u) {
     if (u.plan_label === 'student' && end > now) return 'student';
     const active = u.subscription_status === 'active' || u.subscription_status === 'past_due';
     if (active && (u.subscription_interval === 'monthly' || u.subscription_interval === 'yearly')) return 'paid';
+    if (active && (u.subscription_interval === 'trial' || u.subscription_interval === 'stripe_trial') && end > now) return 'trial';
     return 'free';
 }
 
@@ -63,6 +64,7 @@ function statusLabel(u) {
     if (u.cancel_at_period_end) return 'Canceling';
     const t = tierOf(u);
     if (t === 'student') return 'Student';
+    if (t === 'trial') return 'Trial';
     if (t === 'paid') return u.subscription_interval === 'yearly' ? 'Yearly' : 'Monthly';
     return 'Free';
 }
@@ -73,11 +75,13 @@ const STATUS_STYLES = {
     Yearly: 'bg-purple-100 text-purple-700',
     Monthly: 'bg-emerald-100 text-emerald-700',
     Free: 'bg-gray-100 text-gray-500',
+    Trial: 'bg-sky-100 text-sky-700',
 };
 
 const FILTERS = [
     { key: 'all', label: 'All' },
     { key: 'free', label: 'Free' },
+    { key: 'trial', label: 'Trial' },
     { key: 'monthly', label: 'Monthly' },
     { key: 'yearly', label: 'Yearly' },
     { key: 'paid', label: 'All Paid' },
@@ -289,7 +293,7 @@ const AdminDashboard = () => {
     }, [series]);
 
     const tierCounts = useMemo(() => {
-        const c = { total: users.length, paid: 0, free: 0, student: 0, canceling: 0 };
+        const c = { total: users.length, paid: 0, free: 0, trial: 0, student: 0, canceling: 0 };
         users.forEach(u => {
             const t = tierOf(u);
             c[t] = (c[t] || 0) + 1;
@@ -303,6 +307,7 @@ const AdminDashboard = () => {
         return {
             all: base.length,
             free: base.filter(u => tierOf(u) === 'free').length,
+            trial: base.filter(u => tierOf(u) === 'trial').length,
             monthly: base.filter(u => tierOf(u) === 'paid' && u.subscription_interval === 'monthly').length,
             yearly: base.filter(u => tierOf(u) === 'paid' && u.subscription_interval === 'yearly').length,
             paid: base.filter(u => tierOf(u) === 'paid').length,
@@ -316,6 +321,7 @@ const AdminDashboard = () => {
         let f = [...rangeUsers];
         const fns = {
             free: u => tierOf(u) === 'free',
+            trial: u => tierOf(u) === 'trial',
             monthly: u => tierOf(u) === 'paid' && u.subscription_interval === 'monthly',
             yearly: u => tierOf(u) === 'paid' && u.subscription_interval === 'yearly',
             paid: u => tierOf(u) === 'paid',
@@ -409,7 +415,7 @@ const AdminDashboard = () => {
                 <div className="flex items-center justify-between mb-8">
                     <div>
                         <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Admin</h1>
-                        <p className="text-[13px] text-gray-500 mt-0.5">{tierCounts.total} users · {tierCounts.paid} paid · {tierCounts.free} free</p>
+                        <p className="text-[13px] text-gray-500 mt-0.5">{tierCounts.total} users · {tierCounts.paid} paid · {tierCounts.trial} trial · {tierCounts.free} free</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <button onClick={refresh} className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-gray-200 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
@@ -481,6 +487,7 @@ const AdminDashboard = () => {
                                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                                         <StatCard label="Total users" value={tierCounts.total} />
                                         <StatCard label="Paid" value={tierCounts.paid} sub={`${metrics?.subscriptionsByType?.monthly ?? 0} mo · ${metrics?.subscriptionsByType?.yearly ?? 0} yr`} />
+                                        <StatCard label="Trial" value={tierCounts.trial} />
                                         <StatCard label="Free" value={tierCounts.free} />
                                         <StatCard label="Growth (MoM)" value={metrics ? `${metrics.growthRate > 0 ? '+' : ''}${metrics.growthRate.toFixed(0)}%` : '—'} />
                                     </div>

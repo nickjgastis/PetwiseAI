@@ -188,6 +188,10 @@ function generateWelcomeEmail(userName) {
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             I wanted to personally welcome you to PetWise and thank you for giving the platform a try.
         </p>
+        <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
+            You have <strong>10 days of unlimited PetWise</strong> — no credit card.
+            After that, choose a paid plan or keep using PetWise Free.
+        </p>
         <p style="margin: 0 0 12px; font-size: 16px; color: #374151; line-height: 1.6;">
             One important thing to know: <strong>PetWise is a desktop app.</strong> Your patient records,
             templates, and completed SOAP reports all live on your computer at
@@ -279,7 +283,7 @@ function generateDiscountEmail() {
             Hi there,
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            If you're ready to unlock the full PetWise plan, here's an offer for this week only:
+            Your 10 free days of unlimited PetWise end soon. Stay unlimited with
             <strong>50% off your first month on our monthly plan</strong> when you upgrade in the next 7 days.
         </p>
         <div style="margin: 0 0 16px; padding: 20px; background: #fff7ed; border-radius: 12px; text-align: center;">

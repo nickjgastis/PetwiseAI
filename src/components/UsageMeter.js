@@ -66,12 +66,21 @@ const UsageMeter = ({ usage, onUpgrade }) => {
     if (!usage?.loaded) return null;
 
     if (usage.isUnlimited) {
+        const trialLine = usage.trialPhase === 'last-day'
+            ? 'Last day of your 10-day trial — then PetWise Free, or upgrade to stay unlimited.'
+            : usage.trialPhase === 'active'
+                ? `${usage.trialDaysLeft} day${usage.trialDaysLeft === 1 ? '' : 's'} left of unlimited. Then PetWise Free, or a paid plan.`
+                : 'Your plan includes unlimited SOAP notes and PetQuery.';
         return (
             <div className="flex items-center gap-2 text-sm text-gray-600">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
-                    Unlimited
+                    {usage.trialPhase === 'last-day'
+                        ? 'Unlimited · last day'
+                        : usage.trialPhase === 'active'
+                            ? `Unlimited · ${usage.trialDaysLeft} day${usage.trialDaysLeft === 1 ? '' : 's'}`
+                            : 'Unlimited'}
                 </span>
-                <span>Your plan includes unlimited SOAP notes and PetQuery.</span>
+                <span>{trialLine}</span>
             </div>
         );
     }

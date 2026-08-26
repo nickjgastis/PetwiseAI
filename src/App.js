@@ -23,7 +23,8 @@ const AppContent = () => {
   }, [isAuthenticated, getAccessTokenSilently]);
 
   // Hide navbar on login/callback routes and admin
-  const hideNavbar = ['/login', '/signup', '/callback', '/refresh', '/admin', '/vets', '/introduction'].includes(location.pathname) ||
+  const hideNavbar = ['/login', '/signup', '/callback', '/refresh', '/admin', '/introduction'].includes(location.pathname) ||
+    location.pathname.startsWith('/vets') ||
     (!isAuthenticated && location.pathname === '/');
 
   // Add Meta Pixel tracking
