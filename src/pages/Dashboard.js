@@ -76,7 +76,7 @@ const slideDownStyle = `
 // Mobile/PWA chrome: header + one scroller + bottom nav in a 100dvh flex column.
 // Prevents the iOS nested-scroll "catch" (html/body + min-h-screen + fixed nav).
 const MobileAppShell = ({ visible, location, children, lockScroll = false }) => {
-    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+    const shellRef = useRef(null);
 
     useEffect(() => {
         const html = document.documentElement;
@@ -86,22 +86,23 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
             bodyOverflow: body.style.overflow,
             htmlOverscroll: html.style.overscrollBehavior,
             bodyOverscroll: body.style.overscrollBehavior,
-            appHeight: html.style.getPropertyValue('--mobile-app-height'),
-            appTop: html.style.getPropertyValue('--mobile-app-top'),
+            htmlBg: html.style.backgroundColor,
+            bodyBg: body.style.backgroundColor,
         };
         const viewport = window.visualViewport;
         let animationFrame;
-        let stableViewportHeight = viewport?.height || window.innerHeight;
-        const syncViewport = () => {
+
+        const syncKeyboard = () => {
             cancelAnimationFrame(animationFrame);
             animationFrame = requestAnimationFrame(() => {
+                const shell = shellRef.current;
+                if (!shell) return;
                 const viewportHeight = viewport?.height || window.innerHeight;
-                const activeElement = document.activeElement;
-                const hasTextInputFocus = activeElement?.matches?.('input, textarea, [contenteditable="true"]');
-                if (!hasTextInputFocus) stableViewportHeight = viewportHeight;
-                html.style.setProperty('--mobile-app-height', `${Math.round(viewportHeight)}px`);
-                html.style.setProperty('--mobile-app-top', `${Math.round(viewport?.offsetTop || 0)}px`);
-                setIsKeyboardOpen(Boolean(hasTextInputFocus && stableViewportHeight - viewportHeight > 140));
+                const offsetTop = viewport?.offsetTop || 0;
+                const keyboardHeight = Math.max(0, Math.round(window.innerHeight - viewportHeight - offsetTop));
+                const keyboardOpen = keyboardHeight > 140;
+                shell.style.setProperty('--keyboard-height', `${keyboardOpen ? keyboardHeight : 0}px`);
+                shell.classList.toggle('keyboard-open', keyboardOpen);
             });
         };
 
@@ -109,22 +110,26 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
         body.style.overflow = 'hidden';
         html.style.overscrollBehavior = 'none';
         body.style.overscrollBehavior = 'none';
-        syncViewport();
-        viewport?.addEventListener('resize', syncViewport);
-        viewport?.addEventListener('scroll', syncViewport);
+        html.style.backgroundColor = '#ffffff';
+        body.style.backgroundColor = '#ffffff';
+        syncKeyboard();
+        viewport?.addEventListener('resize', syncKeyboard);
+        viewport?.addEventListener('scroll', syncKeyboard);
+        window.addEventListener('focusin', syncKeyboard);
+        window.addEventListener('focusout', syncKeyboard);
 
         return () => {
             cancelAnimationFrame(animationFrame);
-            viewport?.removeEventListener('resize', syncViewport);
-            viewport?.removeEventListener('scroll', syncViewport);
+            viewport?.removeEventListener('resize', syncKeyboard);
+            viewport?.removeEventListener('scroll', syncKeyboard);
+            window.removeEventListener('focusin', syncKeyboard);
+            window.removeEventListener('focusout', syncKeyboard);
             html.style.overflow = prev.htmlOverflow;
             body.style.overflow = prev.bodyOverflow;
             html.style.overscrollBehavior = prev.htmlOverscroll;
             body.style.overscrollBehavior = prev.bodyOverscroll;
-            if (prev.appHeight) html.style.setProperty('--mobile-app-height', prev.appHeight);
-            else html.style.removeProperty('--mobile-app-height');
-            if (prev.appTop) html.style.setProperty('--mobile-app-top', prev.appTop);
-            else html.style.removeProperty('--mobile-app-top');
+            html.style.backgroundColor = prev.htmlBg;
+            body.style.backgroundColor = prev.bodyBg;
         };
     }, []);
 
@@ -135,15 +140,17 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
     return (
         <>
             <style>{slideDownStyle}</style>
-            <div className={`mobile-app-shell ${visible ? 'pwa-fade-in' : 'opacity-0'}`}>
+            <div
+                ref={shellRef}
+                className={`mobile-app-shell ${visible ? 'pwa-fade-in' : 'opacity-0'}`}
+            >
                 <div className={lockScroll ? 'mobile-app-shell-lock' : 'mobile-app-shell-scroll'}>
                     {children}
                 </div>
-                {!isKeyboardOpen && (
-                    <nav
-                        className="flex-shrink-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/80 z-50"
-                        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-                    >
+                <nav
+                    className="mobile-tab-bar flex-shrink-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/80 z-50"
+                    style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+                >
                         <div className="flex items-center justify-around h-16">
                             <Link
                                 to="/dashboard/quicksoap"
@@ -174,7 +181,6 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                             </Link>
                         </div>
                     </nav>
-                )}
             </div>
         </>
     );
