@@ -7,6 +7,7 @@ import AppRoutes from './routes';
 import Navbar from './components/Navbar';
 import UpdateBanner from './components/UpdateBanner';
 import { supabase, bindSupabaseAccessToken } from './supabaseClient';
+import { trackCompleteRegistration } from './utils/pixelEvents';
 import "./styles/global.css";
 
 const AppContent = () => {
@@ -122,8 +123,8 @@ const AppContent = () => {
           if (insertError) {
             console.error("Error creating user:", insertError);
           } else {
-            // User created successfully, no redirection
             console.log("User created successfully:", newUser);
+            trackCompleteRegistration(user.sub);
           }
         } else {
 

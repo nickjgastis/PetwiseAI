@@ -14,6 +14,7 @@ import Welcome from '../components/Welcome';
 import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
+import { trackCompleteRegistration } from '../utils/pixelEvents';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
@@ -811,6 +812,7 @@ const Dashboard = () => {
                         }
                     } else {
                         userData = newUser;
+                        trackCompleteRegistration(user.sub);
                     }
                 } else {
                     // Add retry for other errors

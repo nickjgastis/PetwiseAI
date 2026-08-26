@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
+import { trackOnboardingComplete } from '../../utils/pixelEvents';
 import OnboardingLayout from './OnboardingLayout';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -43,6 +44,8 @@ const CongratsStep = ({ onNext }) => {
                 .update(updates)
                 .eq('auth0_user_id', user.sub);
             if (updateError) throw updateError;
+
+            trackOnboardingComplete(user.sub);
 
             // Internal team email — phone isn't available at Auth0 signup, only here.
             // Fire-and-forget so a notify failure never blocks onboarding.
