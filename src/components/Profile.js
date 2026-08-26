@@ -146,6 +146,16 @@ const Profile = ({ isMobileSignup = false }) => {
         }
     }, [location, navigate]);
 
+    // Sub-pages replace profile content inside the same mobile scroller —
+    // jump to top so Manage Subscription / Account aren't mid-page.
+    useEffect(() => {
+        if (!isMobileSignup) return;
+        if (!showCheckout && !showManageAccount && !showInstallPrompt) return;
+        const scroller = document.querySelector('.mobile-app-shell-scroll');
+        if (scroller) scroller.scrollTop = 0;
+        else window.scrollTo(0, 0);
+    }, [isMobileSignup, showCheckout, showManageAccount, showInstallPrompt]);
+
     const handleBillingPortal = async () => {
         try {
             const response = await fetch(`${API_URL}/create-customer-portal`, {
@@ -204,7 +214,7 @@ const Profile = ({ isMobileSignup = false }) => {
     // Show loading state only when auth0 is loading or subscription is loading
     if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
         return (
-            <div className="min-h-screen bg-[#f7f8fb] flex items-center justify-center">
+            <div className={`${isMobileSignup ? 'min-h-full h-full' : 'min-h-screen'} bg-[#f7f8fb] flex items-center justify-center`}>
                 <div className="text-base text-gray-500 font-medium">Loading ...</div>
             </div>
         );
@@ -249,7 +259,7 @@ const Profile = ({ isMobileSignup = false }) => {
     if (isMobileSignup) {
         if (showCheckout) {
             return (
-                <div className="min-h-screen bg-[#f7f8fb] px-4 py-6">
+                <div className="min-h-full bg-[#f7f8fb] px-4 py-6">
                     <ManageSubscription
                         user={manageSubscriptionUser}
                         subscriptionStatus={subscriptionStatus}
@@ -262,7 +272,7 @@ const Profile = ({ isMobileSignup = false }) => {
         }
         if (showManageAccount) {
             return (
-                <div className="min-h-screen bg-[#f7f8fb] px-4 py-6">
+                <div className="min-h-full bg-[#f7f8fb] px-4 py-6">
                     <ManageAccount user={user} onBack={() => setShowManageAccount(false)} />
                 </div>
             );
@@ -273,54 +283,84 @@ const Profile = ({ isMobileSignup = false }) => {
 
         const isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches ||
             window.navigator.standalone === true;
+        const profileDisplayName = userData?.dvm_name
+            ? `Dr. ${userData.dvm_name}`
+            : user?.name || 'Welcome';
+        const profileInitial = profileDisplayName
+            .replace(/^Dr\.\s*/i, '')
+            .trim()
+            .charAt(0)
+            .toUpperCase() || 'P';
 
         return (
-            <div className="min-h-screen bg-[#f7f8fb]">
-                <div className="px-4 py-6 space-y-4">
+            <div className="min-h-full bg-[#f4f6fa]">
+                <div className="px-4 pt-5 pb-8 space-y-4">
                     {/* Profile Header Card */}
-                    <div className="bg-gradient-to-br from-[#3468bd] to-[#2a5298] rounded-2xl p-5 text-white shadow-lg">
-                        <div className="flex items-center gap-4">
-                            <div className="flex-1 min-w-0">
-                                <h2 className="text-xl font-bold truncate">
-                                    {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name || 'Welcome'}
-                                </h2>
-                                <p className="text-white/80 text-sm truncate">{user?.email}</p>
-                                <div className="mt-1.5">{planBadge()}</div>
+                    <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                        className="relative overflow-hidden bg-white rounded-[24px] p-5 border border-white shadow-[0_8px_30px_rgba(30,60,111,0.08)]"
+                    >
+                        <div className="absolute -top-12 -right-10 w-32 h-32 rounded-full bg-blue-100/60 blur-2xl pointer-events-none" />
+                        <div className="relative flex items-center gap-4">
+                            <div className="w-14 h-14 flex-shrink-0 rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#5cccf0] text-white shadow-lg shadow-blue-200/70 flex items-center justify-center text-xl font-bold">
+                                {profileInitial}
                             </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#3468bd]/70 mb-1">
+                                    Your account
+                                </p>
+                                <h2 className="text-lg leading-tight font-bold tracking-tight text-gray-900 truncate">
+                                    {profileDisplayName}
+                                </h2>
+                                <p className="text-gray-500 text-xs truncate mt-1">{user?.email}</p>
+                            </div>
+                            <div className="flex-shrink-0 self-start">{planBadge()}</div>
                         </div>
-                    </div>
+                    </motion.div>
 
                     {pastDueBanner}
 
                     {/* Usage */}
-                    <div className="bg-white rounded-2xl border border-gray-200 p-5">
-                        <h3 className="text-sm font-bold text-gray-900 mb-4">Today's Usage</h3>
+                    <div className="bg-white rounded-[22px] border border-gray-100 p-5 shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#3468bd] flex items-center justify-center">
+                                <FaChartPie className="text-sm" />
+                            </div>
+                            <h3 className="text-sm leading-tight font-bold text-gray-900">Usage</h3>
+                        </div>
                         <UsageMeter usage={usage} onUpgrade={() => setShowCheckout(true)} />
                     </div>
 
                     {/* Subscription */}
-                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                        <div className="p-4 border-b border-gray-100">
-                            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                                <FaCircle className={`text-[8px] ${isSubscribed ? 'text-emerald-500' : 'text-gray-300'}`} />
-                                Your Plan
-                            </h3>
+                    <div className="bg-gradient-to-br from-white to-blue-50/50 rounded-[22px] border border-blue-100/70 overflow-hidden shadow-[0_4px_20px_rgba(30,60,111,0.05)]">
+                        <div className="p-5 pb-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">Membership</p>
+                                <h3 className="text-base font-bold text-gray-900 mt-1">{planLabel()} plan</h3>
+                            </div>
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isSubscribed ? 'bg-emerald-50' : 'bg-gray-100'}`}>
+                                <FaCircle className={`text-[9px] ${isSubscribed ? 'text-emerald-500' : 'text-gray-300'}`} />
+                            </div>
                         </div>
-                        <div className="p-4 space-y-2.5">
+                        <div className="px-5 pb-4 space-y-2.5">
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-[13px]">Plan</span>
-                                <span className="text-gray-800 font-semibold text-[13px]">{planLabel()}</span>
+                                <span className="text-gray-500 text-xs">Status</span>
+                                <span className="text-gray-800 font-semibold text-xs">
+                                    {isSubscribed ? 'Active' : 'Free access'}
+                                </span>
                             </div>
                             {subscriptionEndDate && subscriptionStatus === 'active' && (
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-500 text-[13px]">{cancelAtPeriodEnd ? 'Ends' : 'Renews'}</span>
-                                    <span className="text-gray-800 font-semibold text-[13px]">{formatDate(subscriptionEndDate)}</span>
+                                    <span className="text-gray-500 text-xs">{cancelAtPeriodEnd ? 'Ends' : 'Renews'}</span>
+                                    <span className="text-gray-800 font-semibold text-xs">{formatDate(subscriptionEndDate)}</span>
                                 </div>
                             )}
                         </div>
-                        <div className="p-4 pt-0">
+                        <div className="px-5 pb-5">
                             <button
-                                className="w-full bg-[#3468bd] text-white py-3 rounded-xl font-semibold text-sm active:scale-[0.98] transition-transform"
+                                className="w-full bg-gradient-to-r from-[#3468bd] to-[#2d5ca8] text-white py-3 rounded-xl font-semibold text-sm shadow-sm active:scale-[0.985] transition-transform"
                                 onClick={() => setShowCheckout(true)}
                             >
                                 {planLabel() === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
@@ -329,41 +369,44 @@ const Profile = ({ isMobileSignup = false }) => {
                     </div>
 
                     {/* Account actions */}
-                    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+                    <div className="pt-2 px-1">
+                        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-gray-400">Settings</h3>
+                    </div>
+                    <div className="bg-white rounded-[22px] border border-gray-100 overflow-hidden divide-y divide-gray-100 shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
                         {!isStandaloneApp && (
                             <button
-                                className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                                className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors"
                                 onClick={() => setShowInstallPrompt(true)}
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
+                                    <div className="w-10 h-10 bg-emerald-50 rounded-[14px] flex items-center justify-center">
                                         <FaMobile className="text-emerald-600 text-sm" />
                                     </div>
                                     <div>
-                                        <p className="text-gray-800 font-medium text-sm">Get the App</p>
-                                        <p className="text-gray-400 text-xs">Install Petwise on your home screen</p>
+                                        <p className="text-gray-900 font-semibold text-sm">Get the App</p>
+                                        <p className="text-gray-400 text-[11px] mt-0.5">Install Petwise on your home screen</p>
                                     </div>
                                 </div>
-                                <span className="text-gray-300">›</span>
+                                <span className="text-gray-300 text-xl font-light">›</span>
                             </button>
                         )}
                         <button
-                            className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                            className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors"
                             onClick={() => setShowManageAccount(true)}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-blue-50 rounded-xl flex items-center justify-center">
+                                <div className="w-10 h-10 bg-blue-50 rounded-[14px] flex items-center justify-center">
                                     <FaShieldAlt className="text-[#3468bd] text-sm" />
                                 </div>
                                 <div>
-                                    <p className="text-gray-800 font-medium text-sm">Account Settings</p>
-                                    <p className="text-gray-400 text-xs">Security and account management</p>
+                                    <p className="text-gray-900 font-semibold text-sm">Account Settings</p>
+                                    <p className="text-gray-400 text-[11px] mt-0.5">Security and account management</p>
                                 </div>
                             </div>
-                            <span className="text-gray-300">›</span>
+                            <span className="text-gray-300 text-xl font-light">›</span>
                         </button>
                         <button
-                            className="w-full flex items-center justify-between p-4 text-left active:bg-gray-50 transition-colors"
+                            className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-red-50/60 transition-colors"
                             onClick={() => {
                                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                                     window.navigator.standalone === true;
@@ -377,19 +420,19 @@ const Profile = ({ isMobileSignup = false }) => {
                             }}
                         >
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                                <div className="w-10 h-10 bg-red-50 rounded-[14px] flex items-center justify-center">
                                     <FaUser className="text-red-500 text-sm" />
                                 </div>
                                 <div>
-                                    <p className="text-red-600 font-medium text-sm">Log Out</p>
-                                    <p className="text-gray-400 text-xs">Sign out of your account</p>
+                                    <p className="text-red-600 font-semibold text-sm">Log Out</p>
+                                    <p className="text-gray-400 text-[11px] mt-0.5">Sign out of your account</p>
                                 </div>
                             </div>
-                            <span className="text-gray-300">›</span>
+                            <span className="text-gray-300 text-xl font-light">›</span>
                         </button>
                     </div>
 
-                    <p className="text-center text-gray-400 text-xs pt-2">Petwise.vet • Version 1.0</p>
+                    <p className="text-center text-gray-400 text-[10px] tracking-wide pt-3">PETWISE · VERSION 1.0</p>
                 </div>
             </div>
         );
@@ -406,7 +449,7 @@ const Profile = ({ isMobileSignup = false }) => {
 
     const SECTION_TITLES = {
         profile: { title: 'Profile', subtitle: 'Your details as they appear on reports' },
-        usage: { title: 'Usage', subtitle: 'Your daily allowance at a glance — resets at midnight' },
+        usage: { title: 'Usage', subtitle: 'SOAP notes and PetQuery on your current plan' },
         billing: { title: 'Plan & Billing', subtitle: 'Manage your plan, payment, and invoices' },
         account: { title: 'Account', subtitle: 'Security and account management' },
         mobile: { title: 'Mobile App', subtitle: 'Take PetWise into the exam room' },

@@ -15,7 +15,7 @@ import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaCommentMedical, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
@@ -72,6 +72,113 @@ const slideDownStyle = `
         }
     }
 `;
+
+// Mobile/PWA chrome: header + one scroller + bottom nav in a 100dvh flex column.
+// Prevents the iOS nested-scroll "catch" (html/body + min-h-screen + fixed nav).
+const MobileAppShell = ({ visible, location, children, lockScroll = false }) => {
+    const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+
+    useEffect(() => {
+        const html = document.documentElement;
+        const { body } = document;
+        const prev = {
+            htmlOverflow: html.style.overflow,
+            bodyOverflow: body.style.overflow,
+            htmlOverscroll: html.style.overscrollBehavior,
+            bodyOverscroll: body.style.overscrollBehavior,
+            appHeight: html.style.getPropertyValue('--mobile-app-height'),
+            appTop: html.style.getPropertyValue('--mobile-app-top'),
+        };
+        const viewport = window.visualViewport;
+        let animationFrame;
+        let stableViewportHeight = viewport?.height || window.innerHeight;
+        const syncViewport = () => {
+            cancelAnimationFrame(animationFrame);
+            animationFrame = requestAnimationFrame(() => {
+                const viewportHeight = viewport?.height || window.innerHeight;
+                const activeElement = document.activeElement;
+                const hasTextInputFocus = activeElement?.matches?.('input, textarea, [contenteditable="true"]');
+                if (!hasTextInputFocus) stableViewportHeight = viewportHeight;
+                html.style.setProperty('--mobile-app-height', `${Math.round(viewportHeight)}px`);
+                html.style.setProperty('--mobile-app-top', `${Math.round(viewport?.offsetTop || 0)}px`);
+                setIsKeyboardOpen(Boolean(hasTextInputFocus && stableViewportHeight - viewportHeight > 140));
+            });
+        };
+
+        html.style.overflow = 'hidden';
+        body.style.overflow = 'hidden';
+        html.style.overscrollBehavior = 'none';
+        body.style.overscrollBehavior = 'none';
+        syncViewport();
+        viewport?.addEventListener('resize', syncViewport);
+        viewport?.addEventListener('scroll', syncViewport);
+
+        return () => {
+            cancelAnimationFrame(animationFrame);
+            viewport?.removeEventListener('resize', syncViewport);
+            viewport?.removeEventListener('scroll', syncViewport);
+            html.style.overflow = prev.htmlOverflow;
+            body.style.overflow = prev.bodyOverflow;
+            html.style.overscrollBehavior = prev.htmlOverscroll;
+            body.style.overscrollBehavior = prev.bodyOverscroll;
+            if (prev.appHeight) html.style.setProperty('--mobile-app-height', prev.appHeight);
+            else html.style.removeProperty('--mobile-app-height');
+            if (prev.appTop) html.style.setProperty('--mobile-app-top', prev.appTop);
+            else html.style.removeProperty('--mobile-app-top');
+        };
+    }, []);
+
+    const isQuickSOAP = location.pathname === '/dashboard/quicksoap';
+    const isPetQuery = location.pathname === '/dashboard/quick-query';
+    const isProfile = location.pathname === '/dashboard/profile';
+
+    return (
+        <>
+            <style>{slideDownStyle}</style>
+            <div className={`mobile-app-shell ${visible ? 'pwa-fade-in' : 'opacity-0'}`}>
+                <div className={lockScroll ? 'mobile-app-shell-lock' : 'mobile-app-shell-scroll'}>
+                    {children}
+                </div>
+                {!isKeyboardOpen && (
+                    <nav
+                        className="flex-shrink-0 bg-white/95 backdrop-blur-xl border-t border-gray-200/80 z-50"
+                        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+                    >
+                        <div className="flex items-center justify-around h-16">
+                            <Link
+                                to="/dashboard/quicksoap"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isQuickSOAP ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                            >
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isQuickSOAP ? 'bg-blue-50' : ''}`}>
+                                    <FaMicrophone className="text-lg" />
+                                </span>
+                                <span className={`text-[10px] mt-0.5 ${isQuickSOAP ? 'font-bold' : 'font-medium'}`}>QuickSOAP</span>
+                            </Link>
+                            <Link
+                                to="/dashboard/quick-query"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isPetQuery ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                            >
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isPetQuery ? 'bg-blue-50' : ''}`}>
+                                    <FaSearch className="text-lg" />
+                                </span>
+                                <span className={`text-[10px] mt-0.5 ${isPetQuery ? 'font-bold' : 'font-medium'}`}>PetQuery</span>
+                            </Link>
+                            <Link
+                                to="/dashboard/profile"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isProfile ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                            >
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isProfile ? 'bg-blue-50' : ''}`}>
+                                    <FaUser className="text-lg" />
+                                </span>
+                                <span className={`text-[10px] mt-0.5 ${isProfile ? 'font-bold' : 'font-medium'}`}>Profile</span>
+                            </Link>
+                        </div>
+                    </nav>
+                )}
+            </div>
+        </>
+    );
+};
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -1045,108 +1152,24 @@ const Dashboard = () => {
         // QuickSOAP route — available to all users (free tier included)
         const isQuickSOAPRoute = window.location.pathname.includes('/quicksoap');
         if (isQuickSOAPRoute) {
-            // Render QuickSOAP with mobile header and bottom nav
             return (
-                <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
-                    <style>{slideDownStyle}</style>
-                    {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
-                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
-                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
-                            <span>
-                                <span className="font-bold text-white">Petwise</span>
-                                <span className="font-normal text-white">.vet</span>
-                            </span>
-                        </div>
+                <MobileAppShell visible={mobileAppVisible} location={location} lockScroll>
+                    <div className="h-full overflow-hidden bg-[#3369bd]">
+                        <QuickSOAP />
                     </div>
-                    {/* QuickSOAP Component */}
-                    <div className="bg-[#3369bd]" style={{ paddingTop: '64px', paddingBottom: '64px', minHeight: '100vh', height: '100vh', overflow: 'hidden' }}>
-                        <div style={{ height: 'calc(100vh - 128px)', overflow: 'hidden' }}>
-                            <QuickSOAP />
-                        </div>
-                    </div>
-                    {/* Bottom Navigation Bar */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex items-center justify-around h-16">
-                            <Link
-                                to="/dashboard/quicksoap"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">QuickSOAP</span>
-                            </Link>
-                            {/* PetQuery hidden for now - keeping code
-                            <Link
-                                to="/dashboard/quick-query"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">PetQuery</span>
-                            </Link>
-                            */}
-                            <Link
-                                to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">Profile</span>
-                            </Link>
-                        </div>
-                    </nav>
-                </div>
+                </MobileAppShell>
             );
         }
 
         // PetQuery route — available to all users (free tier included)
         const isPetQueryRoute = window.location.pathname.includes('/quick-query');
         if (isPetQueryRoute) {
-            // Render PetQuery with mobile header and bottom nav
             return (
-                <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
-                    <style>{slideDownStyle}</style>
-                    {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
-                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
-                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
-                            <span>
-                                <span className="font-bold text-white">Petwise</span>
-                                <span className="font-normal text-white">.vet</span>
-                            </span>
-                        </div>
-                    </div>
-                    {/* PetQuery Component */}
-                    <div className="bg-white flex flex-col overflow-hidden" style={{ paddingTop: '64px', paddingBottom: '64px', height: '100vh', touchAction: 'pan-y' }}>
+                <MobileAppShell visible={mobileAppVisible} location={location} lockScroll>
+                    <div className="h-full flex flex-col overflow-hidden bg-white" style={{ touchAction: 'pan-y' }}>
                         <QuickQuery isMobile={true} />
                     </div>
-                    {/* Bottom Navigation Bar */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex items-center justify-around h-16">
-                            <Link
-                                to="/dashboard/quicksoap"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">QuickSOAP</span>
-                            </Link>
-                            {/* PetQuery hidden for now - keeping code
-                            <Link
-                                to="/dashboard/quick-query"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">PetQuery</span>
-                            </Link>
-                            */}
-                            <Link
-                                to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">Profile</span>
-                            </Link>
-                        </div>
-                    </nav>
-                </div>
+                </MobileAppShell>
             );
         }
 
@@ -1159,50 +1182,9 @@ const Dashboard = () => {
         // If on profile route, allow it but hide sidebar and only show profile with bottom nav
         if (window.location.pathname.includes('/profile')) {
             return (
-                <div className={mobileAppVisible ? 'pwa-fade-in' : 'opacity-0'}>
-                    <style>{slideDownStyle}</style>
-                    {/* Mobile Header */}
-                    <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
-                        <div className="text-white text-2xl font-inter flex items-center gap-2.5 tracking-wide">
-                            <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
-                            <span>
-                                <span className="font-bold text-white">Petwise</span>
-                                <span className="font-normal text-white">.vet</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div className="min-h-screen bg-[#3369bd] p-0" style={{ paddingTop: '64px', paddingBottom: '64px' }}>
-                        <Profile isMobileSignup={true} />
-                    </div>
-                    {/* Bottom Navigation Bar */}
-                    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-                        <div className="flex items-center justify-around h-16">
-                            <Link
-                                to="/dashboard/quicksoap"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaMicrophone className={`text-2xl mb-1 ${location.pathname === '/dashboard/quicksoap' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">QuickSOAP</span>
-                            </Link>
-                            {/* PetQuery hidden for now - keeping code
-                            <Link
-                                to="/dashboard/quick-query"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaCommentMedical className={`text-2xl mb-1 ${location.pathname === '/dashboard/quick-query' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">PetQuery</span>
-                            </Link>
-                            */}
-                            <Link
-                                to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`}
-                            >
-                                <FaUser className={`text-2xl mb-1 ${location.pathname === '/dashboard/profile' ? 'text-primary-600' : 'text-gray-500'}`} />
-                                <span className="text-xs font-medium">Profile</span>
-                            </Link>
-                        </div>
-                    </nav>
-                </div>
+                <MobileAppShell visible={mobileAppVisible} location={location}>
+                    <Profile isMobileSignup={true} />
+                </MobileAppShell>
             );
         }
 
