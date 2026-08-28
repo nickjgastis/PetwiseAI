@@ -1,6 +1,6 @@
 // src/App.js
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
@@ -28,43 +28,13 @@ const AppContent = () => {
     location.pathname.startsWith('/vets') ||
     (!isAuthenticated && location.pathname === '/');
 
-  // Add Meta Pixel tracking
+  // SPA PageViews. First load is already tracked in index.html.
+  const pixelPath = useRef(location.pathname);
   useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') return;
-
-    // Use void to satisfy no-unused-expressions
-    void function (f, b, e, v, n, t, s) {
-      if (f.fbq) return; n = f.fbq = function () {
-        n.callMethod ?
-          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-      };
-      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-      n.queue = []; t = b.createElement(e); t.async = !0;
-      t.src = v; s = b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t, s)
-    }(window, document, 'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-
-    // Add window to satisfy no-undef
-    window.fbq('init', '691293719968426');
-    window.fbq('track', 'PageView');
-  }, []);
-
-  // Track page changes when routes change
-  useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') return;
-
-    const handleRouteChange = () => {
-      if (window.fbq) {
-        window.fbq('track', 'PageView');
-      }
-    };
-
-    window.addEventListener('popstate', handleRouteChange);
-    return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-    };
-  }, []);
+    if (pixelPath.current === location.pathname) return;
+    pixelPath.current = location.pathname;
+    window.fbq?.('track', 'PageView');
+  }, [location.pathname]);
 
   // Add this alongside your Meta Pixel tracking
   useEffect(() => {

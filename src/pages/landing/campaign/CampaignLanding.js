@@ -15,6 +15,7 @@ import {
 } from 'react-icons/fa';
 import DemoStage from './DemoStage';
 import StepGraphic from './StepGraphic';
+import YoutubeEmbed from '../YoutubeEmbed';
 import { COPY, PHOTOS, QUOTES, BEST_FOR, FAQS } from './copy';
 
 const fadeUp = {
@@ -135,7 +136,7 @@ const CampaignLanding = ({ variant = 'home' }) => {
                     aria-hidden
                     className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent from-40% to-[#f4f7fb]"
                 />
-                <div className="relative max-w-7xl mx-auto px-4 pt-10 pb-16 sm:pt-16 sm:pb-24">
+                <div className="relative max-w-7xl mx-auto px-4 pt-8 pb-8 sm:pt-16 sm:pb-16">
                     <div className="flex flex-col lg:grid lg:grid-cols-12 lg:gap-4 lg:items-center">
                         <div className="lg:col-span-5 text-left">
                             <Title
@@ -159,6 +160,19 @@ const CampaignLanding = ({ variant = 'home' }) => {
                                 className="w-full h-auto"
                             />
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <section className="bg-[#f4f7fb] px-4 pt-2 pb-10 sm:pt-2 sm:pb-14">
+                <div className="max-w-xl mx-auto sm:max-w-3xl">
+                    <Title
+                        parts={['Dr. Stacey ', 'Gastis']}
+                        className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-4 text-center"
+                    />
+                    <YoutubeEmbed />
+                    <div className="mt-5 flex justify-center">
+                        <PrimaryCta onClick={() => start('vsl')}>{copy.cta}</PrimaryCta>
                     </div>
                 </div>
             </section>
