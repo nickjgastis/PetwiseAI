@@ -22,6 +22,7 @@ import Refresh from './pages/Refresh';
 // the authenticated app bundle.
 const VetsLanding = lazy(() => import('./pages/landing/VetsLanding'));
 const VetsNextLanding = lazy(() => import('./pages/landing/VetsNextLanding'));
+const VetsDemoWalkthrough = lazy(() => import('./pages/landing/VetsDemoWalkthrough'));
 const IntroductionLanding = lazy(() => import('./pages/landing/IntroductionLanding'));
 
 // Check if running as installed PWA
@@ -71,6 +72,9 @@ const AppRoutes = () => {
             <Route path="/refresh" element={<Refresh />} />
             <Route path="/vets" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f4ee]" />}><VetsLanding /></Suspense>} />
             <Route path="/vets/next" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f4ee]" />}><VetsNextLanding /></Suspense>} />
+            <Route path="/vets/demo" element={<Suspense fallback={<div className="min-h-screen bg-[#f5f7fb]" />}><VetsDemoWalkthrough /></Suspense>} />
+            <Route path="/vets/petquery" element={<Navigate to="/vets/demo" replace />} />
+            <Route path="/vets/quicksoap" element={<Navigate to="/vets/demo" replace />} />
             <Route path="/introduction" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><IntroductionLanding /></Suspense>} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/blog" element={<Blog />} />
