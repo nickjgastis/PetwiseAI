@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import { FaBookMedical, FaCheck, FaClipboardList, FaCommentMedical, FaCrown, FaDesktop } from 'react-icons/fa';
@@ -20,7 +19,7 @@ const Cta = ({ children, onClick, className = '' }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`w-full rounded-full text-white font-medium py-3.5 ${className || 'bg-[#3468bd] shadow-[0_8px_24px_-6px_rgba(52,104,189,0.55)]'}`}
+        className={`w-full rounded-full text-white font-bold py-3.5 ${className || 'bg-[#3468bd] shadow-[0_8px_24px_-6px_rgba(52,104,189,0.55)]'}`}
     >
         {children}
     </button>
@@ -84,9 +83,9 @@ const DemoShell = ({ title, sub, children, onSignup, afterCta, showAfter }) => {
                 <div className="shrink-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-100">
                     <Cta
                         onClick={onSignup}
-                        className="bg-[#5cccf0] shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] text-lg"
+                        className="bg-[#5cccf0] shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] text-xl"
                     >
-                        Start my free 10 days
+                        Start free trial · No credit card
                     </Cta>
                 </div>
             </div>
@@ -158,9 +157,10 @@ const VetsDemoWalkthrough = () => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#f5f7fb] text-[#1a2b4a] pb-28">
+        <div className="min-h-screen bg-[#f5f7fb] text-[#1a2b4a] pb-32">
             <div className="mx-auto w-full max-w-[430px]">
                 <section className="px-5 pt-[max(2.5rem,env(safe-area-inset-top))] pb-12">
+                    <div ref={sentinelRef} className="h-px" aria-hidden />
                     <div className="flex items-center gap-2 mb-8">
                         <img src="/PW.png" alt="PetWise" className="w-10 h-10 object-contain" />
                         <span className="text-lg font-extrabold tracking-tight">
@@ -199,7 +199,6 @@ const VetsDemoWalkthrough = () => {
                         alt="PetWise QuickSOAP on desktop and phone"
                         className="w-full h-auto mt-6"
                     />
-                    <div ref={sentinelRef} className="h-px" aria-hidden />
                 </section>
 
                 <section className="px-5 pb-12">
@@ -312,28 +311,23 @@ const VetsDemoWalkthrough = () => {
                 </footer>
             </div>
 
-            <AnimatePresence>
-                {showSticky && (
-                    <motion.div
-                        initial={{ y: 80, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 80, opacity: 0 }}
-                        transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                        className="fixed bottom-0 left-0 right-0 z-50"
-                    >
-                        <div className="bg-white/95 backdrop-blur border-t border-gray-200 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
-                            <div className="mx-auto max-w-[430px] px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                                <Cta
-                                    onClick={() => start('sticky')}
-                                    className="bg-[#5cccf0] shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] text-lg"
-                                >
-                                    START FREE TRIAL - NO CREDIT CARD
-                                </Cta>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            <div
+                className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-out ${
+                    showSticky ? 'translate-y-0' : 'translate-y-full pointer-events-none'
+                }`}
+                aria-hidden={!showSticky}
+            >
+                <div className="bg-white/95 backdrop-blur border-t border-gray-200 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
+                    <div className="mx-auto max-w-[430px] px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                        <Cta
+                            onClick={() => start('sticky')}
+                            className="bg-[#5cccf0] shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] text-xl"
+                        >
+                            Start free trial · No credit card
+                        </Cta>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
