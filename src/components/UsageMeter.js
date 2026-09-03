@@ -44,7 +44,7 @@ export const UsagePips = ({ label, used, limit, remaining }) => {
     );
 };
 
-// Count bar for larger daily quotas (e.g. 15 queries): "12 of 15 used".
+// Count bar for larger daily quotas (e.g. 5 queries): "4 of 5 used".
 export const UsageCountBar = ({ label, used, limit, remaining }) => {
     const pct = Math.min(Math.round((used / limit) * 100), 100);
     const color = usageColor(pct);

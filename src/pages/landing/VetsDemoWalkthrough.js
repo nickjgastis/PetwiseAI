@@ -20,7 +20,7 @@ const Cta = ({ children, onClick, className = '' }) => (
     <button
         type="button"
         onClick={onClick}
-        className={`w-full rounded-full bg-[#5cccf0] text-white font-medium py-3.5 shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] ${className}`}
+        className={`w-full rounded-full text-white font-medium py-3.5 ${className || 'bg-[#3468bd] shadow-[0_8px_24px_-6px_rgba(52,104,189,0.55)]'}`}
     >
         {children}
     </button>
@@ -43,13 +43,18 @@ const DemoShell = ({ title, sub, children, onSignup, afterCta, showAfter }) => {
 
     useEffect(() => {
         document.title = `${title} | Petwise.vet`;
-        const prev = document.body.style.overflow;
+        const prevBody = document.body.style.overflow;
+        const prevHtml = document.documentElement.style.overflow;
         document.body.style.overflow = 'hidden';
-        return () => { document.body.style.overflow = prev; };
+        document.documentElement.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = prevBody;
+            document.documentElement.style.overflow = prevHtml;
+        };
     }, [title]);
 
     return (
-        <div className="h-[100dvh] bg-[#f5f7fb] text-[#1a2b4a] overflow-hidden">
+        <div className="fixed inset-0 bg-[#f5f7fb] text-[#1a2b4a] overflow-hidden">
             <div className="mx-auto h-full w-full max-w-[430px] flex flex-col">
                 <div className="px-5 pt-[max(1rem,env(safe-area-inset-top))] pb-1 shrink-0 flex items-start justify-between gap-3">
                     <div>
@@ -76,8 +81,13 @@ const DemoShell = ({ title, sub, children, onSignup, afterCta, showAfter }) => {
                         {afterCta}
                     </button>
                 )}
-                <div className="shrink-0 px-4 py-3 bg-white border-t border-gray-100 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                    <Cta onClick={onSignup}>Start my free 10 days</Cta>
+                <div className="shrink-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white border-t border-gray-100">
+                    <Cta
+                        onClick={onSignup}
+                        className="bg-[#5cccf0] shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] text-lg"
+                    >
+                        Start my free 10 days
+                    </Cta>
                 </div>
             </div>
         </div>
@@ -166,7 +176,7 @@ const VetsDemoWalkthrough = () => {
                         <button
                             type="button"
                             onClick={() => openDemo('soap', '/vets/demo/soap')}
-                            className="w-full rounded-full bg-[#5cccf0] text-white text-lg font-medium py-2.5 tracking-tight inline-flex items-center justify-center gap-2"
+                            className="w-full rounded-full bg-[#3468bd] text-white text-lg font-medium py-2.5 tracking-tight inline-flex items-center justify-center gap-2"
                         >
                             <FaClipboardList className="text-base" />
                             Try a sample SOAP
@@ -174,7 +184,7 @@ const VetsDemoWalkthrough = () => {
                         <button
                             type="button"
                             onClick={() => openDemo('petquery', '/vets/demo/petquery')}
-                            className="w-full rounded-full bg-[#5cccf0] text-white text-lg font-medium py-2.5 tracking-tight inline-flex items-center justify-center gap-2"
+                            className="w-full rounded-full bg-[#3468bd] text-white text-lg font-medium py-2.5 tracking-tight inline-flex items-center justify-center gap-2"
                         >
                             <FaCommentMedical className="text-base" />
                             Try the clinical assistant
@@ -184,6 +194,11 @@ const VetsDemoWalkthrough = () => {
                         <FaCheck className="text-emerald-500 text-xs" />
                         No signup needed
                     </p>
+                    <img
+                        src="/Deskandphone.png"
+                        alt="PetWise QuickSOAP on desktop and phone"
+                        className="w-full h-auto mt-6"
+                    />
                     <div ref={sentinelRef} className="h-px" aria-hidden />
                 </section>
 
@@ -207,14 +222,6 @@ const VetsDemoWalkthrough = () => {
                             </div>
                         ))}
                     </div>
-                </section>
-
-                <section className="px-5 pb-8">
-                    <img
-                        src="/Deskandphone.png"
-                        alt="PetWise QuickSOAP on desktop and phone"
-                        className="w-full h-auto"
-                    />
                 </section>
 
                 <section className="px-5 pb-10">
@@ -296,10 +303,6 @@ const VetsDemoWalkthrough = () => {
                     <YoutubeEmbed />
                 </section>
 
-                <section className="px-5 pb-12">
-                    <Cta onClick={() => start('footer')}>Start free trial - no credit card</Cta>
-                </section>
-
                 <footer className="px-5 py-8 text-sm text-[#1a2b4a]/40 flex justify-between">
                     <span>© {new Date().getFullYear()} Petwise.vet</span>
                     <div className="flex gap-4">
@@ -320,7 +323,12 @@ const VetsDemoWalkthrough = () => {
                     >
                         <div className="bg-white/95 backdrop-blur border-t border-gray-200 shadow-[0_-8px_24px_rgba(15,23,42,0.08)]">
                             <div className="mx-auto max-w-[430px] px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-                                <Cta onClick={() => start('sticky')}>START FREE TRIAL - NO CREDIT CARD</Cta>
+                                <Cta
+                                    onClick={() => start('sticky')}
+                                    className="bg-[#5cccf0] shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] text-lg"
+                                >
+                                    START FREE TRIAL - NO CREDIT CARD
+                                </Cta>
                             </div>
                         </div>
                     </motion.div>

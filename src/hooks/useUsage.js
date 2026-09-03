@@ -7,7 +7,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 // Reset at the user's local midnight; unused quota never rolls over.
 export const FREE_LIMITS = {
     soap: 5,    // QuickSOAP + PetSOAP combined pool
-    query: 15   // PetQuery
+    query: 5    // PetQuery
 };
 
 // The browser's IANA timezone — sent with generation requests so the server

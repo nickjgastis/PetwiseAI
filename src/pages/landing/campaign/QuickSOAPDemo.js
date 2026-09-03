@@ -337,7 +337,7 @@ const QuickSOAPDemo = ({ onGenerated, hideHeader = false }) => {
                             type="button"
                             onClick={generate}
                             disabled={generating || !transcript.trim() || remaining === 0}
-                            className="mt-3 w-full rounded-full bg-[#5cccf0] text-white font-medium py-3.5 shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] disabled:opacity-40 disabled:shadow-none"
+                            className="mt-3 w-full rounded-full bg-[#3468bd] text-white font-medium py-3.5 shadow-[0_8px_24px_-6px_rgba(52,104,189,0.55)] disabled:opacity-40 disabled:shadow-none"
                         >
                             {generating ? 'Generating...' : 'Click to generate SOAP'}
                         </button>

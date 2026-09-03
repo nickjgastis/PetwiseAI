@@ -44,14 +44,14 @@ const REASON_COPY = {
     'last-day': {
         title: () => 'Last day of unlimited',
         body: () => (
-            <>Your 10 free days end in the next 24 hours. Upgrade to stay unlimited, or continue with PetWise Free — 5 SOAPs and 15 PetQuery questions a day.</>
+            <>Your 10 free days end in the next 24 hours. Upgrade to stay unlimited, or continue with PetWise Free — 5 SOAPs and 5 PetQuery questions a day.</>
         ),
         dismiss: 'Keep using unlimited today'
     },
     expired: {
         title: () => 'Your 10 free days are up',
         body: () => (
-            <>Choose a plan to stay unlimited, or continue with PetWise Free — 5 SOAPs and 15 PetQuery questions a day. No credit card required to stay on Free.</>
+            <>Choose a plan to stay unlimited, or continue with PetWise Free — 5 SOAPs and 5 PetQuery questions a day. No credit card required to stay on Free.</>
         ),
         dismiss: 'Continue with PetWise Free'
     }
