@@ -42,7 +42,7 @@ const QuickSOAPDemo = ({ onGenerated, hideHeader = false }) => {
     const [dictateMode, setDictateMode] = useState(false);
     const [sections, setSections] = useState([]);
     const [remaining, setRemaining] = useState(null);
-    const [limit, setLimit] = useState(1);
+    const [limit, setLimit] = useState(3);
     const [recording, setRecording] = useState(false);
     const [paused, setPaused] = useState(false);
     const [transcribing, setTranscribing] = useState(false);
@@ -372,6 +372,7 @@ const QuickSOAPDemo = ({ onGenerated, hideHeader = false }) => {
                 )}
 
                 {sections.length > 0 && (
+                    <>
                     <motion.div
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -404,6 +405,23 @@ const QuickSOAPDemo = ({ onGenerated, hideHeader = false }) => {
                             );
                         })}
                     </motion.div>
+                    <button
+                        type="button"
+                        disabled={remaining === 0}
+                        onClick={() => {
+                            setSections([]);
+                            setDictateMode(false);
+                            setTranscript(SAMPLE);
+                            setError('');
+                            setRecording(false);
+                            setPaused(false);
+                            setTranscribing(false);
+                        }}
+                        className="mt-4 w-full rounded-full bg-[#3468bd] text-white font-bold py-3.5 shadow-[0_8px_24px_-6px_rgba(52,104,189,0.55)] disabled:opacity-40 disabled:shadow-none"
+                    >
+                        Go again
+                    </button>
+                    </>
                 )}
 
                 {error && <p className="mt-3 text-sm text-red-600">{error}</p>}

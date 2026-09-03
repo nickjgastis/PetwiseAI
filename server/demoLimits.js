@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const COOKIE = 'pw_demo';
 const QUERY_LIMIT = Number(process.env.DEMO_QUERY_LIMIT || 3);
-const SOAP_LIMIT = Number(process.env.DEMO_SOAP_LIMIT || 1);
+const SOAP_LIMIT = Number(process.env.DEMO_SOAP_LIMIT || 3);
 const IP_LIMIT = Number(process.env.DEMO_IP_DAILY_LIMIT || 15);
 const SECRET = process.env.SECRET_SALT || process.env.CRON_SECRET || 'local-demo-secret';
 

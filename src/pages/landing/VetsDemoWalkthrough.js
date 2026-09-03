@@ -168,7 +168,7 @@ const VetsDemoWalkthrough = () => {
                         </span>
                     </div>
                     <h1 className="text-[2.15rem] leading-[1.12] font-extrabold tracking-tight mb-8 text-center">
-                        <span className="block">Write your SOAP.</span>
+                        <span className="block">Dictate your SOAP.</span>
                         <span className="block">Ask clinical questions.</span>
                         <span className="block">Get trusted answers.</span>
                     </h1>
