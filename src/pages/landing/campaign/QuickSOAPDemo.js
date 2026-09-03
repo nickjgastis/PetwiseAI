@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { FaClipboardList, FaMicrophone, FaPause, FaPlay, FaStop } from 'react-icons/fa';
 import ChunkedRecorder from '../../../utils/chunkedRecorder';
 import { DEMO_API, demoRequest, saveDemoToken } from './demoClient';
@@ -36,8 +37,9 @@ const parseSOAP = (text) => {
     return sections;
 };
 
-const QuickSOAPDemo = ({ onSignup, onGenerated, hideHeader = false }) => {
-    const [transcript, setTranscript] = useState('');
+const QuickSOAPDemo = ({ onGenerated, hideHeader = false }) => {
+    const [transcript, setTranscript] = useState(SAMPLE);
+    const [dictateMode, setDictateMode] = useState(false);
     const [sections, setSections] = useState([]);
     const [remaining, setRemaining] = useState(null);
     const [limit, setLimit] = useState(1);
@@ -240,8 +242,8 @@ const QuickSOAPDemo = ({ onSignup, onGenerated, hideHeader = false }) => {
             )}
 
             <div className={`flex-1 overflow-y-auto px-4 pb-4 ${sections.length === 0 ? 'flex flex-col' : ''}`}>
-                {sections.length === 0 && (
-                    <div className={`flex flex-col items-center ${transcript ? 'pt-2' : 'flex-1 justify-center'}`}>
+                {sections.length === 0 && dictateMode && (!transcript || recording || transcribing) && (
+                    <div className="flex flex-col items-center flex-1 justify-center">
                         {recording && !paused && audioLevels.length > 0 && (
                             <div className="mb-4 flex items-end justify-center gap-1 h-20 px-2">
                                 {audioLevels.map((level, i) => (
@@ -259,14 +261,14 @@ const QuickSOAPDemo = ({ onSignup, onGenerated, hideHeader = false }) => {
                                 type="button"
                                 onClick={startRecording}
                                 disabled={locked || generating}
-                                className="w-28 h-28 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-xl flex items-center justify-center disabled:bg-gray-300 disabled:shadow-none mb-5"
+                                className="w-28 h-28 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-xl flex items-center justify-center disabled:bg-gray-300 disabled:shadow-none"
                             >
                                 <FaMicrophone className="text-4xl" />
                             </button>
                         )}
 
                         {recording && (
-                            <div className="flex flex-col items-center gap-4 mb-5">
+                            <div className="flex flex-col items-center gap-4">
                                 <div className="flex items-center gap-4">
                                     {!paused ? (
                                         <button
@@ -298,58 +300,95 @@ const QuickSOAPDemo = ({ onSignup, onGenerated, hideHeader = false }) => {
                         )}
 
                         {transcribing && (
-                            <div className="flex items-center gap-3 text-gray-600 mb-5">
+                            <div className="flex items-center gap-3 text-gray-600">
                                 <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent" />
                                 <span className="text-sm font-medium">Transcribing...</span>
                             </div>
                         )}
 
                         {!recording && !transcribing && (
-                            <>
-                                <p className="text-base text-gray-500 text-center mb-3">
-                                    Tap the mic, or load the sample case.
-                                </p>
-                                <button
-                                    type="button"
-                                    disabled={locked}
-                                    onClick={() => { setTranscript(SAMPLE); setError(''); }}
-                                    className="text-sm font-semibold text-[#3468bd] disabled:opacity-40"
-                                >
-                                    Use sample dictation
-                                </button>
-                            </>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setDictateMode(false);
+                                    setTranscript(SAMPLE);
+                                    setError('');
+                                }}
+                                className="mt-6 text-sm font-semibold text-[#3468bd]"
+                            >
+                                Back to sample
+                            </button>
                         )}
                     </div>
                 )}
 
                 {transcript && sections.length === 0 && !recording && (
-                    <div className="mt-5">
-                        <p className="text-xs font-semibold text-blue-700 bg-blue-50 inline-block px-2 py-1 rounded mb-2">
-                            Dictation
-                        </p>
+                    <div className="pt-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#eef4fc] text-[#3468bd] mb-3">
+                            {dictateMode ? 'Your dictation' : 'Sample dictation'}
+                        </span>
                         <textarea
                             value={transcript}
                             onChange={(e) => setTranscript(e.target.value)}
                             rows={7}
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 text-sm"
+                            className="w-full px-4 py-3 rounded-2xl border border-gray-200 bg-white focus:border-[#5cccf0] focus:ring-4 focus:ring-[#5cccf0]/20 focus:outline-none resize-none text-gray-900 text-sm"
                         />
                         <button
                             type="button"
                             onClick={generate}
                             disabled={generating || !transcript.trim() || remaining === 0}
-                            className="mt-3 w-full px-4 py-3.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-bold shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed"
+                            className="mt-3 w-full rounded-full bg-[#5cccf0] text-white font-medium py-3.5 shadow-[0_8px_24px_-6px_rgba(92,204,240,0.7)] disabled:opacity-40 disabled:shadow-none"
                         >
-                            {generating ? 'Generating...' : 'Generate SOAP'}
+                            {generating ? 'Generating...' : 'Click to generate SOAP'}
                         </button>
+                        {!dictateMode && (
+                            <button
+                                type="button"
+                                disabled={locked}
+                                onClick={() => {
+                                    setDictateMode(true);
+                                    setTranscript('');
+                                    setError('');
+                                }}
+                                className="w-full mt-3 py-2 text-sm font-semibold text-[#3468bd] disabled:opacity-40"
+                            >
+                                Dictate your own
+                            </button>
+                        )}
+                        {dictateMode && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setDictateMode(false);
+                                    setTranscript(SAMPLE);
+                                    setError('');
+                                }}
+                                className="w-full mt-3 py-2 text-sm font-semibold text-[#3468bd]"
+                            >
+                                Back to sample
+                            </button>
+                        )}
                     </div>
                 )}
 
                 {sections.length > 0 && (
-                    <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 mt-1" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)' }}>
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                        className="bg-white rounded-2xl overflow-hidden border border-gray-100 mt-1"
+                        style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)' }}
+                    >
                         {sections.map((section, i) => {
                             const colors = SECTION_COLORS[section.name] || SECTION_COLORS.Subjective;
                             return (
-                                <div key={section.name} className={i < sections.length - 1 ? 'border-b border-gray-100' : ''}>
+                                <motion.div
+                                    key={section.name}
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.35, delay: 0.08 + i * 0.1, ease: 'easeOut' }}
+                                    className={i < sections.length - 1 ? 'border-b border-gray-100' : ''}
+                                >
                                     <div className={`${colors.header} px-5 py-3 flex items-center gap-2.5`} style={{ borderLeft: `3px solid ${colors.border}` }}>
                                         <span className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold text-xs bg-white/20">
                                             {section.name.charAt(0)}
@@ -361,31 +400,13 @@ const QuickSOAPDemo = ({ onSignup, onGenerated, hideHeader = false }) => {
                                     <div className={`${colors.bg} px-5 py-3`}>
                                         <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">{section.content}</p>
                                     </div>
-                                </div>
+                                </motion.div>
                             );
                         })}
-                    </div>
+                    </motion.div>
                 )}
 
                 {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-
-                {locked && (
-                    <div className="mt-4">
-                        <p className="text-base font-extrabold text-[#1a2b4a] mb-1">
-                            Wow. You’ve used up your demo.
-                        </p>
-                        <p className="text-sm text-gray-600 mb-3">
-                            Sign up and write unlimited SOAP notes for 10 days. No credit card.
-                        </p>
-                        <button
-                            type="button"
-                            onClick={onSignup}
-                            className="w-full rounded-full bg-[#5cccf0] text-white font-medium py-3.5"
-                        >
-                            Start my free 10 days
-                        </button>
-                    </div>
-                )}
             </div>
 
             {generating && (

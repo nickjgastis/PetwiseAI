@@ -3,18 +3,17 @@ import { motion } from 'framer-motion';
 import FormattedQueryMessage from '../../../components/FormattedQueryMessage';
 import { DEMO_API, demoHeaders, demoRequest, saveDemoToken } from './demoClient';
 
+const AUTO_QUESTION = '100g 70% dark chocolate injestion in a 12kg dog. LD50. Decontamination and treatment.';
+
 const STARTERS = [
     { category: 'GI', question: 'Maropitant dose for a vomiting 4 kg cat. Include route and frequency.' },
     { category: 'Emergency', question: 'Emergency furosemide protocol for a dog in acute CHF with respiratory distress.' },
-    { category: 'Toxicology', question: 'Dark chocolate ingestion in a 12 kg dog. Decontamination and treatment.' }
+    { category: 'Toxicology', question: AUTO_QUESTION }
 ];
 
 const ThinkingLoader = () => (
     <div className="flex justify-start mb-3">
-        <div className="hidden sm:flex shimmer-loader">
-            <span className="loader-text">Thinking...</span>
-        </div>
-        <div className="flex sm:hidden h-10 px-4 rounded-[20px] rounded-bl-md bg-white border border-gray-200/80 shadow-sm items-center gap-1.5">
+        <div className="h-10 px-4 rounded-[20px] rounded-bl-md bg-white border border-gray-200/80 shadow-sm flex items-center gap-1.5">
             {[0, 1, 2].map((dot) => (
                 <motion.span
                     key={dot}
@@ -27,7 +26,7 @@ const ThinkingLoader = () => (
     </div>
 );
 
-const PetQueryDemo = ({ onSignup, onFirstAnswer, fill = false, hideHeader = false }) => {
+const PetQueryDemo = ({ onFirstAnswer, fill = false, hideHeader = false }) => {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [remaining, setRemaining] = useState(null);
@@ -36,6 +35,7 @@ const PetQueryDemo = ({ onSignup, onFirstAnswer, fill = false, hideHeader = fals
     const [error, setError] = useState('');
     const listRef = useRef(null);
     const firedFirst = useRef(false);
+    const autoAsked = useRef(false);
 
     useEffect(() => {
         demoRequest({ method: 'get', url: `${DEMO_API}/api/demo/petquery` })
@@ -50,6 +50,12 @@ const PetQueryDemo = ({ onSignup, onFirstAnswer, fill = false, hideHeader = fals
     useEffect(() => {
         listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' });
     }, [messages, loading]);
+
+    useEffect(() => {
+        if (autoAsked.current || remaining == null || remaining === 0) return;
+        autoAsked.current = true;
+        ask(AUTO_QUESTION);
+    }, [remaining]);
 
     const ask = async (question) => {
         const q = String(question || '').trim();
@@ -155,49 +161,31 @@ const PetQueryDemo = ({ onSignup, onFirstAnswer, fill = false, hideHeader = fals
 
             {error && <p className="px-4 pb-2 text-sm text-red-600">{error}</p>}
 
-            {locked ? (
-                <div className="p-4 bg-white border-t border-gray-100">
-                    <p className="text-base font-extrabold text-[#1a2b4a] mb-1">
-                        Wow. You’ve used up your demo.
-                    </p>
-                    <p className="text-sm text-gray-600 mb-3">
-                        Those were real answers. Sign up and keep asking for 10 days. Unlimited. No credit card.
-                    </p>
+            <form
+                className="bg-white border-t border-gray-200/80 px-3.5 pt-2.5 pb-3"
+                onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!locked) ask(input);
+                }}
+            >
+                <div className={`relative flex items-end rounded-[23px] border border-gray-200 ${locked ? 'bg-gray-200/70' : 'bg-gray-100 focus-within:bg-white focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-50'}`}>
+                    <input
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        maxLength={500}
+                        disabled={loading || locked}
+                        placeholder={locked ? 'Demo limit reached' : 'Ask your own question!'}
+                        className="w-full bg-transparent border-0 outline-none px-4 py-3 text-[16px] placeholder-gray-400 disabled:text-gray-400 disabled:placeholder-gray-400"
+                    />
                     <button
-                        type="button"
-                        onClick={onSignup}
-                        className="w-full rounded-full bg-[#5cccf0] text-white font-medium py-3.5"
+                        type="submit"
+                        disabled={loading || locked || !input.trim()}
+                        className="m-1.5 shrink-0 rounded-full bg-[#3468bd] text-white px-3.5 py-2 text-sm font-medium disabled:opacity-40"
                     >
-                        Start my free 10 days
+                        Ask
                     </button>
                 </div>
-            ) : (
-                <form
-                    className="bg-white border-t border-gray-200/80 px-3.5 pt-2.5 pb-3"
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        ask(input);
-                    }}
-                >
-                    <div className="relative flex items-end rounded-[23px] border bg-gray-100 border-gray-200 focus-within:bg-white focus-within:border-blue-300 focus-within:ring-4 focus-within:ring-blue-50">
-                        <input
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            maxLength={500}
-                            disabled={loading}
-                            placeholder="Ask a clinical question…"
-                            className="w-full bg-transparent border-0 outline-none px-4 py-3 text-[16px] placeholder-gray-400"
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading || !input.trim()}
-                            className="m-1.5 shrink-0 rounded-full bg-[#3468bd] text-white px-3.5 py-2 text-sm font-medium disabled:opacity-40"
-                        >
-                            Ask
-                        </button>
-                    </div>
-                </form>
-            )}
+            </form>
         </div>
     );
 };
