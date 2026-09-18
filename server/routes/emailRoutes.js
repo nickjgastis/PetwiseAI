@@ -87,12 +87,12 @@ router.post('/admin-signup', async (req, res) => {
         if (!notify.success) {
             return res.status(500).json({ error: 'Failed to send admin notification', details: notify.error });
         }
-        await hubspot.syncOnboarded({
+        hubspot.runInBackground(hubspot.syncOnboarded({
             auth0_user_id,
             email,
             nickname,
             phone_number,
-        });
+        }));
         return res.json({ success: true });
     } catch (err) {
         console.error('Admin signup notification failed:', err);

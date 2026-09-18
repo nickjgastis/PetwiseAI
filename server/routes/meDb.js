@@ -262,7 +262,7 @@ router.post('/', requireUser, async (req, res) => {
         if (table === 'users' && method === 'insert') {
             const row = Array.isArray(result) ? result[0] : result;
             const src = row || rows[0] || {};
-            await hubspot.syncSignup({
+            hubspot.runInBackground(hubspot.syncSignup({
                 auth0_user_id: sub,
                 email: src.email,
                 nickname: src.nickname,
@@ -272,7 +272,7 @@ router.post('/', requireUser, async (req, res) => {
                 subscription_interval: 'trial',
                 subscription_end_date: src.subscription_end_date
                     || new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
-            });
+            }));
         }
 
         return res.json({ data: result, error: null });

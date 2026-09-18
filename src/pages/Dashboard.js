@@ -1109,7 +1109,11 @@ const Dashboard = () => {
 
     // ================ LOADING STATE ================
     if (isLoading) {
-        return null;
+        return (
+            <div className="min-h-screen bg-[#3369bd] flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
+            </div>
+        );
     }
 
     // ================ NEW ONBOARDING FLOW ================

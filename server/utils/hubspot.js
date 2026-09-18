@@ -326,6 +326,17 @@ async function syncTrialStates(users) {
     return { skipped: false, updated };
 }
 
+function runInBackground(promise) {
+    const p = Promise.resolve(promise).catch((err) => {
+        console.error('[hubspot] bg:', err.message);
+    });
+    try {
+        const { waitUntil } = require('@vercel/functions');
+        if (typeof waitUntil === 'function') waitUntil(p);
+    } catch (_) { /* local / no Vercel helper — promise still runs */ }
+    return p;
+}
+
 module.exports = {
     enabled,
     syncSignup,
@@ -333,4 +344,5 @@ module.exports = {
     syncPaid,
     trackUsage,
     syncTrialStates,
+    runInBackground,
 };
