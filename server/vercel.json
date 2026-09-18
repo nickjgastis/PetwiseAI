@@ -16,6 +16,10 @@
     {
       "path": "/cron/drip-emails",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/cron/hubspot-sync",
+      "schedule": "0 16 * * *"
     }
   ]
 }

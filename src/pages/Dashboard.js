@@ -207,6 +207,7 @@ const Dashboard = () => {
     const [showAccountMenu, setShowAccountMenu] = useState(false); // Sidebar footer account popup
     const [showQRModal, setShowQRModal] = useState(false); // Mobile app QR popup
     const accountMenuRef = useRef(null);
+    const finishedOnboardingRef = useRef(false);
     const usage = useUsage(); // Free-tier usage (drives the sidebar ring)
 
     // Close the sidebar account popup on any outside click
@@ -1031,14 +1032,15 @@ const Dashboard = () => {
 
             // Auto-started trials set has_used_trial on insert — that is not
             // onboarding. Old click-to-trial users already have a dvm_name.
-            const hasCompletedOnboardingBefore = userData.has_completed_onboarding === true
+            const hasCompletedOnboardingBefore = finishedOnboardingRef.current
+                || userData.has_completed_onboarding === true
                 || (userData.has_used_trial === true && !!userData.dvm_name);
             setHasCompletedOnboarding(hasCompletedOnboardingBefore);
 
-            if (!userData.dvm_name || userData.dvm_name === null || userData.dvm_name === '') {
-                setNeedsWelcome(true);
-            } else {
+            if (finishedOnboardingRef.current || (userData.dvm_name && userData.dvm_name !== '')) {
                 setNeedsWelcome(false);
+            } else {
+                setNeedsWelcome(true);
             }
         } catch (err) {
             console.error('Error:', err);
@@ -1118,12 +1120,21 @@ const Dashboard = () => {
             onboardingData={onboardingData}
             userData={userData}
             refreshSubscription={checkSubscription}
-            onComplete={() => {
+            onComplete={(profile) => {
+                finishedOnboardingRef.current = true;
+                if (profile) {
+                    setUserData((prev) => ({
+                        ...(prev || {}),
+                        ...profile,
+                        has_accepted_terms: true,
+                        has_completed_onboarding: true,
+                    }));
+                }
                 setOnboardingData(null);
                 setHasAcceptedTerms(true);
                 setHasCompletedOnboarding(true);
                 setNeedsWelcome(false);
-                checkSubscription(); // Refresh everything
+                checkSubscription();
             }}
         />;
     }
@@ -1135,7 +1146,7 @@ const Dashboard = () => {
     }
 
     // Then check if they need to set their DVM name
-    if (needsWelcome || !userData?.dvm_name) {
+    if (!hasCompletedOnboarding && (needsWelcome || !userData?.dvm_name)) {
         return <Welcome onComplete={(updatedData) => {
             setNeedsWelcome(false);
             setUserData(updatedData);

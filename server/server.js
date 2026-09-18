@@ -24,6 +24,7 @@ const { sendSubscriptionConfirmedEmail } = require('./utils/emailService');
 const { correctTranscript } = require('./utils/vetCorrector');
 const { runMedicalCleanup } = require('./utils/medicalCleanup');
 const usage = require('./usage');
+const hubspot = require('./utils/hubspot');
 
 // Load veterinary lexicon for Whisper boosting
 const lexiconPath = path.join(__dirname, 'lexicon', 'vetLexicon.txt');
@@ -110,6 +111,8 @@ async function logUsageEvent(sub, eventType) {
     } catch (err) {
         console.error('[usage_events] insert threw:', err?.message || err);
     }
+    // After the note/query already finished. HubSpot miss never fails the request.
+    await hubspot.trackUsage(sub, eventType === 'petquery' ? 'query' : 'soap');
 }
 
 // Middleware setup
@@ -1891,6 +1894,18 @@ app.post('/webhook', async (req, res) => {
                 } else {
                     console.log('No email found for user:', data);
                 }
+
+                if (data && data[0]) {
+                    await hubspot.syncPaid({
+                        auth0_user_id: session.client_reference_id,
+                        email: data[0].email,
+                        nickname: data[0].nickname,
+                        dvm_name: data[0].dvm_name,
+                        subscription_status: 'active',
+                        subscription_interval: subscriptionInterval,
+                        subscription_end_date: endDate,
+                    });
+                }
             } catch (error) {
                 console.error('Subscription processing error:', error);
                 return res.status(500).json({ error: error.message });
@@ -2059,6 +2074,16 @@ app.post('/webhook', async (req, res) => {
 
                     updateData.subscription_interval = newInterval;
                     updateData.subscription_status = 'active';
+
+                    await hubspot.syncPaid({
+                        auth0_user_id: userData.auth0_user_id,
+                        email: userData.email,
+                        nickname: userData.nickname,
+                        dvm_name: userData.dvm_name,
+                        subscription_status: 'active',
+                        subscription_interval: newInterval,
+                        subscription_end_date: updateData.subscription_end_date,
+                    });
 
                     // Send welcome to paid subscription email
                     if (userData.email) {

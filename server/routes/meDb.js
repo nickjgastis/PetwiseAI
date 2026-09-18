@@ -1,6 +1,7 @@
 const express = require('express');
 const fetch = require('node-fetch');
 const { TRIAL_DAYS } = require('../usage');
+const hubspot = require('../utils/hubspot');
 
 const router = express.Router();
 
@@ -257,6 +258,23 @@ router.post('/', requireUser, async (req, res) => {
         if (error) {
             return res.json({ data: null, error: { message: error.message, code: error.code, details: error.details } });
         }
+
+        if (table === 'users' && method === 'insert') {
+            const row = Array.isArray(result) ? result[0] : result;
+            const src = row || rows[0] || {};
+            await hubspot.syncSignup({
+                auth0_user_id: sub,
+                email: src.email,
+                nickname: src.nickname,
+                dvm_name: src.dvm_name,
+                phone_number: src.phone_number,
+                subscription_status: 'active',
+                subscription_interval: 'trial',
+                subscription_end_date: src.subscription_end_date
+                    || new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+            });
+        }
+
         return res.json({ data: result, error: null });
     } catch (err) {
         const status = err.status || 500;

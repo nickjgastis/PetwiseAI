@@ -60,7 +60,7 @@ const CongratsStep = ({ onNext }) => {
                 }),
             }).catch(err => console.error('Admin signup notification error:', err));
 
-            onNext();
+            onNext(updates);
         } catch (err) {
             console.error('Error saving profile:', err);
             setError('Failed to save. Please try again.');

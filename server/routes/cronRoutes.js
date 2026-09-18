@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sendGetStartedEmail, sendDiscountEmail } = require('../utils/emailService');
+const hubspot = require('../utils/hubspot');
 
 // Vercel Cron sends: Authorization: Bearer <CRON_SECRET>
 function verifyCronAuth(req, res, next) {
@@ -117,6 +118,61 @@ async function runDripEmails(req, res) {
 
 router.get('/drip-emails', verifyCronAuth, runDripEmails);
 router.post('/drip-emails', verifyCronAuth, runDripEmails);
+
+/**
+ * GET/POST /cron/hubspot-sync
+ * Push trial days-left + ending/ended stages. No-op without HUBSPOT_ACCESS_TOKEN.
+ * Isolated from drip-emails so a HubSpot blip cannot skip the email cron.
+ */
+async function runHubspotSync(req, res) {
+    const { supabase } = req.app.locals;
+    if (!hubspot.enabled()) {
+        return res.json({ success: true, skipped: true, reason: 'HUBSPOT_ACCESS_TOKEN unset' });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('users')
+            .select('auth0_user_id, email, nickname, dvm_name, phone_number, subscription_status, subscription_interval, subscription_end_date, plan_label')
+            .in('subscription_interval', ['trial', 'stripe_trial'])
+            .not('email', 'is', null)
+            .limit(80);
+
+        if (error) throw error;
+        const users = data || [];
+        if (users.length) {
+            const ids = users.map((u) => u.auth0_user_id);
+            const { data: events, error: evErr } = await supabase
+                .from('usage_events')
+                .select('auth0_user_id, event_type, created_at')
+                .in('auth0_user_id', ids);
+            if (evErr) console.error('[hubspot-sync] usage_events:', evErr.message);
+            const byUser = {};
+            for (const ev of events || []) {
+                const row = byUser[ev.auth0_user_id] || { soaps: 0, queries: 0, last: null };
+                if (ev.event_type === 'petquery') row.queries += 1;
+                else row.soaps += 1;
+                if (!row.last || ev.created_at > row.last) row.last = ev.created_at;
+                byUser[ev.auth0_user_id] = row;
+            }
+            for (const user of users) {
+                const u = byUser[user.auth0_user_id];
+                if (!u) continue;
+                user.pw_soaps = u.soaps;
+                user.pw_queries = u.queries;
+                user.pw_last_active = u.last;
+            }
+        }
+        const result = await hubspot.syncTrialStates(users);
+        return res.json({ success: true, candidates: users.length, ...result });
+    } catch (err) {
+        console.error('HubSpot trial cron failed:', err);
+        return res.status(500).json({ error: 'HubSpot trial cron failed', details: err.message });
+    }
+}
+
+router.get('/hubspot-sync', verifyCronAuth, runHubspotSync);
+router.post('/hubspot-sync', verifyCronAuth, runHubspotSync);
 
 module.exports = router;
 module.exports.verifyCronAuth = verifyCronAuth;

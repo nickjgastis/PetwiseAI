@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
 import CongratsStep from './CongratsStep';
@@ -18,6 +18,7 @@ const REMOVED_STEPS = ['quiz1', 'quiz2', 'affirmation', 'booking', 'terms', 'ben
 const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscription }) => {
     const { user } = useAuth0();
     const [currentStep, setCurrentStep] = useState(onboardingData?.current_step || 'congrats');
+    const profileRef = useRef(null);
 
     // Detect mobile for the desktop-bridge step (user agent only; forceMobile is a dev escape hatch)
     const forceMobile = process.env.NODE_ENV === 'development' && localStorage.getItem('forceMobile') === 'true';
@@ -78,7 +79,8 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
 
     // Congrats collects everything (name, phone, terms) — completing it means
     // onboarding is done and the user lands in the app on the free tier.
-    const handleCongratsComplete = async () => {
+    const handleCongratsComplete = async (profile) => {
+        profileRef.current = profile || null;
         await markUserOnboarded();
         goToStep('complete');
 
@@ -87,17 +89,17 @@ const OnboardingFlow = ({ onboardingData, onComplete, userData, refreshSubscript
             return;
         }
 
-        if (onComplete) onComplete();
+        if (onComplete) onComplete(profile);
     };
 
     // Step 'complete': mobile users get a one-time screen explaining the
     // phone/desktop split; desktop users go straight into the app.
     if (currentStep === 'complete') {
         if (isMobile) {
-            return <DesktopBridgeStep onNext={() => onComplete && onComplete()} />;
+            return <DesktopBridgeStep onNext={() => onComplete && onComplete(profileRef.current)} />;
         }
         // Desktop — should have called onComplete, but just in case
-        if (onComplete) onComplete();
+        if (onComplete) onComplete(profileRef.current);
         return null;
     }
 
