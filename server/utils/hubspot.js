@@ -6,6 +6,7 @@ const { getTier } = require('../usage');
 
 const BASE = 'https://api.hubapi.com';
 const TIMEOUT_MS = Number(process.env.HUBSPOT_TIMEOUT_MS || 8000);
+const USING_AFTER = 10;
 
 const PIPELINE = process.env.HUBSPOT_DEAL_PIPELINE_ID || '2244587465';
 const STAGES = {
@@ -272,7 +273,7 @@ async function trackUsage(auth0Id, feature) {
         const soaps = Number(deal.properties?.pw_soaps || 0) + (feature === 'soap' ? 1 : 0);
         const queries = Number(deal.properties?.pw_queries || 0) + (feature === 'query' ? 1 : 0);
         const total = soaps + queries;
-        const desired = total >= 2 ? 'using' : 'activated';
+        const desired = total >= USING_AFTER ? 'using' : 'activated';
         const props = {
             pw_soaps: String(soaps),
             pw_queries: String(queries),
@@ -292,7 +293,7 @@ function desiredTrialStage(user) {
     if (trialExpired(user)) return 'trial_ended';
     if (tier === 'trial' && trialDaysLeft(user.subscription_end_date) <= 2) return 'trial_ending';
     const uses = Number(user.pw_soaps || 0) + Number(user.pw_queries || 0);
-    if (uses >= 2) return 'using';
+    if (uses >= USING_AFTER) return 'using';
     if (uses >= 1) return 'activated';
     return null;
 }
