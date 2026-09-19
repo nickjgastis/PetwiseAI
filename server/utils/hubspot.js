@@ -161,7 +161,8 @@ async function upsertContact(user) {
     const res = await hs('POST', '/crm/v3/objects/contacts/batch/upsert', {
         inputs: [{ idProperty: 'email', id: user.email, properties }],
     });
-    return res.results?.[0]?.id || null;
+    const row = res.results?.[0];
+    return row?.id || row?.properties?.hs_object_id || null;
 }
 
 async function findDeal(auth0Id) {
@@ -185,8 +186,7 @@ async function associateDeal(dealId, contactId) {
     if (!dealId || !contactId) return;
     await hs(
         'PUT',
-        `/crm/v4/objects/deals/${dealId}/associations/contacts/${contactId}`,
-        [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 3 }]
+        `/crm/v4/objects/deals/${dealId}/associations/default/contacts/${contactId}`
     );
 }
 
@@ -198,13 +198,14 @@ async function createDeal(contactId, user, stageKey) {
         dealtype: 'newbusiness',
         ...dealProperties(user),
     };
-    const created = await hs('POST', '/crm/v3/objects/deals', { properties });
-    try {
-        await associateDeal(created?.id, contactId);
-    } catch (err) {
-        console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
+    const payload = { properties };
+    if (contactId) {
+        payload.associations = [{
+            to: { id: String(contactId) },
+            types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 3 }],
+        }];
     }
-    return created;
+    return hs('POST', '/crm/v3/objects/deals', payload);
 }
 
 async function patchDeal(dealId, properties) {
@@ -221,6 +222,11 @@ async function ensureDeal(user, stageKey) {
         }
         if (user.dvm_name || user.nickname) props.dealname = dealName(user);
         await patchDeal(existing.id, props);
+        try {
+            await associateDeal(existing.id, contactId);
+        } catch (err) {
+            console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
+        }
         return existing.id;
     }
     const created = await createDeal(contactId, user, stageKey);
@@ -233,7 +239,7 @@ async function syncSignup(user) {
 
 async function syncOnboarded(user) {
     return safe('onboarded', async () => {
-        await upsertContact(user);
+        const contactId = await upsertContact(user);
         const existing = await findDeal(user.auth0_user_id);
         if (!existing) return ensureDeal(user, 'onboarded');
         const props = {};
@@ -242,6 +248,11 @@ async function syncOnboarded(user) {
             props.dealstage = STAGES.onboarded;
         }
         if (Object.keys(props).length) await patchDeal(existing.id, props);
+        try {
+            await associateDeal(existing.id, contactId);
+        } catch (err) {
+            console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
+        }
         return existing.id;
     });
 }
@@ -313,6 +324,13 @@ async function syncTrialUser(user) {
             props.dealstage = STAGES[desired];
         }
         await patchDeal(deal.id, props);
+        if (user.email) {
+            try {
+                await associateDeal(deal.id, await upsertContact(user));
+            } catch (err) {
+                console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
+            }
+        }
         return deal.id;
     });
 }

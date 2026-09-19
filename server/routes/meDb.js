@@ -90,6 +90,8 @@ const requireUser = async (req, res, next) => {
             const cached = tokenCache.get(token);
             if (Date.now() < cached.expiresAt) {
                 req.auth0Sub = cached.sub;
+                req.auth0Email = cached.email;
+                req.auth0Nickname = cached.nickname;
                 return next();
             }
             tokenCache.delete(token);
@@ -106,8 +108,15 @@ const requireUser = async (req, res, next) => {
             return res.status(401).json({ data: null, error: { message: 'Invalid token', code: '401' } });
         }
 
-        tokenCache.set(token, { sub: userInfo.sub, expiresAt: Date.now() + 5 * 60 * 1000 });
+        tokenCache.set(token, {
+            sub: userInfo.sub,
+            email: userInfo.email,
+            nickname: userInfo.nickname || userInfo.name,
+            expiresAt: Date.now() + 5 * 60 * 1000,
+        });
         req.auth0Sub = userInfo.sub;
+        req.auth0Email = userInfo.email;
+        req.auth0Nickname = userInfo.nickname || userInfo.name;
         next();
     } catch (err) {
         console.error('[api/db] auth error:', err);
@@ -177,14 +186,19 @@ router.post('/', requireUser, async (req, res) => {
                 q = supabase.from('users').select(cols).eq('auth0_user_id', sub);
             } else if (method === 'insert') {
                 const trialEnd = new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000).toISOString();
-                const payload = rows.map((row) => ({
-                    ...pick(row, USERS_WRITE),
-                    auth0_user_id: sub,
-                    subscription_status: 'active',
-                    subscription_interval: 'trial',
-                    subscription_end_date: trialEnd,
-                    has_used_trial: true,
-                }));
+                const payload = rows.map((row) => {
+                    const fields = pick(row, USERS_WRITE);
+                    return {
+                        ...fields,
+                        auth0_user_id: sub,
+                        email: fields.email || req.auth0Email || undefined,
+                        nickname: fields.nickname || req.auth0Nickname || undefined,
+                        subscription_status: 'active',
+                        subscription_interval: 'trial',
+                        subscription_end_date: trialEnd,
+                        has_used_trial: true,
+                    };
+                });
                 q = supabase.from('users').insert(payload).select(cols);
             } else if (method === 'update') {
                 q = supabase.from('users')
@@ -264,8 +278,8 @@ router.post('/', requireUser, async (req, res) => {
             const src = row || rows[0] || {};
             hubspot.runInBackground(hubspot.syncSignup({
                 auth0_user_id: sub,
-                email: src.email,
-                nickname: src.nickname,
+                email: src.email || req.auth0Email,
+                nickname: src.nickname || req.auth0Nickname,
                 dvm_name: src.dvm_name,
                 phone_number: src.phone_number,
                 subscription_status: 'active',
