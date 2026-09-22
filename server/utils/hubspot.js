@@ -312,12 +312,7 @@ function desiredTrialStage(user) {
 async function syncTrialUser(user) {
     return safe('trial-user', async () => {
         const deal = await findDeal(user.auth0_user_id);
-        if (!deal) {
-            if (['trial', 'stripe_trial'].includes(user.subscription_interval) && user.email) {
-                return ensureDeal(user, desiredTrialStage(user) || 'signed_up');
-            }
-            return null;
-        }
+        if (!deal) return null;
         const props = dealProperties(user);
         const desired = desiredTrialStage(user);
         if (canAdvance(deal.properties?.dealstage, desired)) {
