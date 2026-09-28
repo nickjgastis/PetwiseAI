@@ -9,7 +9,24 @@ const TIMEOUT_MS = Number(process.env.HUBSPOT_TIMEOUT_MS || 8000);
 const USING_AFTER = 10;
 
 const PIPELINE = process.env.HUBSPOT_DEAL_PIPELINE_ID || '2244587465';
+const STAGE_LABELS = {
+    new_lead: 'New Lead',
+    no_answer: 'No Answer',
+    contacted: 'Contacted',
+    signed_up: 'Signed up',
+    onboarded: 'Onboarded',
+    activated: 'Activated',
+    using: 'Using',
+    trial_ending: 'Trial ending',
+    trial_ended: 'Trial ended',
+    won: 'Closed Won',
+    lost: 'Closed Lost',
+    disqualified: 'Disqualified',
+};
 const STAGES = {
+    new_lead: process.env.HUBSPOT_STAGE_NEW_LEAD || '',
+    no_answer: process.env.HUBSPOT_STAGE_NO_ANSWER || '',
+    contacted: process.env.HUBSPOT_STAGE_CONTACTED || '',
     signed_up: process.env.HUBSPOT_STAGE_SIGNED_UP || '3837542388',
     onboarded: process.env.HUBSPOT_STAGE_ONBOARDED || '3837542389',
     activated: process.env.HUBSPOT_STAGE_ACTIVATED || '3837542390',
@@ -18,16 +35,40 @@ const STAGES = {
     trial_ended: process.env.HUBSPOT_STAGE_TRIAL_ENDED || '3837542393',
     won: process.env.HUBSPOT_STAGE_WON || '3837543354',
     lost: process.env.HUBSPOT_STAGE_LOST || '3837543355',
+    disqualified: process.env.HUBSPOT_STAGE_DISQUALIFIED || '',
 };
 
 const STAGE_ORDER = [
+    'new_lead', 'no_answer', 'contacted',
     'signed_up', 'onboarded', 'activated', 'using',
-    'trial_ending', 'trial_ended', 'won', 'lost',
+    'trial_ending', 'trial_ended', 'won', 'lost', 'disqualified',
 ];
 
-const STAGE_BY_ID = Object.fromEntries(
-    Object.entries(STAGES).map(([k, v]) => [v, k])
-);
+let stageCache = null;
+
+async function stages() {
+    if (stageCache) return stageCache;
+    const map = { ...STAGES };
+    try {
+        const pipe = await hs('GET', `/crm/v3/pipelines/deals/${PIPELINE}`);
+        const byLabel = Object.fromEntries((pipe.stages || []).map((s) => [s.label, s.id]));
+        for (const [key, label] of Object.entries(STAGE_LABELS)) {
+            if (byLabel[label]) map[key] = byLabel[label];
+        }
+    } catch (err) {
+        console.error('[hubspot] pipelines:', err.message);
+    }
+    if (map.new_lead && map.no_answer && map.contacted && map.disqualified) {
+        stageCache = map;
+    }
+    return map;
+}
+
+function stageKey(map, stageId) {
+    if (!stageId) return null;
+    const hit = Object.entries(map).find(([, id]) => id && id === stageId);
+    return hit ? hit[0] : null;
+}
 
 function token() {
     return (process.env.HUBSPOT_ACCESS_TOKEN || '').trim();
@@ -140,15 +181,57 @@ function dealProperties(user, extra = {}) {
     return { ...props, ...extra };
 }
 
-function canAdvance(currentId, desiredKey) {
-    if (!desiredKey || !STAGES[desiredKey]) return false;
+const CONTACT_STAGE_ORDER = [
+    'new_lead', 'no_answer', 'contacted',
+    'signed_up', 'onboarded', 'activated', 'using',
+    'trial_ending', 'trial_ended', 'won',
+];
+
+function canAdvanceContact(current, desired) {
+    if (!desired || desired === 'disqualified' || desired === 'old_leads' || desired === 'new_lead') return false;
+    if (current === 'disqualified') return false;
+    if (!current || current === 'old_leads' || current === 'new_lead') {
+        return CONTACT_STAGE_ORDER.includes(desired);
+    }
+    if (current === 'won') return desired === 'won';
+    const from = CONTACT_STAGE_ORDER.indexOf(current);
+    const to = CONTACT_STAGE_ORDER.indexOf(desired);
+    if (from < 0 || to < 0) return false;
+    return to >= from;
+}
+
+async function advanceContactStage(contactId, desired) {
+    if (!contactId || !desired) return;
+    try {
+        const row = await hs('GET', `/crm/v3/objects/contacts/${contactId}?properties=pw_stage`);
+        const current = row.properties?.pw_stage || '';
+        if (!canAdvanceContact(current, desired)) return;
+        await hs('PATCH', `/crm/v3/objects/contacts/${contactId}`, {
+            properties: { pw_stage: desired },
+        });
+    } catch (err) {
+        console.error('[hubspot] contact stage:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
+    }
+}
+
+async function firstContactId(dealId) {
+    const assoc = await hs('GET', `/crm/v4/objects/deals/${dealId}/associations/contacts`);
+    return assoc.results?.[0]?.toObjectId || null;
+}
+
+function canAdvance(map, currentId, desiredKey) {
+    if (!desiredKey || !map[desiredKey]) return false;
     if (!currentId) return true;
-    const currentKey = STAGE_BY_ID[currentId];
+    const currentKey = stageKey(map, currentId);
     if (!currentKey) return true;
+    if (currentKey === 'disqualified') return false;
     if (currentKey === 'won' || currentKey === 'lost') return desiredKey === 'won';
     if (desiredKey === 'won') return true;
-    if (desiredKey === 'lost') return false;
-    return STAGE_ORDER.indexOf(desiredKey) >= STAGE_ORDER.indexOf(currentKey);
+    if (desiredKey === 'lost' || desiredKey === 'disqualified') return false;
+    const current = STAGE_ORDER.indexOf(currentKey);
+    const desired = STAGE_ORDER.indexOf(desiredKey);
+    if (current < 0 || desired < 0) return false;
+    return desired >= current;
 }
 
 async function upsertContact(user) {
@@ -182,6 +265,38 @@ async function findDeal(auth0Id) {
     }
 }
 
+async function findPipelineDealForContact(contactId, map) {
+    const assoc = await hs('GET', `/crm/v4/objects/contacts/${contactId}/associations/deals`);
+    const ids = (assoc.results || []).map((r) => r.toObjectId).filter(Boolean);
+    if (!ids.length) return null;
+    const batch = await hs('POST', '/crm/v3/objects/deals/batch/read', {
+        properties: ['pw_auth0_id', 'dealstage', 'pipeline', 'pw_soaps', 'pw_queries'],
+        inputs: ids.slice(0, 100).map((id) => ({ id: String(id) })),
+    });
+    const inPipe = (batch.results || []).filter((d) => String(d.properties?.pipeline) === String(PIPELINE));
+    if (!inPipe.length) return null;
+    const terminal = new Set([map.won, map.lost, map.disqualified].filter(Boolean));
+    const open = inPipe.filter((d) => !terminal.has(d.properties?.dealstage));
+    open.sort((a, b) => {
+        const ar = STAGE_ORDER.indexOf(stageKey(map, a.properties?.dealstage));
+        const br = STAGE_ORDER.indexOf(stageKey(map, b.properties?.dealstage));
+        return br - ar;
+    });
+    return open[0] || inPipe[0];
+}
+
+async function findDealForUser(user, contactId, map) {
+    const byAuth = await findDeal(user.auth0_user_id);
+    if (byAuth) return byAuth;
+    if (!contactId) return null;
+    try {
+        return await findPipelineDealForContact(contactId, map);
+    } catch (err) {
+        console.error('[hubspot] findPipelineDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
+        return null;
+    }
+}
+
 async function associateDeal(dealId, contactId) {
     if (!dealId || !contactId) return;
     await hs(
@@ -190,11 +305,11 @@ async function associateDeal(dealId, contactId) {
     );
 }
 
-async function createDeal(contactId, user, stageKey) {
+async function createDeal(contactId, user, stageKey, map) {
     const properties = {
         dealname: dealName(user),
         pipeline: PIPELINE,
-        dealstage: STAGES[stageKey] || STAGES.signed_up,
+        dealstage: map[stageKey] || map.signed_up,
         dealtype: 'newbusiness',
         ...dealProperties(user),
     };
@@ -213,12 +328,13 @@ async function patchDeal(dealId, properties) {
 }
 
 async function ensureDeal(user, stageKey) {
+    const map = await stages();
     const contactId = await upsertContact(user);
-    const existing = await findDeal(user.auth0_user_id);
+    const existing = await findDealForUser(user, contactId, map);
     if (existing) {
         const props = dealProperties(user);
-        if (canAdvance(existing.properties?.dealstage, stageKey)) {
-            props.dealstage = STAGES[stageKey];
+        if (canAdvance(map, existing.properties?.dealstage, stageKey)) {
+            props.dealstage = map[stageKey];
         }
         if (user.dvm_name || user.nickname) props.dealname = dealName(user);
         await patchDeal(existing.id, props);
@@ -227,9 +343,11 @@ async function ensureDeal(user, stageKey) {
         } catch (err) {
             console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
         }
+        await advanceContactStage(contactId, stageKey);
         return existing.id;
     }
-    const created = await createDeal(contactId, user, stageKey);
+    const created = await createDeal(contactId, user, stageKey, map);
+    await advanceContactStage(contactId, stageKey);
     return created?.id || null;
 }
 
@@ -238,23 +356,7 @@ async function syncSignup(user) {
 }
 
 async function syncOnboarded(user) {
-    return safe('onboarded', async () => {
-        const contactId = await upsertContact(user);
-        const existing = await findDeal(user.auth0_user_id);
-        if (!existing) return ensureDeal(user, 'onboarded');
-        const props = {};
-        if (user.dvm_name || user.nickname) props.dealname = dealName(user);
-        if (canAdvance(existing.properties?.dealstage, 'onboarded')) {
-            props.dealstage = STAGES.onboarded;
-        }
-        if (Object.keys(props).length) await patchDeal(existing.id, props);
-        try {
-            await associateDeal(existing.id, contactId);
-        } catch (err) {
-            console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
-        }
-        return existing.id;
-    });
+    return safe('onboarded', () => ensureDeal(user, 'onboarded'));
 }
 
 async function syncPaid(user) {
@@ -279,6 +381,7 @@ async function syncPaid(user) {
 
 async function trackUsage(auth0Id, feature) {
     return safe('usage', async () => {
+        const map = await stages();
         const deal = await findDeal(auth0Id);
         if (!deal) return null;
         const soaps = Number(deal.properties?.pw_soaps || 0) + (feature === 'soap' ? 1 : 0);
@@ -290,10 +393,15 @@ async function trackUsage(auth0Id, feature) {
             pw_queries: String(queries),
             pw_last_active: hsDate(new Date().toISOString()),
         };
-        if (canAdvance(deal.properties?.dealstage, desired)) {
-            props.dealstage = STAGES[desired];
+        if (canAdvance(map, deal.properties?.dealstage, desired)) {
+            props.dealstage = map[desired];
         }
         await patchDeal(deal.id, props);
+        try {
+            await advanceContactStage(await firstContactId(deal.id), desired);
+        } catch (err) {
+            console.error('[hubspot] contact stage:', err.message);
+        }
         return deal.id;
     });
 }
@@ -311,17 +419,20 @@ function desiredTrialStage(user) {
 
 async function syncTrialUser(user) {
     return safe('trial-user', async () => {
+        const map = await stages();
         const deal = await findDeal(user.auth0_user_id);
         if (!deal) return null;
         const props = dealProperties(user);
         const desired = desiredTrialStage(user);
-        if (canAdvance(deal.properties?.dealstage, desired)) {
-            props.dealstage = STAGES[desired];
+        if (canAdvance(map, deal.properties?.dealstage, desired)) {
+            props.dealstage = map[desired];
         }
         await patchDeal(deal.id, props);
         if (user.email) {
             try {
-                await associateDeal(deal.id, await upsertContact(user));
+                const contactId = await upsertContact(user);
+                await associateDeal(deal.id, contactId);
+                await advanceContactStage(contactId, desired);
             } catch (err) {
                 console.error('[hubspot] associateDeal:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
             }
