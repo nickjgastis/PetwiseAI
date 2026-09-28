@@ -187,10 +187,53 @@ const CONTACT_STAGE_ORDER = [
     'trial_ending', 'trial_ended', 'won',
 ];
 
+// Lifecycle stage is the sales board. Internal values from the live property.
+const LIFECYCLE = {
+    new_lead: 'lead',
+    no_answer: '3888659407',
+    contacted: 'marketingqualifiedlead',
+    signed_up: '3888659408',
+    onboarded: '3888659409',
+    activated: '3888659410',
+    using: '3883680749',
+    trial_ending: '3883680750',
+    trial_ended: '3883680751',
+    won: 'customer',
+    disqualified: 'other',
+    old_leads: 'subscriber',
+};
+
+const LIFECYCLE_RANK = {
+    lead: 0,
+    '3888659407': 1,
+    marketingqualifiedlead: 2,
+    '3888659408': 3,
+    '3888659409': 4,
+    '3888659410': 5,
+    '3883680749': 6,
+    '3883680750': 7,
+    '3883680751': 8,
+    customer: 9,
+    other: 10,
+    subscriber: 11,
+    salesqualifiedlead: 12,
+    opportunity: 13,
+    '3101801407': 14,
+};
+
+const LIFECYCLE_KEY = Object.fromEntries(
+    Object.entries(LIFECYCLE).map(([key, value]) => [value, key])
+);
+
+function contactStageKey(value) {
+    if (!value) return '';
+    return LIFECYCLE_KEY[value] || 'legacy';
+}
+
 function canAdvanceContact(current, desired) {
     if (!desired || desired === 'disqualified' || desired === 'old_leads' || desired === 'new_lead') return false;
     if (current === 'disqualified') return false;
-    if (!current || current === 'old_leads' || current === 'new_lead') {
+    if (!current || current === 'old_leads' || current === 'new_lead' || current === 'legacy') {
         return CONTACT_STAGE_ORDER.includes(desired);
     }
     if (current === 'won') return desired === 'won';
@@ -200,15 +243,32 @@ function canAdvanceContact(current, desired) {
     return to >= from;
 }
 
+async function setLifecycle(contactId, value, currentValue) {
+    const currentRank = LIFECYCLE_RANK[currentValue];
+    const desiredRank = LIFECYCLE_RANK[value];
+    const backward = Boolean(currentValue) && (
+        currentRank === undefined || desiredRank === undefined || currentRank > desiredRank
+    );
+    if (backward) {
+        await hs('PATCH', `/crm/v3/objects/contacts/${contactId}`, {
+            properties: { lifecyclestage: '' },
+        });
+    }
+    await hs('PATCH', `/crm/v3/objects/contacts/${contactId}`, {
+        properties: { lifecyclestage: value },
+    });
+}
+
 async function advanceContactStage(contactId, desired) {
     if (!contactId || !desired) return;
+    const value = LIFECYCLE[desired];
+    if (!value) return;
     try {
-        const row = await hs('GET', `/crm/v3/objects/contacts/${contactId}?properties=pw_stage`);
-        const current = row.properties?.pw_stage || '';
-        if (!canAdvanceContact(current, desired)) return;
-        await hs('PATCH', `/crm/v3/objects/contacts/${contactId}`, {
-            properties: { pw_stage: desired },
-        });
+        const row = await hs('GET', `/crm/v3/objects/contacts/${contactId}?properties=lifecyclestage`);
+        const currentValue = row.properties?.lifecyclestage || '';
+        if (currentValue === value) return;
+        if (!canAdvanceContact(contactStageKey(currentValue), desired)) return;
+        await setLifecycle(contactId, value, currentValue);
     } catch (err) {
         console.error('[hubspot] contact stage:', err.message, err.detail ? JSON.stringify(err.detail).slice(0, 400) : '');
     }
@@ -360,23 +420,7 @@ async function syncOnboarded(user) {
 }
 
 async function syncPaid(user) {
-    return safe('paid', async () => {
-        const id = await ensureDeal(user, 'won');
-        try {
-            if (user.email) {
-                await hs('POST', '/crm/v3/objects/contacts/batch/upsert', {
-                    inputs: [{
-                        idProperty: 'email',
-                        id: user.email,
-                        properties: { email: user.email, lifecyclestage: 'customer' },
-                    }],
-                });
-            }
-        } catch (err) {
-            console.error('[hubspot] paid lifecycle:', err.message);
-        }
-        return id;
-    });
+    return safe('paid', () => ensureDeal(user, 'won'));
 }
 
 async function trackUsage(auth0Id, feature) {
