@@ -20,7 +20,7 @@ const SOAP_SECTIONS = [
         name: 'Assessment', letter: 'A',
         header: 'bg-gradient-to-r from-amber-500 to-amber-700', 
         border: '#f59e0b', bg: 'bg-amber-50',
-        text: '1. Acute gastroenteritis — likely dietary indiscretion vs early GI foreign body\n2. Rule out pancreatitis — cranial abdominal pain, anorexia, vomiting consistent\n3. Rule out hepatopathy — will evaluate with chem panel\n4. Mild dehydration secondary to vomiting and decreased oral intake'
+        text: '1. Acute gastroenteritis: likely dietary indiscretion vs early GI foreign body\n2. Rule out pancreatitis: cranial abdominal pain, anorexia, vomiting consistent\n3. Rule out hepatopathy: will evaluate with chem panel\n4. Mild dehydration secondary to vomiting and decreased oral intake'
     },
     { 
         name: 'Plan', letter: 'P',
@@ -31,7 +31,7 @@ const SOAP_SECTIONS = [
 ];
 
 const PQ_QUESTION = 'What are the top differentials for a dog with acute onset of PU/PD?';
-const PQ_ANSWER = 'The most common differentials for acute polyuria/polydipsia in dogs include:\n\n• Diabetes mellitus — Check fasting glucose and fructosamine\n• Cushing\'s disease — LDDS or ACTH stim test\n• Renal insufficiency — BUN, creatinine, SDMA, urinalysis\n• Pyometra — In intact females, check CBC + ultrasound\n• Hypercalcemia — Ionized calcium panel\n\nA minimum database of CBC, chemistry, and urinalysis with specific gravity is recommended as a starting point.';
+const PQ_ANSWER = 'The most common differentials for acute polyuria/polydipsia in dogs include:\n\n• Diabetes mellitus: Check fasting glucose and fructosamine\n• Cushing\'s disease: LDDS or ACTH stim test\n• Renal insufficiency: BUN, creatinine, SDMA, urinalysis\n• Pyometra: In intact females, check CBC + ultrasound\n• Hypercalcemia: Ionized calcium panel\n\nA minimum database of CBC, chemistry, and urinalysis with specific gravity is recommended as a starting point.';
 
 // ─── QuickSOAP Demo: dictation scrolls out → SOAP sections appear ───
 const QuickSOAPDemo = () => {

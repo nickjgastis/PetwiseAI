@@ -1,22 +1,17 @@
 // src/routes.js
 
-import React, { useEffect, Suspense, lazy } from 'react';
+import React, { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth0 } from "@auth0/auth0-react";
-import HomePage from './pages/HomePage';  // Make sure this import matches your file name
 import Dashboard from './pages/Dashboard';
-import Blog from './pages/Blog';
 import PrivateRoute from './components/PrivateRoute';
-import AboutPage from './pages/AboutPage';
-import ProductPage from './pages/ProductPage';
-import PrivacyPolicy from './components/PrivacyPolicy';
-import Terms from './components/Terms';
-import Help from './components/Help';
 import AdminDashboard from './components/AdminDashboard';
 import AutoLogin from './components/AutoLogin';
 import PWALogin from './components/PWALogin';
 import Callback from './pages/Callback';
 import Refresh from './pages/Refresh';
+import { SITE_PAGES, SITE_REDIRECTS, findSitePage } from './site/routes';
+import { LAZY_PAGES } from './site/lazyPages';
 
 // Public marketing / campaign landing pages — code-split so they don't bloat
 // the authenticated app bundle.
@@ -33,22 +28,21 @@ const isStandalone = () => {
            window.navigator.standalone === true;
 };
 
+// app.petwise.vet and the installed PWA keep "/" as the login / dashboard entry.
+const isAppHost = () => window.location.hostname.startsWith('app.');
+
 const AppRoutes = () => {
     const { isLoading, isAuthenticated } = useAuth0();
     const location = useLocation();
     
     // Check if running as PWA
     const isPWA = isStandalone();
+    const rootIsApp = isPWA || isAppHost();
 
-    useEffect(() => {
-        // console.log('Route changed to:', location.pathname);
-        // // Check if something is preventing scroll
-        // console.log('Current scroll position:', window.pageYOffset);
-        // console.log('Body overflow:', document.body.style.overflow);
-        // console.log('HTML overflow:', document.documentElement.style.overflow);
-    }, [location]);
+    const sitePage = findSitePage(location.pathname);
+    const isSiteRoute = Boolean(sitePage) && !(sitePage.path === '/' && rootIsApp);
 
-    if (isLoading) {
+    if (isLoading && !isSiteRoute) {
         return (
             <div className="min-h-screen bg-[#3369bd] flex items-center justify-center">
                 <div className="text-white text-xl">Loading...</div>
@@ -58,16 +52,35 @@ const AppRoutes = () => {
 
     return (
         <Routes>
-            <Route
-                path="/"
-                element={
-                    isAuthenticated ? (
-                        <Navigate to="/dashboard" replace />
-                    ) : (
-                        isPWA ? <PWALogin /> : <AutoLogin />
-                    )
-                }
-            />
+            {SITE_PAGES.filter((p) => !(p.path === '/' && rootIsApp)).map(({ path, page }) => {
+                const Page = LAZY_PAGES[page];
+                return (
+                    <Route
+                        key={path}
+                        path={path}
+                        element={
+                            <Suspense fallback={null}>
+                                <Page />
+                            </Suspense>
+                        }
+                    />
+                );
+            })}
+            {Object.entries(SITE_REDIRECTS).map(([from, to]) => (
+                <Route key={from} path={from} element={<Navigate to={to} replace />} />
+            ))}
+            {rootIsApp && (
+                <Route
+                    path="/"
+                    element={
+                        isAuthenticated ? (
+                            <Navigate to="/dashboard" replace />
+                        ) : (
+                            isPWA ? <PWALogin /> : <AutoLogin />
+                        )
+                    }
+                />
+            )}
             <Route path="/login" element={isPWA ? <PWALogin /> : <AutoLogin />} />
             <Route path="/signup" element={isPWA ? <PWALogin /> : <AutoLogin mode="signup" />} />
             <Route path="/callback" element={<Callback />} />
@@ -80,9 +93,6 @@ const AppRoutes = () => {
             <Route path="/vets/petquery" element={<Navigate to="/vets/demo/petquery" replace />} />
             <Route path="/vets/quicksoap" element={<Navigate to="/vets/demo/soap" replace />} />
             <Route path="/introduction" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><IntroductionLanding /></Suspense>} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/product" element={<ProductPage />} />
             <Route
                 path="/dashboard/*"
                 element={
@@ -95,9 +105,6 @@ const AppRoutes = () => {
                 path="/profile"
                 element={<Navigate to="/dashboard/profile" replace />}
             />
-            <Route path="/privacy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/help" element={<Help />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route
                 path="*"

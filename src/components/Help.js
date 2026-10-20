@@ -279,7 +279,7 @@ const Help = () => {
                         <div>
                             <h3 className="text-base font-bold">Book a complimentary 1-on-1 demo</h3>
                             <p className="text-white/85 text-[13px] mt-0.5">
-                                Walk through PetWise with <strong>Dr. Stacey Gastis</strong> — real clinical use cases, completely free.
+                                Walk through PetWise with <strong>Dr. Stacey Gastis</strong>. Real clinical use cases, completely free.
                             </p>
                         </div>
                         <a
@@ -354,14 +354,14 @@ const Help = () => {
                                                 <FaBrain className="text-white text-lg" />
                                             </div>
                                             <p className="font-semibold text-gray-800 text-sm mb-1">Deeper Context</p>
-                                            <p className="text-gray-500 text-xs">Understands more of what you dictate — catches nuance, medications, and clinical details that matter</p>
+                                            <p className="text-gray-500 text-xs">Understands more of what you dictate. Catches nuance, medications, and clinical details that matter</p>
                                         </div>
                                         <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-5 text-center">
                                             <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
                                                 <FaRocket className="text-white text-lg" />
                                             </div>
                                             <p className="font-semibold text-gray-800 text-sm mb-1">Noticeably Faster</p>
-                                            <p className="text-gray-500 text-xs">Records generate quicker than before — less waiting, more documenting</p>
+                                            <p className="text-gray-500 text-xs">Records generate quicker than before. Less waiting, more documenting</p>
                                         </div>
                                         <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-5 text-center">
                                             <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
@@ -372,7 +372,7 @@ const Help = () => {
                                         </div>
                                     </div>
                                     <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl p-4 border border-primary-100">
-                                        <p className="text-gray-600 text-sm text-center">This applies to all record types — SOAP, Summary, and Callback records all benefit from the upgrade.</p>
+                                        <p className="text-gray-600 text-sm text-center">This applies to all record types: SOAP, Summary, and Callback records all benefit from the upgrade.</p>
                                     </div>
                                 </div>
                             )}
@@ -384,7 +384,7 @@ const Help = () => {
                                             <FaColumns className="text-[10px]" /> Layout Update
                                         </div>
                                         <h3 className="font-bold text-gray-800 mb-2 text-2xl">Redesigned QuickSOAP Workspace</h3>
-                                        <p className="text-gray-500 text-base max-w-lg mx-auto">The dictation controls have moved from the sidebar to a dedicated top bar above your record — giving you a wider editing area and a cleaner workflow.</p>
+                                        <p className="text-gray-500 text-base max-w-lg mx-auto">The dictation controls have moved from the sidebar to a dedicated top bar above your record, giving you a wider editing area and a cleaner workflow.</p>
                                     </div>
                                     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
                                         <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 border-b border-gray-200">
@@ -421,11 +421,11 @@ const Help = () => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                                             <p className="font-semibold text-gray-800 text-sm mb-1">Wider editing area</p>
-                                            <p className="text-gray-500 text-xs">Your SOAP sections now stretch across the full width — no more cramped text fields</p>
+                                            <p className="text-gray-500 text-xs">Your SOAP sections now stretch across the full width. No more cramped text fields</p>
                                         </div>
                                         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
                                             <p className="font-semibold text-gray-800 text-sm mb-1">Everything in one flow</p>
-                                            <p className="text-gray-500 text-xs">Dictations, notes, and controls are all above your record — scroll down to edit</p>
+                                            <p className="text-gray-500 text-xs">Dictations, notes, and controls are all above your record. Scroll down to edit</p>
                                         </div>
                                     </div>
                                 </div>

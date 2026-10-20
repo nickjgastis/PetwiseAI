@@ -77,7 +77,7 @@ const InstallPrompt = ({ onClose }) => {
           <div className="install-steps">
             <div className="install-step">
               <span className="step-number">1</span>
-              <span className="step-text">Copy this URL: <strong>app.petwise.vet</strong></span>
+              <span className="step-text">Copy this URL: <strong>petwise.vet</strong></span>
             </div>
             <div className="install-step">
               <span className="step-number">2</span>
@@ -128,7 +128,7 @@ const InstallPrompt = ({ onClose }) => {
             </div>
           </div>
 
-          <p className="install-gate-footer">Must be opened in <strong>Safari</strong> — if you're in the Instagram or Facebook browser, open Safari and go to <strong>app.petwise.vet</strong></p>
+          <p className="install-gate-footer">Must be opened in <strong>Safari</strong>. If you're in the Instagram or Facebook browser, open Safari and go to <strong>petwise.vet</strong></p>
           {closeButtons}
         </div>
       </div>
@@ -171,7 +171,7 @@ const InstallPrompt = ({ onClose }) => {
             )}
           </div>
 
-          <p className="install-gate-footer">Must be opened in a web browser like <strong>Chrome</strong> — if you're in the Instagram or Facebook browser, open Chrome and go to <strong>app.petwise.vet</strong></p>
+          <p className="install-gate-footer">Must be opened in a web browser like <strong>Chrome</strong>. If you're in the Instagram or Facebook browser, open Chrome and go to <strong>petwise.vet</strong></p>
           {closeButtons}
         </div>
       </div>
@@ -201,7 +201,7 @@ const InstallPrompt = ({ onClose }) => {
           </div>
         </div>
 
-        <p className="install-gate-footer">Must be opened in a web browser like <strong>Safari</strong> or <strong>Chrome</strong> — not the Instagram or Facebook browser</p>
+        <p className="install-gate-footer">Must be opened in a web browser like <strong>Safari</strong> or <strong>Chrome</strong>, not the Instagram or Facebook browser</p>
         {closeButtons}
       </div>
     </div>

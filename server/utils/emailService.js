@@ -189,7 +189,7 @@ function generateWelcomeEmail(userName) {
             I wanted to personally welcome you to PetWise and thank you for giving the platform a try.
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            You have <strong>10 days of unlimited PetWise</strong> — no credit card.
+            You have <strong>10 days of unlimited PetWise</strong>. No credit card.
             After that, choose a paid plan or keep using PetWise Free.
         </p>
         <p style="margin: 0 0 12px; font-size: 16px; color: #374151; line-height: 1.6;">
@@ -198,7 +198,7 @@ function generateWelcomeEmail(userName) {
             <a href="https://petwise.vet" style="color: #3db6fd; text-decoration: none; font-weight: 600;">petwise.vet</a>.
         </p>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
-            <strong>Your phone is your portable microphone.</strong> If you signed up on your phone, perfect —
+            <strong>Your phone is your portable microphone.</strong> If you signed up on your phone, perfect:
             use it to record visits with QuickSOAP, and everything flows straight into your records on desktop.
         </p>
         <div style="margin: 0 0 16px; padding: 16px 20px; background: #f0f7ff; border-radius: 12px;">
@@ -296,7 +296,7 @@ function generateDiscountEmail() {
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
             Open PetWise, choose our monthly plan, and enter the code at checkout.
-            It applies to your first month only — not the yearly plan.
+            It applies to your first month only, not the yearly plan.
         </p>
         <div style="text-align: center;">
             ${ctaButton('Upgrade on Petwise', 'https://petwise.vet')}
@@ -306,7 +306,7 @@ function generateDiscountEmail() {
             Nick
         </p>`;
 
-    return emailWrapper(content, `50% off your first month on our monthly plan — use ${DRIP_DISCOUNT_CODE} at checkout this week.`);
+    return emailWrapper(content, `50% off your first month on our monthly plan. Use ${DRIP_DISCOUNT_CODE} at checkout this week.`);
 }
 
 /**
@@ -429,7 +429,7 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
         </p>
         <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-                <strong>⏰ ${daysLeft} days remaining</strong> — Trial ends ${endDateFormatted}
+                <strong>⏰ ${daysLeft} days remaining</strong> · Trial ends ${endDateFormatted}
             </p>
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
@@ -453,7 +453,7 @@ function generateTrialMidwayEmail(userName, daysLeft, trialEndDate) {
             Nick
         </p>`;
 
-    return emailWrapper(content, `One week in — book a free demo with Dr. Gastis (1hr RACE-approved CE included)`);
+    return emailWrapper(content, `One week in: book a free demo with Dr. Gastis (1hr RACE-approved CE included)`);
 }
 
 /**
@@ -480,7 +480,7 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
         </p>
         <div style="background-color: #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0;">
             <p style="margin: 0; font-size: 14px; color: #92400e;">
-                <strong>⏰ ${daysLeft} days remaining</strong> — Trial ends ${endDateFormatted}
+                <strong>⏰ ${daysLeft} days remaining</strong> · Trial ends ${endDateFormatted}
             </p>
         </div>
         <p style="margin: 0 0 16px; font-size: 16px; color: #374151; line-height: 1.6;">
@@ -504,7 +504,7 @@ function generateTrialEndingEmail(userName, daysLeft, trialEndDate) {
             Nick
         </p>`;
 
-    return emailWrapper(content, `Your PetWise trial ends in ${daysLeft} days — book a free demo before it's over.`);
+    return emailWrapper(content, `Your PetWise trial ends in ${daysLeft} days. Book a free demo before it's over.`);
 }
 
 /**
@@ -520,11 +520,11 @@ function generateAdminSignupNotification({ email, nickname, phone_number, auth0_
     const row = (label, value) => `
         <tr>
             <td style="padding: 6px 0; font-size: 14px; color: #6b7280; width: 120px;">${label}</td>
-            <td style="padding: 6px 0; font-size: 14px; color: #111827; font-weight: 600;">${value || '—'}</td>
+            <td style="padding: 6px 0; font-size: 14px; color: #111827; font-weight: 600;">${value || '-'}</td>
         </tr>`;
     const phoneCell = phone_number
         ? `<a href="tel:${phone_number}" style="color: #3db6fd; text-decoration: none;">${phone_number}</a>`
-        : '—';
+        : '-';
 
     const content = `
         <h1 style="margin: 0 0 8px; font-size: 22px; font-weight: 700; color: #111827;">

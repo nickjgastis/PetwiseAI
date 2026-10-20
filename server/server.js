@@ -151,6 +151,15 @@ const upload = multer({
     }
 });
 
+// Stripe return URLs follow the domain the user is on. app.petwise.vet stays
+// the fallback because it keeps serving the app during and after the move.
+const APP_ORIGINS = ['https://petwise.vet', 'https://www.petwise.vet', 'https://app.petwise.vet'];
+const appOrigin = (req) => {
+    if (process.env.NODE_ENV !== 'production') return 'http://localhost:3000';
+    const origin = req.headers.origin;
+    return APP_ORIGINS.includes(origin) ? origin : 'https://app.petwise.vet';
+};
+
 // Add these headers to all responses
 app.use((req, res, next) => {
     const allowedOrigins = [
@@ -1782,12 +1791,8 @@ app.post('/create-checkout-session', async (req, res) => {
                 price: priceId,
                 quantity: 1,
             }],
-            success_url: process.env.NODE_ENV === 'production'
-                ? 'https://app.petwise.vet/dashboard'
-                : 'http://localhost:3000/dashboard',
-            cancel_url: process.env.NODE_ENV === 'production'
-                ? 'https://app.petwise.vet/dashboard'
-                : 'http://localhost:3000/dashboard',
+            success_url: `${appOrigin(req)}/dashboard`,
+            cancel_url: `${appOrigin(req)}/dashboard`,
             client_reference_id: user.sub
         });
 
@@ -2984,9 +2989,7 @@ app.post('/create-customer-portal', async (req, res) => {
         // Create customer portal session
         const session = await stripe.billingPortal.sessions.create({
             customer: userData.stripe_customer_id,
-            return_url: process.env.NODE_ENV === 'production'
-                ? 'https://app.petwise.vet/dashboard/profile'
-                : 'http://localhost:3000/dashboard/profile',
+            return_url: `${appOrigin(req)}/dashboard/profile`,
         });
 
         res.json({ url: session.url });

@@ -4,7 +4,7 @@ import OnboardingLayout from './OnboardingLayout';
 const ROLE_COPY = {
     veterinarian: {
         headline: "Built for DVMs like you.",
-        body: "You didn't spend years in vet school to spend your evenings writing records. Petwise generates accurate, professional SOAP notes so you can focus on medicine — not paperwork.",
+        body: "You didn't spend years in vet school to spend your evenings writing records. Petwise generates accurate, professional SOAP notes so you can focus on medicine, not paperwork.",
     },
     vet_tech: {
         headline: "Your workflow, supercharged.",
@@ -12,7 +12,7 @@ const ROLE_COPY = {
     },
     practice_owner: {
         headline: "Better records. Happier team.",
-        body: "Consistent documentation across your entire team — without the bottleneck. Petwise helps your practice produce higher-quality records in less time, reducing burnout and improving compliance.",
+        body: "Consistent documentation across your entire team, without the bottleneck. Petwise helps your practice produce higher-quality records in less time, reducing burnout and improving compliance.",
     },
     student: {
         headline: "Learn faster. Document smarter.",

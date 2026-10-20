@@ -19,7 +19,7 @@ const BookingStep = ({ onNext, onBack }) => {
                 </p>
 
                 <p className="text-white/60 text-sm max-w-md mx-auto mb-8">
-                    The session is about an hour and includes <strong className="text-white/80">1 hour of RACE-approved CE</strong> — completely free.
+                    The session is about an hour and includes <strong className="text-white/80">1 hour of RACE-approved CE</strong>, completely free.
                 </p>
 
                 {/* Calendly embed will go here */}

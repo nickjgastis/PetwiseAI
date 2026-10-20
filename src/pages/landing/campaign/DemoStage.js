@@ -9,7 +9,7 @@ const DEMO_SECTIONS = [
     { label: 'P  Plan', color: 'bg-[#20447f]', text: 'SQ fluids · maropitant 1 mg/kg · bland diet · recheck 48h' }
 ];
 
-const DemoStage = () => {
+const DemoStage = ({ host = 'app.petwise.vet' }) => {
     const [stage, setStage] = useState('dictate');
 
     useEffect(() => {
@@ -74,7 +74,7 @@ const DemoStage = () => {
                                         <span className="w-2 h-2 rounded-full bg-gray-200" />
                                         <span className="w-2 h-2 rounded-full bg-gray-200" />
                                         <span className="w-2 h-2 rounded-full bg-gray-200" />
-                                        <span className="ml-2 text-[10px] text-gray-400">app.petwise.vet</span>
+                                        <span className="ml-2 text-[10px] text-gray-400">{host}</span>
                                         <span className="ml-auto text-[9px] font-bold text-[#3468bd] bg-[#f0f7ff] px-1.5 py-0.5 rounded">SOAP</span>
                                     </div>
                                     <div className="p-4">

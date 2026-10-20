@@ -25,7 +25,7 @@ const DesktopBridgeStep = ({ onNext }) => {
                             <FaDesktop className="text-[#3db6fd] text-lg" />
                         </div>
                         <div>
-                            <p className="text-white font-semibold text-sm mb-0.5">Your computer — the full app</p>
+                            <p className="text-white font-semibold text-sm mb-0.5">Your computer: the full app</p>
                             <p className="text-white/65 text-[13px] leading-snug">
                                 Records, templates, and completed SOAP reports. Go to{' '}
                                 <span className="text-[#3db6fd] font-semibold">petwise.vet</span> on your computer
@@ -39,7 +39,7 @@ const DesktopBridgeStep = ({ onNext }) => {
                             <FaMicrophone className="text-emerald-300 text-lg" />
                         </div>
                         <div>
-                            <p className="text-white font-semibold text-sm mb-0.5">Your phone — a portable microphone</p>
+                            <p className="text-white font-semibold text-sm mb-0.5">Your phone: a portable microphone</p>
                             <p className="text-white/65 text-[13px] leading-snug">
                                 Record visits with QuickSOAP and they appear in your records on desktop automatically.
                             </p>
@@ -52,7 +52,7 @@ const DesktopBridgeStep = ({ onNext }) => {
                         onClick={onNext}
                         className="w-full py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 text-sm sm:text-base"
                     >
-                        Got it — continue
+                        Got it, continue
                     </button>
                 </div>
             </div>

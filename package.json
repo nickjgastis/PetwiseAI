@@ -50,12 +50,14 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "craco start",
-    "build": "node scripts/update-version.js && craco build",
+    "start": "node scripts/build-blog.js && concurrently --raw --kill-others \"node scripts/build-blog.js --watch\" \"craco start\"",
+    "build": "node scripts/check-copy.js && node scripts/build-blog.js && node scripts/update-version.js && craco build && node scripts/prerender.js",
+    "preview": "node scripts/preview.js",
+    "check-copy": "node scripts/check-copy.js",
     "test": "craco test",
     "eject": "react-scripts eject",
     "server": "cd server && node server.js",
-    "client": "PORT=3000 react-scripts start",
+    "client": "node scripts/build-blog.js && PORT=3000 react-scripts start",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "dev:verbose": "concurrently --names \"SERVER,CLIENT\" --prefix-colors \"red,blue\" \"npm run server\" \"npm run client\""
   },

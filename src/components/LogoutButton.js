@@ -9,9 +9,9 @@ const LogoutButton = () => {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                             window.navigator.standalone === true;
         
-        const returnUrl = process.env.NODE_ENV === 'production'
-            ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
-            : 'http://localhost:3000';
+        const returnUrl = process.env.NODE_ENV === 'production' && !isStandalone
+            ? 'https://petwise.vet'
+            : window.location.origin;
         
         clearAppLocalStorage();
         localStorage.removeItem('auth0.is.authenticated');

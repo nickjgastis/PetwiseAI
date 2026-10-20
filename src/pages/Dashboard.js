@@ -264,9 +264,9 @@ const Dashboard = () => {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                             window.navigator.standalone === true;
         
-        const returnUrl = process.env.NODE_ENV === 'production'
-            ? (isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet')
-            : 'http://localhost:3000';
+        const returnUrl = process.env.NODE_ENV === 'production' && !isStandalone
+            ? 'https://petwise.vet'
+            : window.location.origin;
         
         // Clear all app data from localStorage
         clearAppLocalStorage();
@@ -481,7 +481,7 @@ const Dashboard = () => {
                 // Daily free cap reached — the draft is safe, it just has to wait
                 // for the local-midnight reset (or an upgrade). Signal the queue to stop.
                 if (genError.response?.status === 403 && genError.response?.data?.error === 'USAGE_LIMIT_REACHED') {
-                    console.log('Daily free limit reached — parking mobile drafts until reset/upgrade');
+                    console.log('Daily free limit reached, parking mobile drafts until reset/upgrade');
                     return 'limit';
                 }
                 console.error('Error generating SOAP from mobile dictation:', genError, 'Draft ID:', draftId);
@@ -1690,7 +1690,7 @@ const Dashboard = () => {
                             <div>
                                 <p className="font-semibold text-base">Last day of unlimited</p>
                                 <p className="text-sm text-white/80">
-                                    Tomorrow you move to PetWise Free. Upgrade to stay unlimited — or keep using Free after today. No credit card required to stay on Free.
+                                    Tomorrow you move to PetWise Free. Upgrade to stay unlimited, or keep using Free after today. No credit card required to stay on Free.
                                 </p>
                             </div>
                             <button
@@ -1712,7 +1712,7 @@ const Dashboard = () => {
                                         {draftsWaitingForLimit === 1
                                             ? '1 mobile dictation waiting'
                                             : `${draftsWaitingForLimit} mobile dictations waiting`}
-                                        {' '}— you've finished today's free SOAP notes
+                                        {'. '}You've finished today's free SOAP notes
                                     </p>
                                     <p className="text-sm opacity-80">
                                         Your dictations are saved. They'll generate automatically after your allowance resets at midnight

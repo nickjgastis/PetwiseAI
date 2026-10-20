@@ -1,0 +1,147 @@
+.site {
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+}
+
+.site summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Content stays visible without JS; the inline script in index.html adds .js-reveal. */
+.js-reveal .site .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+    animation: site-reveal-fallback 0s 2.5s forwards;
+}
+
+.js-reveal .site .reveal.in {
+    opacity: 1;
+    transform: none;
+    animation: none;
+}
+
+@keyframes site-reveal-fallback {
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .js-reveal .site .reveal {
+        opacity: 1;
+        transform: none;
+        transition: none;
+    }
+}
+
+.site-prose {
+    color: rgba(26, 43, 74, 0.82);
+    font-size: 1.0625rem;
+    line-height: 1.8;
+}
+
+.site-prose > * + * {
+    margin-top: 1.25em;
+}
+
+.site-prose h2,
+.site-prose h3,
+.site-prose h4 {
+    color: #13233f;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+}
+
+.site-prose h2 {
+    font-size: 1.6rem;
+    margin-top: 2.2em;
+}
+
+.site-prose h3 {
+    font-size: 1.3rem;
+    margin-top: 2em;
+}
+
+.site-prose h4 {
+    font-size: 1.1rem;
+    margin-top: 1.6em;
+}
+
+.site-prose a {
+    color: #3468bd;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.site-prose strong {
+    color: #13233f;
+    font-weight: 600;
+}
+
+.site-prose ul,
+.site-prose ol {
+    padding-left: 1.25em;
+}
+
+.site-prose ul {
+    list-style: disc;
+}
+
+.site-prose ol {
+    list-style: decimal;
+}
+
+.site-prose li + li {
+    margin-top: 0.5em;
+}
+
+.site-prose li::marker {
+    color: #3468bd;
+}
+
+.site-prose blockquote {
+    border-left: 2px solid #5cccf0;
+    padding-left: 1.25em;
+    color: #13233f;
+    font-size: 1.15rem;
+}
+
+.site-prose figure img,
+.site-prose > p > img {
+    border-radius: 20px;
+    width: 100%;
+    height: auto;
+}
+
+.site-prose figcaption {
+    margin-top: 0.75em;
+    font-size: 0.875rem;
+    color: rgba(26, 43, 74, 0.5);
+    text-align: center;
+}
+
+.site-prose .post-embed {
+    position: relative;
+    padding-top: 56.25%;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #13233f;
+}
+
+.site-prose .post-embed iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.site-prose hr {
+    border: 0;
+    border-top: 1px solid rgba(19, 35, 63, 0.1);
+    margin: 2.5em 0;
+}

@@ -17,7 +17,7 @@ const STEPS = [
         icon: FaPaw,
         iconBg: 'from-emerald-400 to-emerald-600',
         title: (dvmName) => `Welcome to PetWise${dvmName ? `, Dr. ${dvmName}` : ''}!`,
-        body: () => "You have 10 free days of unlimited PetWise — no credit card, no limits. Let's take a quick tour so you can get started. It'll only take a few seconds."
+        body: () => "You have 10 free days of unlimited PetWise. No credit card, no limits. Let's take a quick tour so you can get started. It'll only take a few seconds."
     },
     {
         id: 'quicksoap',
@@ -26,7 +26,7 @@ const STEPS = [
         icon: FaMicrophone,
         iconBg: 'from-blue-400 to-blue-600',
         title: () => 'QuickSOAP',
-        body: () => "This is where you'll create all your dictations and SOAP records — just talk or type and PetWise does the rest."
+        body: () => "This is where you'll create all your dictations and SOAP records. Just talk or type and PetWise does the rest."
     },
     {
         id: 'petquery',
@@ -35,7 +35,7 @@ const STEPS = [
         icon: FaSearch,
         iconBg: 'from-purple-400 to-purple-600',
         title: () => 'PetQuery',
-        body: () => 'Your go-to for any veterinary question. Ask about drug dosages, differential diagnoses, treatment protocols, lab result interpretation — and more.'
+        body: () => 'Your go-to for any veterinary question. Ask about drug dosages, differential diagnoses, treatment protocols, lab result interpretation, and more.'
     },
     {
         id: 'mobile',
@@ -44,7 +44,7 @@ const STEPS = [
         icon: FaMobileAlt,
         iconBg: 'from-[#3468bd] to-[#2a5298]',
         title: () => 'Get PetWise on your phone',
-        body: () => 'Scan this code, log in, and follow the instructions to make dictations from anywhere on your phone — they sync straight back here to your desktop.'
+        body: () => 'Scan this code, log in, and follow the instructions to make dictations from anywhere on your phone. They sync straight back here to your desktop.'
     }
 ];
 
@@ -163,7 +163,7 @@ const AppTour = ({ dvmName, isMobile = false, onComplete }) => {
                     onClick={next}
                     className="px-6 py-2.5 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] transition-colors text-sm"
                 >
-                    {isLast ? "Got it — let's go" : 'Next'}
+                    {isLast ? "Got it, let's go" : 'Next'}
                 </button>
             </div>
         </>

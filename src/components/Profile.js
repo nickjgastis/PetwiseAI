@@ -414,7 +414,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                 localStorage.removeItem('auth0.is.authenticated');
                                 logout({
                                     logoutParams: {
-                                        returnTo: isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet'
+                                        returnTo: isStandalone ? window.location.origin : 'https://petwise.vet'
                                     }
                                 });
                             }}
@@ -577,7 +577,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <InfoRow label="Nickname">{user?.nickname || 'Not set'}</InfoRow>
                                             <InfoRow label="Email">{user?.email}</InfoRow>
                                             <InfoRow label="Last updated">
-                                                {user?.updated_at ? new Date(user.updated_at).toLocaleDateString() : '—'}
+                                                {user?.updated_at ? new Date(user.updated_at).toLocaleDateString() : '-'}
                                             </InfoRow>
                                             {isStudentMode() && (
                                                 <>

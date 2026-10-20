@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { motion } from 'framer-motion';
 import { FaCheck, FaCrown, FaGraduationCap, FaTimes, FaLock, FaChartPie, FaBolt } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
+import { PRICES, PLAN_FEATURES } from '../constants/pricing';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -14,19 +15,7 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const PRICES = {
-    usd: { monthly: 79, yearly: 69, yearlyTotal: 828, monthlyAnnual: 948, symbol: '$', code: 'USD' },
-    cad: { monthly: 109, yearly: 96, yearlyTotal: 1152, monthlyAnnual: 1308, symbol: '$', code: 'CAD' }
-};
-
-const FEATURES = [
-    'Unlimited SOAP reports',
-    'QuickSOAP voice dictation',
-    'Unlimited PetQuery AI assistant',
-    'Saved reports library',
-    'Custom templates',
-    'Priority support'
-];
+const FEATURES = PLAN_FEATURES;
 
 const FEATURE_LABELS = {
     soap: 'SOAP notes',
@@ -37,21 +26,21 @@ const REASON_COPY = {
     limit: {
         title: (feature) => `You've finished today's free ${FEATURE_LABELS[feature]}`,
         body: (resetLabel) => (
-            <>Your free allowance resets <span className="text-emerald-300 font-semibold">{resetLabel}</span> — and everything you've created is saved. Upgrade anytime for unlimited use.</>
+            <>Your free allowance resets <span className="text-emerald-300 font-semibold">{resetLabel}</span>, and everything you've created is saved. Upgrade anytime for unlimited use.</>
         ),
         dismiss: 'Maybe later'
     },
     'last-day': {
         title: () => 'Last day of unlimited',
         body: () => (
-            <>Your 10 free days end in the next 24 hours. Upgrade to stay unlimited, or continue with PetWise Free — 5 SOAPs and 5 PetQuery questions a day.</>
+            <>Your 10 free days end in the next 24 hours. Upgrade to stay unlimited, or continue with PetWise Free: 5 SOAPs and 5 PetQuery questions a day.</>
         ),
         dismiss: 'Keep using unlimited today'
     },
     expired: {
         title: () => 'Your 10 free days are up',
         body: () => (
-            <>Choose a plan to stay unlimited, or continue with PetWise Free — 5 SOAPs and 5 PetQuery questions a day. No credit card required to stay on Free.</>
+            <>Choose a plan to stay unlimited, or continue with PetWise Free: 5 SOAPs and 5 PetQuery questions a day. No credit card required to stay on Free.</>
         ),
         dismiss: 'Continue with PetWise Free'
     }
@@ -236,7 +225,7 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
                         </div>
                         <h3 className="text-base font-bold text-gray-900">Yearly</h3>
                         <p className="text-[13px] text-gray-500 mb-4">
-                            Best value — save {PRICES[currency].symbol}{savingsAmount}
+                            Best value: save {PRICES[currency].symbol}{savingsAmount}
                         </p>
 
                         <div className="flex items-end gap-2 mb-4">

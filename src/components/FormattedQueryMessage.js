@@ -154,7 +154,7 @@ const FormattedQueryMessage = ({ content }) => {
                         ) : (
                             <span className="font-semibold text-gray-900">
                                 {renderInline(t.header)}
-                                {t.lead ? <span className="font-normal text-gray-800"> — {renderInline(t.lead)}</span> : null}
+                                {t.lead ? <span className="font-normal text-gray-800">: {renderInline(t.lead)}</span> : null}
                             </span>
                         )}
                     </div>

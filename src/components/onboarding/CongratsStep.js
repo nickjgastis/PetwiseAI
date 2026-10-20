@@ -93,7 +93,7 @@ const CongratsStep = ({ onNext }) => {
                             onClick={() => setIsStudentMode(!isStudentMode)}
                             className="px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 bg-white/10 text-white/80 hover:bg-white/20 border border-white/20"
                         >
-                            {isStudentMode ? 'Student Mode' : 'Doctor Mode'} — tap to switch
+                            {isStudentMode ? 'Student Mode' : 'Doctor Mode'} · tap to switch
                         </button>
                     </div>
 

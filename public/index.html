@@ -10,10 +10,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <meta name="description" content="PetWise - AI-Powered Pet Health Analysis" />
+  <meta name="description" content="PetWise is the veterinary AI scribe built by a veterinarian. Get finished SOAP notes in seconds." />
   
   <!-- Android detection - runs immediately to prevent flash -->
   <script>
+    document.documentElement.classList.add('js-reveal');
     if (/Android/i.test(navigator.userAgent)) {
       document.documentElement.classList.add('android');
     }
@@ -65,6 +66,24 @@
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
   <div id="root"></div>
+  <script>
+    // Prerendered marketing HTML is also the SPA fallback for app routes, so
+    // drop it when it doesn't belong to this URL (or "/" is the app entry).
+    (function () {
+      var root = document.getElementById('root');
+      var page = root && root.getAttribute('data-prerendered');
+      if (!page) return;
+      var path = location.pathname.replace(/\/+$/, '') || '/';
+      var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+      var appHost = location.hostname.indexOf('app.') === 0;
+      if (path !== page || (page === '/' && (standalone || appHost))) {
+        root.innerHTML = '';
+        root.removeAttribute('data-prerendered');
+        document.querySelectorAll('[data-seo]').forEach(function (el) { el.remove(); });
+        document.title = 'PetWise';
+      }
+    })();
+  </script>
 </body>
 
 </html>

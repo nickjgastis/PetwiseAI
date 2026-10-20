@@ -352,7 +352,7 @@ const AdminDashboard = () => {
 
     const visibleUsers = useMemo(() => filtered.slice(0, displayCount), [filtered, displayCount]);
 
-    const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '—';
+    const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' }) : '-';
 
     const copyField = (field) => {
         const vals = filtered.map(u => field === 'emails' ? u.email : (u.dvm_name || u.nickname || '')).filter(Boolean);
@@ -489,7 +489,7 @@ const AdminDashboard = () => {
                                         <StatCard label="Paid" value={tierCounts.paid} sub={`${metrics?.subscriptionsByType?.monthly ?? 0} mo · ${metrics?.subscriptionsByType?.yearly ?? 0} yr`} />
                                         <StatCard label="Trial" value={tierCounts.trial} />
                                         <StatCard label="Free" value={tierCounts.free} />
-                                        <StatCard label="Growth (MoM)" value={metrics ? `${metrics.growthRate > 0 ? '+' : ''}${metrics.growthRate.toFixed(0)}%` : '—'} />
+                                        <StatCard label="Growth (MoM)" value={metrics ? `${metrics.growthRate > 0 ? '+' : ''}${metrics.growthRate.toFixed(0)}%` : '-'} />
                                     </div>
                                 </div>
 
@@ -626,7 +626,7 @@ const AdminDashboard = () => {
                                                 {visibleUsers.map(u => (
                                                     <tr key={u.id} onClick={() => setSelected(u)}
                                                         className="hover:bg-blue-50/40 cursor-pointer transition-colors">
-                                                        <td className="px-4 py-3 font-semibold text-gray-900 max-w-[160px] truncate">{u.dvm_name || u.nickname || '—'}</td>
+                                                        <td className="px-4 py-3 font-semibold text-gray-900 max-w-[160px] truncate">{u.dvm_name || u.nickname || '-'}</td>
                                                         <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">{u.email}</td>
                                                         <td className="px-4 py-3">
                                                             <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLES[statusLabel(u)] || 'bg-gray-100 text-gray-500'}`}>{statusLabel(u)}</span>
@@ -637,7 +637,7 @@ const AdminDashboard = () => {
                                                         <td className="px-4 py-3 text-[12px]">
                                                             {isOnboarded(u) ? <span className="text-emerald-600 font-medium">Done</span>
                                                                 : u.onboarding_step ? <span className="text-amber-600 font-medium">{u.onboarding_step}</span>
-                                                                    : <span className="text-gray-300">—</span>}
+                                                                    : <span className="text-gray-300">-</span>}
                                                         </td>
                                                         <td className="px-4 py-3 text-gray-400 text-[12px] tabular-nums">{formatDate(u.created_at)}</td>
                                                     </tr>
@@ -705,14 +705,14 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
         setTimeout(() => setCopied(null), 1500);
     };
 
-    const dash = (v) => (v === 0 || v === false) ? v : (v || '—');
+    const dash = (v) => (v === 0 || v === false) ? v : (v || '-');
     const yn = (v) => v ? 'Yes' : 'No';
 
     const row = (label, value, extra) => (
         <div className="flex items-start justify-between gap-3 py-3 border-b border-gray-100 last:border-b-0">
             <span className="text-[13px] font-medium text-gray-500 shrink-0">{label}</span>
             <span className="text-[13px] font-semibold text-gray-800 text-right min-w-0 break-all flex items-start gap-1.5">
-                <span className="min-w-0">{value ?? '—'}</span>
+                <span className="min-w-0">{value ?? '-'}</span>
                 {extra}
             </span>
         </div>
@@ -757,7 +757,7 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                             {(user.dvm_name || user.nickname || user.email || '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-[13px] font-semibold text-gray-900 truncate">{user.dvm_name || user.nickname || '—'}</p>
+                            <p className="text-[13px] font-semibold text-gray-900 truncate">{user.dvm_name || user.nickname || '-'}</p>
                             <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${STATUS_STYLES[statusLabel(user)] || 'bg-gray-100 text-gray-500'}`}>{statusLabel(user)}</span>
                         </div>
                     </div>
@@ -769,11 +769,11 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                             {row('Nickname', dash(user.nickname))}
                             {row('Email', user.email
                                 ? <a href={`mailto:${user.email}`} className="text-[#3468bd] hover:underline">{user.email}</a>
-                                : '—',
+                                : '-',
                             <CopyBtn k="email" text={user.email} />)}
                             {row('Phone', user.phone_number
                                 ? <a href={`tel:${user.phone_number}`} className="text-[#3468bd] hover:underline">{user.phone_number}</a>
-                                : '—',
+                                : '-',
                             <CopyBtn k="phone" text={user.phone_number} />)}
                         </div>
                     </div>
@@ -782,7 +782,7 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                         <p className="text-sm font-bold text-gray-900 mb-2">Account</p>
                         <div className="rounded-2xl border border-gray-200 p-4">
                             {row('Joined', formatDate(user.created_at))}
-                            {row('Onboarding', isOnboarded(user) ? 'Completed' : (user.onboarding_step || '—'))}
+                            {row('Onboarding', isOnboarded(user) ? 'Completed' : (user.onboarding_step || '-'))}
                             {row('Terms accepted', yn(user.has_accepted_terms))}
                             {row('App tour', yn(user.has_seen_app_tour))}
                             {row('Welcome email', formatDate(user.welcome_email_sent_at))}
@@ -797,7 +797,7 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                     <div>
                         <p className="text-sm font-bold text-gray-900 mb-2">Plan</p>
                         <div className="rounded-2xl border border-gray-200 p-4">
-                            {row('Status', user.subscription_status || '—')}
+                            {row('Status', user.subscription_status || '-')}
                             {row('Plan', user.subscription_interval || 'Free')}
                             {row('Plan label', dash(user.plan_label))}
                             {row('Renews / expires', formatDate(user.subscription_end_date))}
@@ -807,7 +807,7 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                             {row('Stripe trial', yn(user.has_activated_stripe_trial))}
                             {row('Stripe ID', user.stripe_customer_id
                                 ? <span className="font-mono text-[11px]">{user.stripe_customer_id}</span>
-                                : '—',
+                                : '-',
                             <CopyBtn k="stripe" text={user.stripe_customer_id} />)}
                         </div>
                     </div>
@@ -818,7 +818,7 @@ const UserDrawer = ({ user, onClose, getAuthHeaders, formatDate }) => {
                             <div className="rounded-2xl border border-gray-200 p-4">
                                 {row('School email', user.student_school_email
                                     ? <a href={`mailto:${user.student_school_email}`} className="text-[#3468bd] hover:underline">{user.student_school_email}</a>
-                                    : '—')}
+                                    : '-')}
                                 {row('Grad year', dash(user.student_grad_year))}
                             </div>
                         </div>

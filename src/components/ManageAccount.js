@@ -78,7 +78,7 @@ const ManageAccount = ({ user, onBack }) => {
             // Then force redirect - PWA stays on app domain
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                                 window.navigator.standalone === true;
-            window.location.href = isStandalone ? 'https://app.petwise.vet' : 'https://petwise.vet';
+            window.location.href = isStandalone ? window.location.origin : 'https://petwise.vet';
 
         } catch (error) {
             console.error('Delete error:', error);

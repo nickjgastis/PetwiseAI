@@ -745,7 +745,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
                 setShowUpgradeModal(true);
-                errorMessage = "You've finished today's free PetQuery questions. Your free allowance resets at midnight — or upgrade anytime for unlimited use.";
+                errorMessage = "You've finished today's free PetQuery questions. Your free allowance resets at midnight, or upgrade anytime for unlimited use.";
             } else if (error.response?.status === 429) {
                 // Check if it's a quota error from OpenAI
                 const detail = error.response?.data?.detail || '';
@@ -1104,7 +1104,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
 
             if (error.response?.status === 403 && error.response?.data?.error === 'USAGE_LIMIT_REACHED') {
                 setShowUpgradeModal(true);
-                errorMessage = "You've finished today's free PetQuery questions. Your free allowance resets at midnight — or upgrade anytime for unlimited use.";
+                errorMessage = "You've finished today's free PetQuery questions. Your free allowance resets at midnight, or upgrade anytime for unlimited use.";
             } else if (error.response?.status === 429) {
                 // Check if it's a quota error from OpenAI
                 const detail = error.response?.data?.detail || '';

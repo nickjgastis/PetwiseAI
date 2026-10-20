@@ -4,7 +4,6 @@ import React, { useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 import AppRoutes from './routes';
-import Navbar from './components/Navbar';
 import UpdateBanner from './components/UpdateBanner';
 import { supabase, bindSupabaseAccessToken } from './supabaseClient';
 import { trackCompleteRegistration } from './utils/pixelEvents';
@@ -22,11 +21,6 @@ const AppContent = () => {
       return getAccessTokenSilently();
     });
   }, [isAuthenticated, getAccessTokenSilently]);
-
-  // Hide navbar on login/callback routes and admin
-  const hideNavbar = ['/login', '/signup', '/callback', '/refresh', '/admin', '/introduction'].includes(location.pathname) ||
-    location.pathname.startsWith('/vets') ||
-    (!isAuthenticated && location.pathname === '/');
 
   // SPA PageViews. First load is already tracked in index.html.
   const pixelPath = useRef(location.pathname);
@@ -112,7 +106,6 @@ const AppContent = () => {
 
   return (
     <div>
-      {!hideNavbar && <Navbar />}
       <AppRoutes />
       <UpdateBanner />
     </div>
@@ -130,9 +123,7 @@ const App = () => {
       domain={process.env.REACT_APP_AUTH0_DOMAIN}
       clientId={process.env.REACT_APP_AUTH0_CLIENT_ID}
       authorizationParams={{
-        redirect_uri: process.env.NODE_ENV === 'production'
-          ? 'https://app.petwise.vet/callback'
-          : window.location.origin + '/callback',
+        redirect_uri: window.location.origin + '/callback',
         scope: "openid profile email"
       }}
       onRedirectCallback={onRedirectCallback}

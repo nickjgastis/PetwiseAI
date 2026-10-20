@@ -31,3 +31,4 @@ server/temp/
 # Server dependencies
 server/node_modules/
 server/package-lock.json
+src/content/blog/posts.generated.js

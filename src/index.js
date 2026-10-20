@@ -1,17 +1,24 @@
 import React from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { BrowserRouter } from 'react-router-dom';
 
-const root = createRoot(document.getElementById('root'));
-
-root.render(
+const container = document.getElementById('root');
+const tree = (
   <BrowserRouter>
     <App />
   </BrowserRouter>
 );
+
+// Marketing pages ship prerendered HTML (scripts/prerender.js). The inline
+// script in index.html empties #root when the HTML doesn't match this URL.
+if (container.hasAttribute('data-prerendered') && container.firstElementChild) {
+  hydrateRoot(container, tree);
+} else {
+  createRoot(container).render(tree);
+}
 
 reportWebVitals();
 

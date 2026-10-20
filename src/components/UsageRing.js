@@ -44,7 +44,7 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                 onClick={handleClick}
                 className="relative block rounded-full transition-transform hover:scale-110"
                 style={{ width: size, height: size }}
-                aria-label={`Usage: ${pct}% used — view details`}
+                aria-label={`Usage: ${pct}% used. View details`}
             >
                 <svg width={size} height={size} className="-rotate-90">
                     <circle

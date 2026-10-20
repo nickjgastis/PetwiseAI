@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { FaCheck, FaCrown, FaArrowLeft, FaCreditCard, FaGraduationCap, FaBolt } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
 import { useNavigate } from 'react-router-dom';
+import { PRICES } from '../constants/pricing';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -26,11 +27,6 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
     const isStudentPlan = user?.plan_label === 'student' &&
         user?.subscription_end_date &&
         new Date(user.subscription_end_date) > new Date();
-
-    const PRICES = {
-        usd: { monthly: 79, yearly: 69, yearlyTotal: 828, symbol: '$', code: 'USD' },
-        cad: { monthly: 109, yearly: 96, yearlyTotal: 1152, symbol: '$', code: 'CAD' }
-    };
 
     const handleCheckout = async (planType) => {
         setIsLoading(planType);
