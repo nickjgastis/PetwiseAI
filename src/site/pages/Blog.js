@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import SiteLayout from '../SiteLayout';
 import { Seo } from '../seo';
 import { POSTS } from '../../content/blog/posts.generated';
-import { Container, CtaBand, Hero, Highlight, Reveal } from '../ui';
+import { Container, CtaBand, Highlight, Reveal } from '../ui';
 
 export const formatDate = (iso) =>
     new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
@@ -51,17 +51,14 @@ const Blog = () => {
                 description="Practical articles for veterinarians on AI scribes, faster SOAP notes, dictation, clinical workflow and getting home on time."
                 path="/blog"
             />
-            <Hero
-                eyebrow="Blog"
-                title={
-                    <>
-                        Notes from <Highlight>the clinic.</Highlight>
-                    </>
-                }
-                body="Ideas on AI in veterinary medicine, faster records and protecting your time."
-            />
             <section className="bg-white">
-                <Container className="pt-16 sm:pt-20 pb-24 sm:pb-32">
+                <Container className="pt-10 sm:pt-14 pb-24 sm:pb-32">
+                    <div className="mb-10 sm:mb-14 max-w-2xl">
+                        <h1 className="text-[2.25rem] sm:text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-[#13233f]">
+                            Notes from <Highlight dark>the clinic.</Highlight>
+                        </h1>
+                        <p className="mt-4 text-lg text-[#1a2b4a]/65">Ideas on AI in veterinary medicine, faster records and protecting your time.</p>
+                    </div>
                     {featured && (
                         <Reveal>
                             <PostCard post={featured} large />
