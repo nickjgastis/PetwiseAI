@@ -1,7 +1,7 @@
 import React from 'react';
 import SiteLayout from '../SiteLayout';
 import { Seo } from '../seo';
-import { Container, CtaBand, Hero, HeroPhoto, Highlight, Reveal } from '../ui';
+import { Container, CtaBand, Highlight, Reveal, SplitHero } from '../ui';
 
 const PLATFORMS = [
     {
@@ -23,35 +23,30 @@ const Install = () => (
             description="Install PetWise on your phone in seconds. Dictate SOAP notes between rooms and they sync to your desktop automatically. No app store needed."
             path="/install"
         />
-        <Hero
+        <SplitHero
             eyebrow="Mobile app"
             title={
                 <>
-                    PetWise, <Highlight>in your pocket.</Highlight>
+                    PetWise, <Highlight dark>in your pocket.</Highlight>
                 </>
             }
             body="Install PetWise on your phone in seconds, no app store required. Dictate between rooms and finish on your desktop."
-            media={
-                <HeroPhoto
-                    src="/site/vet-phone.jpg"
-                    alt="A veterinarian checking PetWise on his phone outside the clinic"
-                    className="object-[50%_30%]"
-                />
+            image="/site/vet-phone.jpg"
+            imageAlt="A veterinarian checking PetWise on his phone outside the clinic"
+            imageClassName="object-[30%_center]"
+            badge={
+                <div className="hidden sm:flex items-center gap-4 rounded-2xl bg-white p-3 pr-6 shadow-[0_24px_50px_-20px_rgba(19,35,63,0.45)] ring-1 ring-[#13233f]/[0.06]">
+                    <img src="/PW QR CODE.png" alt="QR code to open PetWise on your phone" className="w-20 h-20" />
+                    <div>
+                        <p className="text-[15px] font-semibold text-[#13233f]">Scan to open</p>
+                        <p className="text-[13px] text-[#1a2b4a]/55">Point your phone camera here</p>
+                    </div>
+                </div>
             }
         />
         <section className="bg-white">
             <Container className="pb-20 sm:pb-28">
-                <Reveal className="rounded-[28px] border border-[#e7ecf3] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-8">
-                    <img src="/PW QR CODE.png" alt="QR code to open PetWise on your phone" className="w-40 h-40 flex-shrink-0" loading="lazy" />
-                    <div className="text-center sm:text-left">
-                        <h2 className="text-2xl font-semibold tracking-tight text-[#13233f]">Scan to open on your phone</h2>
-                        <p className="mt-2 text-[16px] text-[#1a2b4a]/60">
-                            Point your phone camera at the code, or go to <span className="font-medium text-[#13233f]">petwise.vet</span>, then follow the steps below.
-                        </p>
-                    </div>
-                </Reveal>
-
-                <div className="mt-16 sm:mt-20 grid gap-5 md:grid-cols-2">
+                <div className="grid gap-5 md:grid-cols-2">
                     {PLATFORMS.map((p, i) => (
                         <Reveal key={p.name} delay={i * 90}>
                             <div className="h-full rounded-[28px] bg-[#f6f8fb] p-8 sm:p-10">

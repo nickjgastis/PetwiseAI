@@ -3,7 +3,7 @@ import SiteLayout from '../SiteLayout';
 import { Seo, organizationLd } from '../seo';
 import {
     CtaBand,
-    Hero,
+    SplitHero,
     Highlight,
     Photo,
     Reveal,
@@ -27,22 +27,28 @@ const About = () => (
             jsonLd={organizationLd}
         />
 
-        <Hero
+        <SplitHero
             eyebrow="About PetWise"
             title={
                 <>
-                    Built by a vet, <Highlight>for vets.</Highlight>
+                    Built by a vet, <Highlight dark>for vets.</Highlight>
                 </>
+            }
+            body="A father and son on a simple mission: give veterinarians their evenings back."
+            image="/site/founders.jpg"
+            imageAlt="Nick Gastis and Dr. Stacey Gastis fly fishing"
+            imageClassName="object-[center_60%]"
+        />
             }
             body="A father and son on a simple mission: give veterinarians their evenings back."
         />
 
-        <Section className="!pt-0">
+        <Section>
             <div className="grid lg:grid-cols-12 gap-12">
                 <Reveal className="lg:col-span-4">
                     <h2 className="text-[2rem] sm:text-[2.5rem] leading-[1.1] font-semibold tracking-[-0.025em] text-[#13233f]">Our story</h2>
                     <div className="mt-8 overflow-hidden rounded-[24px] aspect-[4/3] max-w-sm">
-                        <Photo src="/site/founders.jpg" alt="Nick Gastis and Dr. Stacey Gastis fly fishing" className="object-[center_60%]" />
+                        <Photo src="/site/dr-gastis.jpg" alt="Dr. Stacey Gastis, DVM, co-founder of PetWise" />
                     </div>
                 </Reveal>
                 <Reveal className="lg:col-span-7 lg:col-start-6 space-y-6 text-lg leading-relaxed text-[#1a2b4a]/70" delay={100}>

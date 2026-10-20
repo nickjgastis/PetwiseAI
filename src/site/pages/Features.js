@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, softwareLd } from '../seo';
-import { CtaBand, FeatureGrid, ImageBand, Highlight, PageHero, Section, SectionHeading, SignupButton, SplitFeature } from '../ui';
+import { CtaBand, FeatureGrid, ImageBand, Highlight, SplitHero, Section, SectionHeading, SignupButton, SplitFeature } from '../ui';
 
 const DOCUMENTATION = [
     { icon: FiClipboard, title: 'QuickSOAP', body: 'AI SOAP notes from the appointment or your dictation.', to: '/' },
@@ -43,21 +43,20 @@ const Features = () => (
             path="/features"
             jsonLd={softwareLd}
         />
-        <PageHero
-            below="tint"
+        <SplitHero
             eyebrow="Features"
             title={
                 <>
-                    Everything the record needs. <Highlight>Nothing it doesn’t.</Highlight>
+                    Everything the record needs. <Highlight dark>Nothing it doesn’t.</Highlight>
                 </>
             }
             body="PetWise brings documentation, clinical questions and client communication into one simple workspace."
             image="/site/laptop-soap.jpg"
             imageAlt="A veterinarian reviewing a PetWise SOAP note on a laptop"
-            photo
+            imageClassName="object-[30%_center]"
         >
-            <SignupButton placement="features_hero" variant="light" />
-        </PageHero>
+            <SignupButton placement="features_hero" />
+        </SplitHero>
 
         <Section tone="tint">
             <SectionHeading eyebrow="Documentation" title="Every kind of note, written for you." />

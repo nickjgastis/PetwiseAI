@@ -10,7 +10,7 @@ import {
     Eyebrow,
     FaqSection,
     FeatureGrid,
-    Hero,
+    SplitHero,
     Highlight,
     ImageBand,
     Reveal,
@@ -69,29 +69,33 @@ const Dictation = () => (
             jsonLd={[softwareLd, faqLd(FAQS)]}
         />
 
-        <Hero
+        <SplitHero
             eyebrow="Veterinary dictation"
             title={
                 <>
-                    Speak it. See it. <Highlight>Done.</Highlight>
+                    Speak it. See it. <Highlight dark>Done.</Highlight>
                 </>
             }
             body="Dictate on your phone between rooms. PetWise turns your voice into a finished SOAP note, and it is waiting on your desktop when you sit down."
             microcopy="Works on iPhone, Android and any modern browser."
             media={
-                <div className="flex justify-center" role="img" aria-label="Dictating on a phone, then the finished SOAP note appearing on desktop">
-                    <DemoStage host="petwise.vet" />
+                <div
+                    className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] px-4 py-10 sm:px-8 sm:py-14 flex justify-center shadow-[0_40px_80px_-30px_rgba(35,80,163,0.6)]"
+                    role="img"
+                    aria-label="Dictating on a phone, then the finished SOAP note appearing on desktop"
+                >
+                    <div aria-hidden className="absolute inset-0 bg-[radial-gradient(50%_50%_at_50%_40%,rgba(92,204,240,0.45)_0%,rgba(92,204,240,0)_70%)]" />
+                    <div className="relative w-full">
+                        <DemoStage host="petwise.vet" />
+                    </div>
                 </div>
             }
-            mediaClassName="max-w-3xl"
-            overlap="sm"
-            below="tint"
         >
-            <SignupButton placement="dictation_hero" variant="light" />
-            <ButtonLink to="/install" variant="glass">
+            <SignupButton placement="dictation_hero" />
+            <ButtonLink to="/install" variant="outline">
                 Get it on your phone
             </ButtonLink>
-        </Hero>
+        </SplitHero>
 
         <Section tone="tint">
             <SectionHeading eyebrow="How it works" title="Start on your phone. Finish on your desktop." />

@@ -192,6 +192,34 @@ export const Hero = ({ eyebrow, title, body, children, microcopy, media, mediaCl
     );
 };
 
+export const SplitHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imageClassName = '', media, badge, aspect = 'aspect-[4/3] lg:aspect-[5/6]' }) => (
+    <section className="relative -mt-[76px] overflow-hidden bg-white">
+        <div aria-hidden className="absolute inset-0 bg-[radial-gradient(45%_60%_at_82%_35%,#e2edfc_0%,rgba(255,255,255,0)_70%)]" />
+        <Container className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 grid lg:grid-cols-12 gap-14 lg:gap-10 items-center">
+            <div className="site-hero-in lg:col-span-6">
+                {eyebrow && <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">{eyebrow}</p>}
+                <h1 className="mt-5 text-[2.75rem] sm:text-[3.75rem] lg:text-[4rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
+                    {title}
+                </h1>
+                {body && <p className="mt-6 max-w-lg text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
+                {children && <div className="mt-9 flex flex-col sm:flex-row gap-3">{children}</div>}
+                {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
+            </div>
+            <div className="site-hero-media relative lg:col-span-6 lg:col-start-7">
+                {media || (
+                    <div className="relative">
+                        <div aria-hidden className="absolute -right-3 -bottom-3 sm:-right-6 sm:-bottom-6 w-2/3 h-2/3 rounded-[36px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)]" />
+                        <div className={`relative overflow-hidden rounded-[32px] shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)] ${aspect}`}>
+                            <img src={image} alt={imageAlt} className={`w-full h-full object-cover ${imageClassName}`} fetchpriority="high" />
+                        </div>
+                        {badge && <div className="absolute left-3 bottom-3 sm:-left-8 sm:bottom-10">{badge}</div>}
+                    </div>
+                )}
+            </div>
+        </Container>
+    </section>
+);
+
 export const HeroPhoto = ({ src, alt, className = '', aspect = 'aspect-[16/10] sm:aspect-[2/1]' }) => (
     <div className={`overflow-hidden rounded-[28px] ring-1 ring-white/15 shadow-[0_60px_120px_-40px_rgba(19,35,63,0.55)] ${aspect}`}>
         <img src={src} alt={alt} className={`w-full h-full object-cover ${className}`} fetchpriority="high" />
