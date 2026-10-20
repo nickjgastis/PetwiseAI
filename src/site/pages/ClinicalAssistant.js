@@ -60,7 +60,7 @@ const ClinicalAssistant = () => (
                         Clinical answers <Highlight dark>in seconds.</Highlight>
                     </h1>
                     <p className="mt-5 text-lg text-[#1a2b4a]/65 text-balance">
-                        Pick a real clinical question and see how PetQuery answers. Two free, no sign up.
+                        Pick a real clinical question and see how PetQuery answers. No sign up needed.
                     </p>
                 </div>
                 <div className="site-hero-media mt-10 sm:mt-12 max-w-5xl mx-auto">

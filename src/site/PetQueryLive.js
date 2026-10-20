@@ -1,11 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import FormattedMessage from '../components/FormattedQueryMessage';
-import { DEMO_API, demoHeaders, demoRequest, saveDemoToken } from '../pages/landing/campaign/demoClient';
+import { DEMO_API } from '../pages/landing/campaign/demoClient';
 import { SignupButton } from './ui';
-
-const LIMIT = 2;
-const USED_KEY = 'pw_site_pq_used';
 
 const SUGGESTIONS = [
     { id: 'toxicology', category: 'Toxicology', question: '100g of 70% dark chocolate ingested by a 12 kg dog. Toxic dose, decontamination and treatment.' },
@@ -33,8 +30,6 @@ const extractSources = (content) => {
 
 const withoutSources = (content) => SOURCE_PATTERNS.reduce((c, p) => c.replace(p, '').trim(), content);
 
-const usedLocally = () => Number(localStorage.getItem(USED_KEY) || 0);
-
 const SendIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
         <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
@@ -59,27 +54,15 @@ const BookIcon = () => (
     </svg>
 );
 
-// Public PetQuery demo, styled like the in-app QuickQuery. Preset questions only (the API rejects
-// anything else and caches answers), two per browser via localStorage plus the API token.
+// Public PetQuery demo, styled like the in-app QuickQuery. Preset questions only; the API rejects
+// anything else and caches each answer, so there's no usage limit.
 const PetQueryLive = () => {
     const [messages, setMessages] = useState([]);
-    const [remaining, setRemaining] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [copied, setCopied] = useState(null);
     const [sourcesOpen, setSourcesOpen] = useState({});
     const listRef = useRef(null);
-
-    useEffect(() => {
-        const local = Math.max(0, LIMIT - usedLocally());
-        setRemaining(local);
-        demoRequest({ method: 'get', url: `${DEMO_API}/api/demo/petquery?scope=site` })
-            .then(({ data }) => {
-                saveDemoToken(data.token);
-                setRemaining(Math.min(local, data.remaining));
-            })
-            .catch(() => {});
-    }, []);
 
     useEffect(() => {
         const el = listRef.current;
@@ -89,37 +72,28 @@ const PetQueryLive = () => {
         el.scrollTo({ top, behavior: 'smooth' });
     }, [messages, loading]);
 
-    const locked = remaining === 0;
-
     const asked = messages.filter((m) => m.role === 'user').map((m) => m.id);
     const unasked = SUGGESTIONS.filter((s) => !asked.includes(s.id));
 
     const ask = async (s) => {
-        if (!s || loading || locked) return;
+        if (!s || loading) return;
 
         setError('');
         setMessages((prev) => [...prev, { role: 'user', id: s.id, content: s.question }]);
         setLoading(true);
 
         try {
-            const { data } = await demoRequest({
-                method: 'post',
-                url: `${DEMO_API}/api/demo/petquery`,
-                data: { questionId: s.id, scope: 'site' },
-                headers: demoHeaders()
+            const res = await fetch(`${DEMO_API}/api/demo/site-petquery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ questionId: s.id })
             });
-            saveDemoToken(data.token);
-            localStorage.setItem(USED_KEY, String(usedLocally() + 1));
+            const data = await res.json();
+            if (!res.ok || !data.answer) throw new Error(data.error || 'Query failed');
             setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }]);
-            setRemaining(Math.min(data.remaining, Math.max(0, LIMIT - usedLocally())));
-            window.gtag?.('event', 'site_petquery_demo', { page_path: window.location.pathname });
-        } catch (err) {
-            if (err.response?.data?.error === 'DEMO_LIMIT') {
-                localStorage.setItem(USED_KEY, String(LIMIT));
-                setRemaining(0);
-            } else {
-                setError('Couldn’t run that question. Try again.');
-            }
+            window.gtag?.('event', 'site_petquery_demo', { page_path: window.location.pathname, question: s.id });
+        } catch {
+            setError('Couldn’t run that question. Try again.');
             setMessages((prev) => prev.slice(0, -1));
         } finally {
             setLoading(false);
@@ -138,11 +112,8 @@ const PetQueryLive = () => {
 
     return (
         <div className="rounded-[24px] bg-white ring-1 ring-[#13233f]/[0.08] shadow-[0_40px_80px_-40px_rgba(19,35,63,0.45)] overflow-hidden flex flex-col h-[600px] sm:h-[620px] text-left">
-            <div className="flex justify-between sm:justify-center items-center p-4 border-b border-gray-200 bg-white relative">
+            <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white">
                 <h2 className="text-2xl sm:text-3xl font-bold text-primary-600">PetQuery</h2>
-                <span className="sm:absolute sm:right-4 text-xs font-semibold text-[#3468bd] bg-[#eef4fc] px-2.5 py-1 rounded-full">
-                    {remaining == null ? '…' : `${remaining} of ${LIMIT} free left`}
-                </span>
             </div>
 
             <div ref={listRef} className="relative flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-6 space-y-4">
@@ -160,7 +131,6 @@ const PetQueryLive = () => {
                                 <button
                                     key={s.id}
                                     type="button"
-                                    disabled={locked}
                                     onClick={() => ask(s)}
                                     className="flex flex-col items-start text-left bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -234,13 +204,13 @@ const PetQueryLive = () => {
 
             <div className="bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)] p-3 sm:p-4">
                 {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-                {locked ? (
+                {!loading && unasked.length === 0 ? (
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-[#f5f8fd] px-5 py-4">
                         <p className="text-[15px] text-[#13233f]">
-                            <span className="font-semibold">That’s your 2 free questions.</span>{' '}
+                            <span className="font-semibold">Want to ask your own?</span>{' '}
                             <span className="text-[#1a2b4a]/60">Unlimited PetQuery with a free 10 day trial.</span>
                         </p>
-                        <SignupButton placement="petquery_demo_limit" className="!py-2.5 shrink-0">
+                        <SignupButton placement="petquery_demo_done" className="!py-2.5 shrink-0">
                             Start free
                         </SignupButton>
                     </div>
