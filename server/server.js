@@ -1785,6 +1785,10 @@ app.post('/create-checkout-session', async (req, res) => {
         // opening a second checkout (which would bill both).
         const existingSubs = await stripe.subscriptions.list({ customer: customer.id, status: 'all', limit: 10 });
         const liveSub = existingSubs.data.find((s) => ['active', 'trialing', 'past_due'].includes(s.status));
+        if (liveSub?.status === 'past_due') {
+            const payUrl = await pastDueInvoiceUrl(customer.id);
+            if (payUrl) return res.json({ payUrl });
+        }
         if (liveSub) {
             const item = liveSub.items.data[0];
             const targetPrice = PRICE_IDS[`${planType}_${liveSub.currency}`] || priceId;
@@ -3053,6 +3057,16 @@ app.get('/admin-metrics', requireAdmin, async (req, res) => {
     }
 });
 
+// Stripe-hosted page for the unpaid invoice of a past_due subscription. Paying it
+// fires invoice.payment_succeeded, which restores the paid plan.
+const pastDueInvoiceUrl = async (customerId) => {
+    const subs = await stripe.subscriptions.list({ customer: customerId, status: 'past_due', limit: 1 });
+    const invoiceId = subs.data[0]?.latest_invoice;
+    if (!invoiceId) return null;
+    const invoice = await stripe.invoices.retrieve(typeof invoiceId === 'string' ? invoiceId : invoiceId.id);
+    return invoice.status === 'open' ? invoice.hosted_invoice_url : null;
+};
+
 // ================ CUSTOMER PORTAL ENDPOINT ================
 // Creates a Stripe customer portal session for billing management
 app.post('/create-customer-portal', async (req, res) => {
@@ -3074,13 +3088,18 @@ app.post('/create-customer-portal', async (req, res) => {
             return res.status(404).json({ error: 'No billing account found' });
         }
 
+        if (flow === 'pay_past_due') {
+            const payUrl = await pastDueInvoiceUrl(userData.stripe_customer_id);
+            if (payUrl) return res.json({ url: payUrl });
+        }
+
         // Create customer portal session
         const returnUrl = `${appOrigin(req)}/dashboard/profile`;
         const session = await stripe.billingPortal.sessions.create({
             customer: userData.stripe_customer_id,
             return_url: returnUrl,
             // flow=payment_method_update drops the user straight onto the "update card" form
-            ...(flow === 'payment_method_update' && {
+            ...((flow === 'payment_method_update' || flow === 'pay_past_due') && {
                 flow_data: {
                     type: 'payment_method_update',
                     after_completion: { type: 'redirect', redirect: { return_url: returnUrl } }

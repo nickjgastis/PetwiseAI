@@ -28,9 +28,8 @@ export function getTier(userRow) {
 
     if (userRow.plan_label === 'student' && endDate && endDate > now) return 'student';
 
-    const graceEnd = userRow.grace_period_end ? new Date(userRow.grace_period_end) : null;
-    const inGrace = userRow.subscription_status === 'past_due' && (!graceEnd || graceEnd > now);
-    const hasActiveStatus = userRow.subscription_status === 'active' || inGrace;
+    // past_due drops to free right away; paying the open invoice restores 'active'.
+    const hasActiveStatus = userRow.subscription_status === 'active';
     if (hasActiveStatus && ['monthly', 'yearly'].includes(userRow.subscription_interval)) return 'paid';
     if (hasActiveStatus && ['trial', 'stripe_trial'].includes(userRow.subscription_interval)
         && endDate && endDate > now) return 'trial';

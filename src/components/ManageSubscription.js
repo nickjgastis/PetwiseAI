@@ -51,6 +51,10 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
             const session = await response.json();
             if (!response.ok) throw new Error(session?.error || 'Could not change plan');
+            if (session.payUrl) {
+                window.location.href = session.payUrl;
+                return;
+            }
 
             if (session.switched) {
                 if (onSubscriptionChange) onSubscriptionChange();
@@ -147,6 +151,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
     const getCurrentPlanLabel = () => {
         if (isStudentPlan) return '🎓 Student Access';
+        if (subscriptionStatus === 'past_due') return 'Free Plan (payment past due)';
         if (subscriptionInterval === 'monthly') return 'Monthly Plan';
         if (subscriptionInterval === 'yearly') return 'Yearly Plan';
         return 'Free Plan';

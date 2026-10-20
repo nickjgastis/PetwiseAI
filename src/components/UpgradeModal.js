@@ -72,6 +72,10 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
             });
 
             const session = await response.json();
+            if (session?.payUrl) {
+                window.location.href = session.payUrl;
+                return;
+            }
             if (session?.switched) {
                 window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
                 if (onSubscribed) onSubscribed();

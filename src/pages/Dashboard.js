@@ -1532,7 +1532,7 @@ const Dashboard = () => {
                                     <div className="w-6 h-6 rounded-md flex items-center justify-center mr-2" style={{ background: 'rgba(214,69,69,0.3)' }}>
                                         <span className="text-[10px]">💳</span>
                                     </div>
-                                    <span className="text-[11px]">Update your card</span>
+                                    <span className="text-[11px]">Payment past due</span>
                                 </Link>
                             </li>
                         )}
