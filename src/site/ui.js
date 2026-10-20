@@ -114,7 +114,7 @@ export const Highlight = ({ dark = false, children }) => (
 // Photo bleeds off the right edge and fades into the background behind the copy. Below lg it stacks under the copy.
 export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imagePosition = 'center', badge }) => (
     <section className="relative -mt-[76px] overflow-hidden bg-[#f6f1ec]">
-        <div className="hidden lg:block absolute inset-y-0 right-0 w-[64%] [mask-image:linear-gradient(to_right,transparent,black_38%)]">
+        <div className="hidden lg:block absolute inset-y-0 right-0 w-[62%] [mask-image:linear-gradient(to_right,transparent_8%,black_52%)]">
             <img src={image} alt={imageAlt} className="w-full h-full object-cover" style={{ objectPosition: imagePosition }} fetchpriority="high" />
         </div>
         <Container className="relative pt-36 sm:pt-44 lg:pt-40 pb-0 lg:pb-24 lg:min-h-[720px] lg:flex lg:flex-col lg:justify-center">

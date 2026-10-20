@@ -117,7 +117,7 @@ const Home = () => (
             eyebrow="Veterinary AI scribe"
             title={
                 <>
-                    Your records, <Highlight dark>done.</Highlight>
+                    Finish your notes <Highlight dark>before you leave.</Highlight>
                 </>
             }
             body="PetWise listens to the appointment and writes the SOAP note for you. Built by a veterinarian, for veterinarians."
