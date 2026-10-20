@@ -39,9 +39,6 @@ const About = () => (
             imageAlt="Nick Gastis and Dr. Stacey Gastis fly fishing"
             imageClassName="object-[center_60%]"
         />
-            }
-            body="A father and son on a simple mission: give veterinarians their evenings back."
-        />
 
         <Section>
             <div className="grid lg:grid-cols-12 gap-12">

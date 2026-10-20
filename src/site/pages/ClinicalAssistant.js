@@ -63,7 +63,7 @@ const ClinicalAssistant = () => (
                         Pick a real clinical question and see how PetQuery answers. No sign up needed.
                     </p>
                 </div>
-                <div className="site-hero-media mt-10 sm:mt-12 max-w-5xl mx-auto">
+                <div className="site-hero-media mt-8 sm:mt-12 max-w-5xl -mx-2 sm:mx-auto">
                     <PetQueryLive />
                 </div>
             </Container>

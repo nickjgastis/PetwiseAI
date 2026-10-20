@@ -117,19 +117,19 @@ export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, im
         <div className="hidden lg:block absolute inset-y-0 right-0 w-[62%] [mask-image:linear-gradient(to_right,transparent_8%,black_52%)]">
             <img src={image} alt={imageAlt} className="w-full h-full object-cover" style={{ objectPosition: imagePosition }} fetchpriority="high" />
         </div>
-        <Container className="relative pt-36 sm:pt-44 lg:pt-40 pb-0 lg:pb-24 lg:min-h-[720px] lg:flex lg:flex-col lg:justify-center">
-            <div className="site-hero-in max-w-xl">
+        <Container className="relative pt-32 sm:pt-44 lg:pt-40 pb-0 lg:pb-24 lg:min-h-[720px] lg:flex lg:flex-col lg:justify-center">
+            <div className="site-hero-in max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
                 {eyebrow && <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">{eyebrow}</p>}
                 <h1 className="mt-5 text-[2.75rem] sm:text-[4rem] lg:text-[4.5rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
                     {title}
                 </h1>
-                {body && <p className="mt-6 max-w-lg text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
-                {children && <div className="mt-9 flex flex-col sm:flex-row gap-3">{children}</div>}
+                {body && <p className="mt-6 max-w-lg mx-auto lg:mx-0 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
+                {children && <div className="mt-9 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">{children}</div>}
                 {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
             </div>
-            {badge && <div className="site-hero-media mt-10 lg:mt-0 lg:absolute lg:right-8 lg:bottom-32">{badge}</div>}
+            {badge && <div className="site-hero-media mt-10 flex justify-center lg:block lg:mt-0 lg:absolute lg:right-8 lg:bottom-32">{badge}</div>}
         </Container>
-        <img src={image} alt="" aria-hidden className="lg:hidden relative mt-12 w-full aspect-[4/3] sm:aspect-[16/9] object-cover" style={{ objectPosition: imagePosition }} />
+        <img src={image} alt="" aria-hidden className="lg:hidden relative mt-10 w-full aspect-[4/3] sm:aspect-[16/9] object-cover" style={{ objectPosition: imagePosition }} />
     </section>
 );
 
@@ -169,7 +169,7 @@ export const Hero = ({ eyebrow, title, body, children, microcopy, media, mediaCl
                     </div>
                     {media && (
                         <div className={`site-hero-media relative z-10 mx-auto mt-16 sm:mt-20 ${mediaClassName} ${pull}`}>
-                            <div aria-hidden className="absolute -inset-x-16 -top-16 bottom-1/3 bg-[radial-gradient(50%_50%_at_50%_50%,rgba(92,204,240,0.35)_0%,rgba(92,204,240,0)_70%)] blur-2xl" />
+                            <div aria-hidden className="absolute -inset-x-4 sm:-inset-x-16 -top-16 bottom-1/3 bg-[radial-gradient(50%_50%_at_50%_50%,rgba(92,204,240,0.35)_0%,rgba(92,204,240,0)_70%)] blur-2xl" />
                             <div className="relative">{media}</div>
                         </div>
                     )}
@@ -183,14 +183,14 @@ export const Hero = ({ eyebrow, title, body, children, microcopy, media, mediaCl
 export const SplitHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imageClassName = '', media, badge, badgeClassName = 'left-3 bottom-3 sm:-left-8 sm:bottom-10', aspect = 'aspect-[4/3] lg:aspect-[5/6]' }) => (
     <section className="relative -mt-[76px] overflow-hidden bg-white">
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(45%_60%_at_82%_35%,#e2edfc_0%,rgba(255,255,255,0)_70%)]" />
-        <Container className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 grid lg:grid-cols-12 gap-14 lg:gap-10 items-center">
-            <div className="site-hero-in lg:col-span-6">
+        <Container className="relative pt-28 sm:pt-40 pb-14 sm:pb-24 grid lg:grid-cols-12 gap-12 lg:gap-10 items-center">
+            <div className="site-hero-in lg:col-span-6 text-center lg:text-left">
                 {eyebrow && <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">{eyebrow}</p>}
                 <h1 className="mt-5 text-[2.75rem] sm:text-[3.75rem] lg:text-[4rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
                     {title}
                 </h1>
-                {body && <p className="mt-6 max-w-lg text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
-                {children && <div className="mt-9 flex flex-col sm:flex-row gap-3">{children}</div>}
+                {body && <p className="mt-6 max-w-lg mx-auto lg:mx-0 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
+                {children && <div className="mt-9 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">{children}</div>}
                 {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
             </div>
             <div className="site-hero-media relative lg:col-span-6 lg:col-start-7">

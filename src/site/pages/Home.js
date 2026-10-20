@@ -127,11 +127,11 @@ const Home = () => (
             imagePosition="55% 40%"
             badge={
                 PRESS.length > 0 && (
-                    <div className="inline-flex items-center gap-4 rounded-[20px] bg-white/90 backdrop-blur p-3 pl-5 shadow-[0_24px_50px_-20px_rgba(19,35,63,0.45)] ring-1 ring-[#13233f]/[0.06]">
+                    <div className="inline-flex items-center gap-3 sm:gap-4 rounded-[20px] bg-white/90 backdrop-blur p-2.5 pl-4 sm:p-3 sm:pl-5 shadow-[0_24px_50px_-20px_rgba(19,35,63,0.45)] ring-1 ring-[#13233f]/[0.06]">
                         <span className="text-[12px] font-semibold tracking-[0.16em] uppercase text-[#13233f]/50">As seen on</span>
                         {PRESS.map((p) => (
-                            <span key={p.name} className="inline-flex items-center rounded-2xl bg-[#13233f] px-5 py-3.5">
-                                <img src={p.logo} alt={p.name} className="h-7 w-auto" />
+                            <span key={p.name} className="inline-flex items-center rounded-2xl bg-[#13233f] px-4 py-3 sm:px-5 sm:py-3.5">
+                                <img src={p.logo} alt={p.name} className="h-6 sm:h-7 w-auto" />
                             </span>
                         ))}
                     </div>
@@ -162,7 +162,7 @@ const Home = () => (
             <div className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white">
                 <div aria-hidden className="absolute inset-0 bg-[radial-gradient(55%_50%_at_50%_0%,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_70%)]" />
                 <div aria-hidden className="absolute inset-0 bg-[radial-gradient(40%_50%_at_50%_85%,rgba(92,204,240,0.45)_0%,rgba(92,204,240,0)_70%)]" />
-                <Container className="relative pt-20 sm:pt-28 text-center">
+                <Container className="relative pt-16 sm:pt-28 text-center">
                     <Reveal>
                         <h2 className="mx-auto max-w-3xl text-[2.25rem] sm:text-[3.5rem] leading-[1.04] font-semibold tracking-[-0.04em] text-balance">
                             On your desk. <Highlight>In your pocket.</Highlight>
@@ -171,7 +171,7 @@ const Home = () => (
                             Record on your phone between rooms. The finished SOAP is waiting on your desktop when you sit down.
                         </p>
                     </Reveal>
-                    <Reveal delay={120} className="mx-auto mt-14 sm:mt-16 max-w-5xl -mb-16 sm:-mb-28">
+                    <Reveal delay={120} className="-mx-2 sm:mx-auto mt-10 sm:mt-16 max-w-5xl -mb-3 sm:-mb-28">
                         <img
                             src="/site/hero-desk-phone-crop.png"
                             alt="PetWise QuickSOAP writing a SOAP note on desktop and phone"

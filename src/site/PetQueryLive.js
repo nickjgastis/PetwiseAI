@@ -111,31 +111,31 @@ const PetQueryLive = () => {
     };
 
     return (
-        <div className="rounded-[24px] bg-white ring-1 ring-[#13233f]/[0.08] shadow-[0_40px_80px_-40px_rgba(19,35,63,0.45)] overflow-hidden flex flex-col h-[600px] sm:h-[620px] text-left">
-            <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white">
-                <h2 className="text-2xl sm:text-3xl font-bold text-primary-600">PetQuery</h2>
+        <div className="rounded-[20px] sm:rounded-[24px] bg-white ring-1 ring-[#13233f]/[0.08] shadow-[0_40px_80px_-40px_rgba(19,35,63,0.45)] overflow-hidden flex flex-col h-[min(76svh,640px)] min-h-[520px] sm:h-[620px] text-left">
+            <div className="flex justify-center items-center p-3 sm:p-4 border-b border-gray-200 bg-white">
+                <h2 className="text-xl sm:text-3xl font-bold text-primary-600">PetQuery</h2>
             </div>
 
-            <div ref={listRef} className="relative flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-6 space-y-4">
+            <div ref={listRef} className="relative flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
                 {messages.length === 0 && !loading && (
                     <>
-                        <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
-                            <strong className="block mb-1 text-sm font-semibold text-gray-700">Disclaimer:</strong>
-                            <p className="text-sm text-gray-600 leading-relaxed">
+                        <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 max-w-5xl mx-auto">
+                            <strong className="block mb-1 text-xs sm:text-sm font-semibold text-gray-700">Disclaimer:</strong>
+                            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
                                 PetQuery provides AI-generated responses for educational purposes only. These responses may contain inaccuracies and are not a substitute for
                                 professional veterinary judgment. Verify information before making any medical decisions.
                             </p>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4 max-w-6xl mx-auto">
                             {SUGGESTIONS.map((s) => (
                                 <button
                                     key={s.id}
                                     type="button"
                                     onClick={() => ask(s)}
-                                    className="flex flex-col items-start text-left bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="flex flex-col items-start text-left bg-white border border-gray-200 rounded-lg p-3.5 sm:p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <h4 className="text-primary-600 font-semibold mb-2 text-base">{s.category}</h4>
-                                    <p className="text-gray-700 text-sm leading-relaxed">{s.question}</p>
+                                    <h4 className="text-primary-600 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{s.category}</h4>
+                                    <p className="text-gray-700 text-[13px] sm:text-sm leading-relaxed">{s.question}</p>
                                 </button>
                             ))}
                         </div>
@@ -151,12 +151,12 @@ const PetQueryLive = () => {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className={`flex mb-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex mb-4 sm:mb-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             {m.role === 'user' ? (
-                                <div className="max-w-[85%] bg-[#3468bd] text-white rounded-2xl rounded-br-md px-5 py-4 whitespace-pre-wrap">{m.content}</div>
+                                <div className="max-w-[88%] sm:max-w-[85%] bg-[#3468bd] text-white text-[15px] sm:text-base rounded-2xl rounded-br-md px-4 py-3 sm:px-5 sm:py-4 whitespace-pre-wrap">{m.content}</div>
                             ) : (
-                                <div className="max-w-4xl w-full bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400 message-content">
+                                <div className="max-w-4xl w-full bg-primary-50 text-gray-800 text-[15px] sm:text-base rounded-2xl rounded-bl-md px-4 py-4 sm:px-5 sm:py-5 border-l-4 border-primary-400 message-content">
                                     <FormattedMessage content={withoutSources(m.content)} />
                                     <div className="flex items-center gap-1.5 mt-3">
                                         <button
@@ -194,7 +194,7 @@ const PetQueryLive = () => {
                 })}
 
                 {loading && (
-                    <div className="flex justify-start mb-6">
+                    <div className="flex justify-start mb-4 sm:mb-6">
                         <div className="shimmer-loader">
                             <span className="loader-text">Thinking...</span>
                         </div>
@@ -205,7 +205,7 @@ const PetQueryLive = () => {
             <div className="bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)] p-3 sm:p-4">
                 {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
                 {!loading && unasked.length === 0 ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-[#f5f8fd] px-5 py-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-[#f5f8fd] px-4 py-4 sm:px-5 text-center sm:text-left">
                         <p className="text-[15px] text-[#13233f]">
                             <span className="font-semibold">Want to ask your own?</span>{' '}
                             <span className="text-[#1a2b4a]/60">Unlimited PetQuery with a free 10 day trial.</span>
@@ -236,14 +236,14 @@ const PetQueryLive = () => {
                             <textarea
                                 disabled
                                 rows={1}
-                                placeholder={messages.length ? 'Pick another question above. Sign up to ask your own.' : 'Pick a question above. Sign up to ask your own.'}
-                                className="flex-1 min-h-[52px] px-4 py-3 text-base border-2 border-gray-300 rounded-2xl bg-gray-50 shadow-sm resize-none cursor-not-allowed"
+                                placeholder={messages.length ? 'Pick another question above' : 'Pick a question above to try it'}
+                                className="flex-1 min-w-0 h-12 sm:h-[52px] px-4 py-2.5 sm:py-3 text-[15px] sm:text-base border-2 border-gray-300 rounded-2xl bg-gray-50 shadow-sm resize-none cursor-not-allowed"
                             />
                             <button
                                 type="button"
                                 disabled
                                 aria-label="Send message"
-                                className="w-[52px] h-[52px] bg-gray-300 text-white rounded-full cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                                className="w-12 h-12 sm:w-[52px] sm:h-[52px] bg-gray-300 text-white rounded-full cursor-not-allowed flex items-center justify-center flex-shrink-0"
                             >
                                 <SendIcon />
                             </button>
