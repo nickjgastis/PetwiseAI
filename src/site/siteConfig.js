@@ -9,9 +9,9 @@ export const SOCIALS = {
 };
 
 export const NAV = [
-    { label: 'Features', to: '/features' },
     { label: 'Dictation', to: '/veterinary-dictation' },
     { label: 'Clinical Assistant', to: '/veterinary-clinical-assistant' },
+    { label: 'Features', to: '/features' },
     { label: 'Pricing', to: '/pricing' },
     { label: 'Blog', to: '/blog' }
 ];
