@@ -127,7 +127,7 @@ export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, im
                 {children && <div className="mt-9 flex flex-col sm:flex-row gap-3">{children}</div>}
                 {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
             </div>
-            {badge && <div className="site-hero-media mt-10 lg:mt-0 lg:absolute lg:right-8 lg:bottom-10">{badge}</div>}
+            {badge && <div className="site-hero-media mt-10 lg:mt-0 lg:absolute lg:right-8 lg:bottom-32">{badge}</div>}
         </Container>
         <img src={image} alt="" aria-hidden className="lg:hidden relative mt-12 w-full aspect-[4/3] sm:aspect-[16/9] object-cover" style={{ objectPosition: imagePosition }} />
     </section>

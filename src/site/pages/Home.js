@@ -117,7 +117,7 @@ const Home = () => (
             eyebrow="Veterinary AI scribe"
             title={
                 <>
-                    Leave the clinic with <Highlight dark>your records done.</Highlight>
+                    Your records, <Highlight dark>done.</Highlight>
                 </>
             }
             body="PetWise listens to the appointment and writes the SOAP note for you. Built by a veterinarian, for veterinarians."
@@ -127,11 +127,11 @@ const Home = () => (
             imagePosition="55% 40%"
             badge={
                 PRESS.length > 0 && (
-                    <div className="inline-flex items-center gap-3 rounded-2xl bg-white/90 backdrop-blur p-2.5 pl-4 shadow-[0_24px_50px_-20px_rgba(19,35,63,0.45)] ring-1 ring-[#13233f]/[0.06]">
-                        <span className="text-[11px] font-semibold tracking-[0.16em] uppercase text-[#13233f]/45">As seen on</span>
+                    <div className="inline-flex items-center gap-4 rounded-[20px] bg-white/90 backdrop-blur p-3 pl-5 shadow-[0_24px_50px_-20px_rgba(19,35,63,0.45)] ring-1 ring-[#13233f]/[0.06]">
+                        <span className="text-[12px] font-semibold tracking-[0.16em] uppercase text-[#13233f]/50">As seen on</span>
                         {PRESS.map((p) => (
-                            <span key={p.name} className="inline-flex items-center rounded-xl bg-[#13233f] px-4 py-2.5">
-                                <img src={p.logo} alt={p.name} className="h-5 w-auto" />
+                            <span key={p.name} className="inline-flex items-center rounded-2xl bg-[#13233f] px-5 py-3.5">
+                                <img src={p.logo} alt={p.name} className="h-7 w-auto" />
                             </span>
                         ))}
                     </div>
