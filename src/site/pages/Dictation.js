@@ -2,7 +2,7 @@ import React from 'react';
 import { FiClock, FiMic, FiMonitor, FiRefreshCw, FiSmartphone, FiType } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, softwareLd } from '../seo';
-import DemoStage from '../../pages/landing/campaign/DemoStage';
+import DictationDemo from '../DictationDemo';
 import {
     ButtonLink,
     CheckList,
@@ -80,13 +80,13 @@ const Dictation = () => (
             microcopy="Works on iPhone, Android and any modern browser."
             media={
                 <div
-                    className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] px-4 py-10 sm:px-8 sm:py-14 flex justify-center shadow-[0_40px_80px_-30px_rgba(35,80,163,0.6)]"
+                    className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] px-3 py-8 sm:px-6 sm:py-12 flex justify-center shadow-[0_40px_80px_-30px_rgba(35,80,163,0.6)]"
                     role="img"
                     aria-label="Dictating on a phone, then the finished SOAP note appearing on desktop"
                 >
                     <div aria-hidden className="absolute inset-0 bg-[radial-gradient(50%_50%_at_50%_40%,rgba(92,204,240,0.45)_0%,rgba(92,204,240,0)_70%)]" />
                     <div className="relative w-full">
-                        <DemoStage host="petwise.vet" />
+                        <DictationDemo />
                     </div>
                 </div>
             }
