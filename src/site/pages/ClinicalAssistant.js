@@ -2,7 +2,7 @@ import React from 'react';
 import { FiActivity, FiBookOpen, FiDroplet, FiList, FiMessageSquare, FiUsers } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, softwareLd } from '../seo';
-import { CtaBand, FaqSection, FeatureGrid, ImageBand, PageHero, Reveal, Section, SectionHeading, SignupButton, SplitFeature } from '../ui';
+import { CtaBand, FaqSection, FeatureGrid, ImageBand, Highlight, PageHero, Reveal, Section, SectionHeading, SignupButton, SplitFeature } from '../ui';
 import { PetQueryAnswer } from '../demos';
 
 const QUESTIONS = [
@@ -43,7 +43,7 @@ const FAQS = [
 ];
 
 const ClinicalAssistant = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="Veterinary Clinical AI Assistant | PetQuery by PetWise"
             description="PetQuery is a veterinary AI assistant for dosages, differentials, protocols and client explanations, built on trusted veterinary references. Included with PetWise."
@@ -51,26 +51,27 @@ const ClinicalAssistant = () => (
             jsonLd={[softwareLd, faqLd(FAQS)]}
         />
         <PageHero
+            below="tint"
             eyebrow="Veterinary clinical assistant"
-            title="Clinical answers in seconds."
+            title={
+                <>
+                    Clinical answers <Highlight>in seconds.</Highlight>
+                </>
+            }
             body="Ask PetQuery about dosages, differentials, protocols, or how to explain a diagnosis to a client. Stop digging through PDFs and tabs mid exam."
+            media={
+                <img
+                    src="/site/petquery.png"
+                    alt="PetQuery answering a question about fluoxetine and trazodone dosing"
+                    className="w-full h-auto rounded-[20px] ring-1 ring-white/15 shadow-[0_60px_120px_-40px_rgba(19,35,63,0.55)]"
+                    width="1600"
+                    height="1097"
+                    fetchpriority="high"
+                />
+            }
         >
-            <SignupButton placement="petquery_hero">Try PetQuery free</SignupButton>
+            <SignupButton placement="petquery_hero" variant="light">Try PetQuery free</SignupButton>
         </PageHero>
-
-        <section className="bg-white pb-20 sm:pb-28 px-5 sm:px-8">
-            <Reveal className="max-w-5xl mx-auto">
-                <div className="rounded-[28px] bg-gradient-to-br from-[#e9f6fd] to-[#f6f8fb] p-3 sm:p-5">
-                    <img
-                        src="/site/petquery.png"
-                        alt="PetQuery answering a question about fluoxetine and trazodone dosing"
-                        className="w-full h-auto rounded-[18px] shadow-[0_30px_60px_-30px_rgba(19,35,63,0.35)]"
-                        width="1600"
-                        height="1097"
-                    />
-                </div>
-            </Reveal>
-        </section>
 
         <Section tone="tint">
             <SectionHeading eyebrow="Ask it anything clinical" title="Questions vets ask PetQuery every day." />

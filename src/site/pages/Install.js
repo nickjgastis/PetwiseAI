@@ -1,7 +1,7 @@
 import React from 'react';
 import SiteLayout from '../SiteLayout';
 import { Seo } from '../seo';
-import { Container, CtaBand, Reveal, RoundedPhoto } from '../ui';
+import { Container, CtaBand, Hero, HeroPhoto, Highlight, Reveal } from '../ui';
 
 const PLATFORMS = [
     {
@@ -17,39 +17,38 @@ const PLATFORMS = [
 ];
 
 const Install = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="Get the PetWise App on iPhone and Android"
             description="Install PetWise on your phone in seconds. Dictate SOAP notes between rooms and they sync to your desktop automatically. No app store needed."
             path="/install"
         />
+        <Hero
+            eyebrow="Mobile app"
+            title={
+                <>
+                    PetWise, <Highlight>in your pocket.</Highlight>
+                </>
+            }
+            body="Install PetWise on your phone in seconds, no app store required. Dictate between rooms and finish on your desktop."
+            media={
+                <HeroPhoto
+                    src="/site/vet-phone.jpg"
+                    alt="A veterinarian checking PetWise on his phone outside the clinic"
+                    className="object-[50%_30%]"
+                />
+            }
+        />
         <section className="bg-white">
-            <Container className="pt-14 sm:pt-24 pb-20 sm:pb-28">
-                <div className="grid lg:grid-cols-12 gap-14 items-center">
-                    <div className="lg:col-span-7">
-                        <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd] mb-4">Mobile app</p>
-                        <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">PetWise, in your pocket.</h1>
-                        <p className="mt-6 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/65 max-w-xl">
-                            Install PetWise on your phone in seconds, no app store required. Dictate between rooms and finish on your desktop.
+            <Container className="pb-20 sm:pb-28">
+                <Reveal className="rounded-[28px] border border-[#e7ecf3] p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-8">
+                    <img src="/PW QR CODE.png" alt="QR code to open PetWise on your phone" className="w-40 h-40 flex-shrink-0" loading="lazy" />
+                    <div className="text-center sm:text-left">
+                        <h2 className="text-2xl font-semibold tracking-tight text-[#13233f]">Scan to open on your phone</h2>
+                        <p className="mt-2 text-[16px] text-[#1a2b4a]/60">
+                            Point your phone camera at the code, or go to <span className="font-medium text-[#13233f]">petwise.vet</span>, then follow the steps below.
                         </p>
                     </div>
-                    <div className="lg:col-span-4 lg:col-start-9">
-                        <div className="rounded-[28px] border border-[#e7ecf3] p-8 text-center">
-                            <img src="/PW QR CODE.png" alt="QR code to open PetWise on your phone" className="mx-auto w-48 h-48" loading="lazy" />
-                            <p className="mt-5 text-[15px] text-[#1a2b4a]/60">
-                                Scan with your phone camera, or go to <span className="font-medium text-[#13233f]">petwise.vet</span>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <Reveal className="mt-16 sm:mt-20">
-                    <RoundedPhoto
-                        src="/site/vet-phone.jpg"
-                        alt="A veterinarian checking PetWise on his phone outside the clinic"
-                        aspect="aspect-[16/10] sm:aspect-[21/9]"
-                        className="object-[50%_30%]"
-                    />
                 </Reveal>
 
                 <div className="mt-16 sm:mt-20 grid gap-5 md:grid-cols-2">

@@ -7,16 +7,16 @@ import { FOOTER, NAV, SOCIALS } from './siteConfig';
 import { ButtonLink, Container } from './ui';
 import './site.css';
 
-const Logo = () => (
+const Logo = ({ light = false }) => (
     <Link to="/" className="flex items-center gap-2.5" aria-label="PetWise home">
         <img src="/PW.png" alt="" className="w-8 h-8 object-contain" width="32" height="32" />
-        <span className="text-[17px] font-semibold tracking-tight text-[#13233f]">
-            PetWise<span className="font-normal text-[#13233f]/35">.vet</span>
+        <span className={`text-[17px] font-semibold tracking-tight transition-colors ${light ? 'text-white' : 'text-[#13233f]'}`}>
+            PetWise<span className={`font-normal ${light ? 'text-white/45' : 'text-[#13233f]/35'}`}>.vet</span>
         </span>
     </Link>
 );
 
-const Header = () => {
+const Header = ({ overlay = false }) => {
     const { isAuthenticated } = useAuth0();
     const [open, setOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -31,8 +31,14 @@ const Header = () => {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
+    const light = overlay && !scrolled && !open;
+
     const navClass = ({ isActive }) =>
-        `px-3 py-2 rounded-full text-[14px] transition-colors ${isActive ? 'text-[#13233f]' : 'text-[#13233f]/60 hover:text-[#13233f]'}`;
+        `px-3 py-2 rounded-full text-[14px] transition-colors ${
+            light
+                ? isActive ? 'text-white' : 'text-white/70 hover:text-white'
+                : isActive ? 'text-[#13233f]' : 'text-[#13233f]/60 hover:text-[#13233f]'
+        }`;
 
     return (
         <header
@@ -41,7 +47,7 @@ const Header = () => {
             }`}
         >
             <Container className="h-16 flex items-center justify-between">
-                <Logo />
+                <Logo light={light} />
                 <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
                     {NAV.map((n) => (
                         <NavLink key={n.to} to={n.to} className={navClass}>
@@ -51,15 +57,15 @@ const Header = () => {
                 </nav>
                 <div className="hidden lg:flex items-center gap-2">
                     {isAuthenticated ? (
-                        <ButtonLink to="/dashboard" className="!py-2.5 !px-5 !text-[14px]">
+                        <ButtonLink to="/dashboard" variant={light ? 'light' : 'primary'} className="!py-2.5 !px-5 !text-[14px]">
                             Open dashboard
                         </ButtonLink>
                     ) : (
                         <>
-                            <Link to="/login" className="px-3 py-2 text-[14px] text-[#13233f]/60 hover:text-[#13233f] transition-colors">
+                            <Link to="/login" className={`px-3 py-2 text-[14px] transition-colors ${light ? 'text-white/70 hover:text-white' : 'text-[#13233f]/60 hover:text-[#13233f]'}`}>
                                 Sign in
                             </Link>
-                            <ButtonLink to="/signup" trackAs="signup_header" arrow={false} className="!py-2.5 !px-5 !text-[14px]">
+                            <ButtonLink to="/signup" trackAs="signup_header" arrow={false} variant={light ? 'light' : 'primary'} className="!py-2.5 !px-5 !text-[14px]">
                                 Start free
                             </ButtonLink>
                         </>
@@ -67,7 +73,7 @@ const Header = () => {
                 </div>
                 <button
                     type="button"
-                    className="lg:hidden -mr-2 p-2 text-[#13233f]"
+                    className={`lg:hidden -mr-2 p-2 transition-colors ${light ? 'text-white' : 'text-[#13233f]'}`}
                     onClick={() => setOpen((v) => !v)}
                     aria-expanded={open}
                     aria-label={open ? 'Close menu' : 'Open menu'}
@@ -151,7 +157,7 @@ const Footer = () => (
     </footer>
 );
 
-const SiteLayout = ({ children }) => {
+const SiteLayout = ({ overlayHeader = false, children }) => {
     const { pathname, hash } = useLocation();
 
     useEffect(() => {
@@ -160,7 +166,7 @@ const SiteLayout = ({ children }) => {
 
     return (
         <div className="site min-h-screen bg-white text-[#1a2b4a] antialiased">
-            <Header />
+            <Header overlay={overlayHeader} />
             <main>{children}</main>
             <Footer />
         </div>

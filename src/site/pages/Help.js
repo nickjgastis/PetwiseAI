@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { FiMail, FiSmartphone, FiZap } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd } from '../seo';
-import { ButtonLink, Container, CtaBand, FaqList, ImageBand, Reveal, Section } from '../ui';
+import { ButtonLink, Container, CtaBand, FaqList, Hero, Highlight, ImageBand, Reveal, Section } from '../ui';
 
 const GROUPS = [
     {
@@ -106,18 +106,25 @@ const CARDS = [
 ];
 
 const Help = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="Help Center | PetWise"
             description="Answers to common questions about PetWise: QuickSOAP, dictation, PetQuery, templates, saved records, billing and installing the app on your phone."
             path="/help"
             jsonLd={faqLd(ALL_FAQS)}
         />
+        <Hero
+            eyebrow="Help center"
+            title={
+                <>
+                    How can <Highlight>we help?</Highlight>
+                </>
+            }
+            body="Quick answers, setup guides and a real person on the other end of support@petwise.vet."
+        />
         <section className="bg-white">
-            <Container className="pt-14 sm:pt-24 pb-14">
-                <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd] mb-4">Help center</p>
-                <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">How can we help?</h1>
-                <div className="mt-12 grid gap-4 md:grid-cols-3">
+            <Container className="pt-16 sm:pt-20 pb-14">
+                <div className="grid gap-4 md:grid-cols-3">
                     {CARDS.map(({ icon: Icon, title, body, link }) => (
                         <div key={title} className="rounded-[24px] bg-[#f6f8fb] p-7">
                             <Icon className="text-[20px] text-[#3468bd]" aria-hidden />

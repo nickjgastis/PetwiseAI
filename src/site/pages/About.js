@@ -1,7 +1,16 @@
 import React from 'react';
 import SiteLayout from '../SiteLayout';
 import { Seo, organizationLd } from '../seo';
-import { Container, CtaBand, Photo, Reveal, Section, SectionHeading, Testimonials } from '../ui';
+import {
+    CtaBand,
+    Hero,
+    Highlight,
+    Photo,
+    Reveal,
+    Section,
+    SectionHeading,
+    Testimonials
+} from '../ui';
 
 const VALUES = [
     { title: 'Built with vets', body: 'Every feature starts in the clinic. If it does not save a vet time on a real day, it does not ship.' },
@@ -10,7 +19,7 @@ const VALUES = [
 ];
 
 const About = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="About PetWise | Built by a Veterinarian and a Developer"
             description="PetWise was founded by Dr. Stacey Gastis, DVM, with over 30 years in clinical practice, and his son Nick Gastis, a developer, to give veterinarians their time back."
@@ -18,19 +27,15 @@ const About = () => (
             jsonLd={organizationLd}
         />
 
-        <section className="bg-white">
-            <Container className="pt-14 sm:pt-24 pb-14 sm:pb-20">
-                <div className="max-w-3xl">
-                    <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd] mb-4">About PetWise</p>
-                    <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">
-                        Built by a vet, for vets.
-                    </h1>
-                    <p className="mt-6 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/65 max-w-xl">
-                        A father and son on a simple mission: give veterinarians their evenings back.
-                    </p>
-                </div>
-            </Container>
-        </section>
+        <Hero
+            eyebrow="About PetWise"
+            title={
+                <>
+                    Built by a vet, <Highlight>for vets.</Highlight>
+                </>
+            }
+            body="A father and son on a simple mission: give veterinarians their evenings back."
+        />
 
         <Section className="!pt-0">
             <div className="grid lg:grid-cols-12 gap-12">

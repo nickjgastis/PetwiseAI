@@ -4,7 +4,7 @@ import { FiCheck } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, softwareLd } from '../seo';
 import { FREE_DAILY, PLAN_FEATURES, PRICES, TRIAL_DAYS } from '../../constants/pricing';
-import { Container, CtaBand, FaqSection, ImageBand, Reveal, SignupButton } from '../ui';
+import { Container, CtaBand, FaqSection, Hero, Highlight, ImageBand, Reveal, SignupButton } from '../ui';
 
 const FAQS = [
     {
@@ -36,24 +36,24 @@ const FAQS = [
 const PlanCard = ({ name, price, unit, note, features, cta, featured = false, badge }) => (
     <div
         className={`relative h-full rounded-[28px] p-8 sm:p-9 flex flex-col ${
-            featured ? 'bg-[#13233f] text-white shadow-[0_40px_80px_-40px_rgba(19,35,63,0.7)]' : 'bg-white border border-[#e7ecf3]'
+            featured ? 'bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white shadow-[0_40px_80px_-40px_rgba(35,80,163,0.8)]' : 'bg-white border border-[#e7ecf3]'
         }`}
     >
         {badge && (
-            <span className="absolute top-8 right-8 rounded-full bg-[#5cccf0]/20 text-[#7fd6f3] px-3 py-1 text-[12px] font-semibold">{badge}</span>
+            <span className="absolute top-8 right-8 rounded-full bg-white/15 text-white px-3 py-1 text-[12px] font-semibold">{badge}</span>
         )}
-        <h2 className={`text-[15px] font-semibold ${featured ? 'text-white/70' : 'text-[#13233f]/60'}`}>{name}</h2>
+        <h2 className={`text-[15px] font-semibold ${featured ? 'text-white/80' : 'text-[#13233f]/60'}`}>{name}</h2>
         <div className="mt-5 flex items-baseline gap-2">
             <span className="text-[3.25rem] leading-none font-semibold tracking-[-0.04em]">{price}</span>
-            <span className={`text-[14px] ${featured ? 'text-white/55' : 'text-[#1a2b4a]/50'}`}>{unit}</span>
+            <span className={`text-[14px] ${featured ? 'text-white/70' : 'text-[#1a2b4a]/50'}`}>{unit}</span>
         </div>
-        <p className={`mt-3 text-[14px] min-h-[21px] ${featured ? 'text-white/55' : 'text-[#1a2b4a]/50'}`}>{note}</p>
+        <p className={`mt-3 text-[14px] min-h-[21px] ${featured ? 'text-white/70' : 'text-[#1a2b4a]/50'}`}>{note}</p>
         <div className="mt-8">{cta}</div>
         <ul className="mt-8 space-y-3.5">
             {features.map((f) => (
                 <li key={f} className="flex gap-3 text-[15px]">
-                    <FiCheck className={`mt-1 flex-shrink-0 ${featured ? 'text-[#7fd6f3]' : 'text-[#3468bd]'}`} aria-hidden />
-                    <span className={featured ? 'text-white/80' : 'text-[#1a2b4a]/75'}>{f}</span>
+                    <FiCheck className={`mt-1 flex-shrink-0 ${featured ? 'text-[#c6f1ff]' : 'text-[#3468bd]'}`} aria-hidden />
+                    <span className={featured ? 'text-white/90' : 'text-[#1a2b4a]/75'}>{f}</span>
                 </li>
             ))}
         </ul>
@@ -66,7 +66,7 @@ const Pricing = () => {
     const savings = p.monthlyAnnual - p.yearlyTotal;
 
     return (
-        <SiteLayout>
+        <SiteLayout overlayHeader>
             <Seo
                 title="Pricing | Veterinary AI Scribe Plans | PetWise"
                 description={`PetWise pricing: ${TRIAL_DAYS} days unlimited free, then $${PRICES.usd.monthly} USD a month or $${PRICES.usd.yearly} USD a month billed yearly. PetWise Free stays available. No credit card to start.`}
@@ -74,35 +74,36 @@ const Pricing = () => {
                 jsonLd={[softwareLd, faqLd(FAQS)]}
             />
 
-            <section className="relative overflow-hidden bg-white">
-                <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[600px] bg-[radial-gradient(50%_60%_at_50%_0%,#dff1fc_0%,rgba(255,255,255,0)_70%)]" />
-                <Container className="relative pt-14 sm:pt-24 pb-20 sm:pb-28">
-                    <div className="max-w-2xl mx-auto text-center">
-                        <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd] mb-4">Pricing</p>
-                        <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">
-                            Unlimited records. One simple price.
-                        </h1>
-                        <p className="mt-6 text-lg sm:text-xl text-[#1a2b4a]/65">
-                            Start with {TRIAL_DAYS} days of everything, free. No credit card.
-                        </p>
-                        <div className="mt-9 inline-flex rounded-full bg-[#f1f4f8] p-1" role="group" aria-label="Currency">
-                            {['usd', 'cad'].map((c) => (
-                                <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setCurrency(c)}
-                                    aria-pressed={currency === c}
-                                    className={`px-5 py-2 rounded-full text-[14px] font-medium transition-all ${
-                                        currency === c ? 'bg-white text-[#13233f] shadow-sm' : 'text-[#13233f]/50 hover:text-[#13233f]'
-                                    }`}
-                                >
-                                    {c.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
+            <Hero
+                eyebrow="Pricing"
+                title={
+                    <>
+                        Unlimited records. <Highlight>One simple price.</Highlight>
+                    </>
+                }
+                body={`Start with ${TRIAL_DAYS} days of everything, free. No credit card.`}
+                after={
+                    <div className="mt-10 inline-flex rounded-full border border-white/20 bg-white/[0.08] p-1 backdrop-blur" role="group" aria-label="Currency">
+                        {['usd', 'cad'].map((c) => (
+                            <button
+                                key={c}
+                                type="button"
+                                onClick={() => setCurrency(c)}
+                                aria-pressed={currency === c}
+                                className={`px-5 py-2 rounded-full text-[14px] font-medium transition-all ${
+                                    currency === c ? 'bg-white text-[#2d5fb8] shadow-sm' : 'text-white/75 hover:text-white'
+                                }`}
+                            >
+                                {c.toUpperCase()}
+                            </button>
+                        ))}
                     </div>
+                }
+            />
 
-                    <div className="mt-14 grid gap-5 lg:grid-cols-3 max-w-6xl mx-auto">
+            <section className="bg-white">
+                <Container className="pt-16 sm:pt-20 pb-20 sm:pb-28">
+                    <div className="grid gap-5 lg:grid-cols-3 max-w-6xl mx-auto">
                         <Reveal>
                             <PlanCard
                                 name="Free"

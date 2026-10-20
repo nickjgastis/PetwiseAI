@@ -6,13 +6,13 @@ import DemoStage from '../../pages/landing/campaign/DemoStage';
 import {
     ButtonLink,
     CheckList,
-    Container,
     CtaBand,
     Eyebrow,
     FaqSection,
     FeatureGrid,
+    Hero,
+    Highlight,
     ImageBand,
-    Microcopy,
     Reveal,
     RoundedPhoto,
     Section,
@@ -61,7 +61,7 @@ const FAQS = [
 ];
 
 const Dictation = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="Veterinary Dictation Software | Voice to SOAP Notes | PetWise"
             description="Dictate on your phone between rooms and PetWise turns it into a finished SOAP note, synced to your desktop. Veterinary dictation built for clinic language. Try it free."
@@ -69,32 +69,29 @@ const Dictation = () => (
             jsonLd={[softwareLd, faqLd(FAQS)]}
         />
 
-        <section className="relative overflow-hidden bg-white">
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[700px] bg-[radial-gradient(50%_60%_at_70%_20%,#dff1fc_0%,rgba(255,255,255,0)_70%)]" />
-            <Container className="relative pt-14 sm:pt-24 pb-16 sm:pb-24">
-                <div className="grid lg:grid-cols-12 gap-14 items-center">
-                    <div className="lg:col-span-7">
-                        <Eyebrow>Veterinary dictation</Eyebrow>
-                        <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">
-                            Speak it. See it. Done.
-                        </h1>
-                        <p className="mt-6 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/65 max-w-xl">
-                            Dictate on your phone between rooms. PetWise turns your voice into a finished SOAP note, and it is waiting on your desktop when you sit down.
-                        </p>
-                        <div className="mt-9 flex flex-col sm:flex-row gap-3">
-                            <SignupButton placement="dictation_hero" />
-                            <ButtonLink to="/install" variant="ghost">
-                                Get it on your phone
-                            </ButtonLink>
-                        </div>
-                        <Microcopy>Works on iPhone, Android and any modern browser.</Microcopy>
-                    </div>
-                    <div className="lg:col-span-5 flex justify-center" role="img" aria-label="Dictating on a phone, then the finished SOAP note appearing on desktop">
-                        <DemoStage host="petwise.vet" />
-                    </div>
+        <Hero
+            eyebrow="Veterinary dictation"
+            title={
+                <>
+                    Speak it. See it. <Highlight>Done.</Highlight>
+                </>
+            }
+            body="Dictate on your phone between rooms. PetWise turns your voice into a finished SOAP note, and it is waiting on your desktop when you sit down."
+            microcopy="Works on iPhone, Android and any modern browser."
+            media={
+                <div className="flex justify-center" role="img" aria-label="Dictating on a phone, then the finished SOAP note appearing on desktop">
+                    <DemoStage host="petwise.vet" />
                 </div>
-            </Container>
-        </section>
+            }
+            mediaClassName="max-w-3xl"
+            overlap="sm"
+            below="tint"
+        >
+            <SignupButton placement="dictation_hero" variant="light" />
+            <ButtonLink to="/install" variant="glass">
+                Get it on your phone
+            </ButtonLink>
+        </Hero>
 
         <Section tone="tint">
             <SectionHeading eyebrow="How it works" title="Start on your phone. Finish on your desktop." />

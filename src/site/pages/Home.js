@@ -11,8 +11,9 @@ import {
     CtaBand,
     FaqSection,
     FeatureGrid,
+    Hero,
+    Highlight,
     ImageBand,
-    Microcopy,
     Photo,
     PhotoStrip,
     Reveal,
@@ -105,7 +106,7 @@ const FAQS = [
 ];
 
 const Home = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="PetWise | Veterinary AI Scribe for SOAP Notes"
             description="PetWise is the veterinary AI scribe built by a veterinarian. Record the appointment or dictate, and get a finished SOAP note in seconds. Try it free for 10 days."
@@ -113,42 +114,32 @@ const Home = () => (
             jsonLd={[organizationLd, softwareLd, faqLd(FAQS)]}
         />
 
-        <section className="relative overflow-hidden bg-white">
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[760px] bg-[radial-gradient(55%_55%_at_75%_15%,#dff1fc_0%,rgba(255,255,255,0)_70%)]" />
-            <Container className="relative pt-14 sm:pt-24 pb-16 sm:pb-24">
-                <div className="grid lg:grid-cols-12 gap-14 lg:gap-6 items-center">
-                    <div className="lg:col-span-5">
-                        <p className="inline-flex items-center gap-2 rounded-full border border-[#13233f]/10 bg-white/70 px-3.5 py-1.5 text-[13px] text-[#13233f]/70">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#5cccf0]" />
-                            Veterinary AI scribe
-                        </p>
-                        <h1 className="mt-6 text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">
-                            Leave the clinic with your records done.
-                        </h1>
-                        <p className="mt-6 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/65 max-w-lg">
-                            PetWise listens to the appointment and writes the SOAP note for you. Built by a veterinarian, for veterinarians.
-                        </p>
-                        <div className="mt-9 flex flex-col sm:flex-row gap-3">
-                            <SignupButton placement="home_hero" />
-                            <ButtonLink href="#how-it-works" variant="ghost">
-                                See how it works
-                            </ButtonLink>
-                        </div>
-                        <Microcopy>10 days unlimited. No credit card.</Microcopy>
-                    </div>
-                    <div className="lg:col-span-7">
-                        <img
-                            src="/site/hero-desk-phone.png"
-                            alt="PetWise QuickSOAP writing a SOAP note on desktop and phone"
-                            className="w-full h-auto"
-                            width="1800"
-                            height="1272"
-                            fetchpriority="high"
-                        />
-                    </div>
-                </div>
-            </Container>
-        </section>
+        <Hero
+            eyebrow="Veterinary AI scribe"
+            title={
+                <>
+                    Leave the clinic with <Highlight>your records done.</Highlight>
+                </>
+            }
+            body="PetWise listens to the appointment and writes the SOAP note for you. Built by a veterinarian, for veterinarians."
+            microcopy="10 days unlimited. No credit card."
+            media={
+                <img
+                    src="/site/hero-desk-phone-crop.png"
+                    alt="PetWise QuickSOAP writing a SOAP note on desktop and phone"
+                    className="w-full h-auto drop-shadow-[0_50px_60px_rgba(19,35,63,0.35)]"
+                    width="1680"
+                    height="992"
+                    fetchpriority="high"
+                />
+            }
+            overlap="lg"
+        >
+            <SignupButton placement="home_hero" variant="light" />
+            <ButtonLink href="#how-it-works" variant="glass" arrow={false}>
+                See how it works
+            </ButtonLink>
+        </Hero>
 
         {PRESS.length > 0 && (
             <div className="bg-white border-y border-[#13233f]/[0.06]">

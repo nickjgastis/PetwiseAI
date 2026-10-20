@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import SiteLayout from '../SiteLayout';
 import { Seo } from '../seo';
 import { POSTS } from '../../content/blog/posts.generated';
-import { Container, CtaBand, Reveal } from '../ui';
+import { Container, CtaBand, Hero, Highlight, Reveal } from '../ui';
 
 export const formatDate = (iso) =>
     new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
@@ -45,26 +45,25 @@ export const PostCard = ({ post, large = false }) => (
 const Blog = () => {
     const [featured, ...rest] = POSTS;
     return (
-        <SiteLayout>
+        <SiteLayout overlayHeader>
             <Seo
                 title="Blog | Veterinary AI, SOAP Notes and Clinic Workflow | PetWise"
                 description="Practical articles for veterinarians on AI scribes, faster SOAP notes, dictation, clinical workflow and getting home on time."
                 path="/blog"
             />
+            <Hero
+                eyebrow="Blog"
+                title={
+                    <>
+                        Notes from <Highlight>the clinic.</Highlight>
+                    </>
+                }
+                body="Ideas on AI in veterinary medicine, faster records and protecting your time."
+            />
             <section className="bg-white">
-                <Container className="pt-14 sm:pt-24 pb-24 sm:pb-32">
-                    <div className="max-w-3xl">
-                        <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd] mb-4">Blog</p>
-                        <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">
-                            Notes from the clinic.
-                        </h1>
-                        <p className="mt-6 text-lg sm:text-xl text-[#1a2b4a]/65">
-                            Ideas on AI in veterinary medicine, faster records and protecting your time.
-                        </p>
-                    </div>
-
+                <Container className="pt-16 sm:pt-20 pb-24 sm:pb-32">
                     {featured && (
-                        <Reveal className="mt-16 sm:mt-20">
+                        <Reveal>
                             <PostCard post={featured} large />
                         </Reveal>
                     )}

@@ -1,7 +1,15 @@
 import React from 'react';
 import SiteLayout from '../SiteLayout';
 import { Seo } from '../seo';
-import { CheckList, Container, CtaBand, Reveal, RoundedPhoto } from '../ui';
+import {
+    CheckList,
+    Container,
+    CtaBand,
+    Hero,
+    HeroPhoto,
+    Highlight,
+    Reveal
+} from '../ui';
 
 const RELEASES = [
     {
@@ -49,32 +57,25 @@ const RELEASES = [
 ];
 
 const Updates = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="Product Updates | What’s New in PetWise"
             description="The latest PetWise releases: QuickSOAP voice dictation, Callback Notes, Clinical Summaries, faster and more accurate records, and the 10 day unlimited trial."
             path="/updates"
         />
+        <Hero
+            eyebrow="Updates"
+            title={
+                <>
+                    What’s new in <Highlight>PetWise.</Highlight>
+                </>
+            }
+            body="We ship improvements every month, most of them straight from vet feedback."
+            media={<HeroPhoto src="/site/working-laptop.jpg" alt="A man smiling while working on his laptop" className="object-[50%_35%]" />}
+        />
         <section className="bg-white">
-            <Container className="pt-14 sm:pt-24 pb-24 sm:pb-32">
-                <div className="max-w-3xl">
-                    <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd] mb-4">Updates</p>
-                    <h1 className="text-[2.75rem] sm:text-[4rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f]">What’s new in PetWise.</h1>
-                    <p className="mt-6 text-lg sm:text-xl text-[#1a2b4a]/65">
-                        We ship improvements every month, most of them straight from vet feedback.
-                    </p>
-                </div>
-
-                <Reveal className="mt-14 sm:mt-16">
-                    <RoundedPhoto
-                        src="/site/working-laptop.jpg"
-                        alt="A man smiling while working on his laptop"
-                        aspect="aspect-[16/10] sm:aspect-[21/9]"
-                        className="object-[50%_35%]"
-                    />
-                </Reveal>
-
-                <ol className="mt-20 space-y-16">
+            <Container className="pb-24 sm:pb-32">
+                <ol className="space-y-16">
                     {RELEASES.map((r) => (
                         <Reveal as="li" key={r.title} className="grid lg:grid-cols-12 gap-6 lg:gap-10">
                             <div className="lg:col-span-3">

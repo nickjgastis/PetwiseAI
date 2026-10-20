@@ -8,7 +8,7 @@ export const Container = ({ className = '', children }) => (
 );
 
 export const Section = ({ id, tone = 'white', className = '', children }) => {
-    const bg = { white: 'bg-white', tint: 'bg-[#f6f8fb]', navy: 'bg-[#13233f] text-white' }[tone];
+    const bg = { white: 'bg-white', tint: 'bg-[#f6f8fb]', navy: 'bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white' }[tone];
     return (
         <section id={id} className={`${bg} py-20 sm:py-28 ${className}`}>
             <Container>{children}</Container>
@@ -65,10 +65,11 @@ const track = (label) => {
 };
 
 const BUTTON_STYLES = {
-    primary: 'bg-[#13233f] text-white hover:bg-[#3468bd] shadow-[0_10px_30px_-12px_rgba(19,35,63,0.6)]',
+    primary: 'bg-[#2d5fb8] text-white hover:bg-[#2350a3] shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)]',
     light: 'bg-white text-[#13233f] hover:bg-[#e9f6fd]',
     ghost: 'text-[#13233f] hover:bg-[#13233f]/5',
-    outline: 'border border-[#13233f]/15 text-[#13233f] hover:border-[#13233f]/40'
+    outline: 'border border-[#13233f]/15 text-[#13233f] hover:border-[#13233f]/40',
+    glass: 'border border-white/20 bg-white/[0.06] text-white backdrop-blur hover:bg-white/[0.12] hover:border-white/30'
 };
 
 export const ButtonLink = ({ to, href, variant = 'primary', trackAs, arrow = true, className = '', children }) => {
@@ -100,31 +101,76 @@ export const SignupButton = ({ placement, variant = 'primary', children = 'Start
     </ButtonLink>
 );
 
-export const PageHero = ({ eyebrow, title, body, image, imageAlt, photo, photoClassName = '', children, center = false }) => (
-    <section className="relative overflow-hidden bg-white">
-        <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-[640px] bg-[radial-gradient(60%_60%_at_70%_10%,#e3f3fd_0%,rgba(255,255,255,0)_70%)]" />
-        <Container className={`relative pt-14 sm:pt-24 ${image ? 'pb-16 sm:pb-24' : 'pb-12 sm:pb-20'}`}>
-            <div className={image ? 'grid lg:grid-cols-12 gap-12 lg:gap-8 items-center' : ''}>
-                <div className={image ? 'lg:col-span-5' : `max-w-3xl ${center ? 'mx-auto text-center' : ''}`}>
-                    {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-                    <h1 className="text-[2.6rem] sm:text-[3.75rem] leading-[1.03] font-semibold tracking-[-0.035em] text-[#13233f]">
-                        {title}
-                    </h1>
-                    {body && <p className="mt-6 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/65 max-w-xl">{body}</p>}
-                    {children && <div className={`mt-9 flex flex-col sm:flex-row gap-3 ${center ? 'sm:justify-center' : ''}`}>{children}</div>}
+export const Highlight = ({ children }) => (
+    <span className="bg-gradient-to-r from-[#c6f1ff] via-[#9fe3fb] to-white bg-clip-text text-transparent">{children}</span>
+);
+
+const OVERLAP = {
+    sm: ['-mb-16 sm:-mb-24', 'h-16 sm:h-24'],
+    md: ['-mb-24 sm:-mb-40', 'h-24 sm:h-40'],
+    lg: ['-mb-32 sm:-mb-56', 'h-32 sm:h-56']
+};
+
+// Dark, centered page hero. The header floats over it (SiteLayout overlayHeader).
+// media hangs off the bottom edge into the white section below by `overlap`.
+export const Hero = ({ eyebrow, title, body, children, microcopy, media, mediaClassName = 'max-w-5xl', overlap = 'md', below = 'white', after }) => {
+    const [pull, spacer] = OVERLAP[overlap];
+    return (
+        <>
+            <section className="relative -mt-16 text-white">
+                <div aria-hidden className="absolute inset-0 overflow-hidden bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)]">
+                    <div className="absolute inset-0 bg-[radial-gradient(55%_60%_at_50%_-5%,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0)_70%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(35%_45%_at_90%_25%,rgba(92,204,240,0.4)_0%,rgba(92,204,240,0)_70%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(35%_45%_at_5%_75%,rgba(92,204,240,0.22)_0%,rgba(92,204,240,0)_70%)]" />
                 </div>
-                {image && (
-                    <div className="lg:col-span-7">
-                        {photo ? (
-                            <RoundedPhoto src={image} alt={imageAlt} className={photoClassName} />
-                        ) : (
-                            <img src={image} alt={imageAlt} className="w-full h-auto" width="1800" height="1272" />
+                <Container className={`relative flow-root pt-32 sm:pt-44 text-center ${media ? '' : 'pb-24 sm:pb-32'}`}>
+                    <div className="site-hero-in max-w-4xl mx-auto">
+                        {eyebrow && (
+                            <p className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-1.5 text-[13px] text-white/80 backdrop-blur">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#5cccf0] shadow-[0_0_10px_rgba(92,204,240,0.9)]" />
+                                {eyebrow}
+                            </p>
                         )}
+                        <h1 className="mt-7 text-[2.9rem] sm:text-[4.5rem] lg:text-[5.25rem] leading-[1] font-semibold tracking-[-0.045em] text-balance">
+                            {title}
+                        </h1>
+                        {body && <p className="mx-auto mt-7 max-w-2xl text-lg sm:text-xl leading-relaxed text-white/70 text-balance">{body}</p>}
+                        {children && <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">{children}</div>}
+                        {microcopy && <p className="mt-5 text-sm text-white/60">{microcopy}</p>}
+                        {after}
                     </div>
-                )}
-            </div>
-        </Container>
-    </section>
+                    {media && (
+                        <div className={`site-hero-media relative z-10 mx-auto mt-16 sm:mt-20 ${mediaClassName} ${pull}`}>
+                            <div aria-hidden className="absolute -inset-x-16 -top-16 bottom-1/3 bg-[radial-gradient(50%_50%_at_50%_50%,rgba(92,204,240,0.35)_0%,rgba(92,204,240,0)_70%)] blur-2xl" />
+                            <div className="relative">{media}</div>
+                        </div>
+                    )}
+                </Container>
+            </section>
+            {media && <div aria-hidden className={`${below === 'tint' ? 'bg-[#f6f8fb]' : 'bg-white'} ${spacer}`} />}
+        </>
+    );
+};
+
+export const HeroPhoto = ({ src, alt, className = '', aspect = 'aspect-[16/10] sm:aspect-[2/1]' }) => (
+    <div className={`overflow-hidden rounded-[28px] ring-1 ring-white/15 shadow-[0_60px_120px_-40px_rgba(19,35,63,0.55)] ${aspect}`}>
+        <img src={src} alt={alt} className={`w-full h-full object-cover ${className}`} fetchpriority="high" />
+    </div>
+);
+
+export const PageHero = ({ image, imageAlt, photo, photoClassName = '', media, ...props }) => (
+    <Hero
+        {...props}
+        media={
+            media ||
+            (image &&
+                (photo ? (
+                    <HeroPhoto src={image} alt={imageAlt} className={photoClassName} />
+                ) : (
+                    <img src={image} alt={imageAlt} className="w-full h-auto" width="1800" height="1272" fetchpriority="high" />
+                )))
+        }
+    />
 );
 
 export const Microcopy = ({ children, light = false, center = false }) => (
@@ -336,12 +382,12 @@ export const Testimonials = ({ tone = 'white' }) => (
 
 export const CtaBand = ({ title = 'Your next appointment can be your first PetWise record.', body = '10 days unlimited. No credit card. Keep PetWise Free when the trial ends.' }) => (
     <section className="bg-white px-3 sm:px-5 pb-3 sm:pb-5">
-        <div className="relative overflow-hidden rounded-[32px] bg-[#13233f] text-white">
-            <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_80%_at_85%_0%,rgba(92,204,240,0.28)_0%,rgba(19,35,63,0)_70%)]" />
+        <div className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white">
+            <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_80%_at_85%_0%,rgba(92,204,240,0.4)_0%,rgba(92,204,240,0)_70%)]" />
             <Container className="relative py-20 sm:py-28 text-center">
                 <Reveal>
                     <h2 className="mx-auto max-w-3xl text-[2rem] sm:text-[3rem] leading-[1.06] font-semibold tracking-[-0.03em]">{title}</h2>
-                    <p className="mx-auto mt-5 max-w-xl text-lg text-white/65">{body}</p>
+                    <p className="mx-auto mt-5 max-w-xl text-lg text-white/75">{body}</p>
                     <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
                         <SignupButton placement="cta_band" variant="light" />
                         <ButtonLink to="/pricing" variant="ghost" className="!text-white hover:!bg-white/10">

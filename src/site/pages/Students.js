@@ -2,7 +2,7 @@ import React from 'react';
 import { FiBookOpen, FiClipboard, FiMessageCircle, FiTrendingUp } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd } from '../seo';
-import { ButtonLink, CtaBand, FaqSection, FeatureGrid, PageHero, Reveal, Section, SectionHeading, Steps } from '../ui';
+import { ButtonLink, CtaBand, FaqSection, FeatureGrid, Highlight, PageHero, Reveal, Section, SectionHeading, Steps } from '../ui';
 
 const MAILTO = 'mailto:support@petwise.vet?subject=I%E2%80%99m%20a%20vet%20student!';
 
@@ -35,7 +35,7 @@ const FAQS = [
 ];
 
 const Students = () => (
-    <SiteLayout>
+    <SiteLayout overlayHeader>
         <Seo
             title="Free AI Scribe for Veterinary Students | PetWise"
             description="Veterinary students get PetWise free. AI SOAP notes and PetQuery, a clinical assistant for dosages and treatments, to help you learn faster and be clinic ready."
@@ -43,15 +43,20 @@ const Students = () => (
             jsonLd={faqLd(FAQS)}
         />
         <PageHero
+            below="tint"
             eyebrow="For vet students"
-            title="Vet school is tough. PetWise is free."
+            title={
+                <>
+                    Vet school is tough. <Highlight>PetWise is free.</Highlight>
+                </>
+            }
             body="Spend less time on SOAP notes and drug look ups, and more time learning medicine. Every veterinary student gets PetWise at no cost."
             image="/site/young-vet.jpg"
             imageAlt="A young veterinarian in scrubs smiling in a clinic"
             photo
             photoClassName="object-[50%_30%]"
         >
-            <ButtonLink href={MAILTO} trackAs="student_email">
+            <ButtonLink href={MAILTO} trackAs="student_email" variant="light">
                 Get my free access code
             </ButtonLink>
         </PageHero>
