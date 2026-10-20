@@ -43,7 +43,7 @@ const FAQS = [
 ];
 
 const ClinicalAssistant = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Veterinary Clinical AI Assistant | PetQuery by PetWise"
             description="PetQuery is a veterinary AI assistant for dosages, differentials, protocols and client explanations, built on trusted veterinary references. Included with PetWise."

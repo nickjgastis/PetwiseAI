@@ -17,7 +17,7 @@ const PLATFORMS = [
 ];
 
 const Install = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Get the PetWise App on iPhone and Android"
             description="Install PetWise on your phone in seconds. Dictate SOAP notes between rooms and they sync to your desktop automatically. No app store needed."

@@ -106,7 +106,7 @@ const CARDS = [
 ];
 
 const Help = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Help Center | PetWise"
             description="Answers to common questions about PetWise: QuickSOAP, dictation, PetQuery, templates, saved records, billing and installing the app on your phone."

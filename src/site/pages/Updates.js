@@ -57,7 +57,7 @@ const RELEASES = [
 ];
 
 const Updates = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Product Updates | What’s New in PetWise"
             description="The latest PetWise releases: QuickSOAP voice dictation, Callback Notes, Clinical Summaries, faster and more accurate records, and the 10 day unlimited trial."

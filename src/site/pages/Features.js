@@ -36,7 +36,7 @@ const WORKFLOW = [
 ];
 
 const Features = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Features | Veterinary AI Scribe and Clinical Assistant | PetWise"
             description="Everything in PetWise: AI SOAP notes, veterinary dictation, callback notes, clinical summaries, client communication, templates and PetQuery, a veterinary clinical assistant."

@@ -7,16 +7,16 @@ import { FOOTER, NAV, SOCIALS } from './siteConfig';
 import { ButtonLink, Container } from './ui';
 import './site.css';
 
-const Logo = ({ light = false }) => (
+const Logo = () => (
     <Link to="/" className="flex items-center gap-2.5" aria-label="PetWise home">
         <img src="/PW.png" alt="" className="w-8 h-8 object-contain" width="32" height="32" />
-        <span className={`text-[17px] font-semibold tracking-tight transition-colors ${light ? 'text-white' : 'text-[#13233f]'}`}>
-            PetWise<span className={`font-normal ${light ? 'text-white/45' : 'text-[#13233f]/35'}`}>.vet</span>
+        <span className={`text-[17px] font-semibold tracking-tight transition-colors text-[#13233f]`}>
+            PetWise<span className={`font-normal text-[#13233f]/35`}>.vet</span>
         </span>
     </Link>
 );
 
-const Header = ({ overlay = false }) => {
+const Header = () => {
     const { isAuthenticated } = useAuth0();
     const [open, setOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
@@ -31,59 +31,53 @@ const Header = ({ overlay = false }) => {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
-    const light = overlay && !scrolled && !open;
-
     const navClass = ({ isActive }) =>
-        `px-3 py-2 rounded-full text-[14px] transition-colors ${
-            light
-                ? isActive ? 'text-white' : 'text-white/70 hover:text-white'
-                : isActive ? 'text-[#13233f]' : 'text-[#13233f]/60 hover:text-[#13233f]'
-        }`;
+        `px-3 py-2 rounded-full text-[14px] transition-colors ${isActive ? 'text-[#2d5fb8]' : 'text-[#13233f]/65 hover:text-[#13233f]'}`;
 
     return (
-        <header
-            className={`sticky top-0 z-50 transition-all duration-300 ${
-                scrolled || open ? 'bg-white/85 backdrop-blur-xl border-b border-[#13233f]/[0.06]' : 'bg-white/0 border-b border-transparent'
-            }`}
-        >
-            <Container className="h-16 flex items-center justify-between">
-                <Logo light={light} />
-                <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
-                    {NAV.map((n) => (
-                        <NavLink key={n.to} to={n.to} className={navClass}>
-                            {n.label}
-                        </NavLink>
-                    ))}
-                </nav>
-                <div className="hidden lg:flex items-center gap-2">
-                    {isAuthenticated ? (
-                        <ButtonLink to="/dashboard" variant={light ? 'light' : 'primary'} className="!py-2.5 !px-5 !text-[14px]">
-                            Open dashboard
-                        </ButtonLink>
-                    ) : (
-                        <>
-                            <Link to="/login" className={`px-3 py-2 text-[14px] transition-colors ${light ? 'text-white/70 hover:text-white' : 'text-[#13233f]/60 hover:text-[#13233f]'}`}>
-                                Sign in
-                            </Link>
-                            <ButtonLink to="/signup" trackAs="signup_header" arrow={false} variant={light ? 'light' : 'primary'} className="!py-2.5 !px-5 !text-[14px]">
-                                Start free
+        <header className="sticky top-0 z-50 h-[76px] px-3 sm:px-5 pt-3">
+            <div
+                className={`mx-auto max-w-6xl rounded-2xl bg-white/90 backdrop-blur-xl ring-1 ring-[#13233f]/[0.06] transition-shadow duration-300 ${
+                    scrolled || open ? 'shadow-[0_12px_40px_-12px_rgba(19,35,63,0.25)]' : 'shadow-[0_8px_30px_-14px_rgba(19,35,63,0.18)]'
+                }`}
+            >
+                <div className="h-16 px-4 sm:px-5 flex items-center justify-between">
+                    <Logo />
+                    <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
+                        {NAV.map((n) => (
+                            <NavLink key={n.to} to={n.to} className={navClass}>
+                                {n.label}
+                            </NavLink>
+                        ))}
+                    </nav>
+                    <div className="hidden lg:flex items-center gap-2">
+                        {isAuthenticated ? (
+                            <ButtonLink to="/dashboard" className="!py-2.5 !px-5 !text-[14px]">
+                                Open dashboard
                             </ButtonLink>
-                        </>
-                    )}
+                        ) : (
+                            <>
+                                <Link to="/login" className="px-3 py-2 text-[14px] text-[#13233f]/65 hover:text-[#13233f] transition-colors">
+                                    Sign in
+                                </Link>
+                                <ButtonLink to="/signup" trackAs="signup_header" arrow={false} className="!py-2.5 !px-5 !text-[14px]">
+                                    Start free
+                                </ButtonLink>
+                            </>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        className="lg:hidden -mr-2 p-2 text-[#13233f]"
+                        onClick={() => setOpen((v) => !v)}
+                        aria-expanded={open}
+                        aria-label={open ? 'Close menu' : 'Open menu'}
+                    >
+                        {open ? <FiX className="text-[22px]" /> : <FiMenu className="text-[22px]" />}
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    className={`lg:hidden -mr-2 p-2 transition-colors ${light ? 'text-white' : 'text-[#13233f]'}`}
-                    onClick={() => setOpen((v) => !v)}
-                    aria-expanded={open}
-                    aria-label={open ? 'Close menu' : 'Open menu'}
-                >
-                    {open ? <FiX className="text-[22px]" /> : <FiMenu className="text-[22px]" />}
-                </button>
-            </Container>
-            {open && (
-                <div className="lg:hidden border-t border-[#13233f]/[0.06] bg-white">
-                    <Container className="py-4 flex flex-col">
+                {open && (
+                    <div className="lg:hidden border-t border-[#13233f]/[0.06] px-4 sm:px-5 py-4 flex flex-col">
                         {NAV.map((n) => (
                             <Link key={n.to} to={n.to} className="py-3 text-[17px] text-[#13233f]">
                                 {n.label}
@@ -103,9 +97,9 @@ const Header = ({ overlay = false }) => {
                                 </>
                             )}
                         </div>
-                    </Container>
-                </div>
-            )}
+                    </div>
+                )}
+            </div>
         </header>
     );
 };
@@ -157,7 +151,7 @@ const Footer = () => (
     </footer>
 );
 
-const SiteLayout = ({ overlayHeader = false, children }) => {
+const SiteLayout = ({ children }) => {
     const { pathname, hash } = useLocation();
 
     useEffect(() => {
@@ -166,7 +160,7 @@ const SiteLayout = ({ overlayHeader = false, children }) => {
 
     return (
         <div className="site min-h-screen bg-white text-[#1a2b4a] antialiased">
-            <Header overlay={overlayHeader} />
+            <Header />
             <main>{children}</main>
             <Footer />
         </div>

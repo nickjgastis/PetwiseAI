@@ -61,7 +61,7 @@ const FAQS = [
 ];
 
 const Dictation = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Veterinary Dictation Software | Voice to SOAP Notes | PetWise"
             description="Dictate on your phone between rooms and PetWise turns it into a finished SOAP note, synced to your desktop. Veterinary dictation built for clinic language. Try it free."

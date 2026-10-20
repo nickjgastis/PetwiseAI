@@ -35,7 +35,7 @@ const FAQS = [
 ];
 
 const Students = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="Free AI Scribe for Veterinary Students | PetWise"
             description="Veterinary students get PetWise free. AI SOAP notes and PetQuery, a clinical assistant for dosages and treatments, to help you learn faster and be clinic ready."

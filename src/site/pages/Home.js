@@ -11,9 +11,8 @@ import {
     CtaBand,
     FaqSection,
     FeatureGrid,
-    Hero,
     Highlight,
-    ImageBand,
+    PhotoHero,
     Photo,
     PhotoStrip,
     Reveal,
@@ -106,7 +105,7 @@ const FAQS = [
 ];
 
 const Home = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="PetWise | Veterinary AI Scribe for SOAP Notes"
             description="PetWise is the veterinary AI scribe built by a veterinarian. Record the appointment or dictate, and get a finished SOAP note in seconds. Try it free for 10 days."
@@ -114,45 +113,77 @@ const Home = () => (
             jsonLd={[organizationLd, softwareLd, faqLd(FAQS)]}
         />
 
-        <Hero
+        <PhotoHero
             eyebrow="Veterinary AI scribe"
             title={
                 <>
-                    Leave the clinic with <Highlight>your records done.</Highlight>
+                    Leave the clinic with <Highlight dark>your records done.</Highlight>
                 </>
             }
             body="PetWise listens to the appointment and writes the SOAP note for you. Built by a veterinarian, for veterinarians."
             microcopy="10 days unlimited. No credit card."
-            media={
-                <img
-                    src="/site/hero-desk-phone-crop.png"
-                    alt="PetWise QuickSOAP writing a SOAP note on desktop and phone"
-                    className="w-full h-auto drop-shadow-[0_50px_60px_rgba(19,35,63,0.35)]"
-                    width="1680"
-                    height="992"
-                    fetchpriority="high"
-                />
+            image="/site/vet-holding-dog.jpg"
+            imageAlt="A veterinarian hugging a Boston terrier"
+            imagePosition="80% center"
+            footer={
+                PRESS.length > 0 && (
+                    <div className="flex items-center gap-4">
+                        <span className="text-[12px] font-semibold tracking-[0.16em] uppercase text-[#13233f]/40">As seen on</span>
+                        {PRESS.map((p) => (
+                            <span key={p.name} className="inline-flex items-center rounded-xl bg-[#13233f] px-4 py-2.5">
+                                <img src={p.logo} alt={p.name} className="h-5 w-auto" loading="lazy" />
+                            </span>
+                        ))}
+                    </div>
+                )
             }
-            overlap="lg"
         >
-            <SignupButton placement="home_hero" variant="light" />
-            <ButtonLink href="#how-it-works" variant="glass" arrow={false}>
+            <SignupButton placement="home_hero" />
+            <ButtonLink href="#how-it-works" variant="outline" arrow={false} className="bg-white/60 backdrop-blur">
                 See how it works
             </ButtonLink>
-        </Hero>
+        </PhotoHero>
 
-        {PRESS.length > 0 && (
-            <div className="bg-white border-y border-[#13233f]/[0.06]">
-                <Container className="py-8 flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12">
-                    <span className="text-[12px] font-semibold tracking-[0.16em] uppercase text-[#13233f]/35">As seen on</span>
-                    {PRESS.map((p) => (
-                        <span key={p.name} className="inline-flex items-center rounded-2xl bg-[#13233f] px-6 py-3.5">
-                            <img src={p.logo} alt={p.name} className="h-7 w-auto" loading="lazy" />
-                        </span>
-                    ))}
+        <Section>
+            <Reveal as="figure" className="max-w-4xl mx-auto text-center">
+                <span aria-hidden className="block font-serif text-[7rem] leading-[0.6] text-[#5cccf0]">
+                    “
+                </span>
+                <blockquote className="mt-6 text-[1.9rem] sm:text-[2.9rem] leading-[1.12] font-semibold tracking-[-0.03em] text-[#13233f] text-balance">
+                    Without PetWise I could not possibly be as <Highlight dark>productive or efficient.</Highlight>
+                </blockquote>
+                <figcaption className="mt-8 text-[15px] text-[#1a2b4a]/60">
+                    <span className="font-medium text-[#13233f]">Dr. Tammi Whelan</span>, DVM
+                </figcaption>
+            </Reveal>
+        </Section>
+
+        <section className="bg-white px-3 sm:px-5">
+            <div className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white">
+                <div aria-hidden className="absolute inset-0 bg-[radial-gradient(55%_50%_at_50%_0%,rgba(255,255,255,0.2)_0%,rgba(255,255,255,0)_70%)]" />
+                <div aria-hidden className="absolute inset-0 bg-[radial-gradient(40%_50%_at_50%_85%,rgba(92,204,240,0.45)_0%,rgba(92,204,240,0)_70%)]" />
+                <Container className="relative pt-20 sm:pt-28 text-center">
+                    <Reveal>
+                        <h2 className="mx-auto max-w-3xl text-[2.25rem] sm:text-[3.5rem] leading-[1.04] font-semibold tracking-[-0.04em] text-balance">
+                            On your desk. <Highlight>In your pocket.</Highlight>
+                        </h2>
+                        <p className="mx-auto mt-5 max-w-xl text-lg text-white/75">
+                            Record on your phone between rooms. The finished SOAP is waiting on your desktop when you sit down.
+                        </p>
+                    </Reveal>
+                    <Reveal delay={120} className="mx-auto mt-14 sm:mt-16 max-w-5xl -mb-16 sm:-mb-28">
+                        <img
+                            src="/site/hero-desk-phone-crop.png"
+                            alt="PetWise QuickSOAP writing a SOAP note on desktop and phone"
+                            className="w-full h-auto drop-shadow-[0_40px_50px_rgba(19,35,63,0.4)]"
+                            width="1680"
+                            height="992"
+                            loading="lazy"
+                        />
+                    </Reveal>
                 </Container>
             </div>
-        )}
+        </section>
 
         <Section id="how-it-works">
             <SectionHeading
@@ -196,13 +227,6 @@ const Home = () => (
             />
         </Section>
 
-        <ImageBand
-            src="/site/vet-holding-dog.jpg"
-            alt="A veterinarian holding a Boston terrier"
-            imageClassName="object-[70%_center]"
-            title="Keep your evenings to yourself."
-            body="Vets tell us PetWise gives them back hours every week. Finish the record before the next patient walks in, not after the clinic closes."
-        />
 
         <Testimonials />
 

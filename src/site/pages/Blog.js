@@ -45,7 +45,7 @@ export const PostCard = ({ post, large = false }) => (
 const Blog = () => {
     const [featured, ...rest] = POSTS;
     return (
-        <SiteLayout overlayHeader>
+        <SiteLayout>
             <Seo
                 title="Blog | Veterinary AI, SOAP Notes and Clinic Workflow | PetWise"
                 description="Practical articles for veterinarians on AI scribes, faster SOAP notes, dictation, clinical workflow and getting home on time."

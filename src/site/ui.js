@@ -101,8 +101,48 @@ export const SignupButton = ({ placement, variant = 'primary', children = 'Start
     </ButtonLink>
 );
 
-export const Highlight = ({ children }) => (
-    <span className="bg-gradient-to-r from-[#c6f1ff] via-[#9fe3fb] to-white bg-clip-text text-transparent">{children}</span>
+export const Highlight = ({ dark = false, children }) => (
+    <span
+        className={`bg-clip-text text-transparent ${
+            dark ? 'bg-gradient-to-r from-[#2d5fb8] via-[#3a7be0] to-[#4fb8e6]' : 'bg-gradient-to-r from-[#c6f1ff] via-[#9fe3fb] to-white'
+        }`}
+    >
+        {children}
+    </span>
+);
+
+// Full-bleed photo with the copy on the empty side of the frame. Below lg the photo stacks under the copy.
+export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imagePosition = '75% center', footer }) => (
+    <section className="relative -mt-[76px] overflow-hidden bg-[#eceef0]">
+        <img
+            src={image}
+            alt={imageAlt}
+            className="hidden lg:block absolute inset-0 w-full h-full object-cover"
+            style={{ objectPosition: imagePosition }}
+            fetchpriority="high"
+        />
+        <div aria-hidden className="hidden lg:block absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent" />
+        <div aria-hidden className="lg:hidden absolute inset-0 bg-gradient-to-b from-white to-[#eceef0]" />
+        <Container className="relative pt-36 sm:pt-44 lg:pt-40 pb-0 lg:pb-24 lg:min-h-[700px] lg:flex lg:flex-col lg:justify-center">
+            <div className="site-hero-in max-w-xl">
+                {eyebrow && <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">{eyebrow}</p>}
+                <h1 className="mt-5 text-[2.75rem] sm:text-[4rem] lg:text-[4.25rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
+                    {title}
+                </h1>
+                {body && <p className="mt-6 max-w-lg text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
+                {children && <div className="mt-9 flex flex-col sm:flex-row gap-3">{children}</div>}
+                {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
+                {footer && <div className="mt-12">{footer}</div>}
+            </div>
+        </Container>
+        <img
+            src={image}
+            alt=""
+            aria-hidden
+            className="lg:hidden relative mt-12 w-full aspect-[4/3] sm:aspect-[16/9] object-cover"
+            style={{ objectPosition: '88% center' }}
+        />
+    </section>
 );
 
 const OVERLAP = {
@@ -111,13 +151,13 @@ const OVERLAP = {
     lg: ['-mb-32 sm:-mb-56', 'h-32 sm:h-56']
 };
 
-// Dark, centered page hero. The header floats over it (SiteLayout overlayHeader).
+// Brand blue, centered page hero. The floating header sits over its top edge.
 // media hangs off the bottom edge into the white section below by `overlap`.
 export const Hero = ({ eyebrow, title, body, children, microcopy, media, mediaClassName = 'max-w-5xl', overlap = 'md', below = 'white', after }) => {
     const [pull, spacer] = OVERLAP[overlap];
     return (
         <>
-            <section className="relative -mt-16 text-white">
+            <section className="relative -mt-[76px] text-white">
                 <div aria-hidden className="absolute inset-0 overflow-hidden bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)]">
                     <div className="absolute inset-0 bg-[radial-gradient(55%_60%_at_50%_-5%,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0)_70%)]" />
                     <div className="absolute inset-0 bg-[radial-gradient(35%_45%_at_90%_25%,rgba(92,204,240,0.4)_0%,rgba(92,204,240,0)_70%)]" />

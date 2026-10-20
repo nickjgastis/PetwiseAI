@@ -19,7 +19,7 @@ const VALUES = [
 ];
 
 const About = () => (
-    <SiteLayout overlayHeader>
+    <SiteLayout>
         <Seo
             title="About PetWise | Built by a Veterinarian and a Developer"
             description="PetWise was founded by Dr. Stacey Gastis, DVM, with over 30 years in clinical practice, and his son Nick Gastis, a developer, to give veterinarians their time back."

@@ -66,7 +66,7 @@ const Pricing = () => {
     const savings = p.monthlyAnnual - p.yearlyTotal;
 
     return (
-        <SiteLayout overlayHeader>
+        <SiteLayout>
             <Seo
                 title="Pricing | Veterinary AI Scribe Plans | PetWise"
                 description={`PetWise pricing: ${TRIAL_DAYS} days unlimited free, then $${PRICES.usd.monthly} USD a month or $${PRICES.usd.yearly} USD a month billed yearly. PetWise Free stays available. No credit card to start.`}
