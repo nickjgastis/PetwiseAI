@@ -1386,7 +1386,7 @@ const Dashboard = () => {
                 {/* Mobile Header */}
                 {window.innerWidth <= 768 && (
                     <>
-                        <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#13233f] items-center justify-between px-4 z-50 shadow-md">
+                        <div className="flex fixed top-0 left-0 right-0 h-16 bg-[#3369bd] items-center justify-between px-4 z-50 shadow-md">
                             <button
                                 className="flex flex-col justify-around w-8 h-6 bg-transparent border-none cursor-pointer p-0 z-50"
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -1399,7 +1399,7 @@ const Dashboard = () => {
                                 <img src="/PW.png" alt="PW" className="w-8 h-8 object-contain" />
                                 <span>
                                     <span className="font-semibold text-white tracking-[-0.02em]">PetWise</span>
-                                    <span className="font-normal text-white/45 tracking-[-0.02em]">.vet</span>
+                                    <span className="font-normal text-white/60 tracking-[-0.02em]">.vet</span>
                                 </span>
                             </div>
                         </div>
@@ -1415,8 +1415,8 @@ const Dashboard = () => {
                 <aside
                     className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 ${isMobileMenuOpen ? 'left-0' : 'left-[-250px]'} ${isSidebarCollapsed ? 'w-20 sidebar-collapsed' : 'w-56'} md:left-0`}
                     style={{
-                        background: 'radial-gradient(120% 40% at 0% 0%, rgba(92,204,240,0.14) 0%, rgba(19,35,63,0) 60%), linear-gradient(180deg, #13233f 0%, #0f1d35 100%)',
-                        boxShadow: '2px 0 24px rgba(19,35,63,0.18)',
+                        background: 'radial-gradient(120% 40% at 0% 0%, rgba(92,204,240,0.18) 0%, rgba(45,95,184,0) 60%), linear-gradient(180deg, #2d5fb8 0%, #1e4a94 50%, #183d7a 100%)',
+                        boxShadow: '2px 0 20px rgba(30,74,148,0.15)',
                         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
                     }}
                 >
@@ -1431,7 +1431,7 @@ const Dashboard = () => {
                             </div>
                             <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
                                 <span className="font-semibold text-white tracking-[-0.02em]">PetWise</span>
-                                <span className="font-normal text-white/45 tracking-[-0.02em]">.vet</span>
+                                <span className="font-normal text-white/60 tracking-[-0.02em]">.vet</span>
                             </span>
                         </Link>
                     </div>
@@ -1449,7 +1449,7 @@ const Dashboard = () => {
                                         onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                                         onMouseLeave={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative`} style={{ background: location.pathname === '/dashboard/quicksoap' ? 'rgba(92,204,240,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative`} style={{ background: location.pathname === '/dashboard/quicksoap' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
                                             <FaMicrophone className="text-xs" />
                                             {/* Notification dot for pending dictations */}
                                             {hasPendingDictation && !isMobile && (
@@ -1476,7 +1476,7 @@ const Dashboard = () => {
                                         onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                                         onMouseLeave={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/quick-query' ? 'rgba(92,204,240,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/quick-query' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
                                             <FaSearch className="text-xs" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetQUERY</span>
@@ -1491,7 +1491,7 @@ const Dashboard = () => {
                                         onMouseEnter={(e) => { if (location.pathname !== '/dashboard/saved-reports') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                                         onMouseLeave={(e) => { if (location.pathname !== '/dashboard/saved-reports') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative" style={{ background: location.pathname === '/dashboard/saved-reports' ? 'rgba(92,204,240,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative" style={{ background: location.pathname === '/dashboard/saved-reports' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
                                             <FaSave className="text-xs" />
                                             {/* Notification dot for new mobile SOAP */}
                                             {hasNewMobileSOAP && !isMobile && (
@@ -1516,7 +1516,7 @@ const Dashboard = () => {
                                         onMouseEnter={(e) => { if (location.pathname !== '/dashboard/templates') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                                         onMouseLeave={(e) => { if (location.pathname !== '/dashboard/templates') e.currentTarget.style.background = 'transparent'; }}
                                     >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/templates' ? 'rgba(92,204,240,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/templates' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
                                             <FaClipboard className="text-xs" />
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>My Templates</span>
@@ -1546,7 +1546,7 @@ const Dashboard = () => {
                                 onMouseEnter={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                                 onMouseLeave={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'transparent'; }}
                             >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'rgba(92,204,240,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
                                     <FaFileAlt className="text-xs" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetSOAP</span>
@@ -1562,7 +1562,7 @@ const Dashboard = () => {
                                 onMouseEnter={(e) => { if (location.pathname !== '/dashboard/help') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
                                 onMouseLeave={(e) => { if (location.pathname !== '/dashboard/help') e.currentTarget.style.background = 'transparent'; }}
                             >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/help' ? 'rgba(92,204,240,0.2)' : 'rgba(255,255,255,0.06)' }}>
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/help' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
                                     <FaQuestionCircle className="text-xs" />
                                 </div>
                                 <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Help</span>

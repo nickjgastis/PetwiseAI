@@ -107,7 +107,7 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 bg-white bg-[radial-gradient(60%_50%_at_50%_0%,#dff1fc_0%,rgba(255,255,255,0)_70%)] overflow-y-auto z-[9999]"
+            className="fixed inset-0 bg-white bg-[radial-gradient(70%_55%_at_50%_0%,#dbe8fb_0%,rgba(255,255,255,0)_70%)] overflow-y-auto z-[9999]"
             style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}
         >
             <button
@@ -136,8 +136,8 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
                     transition={{ duration: 0.4 }}
                     className="text-center mb-4 max-w-xl"
                 >
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-[#13233f] rounded-2xl mb-4 shadow-[0_10px_30px_-12px_rgba(19,35,63,0.6)]">
-                        <FaChartPie className="text-[#7fd6f3] text-xl" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-[#3a72cc] to-[#1e4a94] rounded-2xl mb-4 shadow-[0_10px_30px_-12px_rgba(52,104,189,0.6)]">
+                        <FaChartPie className="text-white text-xl" />
                     </div>
                     <h1 className="text-2xl sm:text-[2rem] font-semibold text-[#13233f] mb-2 tracking-[-0.03em] leading-tight">
                         {copy.title(feature)}

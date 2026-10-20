@@ -75,7 +75,7 @@ const UpgradeButton = ({ onUpgrade, children }) => {
     return (
         <button
             onClick={onUpgrade}
-            className="w-full mt-1 px-4 py-2.5 bg-[#13233f] text-white text-sm font-medium rounded-full hover:bg-[#3468bd] active:scale-[0.99] transition-all"
+            className="w-full mt-1 px-4 py-2.5 bg-[#3468bd] text-white text-sm font-medium rounded-full hover:bg-[#2a5298] active:scale-[0.99] transition-all"
         >
             {children}
         </button>

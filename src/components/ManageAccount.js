@@ -125,7 +125,7 @@ const ManageAccount = ({ user, onBack }) => {
                             <button
                                 onClick={handlePasswordChange}
                                 disabled={isPasswordChangeLoading}
-                                className="px-5 py-2.5 bg-[#13233f] text-white font-medium rounded-full text-sm hover:bg-[#3468bd] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-5 py-2.5 bg-[#3468bd] text-white font-medium rounded-full text-sm hover:bg-[#2a5298] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isPasswordChangeLoading ? 'Sending...' : 'Change Password'}
                             </button>

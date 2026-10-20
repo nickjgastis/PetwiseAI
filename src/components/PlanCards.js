@@ -5,30 +5,30 @@ import { PRICES, PLAN_FEATURES } from '../constants/pricing';
 const Card = ({ name, price, unit, note, badge, featured, current, button, features }) => (
     <div
         className={`relative h-full rounded-[28px] p-7 flex flex-col ${
-            featured ? 'bg-[#13233f] text-white shadow-[0_40px_80px_-40px_rgba(19,35,63,0.7)]' : 'bg-white border border-[#e7ecf3] text-[#13233f]'
+            featured ? 'bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] text-white shadow-[0_40px_80px_-40px_rgba(30,74,148,0.7)]' : 'bg-white border border-[#e7ecf3] text-[#13233f]'
         } ${current ? 'ring-2 ring-[#5cccf0]' : ''}`}
     >
         {(badge || current) && (
             <span
                 className={`absolute top-7 right-7 rounded-full px-3 py-1 text-[12px] font-semibold ${
-                    featured ? 'bg-[#5cccf0]/20 text-[#7fd6f3]' : 'bg-[#e9f6fd] text-[#3468bd]'
+                    featured ? 'bg-white/15 text-white' : 'bg-[#e9f6fd] text-[#3468bd]'
                 }`}
             >
                 {current ? 'Current plan' : badge}
             </span>
         )}
-        <h3 className={`text-[15px] font-semibold ${featured ? 'text-white/70' : 'text-[#13233f]/60'}`}>{name}</h3>
+        <h3 className={`text-[15px] font-semibold ${featured ? 'text-white/80' : 'text-[#13233f]/60'}`}>{name}</h3>
         <div className="mt-4 flex items-baseline gap-2">
             <span className="text-[2.75rem] leading-none font-semibold tracking-[-0.04em]">{price}</span>
-            <span className={`text-[13px] ${featured ? 'text-white/55' : 'text-[#1a2b4a]/50'}`}>{unit}</span>
+            <span className={`text-[13px] ${featured ? 'text-white/70' : 'text-[#1a2b4a]/50'}`}>{unit}</span>
         </div>
-        <p className={`mt-2.5 text-[13px] ${featured ? 'text-white/55' : 'text-[#1a2b4a]/50'}`}>{note}</p>
+        <p className={`mt-2.5 text-[13px] ${featured ? 'text-white/70' : 'text-[#1a2b4a]/50'}`}>{note}</p>
         <div className="mt-6">{button}</div>
         <ul className="mt-6 space-y-3">
             {features.map((f) => (
                 <li key={f} className="flex gap-3 text-[14px]">
-                    <FiCheck className={`mt-0.5 flex-shrink-0 ${featured ? 'text-[#7fd6f3]' : 'text-[#3468bd]'}`} aria-hidden />
-                    <span className={featured ? 'text-white/80' : 'text-[#1a2b4a]/75'}>{f}</span>
+                    <FiCheck className={`mt-0.5 flex-shrink-0 ${featured ? 'text-[#a8e6fa]' : 'text-[#3468bd]'}`} aria-hidden />
+                    <span className={featured ? 'text-white/90' : 'text-[#1a2b4a]/75'}>{f}</span>
                 </li>
             ))}
         </ul>
@@ -37,7 +37,7 @@ const Card = ({ name, price, unit, note, badge, featured, current, button, featu
 
 const buttonClass = (featured) =>
     `w-full rounded-full px-6 py-3 text-[14px] font-medium tracking-tight transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-        featured ? 'bg-white text-[#13233f] hover:bg-[#e9f6fd]' : 'bg-[#13233f] text-white hover:bg-[#3468bd]'
+        featured ? 'bg-white text-[#2d5fb8] hover:bg-[#e9f6fd]' : 'bg-[#3468bd] text-white hover:bg-[#2a5298]'
     }`;
 
 // Monthly + Yearly cards in the petwise.vet pricing style.

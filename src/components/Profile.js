@@ -360,7 +360,7 @@ const Profile = ({ isMobileSignup = false }) => {
                         </div>
                         <div className="px-5 pb-5">
                             <button
-                                className="w-full bg-[#13233f] text-white py-3 rounded-full font-medium text-sm shadow-[0_10px_30px_-12px_rgba(19,35,63,0.6)] active:scale-[0.985] transition-transform"
+                                className="w-full bg-gradient-to-r from-[#3468bd] to-[#2d5ca8] text-white py-3 rounded-full font-medium text-sm shadow-[0_10px_30px_-12px_rgba(52,104,189,0.6)] active:scale-[0.985] transition-transform"
                                 onClick={() => setShowCheckout(true)}
                             >
                                 {planLabel() === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
@@ -518,13 +518,13 @@ const Profile = ({ isMobileSignup = false }) => {
                                         <button
                                             onClick={() => setActiveSection(id)}
                                             className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-[13px] font-medium transition-colors ${
-                                                isActive ? 'text-[#13233f]' : 'text-[#1a2b4a]/55 hover:text-[#13233f]'
+                                                isActive ? 'text-[#3468bd]' : 'text-[#1a2b4a]/55 hover:text-[#13233f]'
                                             }`}
                                         >
                                             {isActive && (
                                                 <motion.span
                                                     layoutId="settings-active-pill"
-                                                    className="absolute inset-0 rounded-full bg-white border border-[#e7ecf3] shadow-[0_4px_14px_-8px_rgba(19,35,63,0.25)]"
+                                                    className="absolute inset-0 rounded-full bg-[#eaf1fc] border border-[#d6e3f7]"
                                                     transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                                                 />
                                             )}
@@ -596,7 +596,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <UsageMeter usage={usage} onUpgrade={() => setActiveSection('billing')} />
                                         </SectionCard>
                                         {!usage.isUnlimited && (
-                                            <div className="rounded-[24px] bg-[#13233f] bg-[radial-gradient(60%_140%_at_100%_0%,rgba(92,204,240,0.28)_0%,rgba(19,35,63,0)_70%)] p-6 text-white flex flex-wrap items-center justify-between gap-4">
+                                            <div className="rounded-[24px] bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] bg-[radial-gradient(60%_140%_at_100%_0%,rgba(92,204,240,0.28)_0%,rgba(19,35,63,0)_70%)] p-6 text-white flex flex-wrap items-center justify-between gap-4">
                                                 <div>
                                                     <h3 className="text-lg font-semibold tracking-tight">Go unlimited</h3>
                                                     <p className="text-white/75 text-[13px] mt-0.5">
@@ -605,7 +605,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 </div>
                                                 <button
                                                     onClick={() => setActiveSection('billing')}
-                                                    className="px-5 py-2.5 bg-white text-[#13233f] font-medium rounded-full text-sm hover:bg-[#e9f6fd] transition-colors"
+                                                    className="px-5 py-2.5 bg-white text-[#2d5fb8] font-medium rounded-full text-sm hover:bg-[#e9f6fd] transition-colors"
                                                 >
                                                     View plans
                                                 </button>
