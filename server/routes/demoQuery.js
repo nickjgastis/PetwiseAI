@@ -37,6 +37,17 @@ router.get('/status', (req, res) => {
 });
 
 // scope=site is the public petwise.vet demo; it has its own counter so /vets campaign limits are untouched.
+// It only answers these fixed questions (by id) and caches each answer, so free-text abuse is impossible.
+const SITE_QUESTIONS = {
+    toxicology: '100g of 70% dark chocolate ingested by a 12 kg dog. Toxic dose, decontamination and treatment.',
+    maropitant: 'Maropitant dose for a vomiting 4 kg cat, including route and frequency.',
+    chf: 'Emergency furosemide protocol for a dog in acute CHF with respiratory distress.',
+    pupd: 'Top differentials and first diagnostics for PU/PD in a 13 year old cat.',
+    premed: 'Premedication options for a healthy 30 kg dog having a dental cleaning.',
+    derm: 'Seasonal paw licking in a 2 year old Labrador. Differentials and first-line treatment.'
+};
+const siteAnswers = new Map();
+
 const isSite = (req) => (req.query?.scope || req.body?.scope) === 'site';
 const queryLeft = (req, state) => (isSite(req) ? demo.remainingSite(state) : demo.remaining(state));
 const queryLimit = (req) => (isSite(req) ? demo.SITE_QUERY_LIMIT : demo.QUERY_LIMIT);
@@ -107,11 +118,15 @@ router.post('/petquery', async (req, res) => {
         });
     }
 
-    const question = String(req.body?.question || '').trim();
+    const site = isSite(req);
+    const siteId = site ? String(req.body?.questionId || '') : '';
+    if (site && !Object.hasOwn(SITE_QUESTIONS, siteId)) return res.status(400).json({ error: 'Unknown question' });
+
+    const question = site ? SITE_QUESTIONS[siteId] : String(req.body?.question || '').trim();
     if (!question) return res.status(400).json({ error: 'Question is required' });
     if (question.length > 500) return res.status(400).json({ error: 'Question is too long' });
 
-    const rawHistory = Array.isArray(req.body?.history) ? req.body.history : [];
+    const rawHistory = !site && Array.isArray(req.body?.history) ? req.body.history : [];
     const history = rawHistory
         .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string')
         .slice(-4)
@@ -127,7 +142,7 @@ router.post('/petquery', async (req, res) => {
         { role: 'user', content: question }
     ];
 
-    try {
+    const ask = async () => {
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
             {
@@ -144,8 +159,21 @@ router.post('/petquery', async (req, res) => {
                 timeout: Number(process.env.OPENAI_TIMEOUT_MS || 55000)
             }
         );
+        return response.data?.choices?.[0]?.message?.content || null;
+    };
 
-        const content = response.data?.choices?.[0]?.message?.content;
+    try {
+        let content;
+        if (site) {
+            if (!siteAnswers.has(siteId)) siteAnswers.set(siteId, ask());
+            content = await siteAnswers.get(siteId).catch((err) => {
+                siteAnswers.delete(siteId);
+                throw err;
+            });
+            if (!content) siteAnswers.delete(siteId);
+        } else {
+            content = await ask();
+        }
         if (!content) return res.status(502).json({ error: 'Invalid response from OpenAI' });
 
         const next = isSite(req) ? demo.consumeSite(state) : demo.consume(state);
