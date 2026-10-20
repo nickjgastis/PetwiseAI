@@ -3,7 +3,6 @@ const crypto = require('crypto');
 const COOKIE = 'pw_demo';
 const QUERY_LIMIT = Number(process.env.DEMO_QUERY_LIMIT || 3);
 const SOAP_LIMIT = Number(process.env.DEMO_SOAP_LIMIT || 3);
-const SITE_QUERY_LIMIT = Number(process.env.DEMO_SITE_QUERY_LIMIT || 2);
 const IP_LIMIT = Number(process.env.DEMO_IP_DAILY_LIMIT || 15);
 const SECRET = process.env.SECRET_SALT || process.env.CRON_SECRET || 'local-demo-secret';
 
@@ -53,11 +52,10 @@ const sessionOf = (id) => {
     const day = todayUtc();
     let row = sessions.get(id);
     if (!row || row.d !== day) {
-        row = { q: 0, s: 0, p: 0, d: day };
+        row = { q: 0, s: 0, d: day };
         sessions.set(id, row);
-    } else {
-        if (row.s == null) row.s = 0;
-        if (row.p == null) row.p = 0;
+    } else if (row.s == null) {
+        row.s = 0;
     }
     return row;
 };
@@ -81,25 +79,17 @@ const getState = (req) => {
     const token = req.headers['x-demo-token'] || cookies[COOKIE];
     const id = readId(token) || crypto.randomUUID();
     const row = sessionOf(id);
-    return { id, token: signId(id), q: row.q, s: row.s || 0, p: row.p || 0, ip: clientIp(req) };
+    return { id, token: signId(id), q: row.q, s: row.s || 0, ip: clientIp(req) };
 };
 
 const remainingQuery = (state) => Math.max(0, Math.min(QUERY_LIMIT - state.q, IP_LIMIT - ipCount(state.ip)));
 const remainingSoap = (state) => Math.max(0, Math.min(SOAP_LIMIT - state.s, IP_LIMIT - ipCount(state.ip)));
-const remainingSite = (state) => Math.max(0, Math.min(SITE_QUERY_LIMIT - state.p, IP_LIMIT - ipCount(state.ip)));
 
 const consumeQuery = (state) => {
     const row = sessionOf(state.id);
     row.q += 1;
     bumpIp(state.ip);
     return { ...state, q: row.q, s: row.s || 0 };
-};
-
-const consumeSite = (state) => {
-    const row = sessionOf(state.id);
-    row.p += 1;
-    bumpIp(state.ip);
-    return { ...state, p: row.p };
 };
 
 const consumeSoap = (state) => {
@@ -125,10 +115,7 @@ const setCookie = (res, token) => {
 module.exports = {
     QUERY_LIMIT,
     SOAP_LIMIT,
-    SITE_QUERY_LIMIT,
     remaining: remainingQuery,
-    remainingSite,
-    consumeSite,
     remainingQuery,
     remainingSoap,
     consume: consumeQuery,
