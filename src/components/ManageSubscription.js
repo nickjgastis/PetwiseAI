@@ -28,6 +28,15 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         new Date(user.subscription_end_date) > new Date();
 
     const handleCheckout = async (planType) => {
+        const isSwitch = ['monthly', 'yearly'].includes(subscriptionInterval) && subscriptionStatus === 'active';
+        if (isSwitch && !window.confirm(
+            planType === 'yearly'
+                ? 'Switch to the Yearly plan? You will be charged the yearly price now, minus credit for the unused part of this month.'
+                : 'Switch to the Monthly plan? Credit for the unused part of your year will be applied to your monthly invoices.'
+        )) {
+            return;
+        }
+
         setIsLoading(planType);
         try {
             const stripe = await stripePromise;
@@ -41,6 +50,15 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             });
 
             const session = await response.json();
+            if (!response.ok) throw new Error(session?.error || 'Could not change plan');
+
+            if (session.switched) {
+                if (onSubscriptionChange) onSubscriptionChange();
+                window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+                setIsLoading(null);
+                return;
+            }
+
             if (!session || !session.id) {
                 console.error('Invalid session:', session);
                 setIsLoading(null);
@@ -54,6 +72,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             }
         } catch (error) {
             console.error('Checkout error:', error);
+            alert(`Unable to change plan: ${error.message}`);
             setIsLoading(null);
         }
     };

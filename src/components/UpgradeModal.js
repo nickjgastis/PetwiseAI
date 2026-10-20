@@ -72,6 +72,12 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
             });
 
             const session = await response.json();
+            if (session?.switched) {
+                window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
+                if (onSubscribed) onSubscribed();
+                if (onClose) onClose();
+                return;
+            }
             if (!session?.id) { setIsLoading(null); return; }
 
             const result = await stripe.redirectToCheckout({ sessionId: session.id });

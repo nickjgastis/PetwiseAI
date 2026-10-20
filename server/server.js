@@ -1749,10 +1749,17 @@ app.post('/create-checkout-session', async (req, res) => {
 
         // Find or create customer with invoice settings
         let customer;
-        const existingCustomers = await stripe.customers.list({
-            email: user.email,
-            limit: 1
-        });
+        const { data: userRow } = await supabase
+            .from('users')
+            .select('stripe_customer_id')
+            .eq('auth0_user_id', user.sub)
+            .single();
+        const storedCustomer = userRow?.stripe_customer_id
+            ? await stripe.customers.retrieve(userRow.stripe_customer_id).catch(() => null)
+            : null;
+        const existingCustomers = storedCustomer && !storedCustomer.deleted
+            ? { data: [storedCustomer] }
+            : await stripe.customers.list({ email: user.email, limit: 1 });
 
         if (existingCustomers.data.length > 0) {
             // Force update existing customer's email and set invoice settings
@@ -1772,6 +1779,39 @@ app.post('/create-checkout-session', async (req, res) => {
                     default_payment_method: null
                 }
             });
+        }
+
+        // Already subscribed: swap the price on the existing subscription instead of
+        // opening a second checkout (which would bill both).
+        const existingSubs = await stripe.subscriptions.list({ customer: customer.id, status: 'all', limit: 10 });
+        const liveSub = existingSubs.data.find((s) => ['active', 'trialing', 'past_due'].includes(s.status));
+        if (liveSub) {
+            const item = liveSub.items.data[0];
+            const targetPrice = PRICE_IDS[`${planType}_${liveSub.currency}`] || priceId;
+
+            if (item.price.id === targetPrice && !liveSub.cancel_at_period_end) {
+                return res.json({ switched: true, interval: planType });
+            }
+
+            const updated = await stripe.subscriptions.update(liveSub.id, {
+                items: [{ id: item.id, price: targetPrice }],
+                proration_behavior: 'always_invoice',
+                payment_behavior: 'error_if_incomplete',
+                cancel_at_period_end: false
+            });
+
+            await supabase
+                .from('users')
+                .update({
+                    subscription_status: 'active',
+                    subscription_interval: planType,
+                    stripe_customer_id: customer.id,
+                    subscription_end_date: new Date(updated.current_period_end * 1000).toISOString(),
+                    cancel_at_period_end: false
+                })
+                .eq('auth0_user_id', user.sub);
+
+            return res.json({ switched: true, interval: planType });
         }
 
         // Create checkout session with updated customer
@@ -2118,6 +2158,12 @@ app.post('/webhook', async (req, res) => {
                     // Regular status update (not trial conversion)
                     if (subscription.status === 'active') {
                         updateData.subscription_status = 'active';
+                        const priceId = subscription.items.data[0]?.price.id;
+                        if (priceId === PRICE_IDS.yearly_usd || priceId === PRICE_IDS.yearly_cad) {
+                            updateData.subscription_interval = 'yearly';
+                        } else if (priceId === PRICE_IDS.monthly_usd || priceId === PRICE_IDS.monthly_cad) {
+                            updateData.subscription_interval = 'monthly';
+                        }
                     } else if (subscription.status === 'past_due') {
                         updateData.subscription_status = 'past_due';
                     } else if (['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
