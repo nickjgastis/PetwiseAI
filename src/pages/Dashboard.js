@@ -20,7 +20,8 @@ import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clear
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
 import UsageRing from '../components/UsageRing';
-import { useUsage, trialPlanLabel } from '../hooks/useUsage';
+import { useUsage, trialPlanLabel, getTier } from '../hooks/useUsage';
+import PaymentIssueBanner from '../components/PaymentIssueBanner';
 import UpgradeModal from '../components/UpgradeModal';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
@@ -246,8 +247,7 @@ const Dashboard = () => {
     // upgrade UI / usage meters (paid or student = unlimited).
     const hasPaidPlan = () => {
         if (isStudentMode()) return true;
-        return ['active', 'past_due'].includes(userData?.subscription_status) &&
-            ['monthly', 'yearly'].includes(userData?.subscription_interval);
+        return getTier(userData) === 'paid';
     };
 
     // ================ USER CHANGE DETECTION ================
@@ -1526,13 +1526,13 @@ const Dashboard = () => {
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
                                 <Link
                                     to="/dashboard/profile"
-                                    className="flex items-center text-amber-200 no-underline font-medium rounded-xl p-2.5 transition-all duration-200 text-xs"
-                                    style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.15)' }}
+                                    className="flex items-center text-[#ffd9d9] no-underline font-medium rounded-xl p-2.5 transition-all duration-200 text-xs"
+                                    style={{ background: 'rgba(214,69,69,0.2)', border: '1px solid rgba(255,180,180,0.25)' }}
                                 >
-                                    <div className="w-6 h-6 rounded-md flex items-center justify-center mr-2" style={{ background: 'rgba(245,158,11,0.2)' }}>
+                                    <div className="w-6 h-6 rounded-md flex items-center justify-center mr-2" style={{ background: 'rgba(214,69,69,0.3)' }}>
                                         <span className="text-[10px]">💳</span>
                                     </div>
-                                    <span className="text-[11px]">Payment needs attention</span>
+                                    <span className="text-[11px]">Update your card</span>
                                 </Link>
                             </li>
                         )}
@@ -1651,12 +1651,16 @@ const Dashboard = () => {
                     {/* Mobile padding for header */}
                     <div className="md:hidden h-16"></div>
 
+                    {location.pathname !== '/dashboard/profile' && (
+                        <PaymentIssueBanner userData={userData} userId={user?.sub} className="mx-4 mt-4 mb-4" />
+                    )}
+
                     {/* Mobile Reports Generating Banner */}
                     {mobileReportsGenerating > 0 && !isMobile && (
-                        <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
+                        <div className="bg-[#eef4fc] border border-[#d6e3f7] text-[#13233f] px-5 py-4 mb-4 mx-4 mt-4 rounded-[20px] flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-white bg-opacity-20 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-4 h-4 border-2 border-[#3468bd] border-t-transparent rounded-full animate-spin"></div>
                                 </div>
                                 <div>
                                     <p className="font-semibold text-base">
@@ -1679,14 +1683,14 @@ const Dashboard = () => {
                                             return `${parts.join(', ')} generating from mobile`;
                                         })()}
                                     </p>
-                                    <p className="text-sm opacity-90">Will appear in Saved Records when complete</p>
+                                    <p className="text-[13px] text-[#1a2b4a]/65">Will appear in Saved Records when complete</p>
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {usage.trialPhase === 'last-day' && (
-                        <div className="bg-[#3468bd] text-white px-6 py-4 shadow-sm mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between gap-4" style={{ animation: 'fadeUp 0.5s ease-out' }}>
+                        <div className="bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] text-white px-6 py-4 shadow-[0_20px_40px_-24px_rgba(30,74,148,0.7)] mb-4 mx-4 mt-4 rounded-[20px] flex items-center justify-between gap-4" style={{ animation: 'fadeUp 0.5s ease-out' }}>
                             <div>
                                 <p className="font-semibold text-base">Last day of unlimited</p>
                                 <p className="text-sm text-white/80">
@@ -1695,7 +1699,7 @@ const Dashboard = () => {
                             </div>
                             <button
                                 onClick={() => setShowTrialUpgrade(true)}
-                                className="flex-shrink-0 px-4 py-2 bg-white text-[#3468bd] text-sm font-semibold rounded-lg hover:bg-blue-50 transition-colors whitespace-nowrap"
+                                className="flex-shrink-0 px-5 py-2.5 bg-white text-[#2d5fb8] text-sm font-medium rounded-full hover:bg-[#e9f6fd] transition-colors whitespace-nowrap"
                             >
                                 See plans
                             </button>
@@ -1704,9 +1708,9 @@ const Dashboard = () => {
 
                     {/* Mobile drafts parked by the daily free limit */}
                     {draftsWaitingForLimit > 0 && !isMobile && (
-                        <div className="bg-amber-50 border border-amber-300 text-amber-900 px-6 py-4 shadow-sm mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between gap-4" style={{ animation: 'fadeUp 0.5s ease-out' }}>
+                        <div className="bg-[#fffaf0] border border-[#f5e2b8] text-[#13233f] px-5 py-4 mb-4 mx-4 mt-4 rounded-[20px] flex items-center justify-between gap-4" style={{ animation: 'fadeUp 0.5s ease-out' }}>
                             <div className="flex items-center gap-3">
-                                <FaMobile className="text-xl flex-shrink-0 text-amber-500" />
+                                <FaMobile className="text-xl flex-shrink-0 text-[#d99a1e]" />
                                 <div>
                                     <p className="font-semibold text-base">
                                         {draftsWaitingForLimit === 1
@@ -1714,7 +1718,7 @@ const Dashboard = () => {
                                             : `${draftsWaitingForLimit} mobile dictations waiting`}
                                         {'. '}You've finished today's free SOAP notes
                                     </p>
-                                    <p className="text-sm opacity-80">
+                                    <p className="text-[13px] text-[#1a2b4a]/65">
                                         Your dictations are saved. They'll generate automatically after your allowance resets at midnight
                                         {usage.hoursUntilReset ? ` (in ${usage.hoursUntilReset}h)` : ''}, or upgrade now for unlimited use.
                                     </p>
@@ -1722,7 +1726,7 @@ const Dashboard = () => {
                             </div>
                             <button
                                 onClick={() => navigate('/dashboard/profile', { state: { openCheckout: true } })}
-                                className="flex-shrink-0 px-4 py-2 bg-[#3468bd] text-white text-sm font-semibold rounded-lg hover:bg-[#2a5298] transition-colors whitespace-nowrap"
+                                className="flex-shrink-0 px-5 py-2.5 bg-[#3468bd] text-white text-sm font-medium rounded-full hover:bg-[#2a5298] transition-colors whitespace-nowrap"
                             >
                                 Upgrade
                             </button>
@@ -1731,7 +1735,7 @@ const Dashboard = () => {
 
                     {/* Site-wide Mobile SOAP Notification Banner */}
                     {showMobileSOAPNotification && mobileSOAPCount > 0 && !isMobile && mobileReportsGenerating === 0 && (
-                        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-4 shadow-lg mb-4 mx-4 mt-4 rounded-xl flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
+                        <div className="bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] text-white px-6 py-4 shadow-[0_20px_40px_-24px_rgba(30,74,148,0.7)] mb-4 mx-4 mt-4 rounded-[20px] flex items-center justify-between relative transition-all duration-500 ease-out" style={{ animation: 'fadeUp 0.5s ease-out', zIndex: 9999 }}>
                             <div className="flex items-center gap-3">
                                 <FaMobile className="text-xl flex-shrink-0" />
                                 <div>
@@ -1749,7 +1753,7 @@ const Dashboard = () => {
                                     onClick={() => {
                                         navigate('/dashboard/saved-reports');
                                     }}
-                                    className="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg font-medium text-sm transition-all relative"
+                                    className="px-5 py-2 bg-white text-[#2d5fb8] hover:bg-[#e9f6fd] rounded-full font-medium text-sm transition-all relative"
                                     style={{ zIndex: 10001 }}
                                 >
                                     View

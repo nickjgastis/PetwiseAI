@@ -1967,6 +1967,7 @@ app.post('/webhook', async (req, res) => {
                             subscription_interval: subscriptionInterval,
                             subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
                             cancel_at_period_end: subscription.cancel_at_period_end || false,
+                            grace_period_end: null,
                             // Clear student fields on paid activation (but preserve graduation year)
                             plan_label: null,
                             student_school_email: null,
@@ -2001,7 +2002,7 @@ app.post('/webhook', async (req, res) => {
                     // Find user by stripe customer ID
                     const { data: userData, error: userError } = await supabase
                         .from('users')
-                        .select('auth0_user_id, subscription_end_date')
+                        .select('auth0_user_id, subscription_end_date, subscription_status, grace_period_end')
                         .eq('stripe_customer_id', customer.id)
                         .single();
 
@@ -2010,9 +2011,13 @@ app.post('/webhook', async (req, res) => {
                         return res.status(200).json({ received: true });
                     }
 
-                    // Calculate grace period: exactly 7 days from first payment failure
-                    const gracePeriodEnd = new Date();
+                    // Grace period: 7 days from the FIRST failure. Stripe retries fire this
+                    // event again, so keep the existing deadline instead of pushing it out.
+                    let gracePeriodEnd = new Date();
                     gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+                    if (userData.subscription_status === 'past_due' && userData.grace_period_end) {
+                        gracePeriodEnd = new Date(userData.grace_period_end);
+                    }
 
                     // Set status to past_due when payment fails
                     // This gives user exactly 7 days grace period
@@ -2115,9 +2120,10 @@ app.post('/webhook', async (req, res) => {
                         updateData.subscription_status = 'active';
                     } else if (subscription.status === 'past_due') {
                         updateData.subscription_status = 'past_due';
-                    } else if (subscription.status === 'canceled') {
+                    } else if (['canceled', 'unpaid', 'incomplete_expired'].includes(subscription.status)) {
                         updateData.subscription_status = 'inactive';
                         updateData.subscription_interval = null;  // Clear interval on cancellation
+                        updateData.grace_period_end = null;
                     } else if (subscription.status === 'trialing') {
                         // Still in trial, keep as stripe_trial
                         updateData.subscription_status = 'active';
@@ -2137,6 +2143,42 @@ app.post('/webhook', async (req, res) => {
                 console.log('Successfully updated subscription status for user:', userData.auth0_user_id);
             } catch (error) {
                 console.error('Error processing subscription update:', error);
+                return res.status(500).json({ error: error.message });
+            }
+        }
+
+        // Subscription ended for good (Stripe gave up on retries, or it was canceled
+        // immediately). Drop to the free tier unless another live subscription exists.
+        if (event.type === 'customer.subscription.deleted') {
+            const subscription = event.data.object;
+            console.log('Subscription deleted:', subscription.id);
+
+            try {
+                const live = await stripe.subscriptions.list({ customer: subscription.customer, status: 'all', limit: 10 });
+                const stillLive = live.data.some(
+                    (s) => s.id !== subscription.id && ['active', 'trialing', 'past_due'].includes(s.status)
+                );
+                if (stillLive) {
+                    console.log('Customer has another live subscription, leaving status as is:', subscription.customer);
+                    return res.status(200).json({ received: true });
+                }
+
+                const { error: updateError } = await supabase
+                    .from('users')
+                    .update({
+                        subscription_status: 'inactive',
+                        subscription_interval: null,
+                        cancel_at_period_end: false,
+                        grace_period_end: null
+                    })
+                    .eq('stripe_customer_id', subscription.customer);
+
+                if (updateError) {
+                    console.error('Failed to downgrade user after subscription deletion:', updateError);
+                    throw updateError;
+                }
+            } catch (error) {
+                console.error('Error processing subscription deletion:', error);
                 return res.status(500).json({ error: error.message });
             }
         }
@@ -2969,7 +3011,7 @@ app.get('/admin-metrics', requireAdmin, async (req, res) => {
 // Creates a Stripe customer portal session for billing management
 app.post('/create-customer-portal', async (req, res) => {
     try {
-        const { user_id } = req.body;
+        const { user_id, flow } = req.body;
 
         if (!user_id) {
             return res.status(400).json({ error: 'user_id is required' });
@@ -2987,9 +3029,17 @@ app.post('/create-customer-portal', async (req, res) => {
         }
 
         // Create customer portal session
+        const returnUrl = `${appOrigin(req)}/dashboard/profile`;
         const session = await stripe.billingPortal.sessions.create({
             customer: userData.stripe_customer_id,
-            return_url: `${appOrigin(req)}/dashboard/profile`,
+            return_url: returnUrl,
+            // flow=payment_method_update drops the user straight onto the "update card" form
+            ...(flow === 'payment_method_update' && {
+                flow_data: {
+                    type: 'payment_method_update',
+                    after_completion: { type: 'redirect', redirect: { return_url: returnUrl } }
+                }
+            })
         });
 
         res.json({ url: session.url });

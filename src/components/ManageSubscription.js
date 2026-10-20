@@ -144,7 +144,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         <div>
             {/* Student Redeem Modal */}
             {showStudentRedeem && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                <div className="fixed inset-0 bg-[#13233f]/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
                     <StudentRedeem
                         onSuccess={handleStudentRedeemSuccess}
                         onCancel={() => setShowStudentRedeem(false)}

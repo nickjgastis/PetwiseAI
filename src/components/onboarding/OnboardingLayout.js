@@ -9,25 +9,14 @@ const OnboardingLayout = ({ currentStep, children, showProgress = true, wide = f
     const progress = stepIndex >= 0 ? ((stepIndex + 1) / STEP_ORDER.length) * 100 : 0;
 
     return (
-        <div 
-            className="fixed inset-0 z-50 bg-gradient-to-br from-[#1e3a6e] via-[#2a5298] to-[#3468bd] flex flex-col overflow-y-auto"
+        <div
+            className="fixed inset-0 z-50 bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] flex flex-col overflow-y-auto"
             style={{ overscrollBehavior: 'none' }}
         >
-            {/* Floating orbs background */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute w-20 h-20 sm:w-28 sm:h-28 rounded-full blur-2xl"
-                    style={{ background: '#3b82f6', opacity: 0.45, animation: 'onbFloat1 20s ease-in-out infinite' }}
-                />
-                <div className="absolute w-16 h-16 sm:w-24 sm:h-24 rounded-full blur-2xl"
-                    style={{ background: '#10b981', opacity: 0.4, animation: 'onbFloat2 25s ease-in-out infinite' }}
-                />
-                <div className="absolute w-24 h-24 sm:w-32 sm:h-32 rounded-full blur-2xl"
-                    style={{ background: '#f59e0b', opacity: 0.35, animation: 'onbFloat3 22s ease-in-out infinite' }}
-                />
-                <div className="absolute w-14 h-14 sm:w-20 sm:h-20 rounded-full blur-2xl"
-                    style={{ background: '#ef4444', opacity: 0.35, animation: 'onbFloat4 28s ease-in-out infinite' }}
-                />
-            </div>
+            <div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: 'radial-gradient(60% 45% at 50% 0%, rgba(92,204,240,0.35) 0%, rgba(45,95,184,0) 70%)' }}
+            />
 
             {/* Progress bar with back button */}
             {showProgress && stepIndex >= 0 && (
@@ -42,7 +31,7 @@ const OnboardingLayout = ({ currentStep, children, showProgress = true, wide = f
                         )}
                         <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
                             <div 
-                                className="h-full bg-[#3db6fd] rounded-full transition-all duration-700 ease-out"
+                                className="h-full bg-[#7fd6f3] rounded-full transition-all duration-700 ease-out"
                                 style={{ width: `${progress}%` }}
                             />
                         </div>
@@ -57,33 +46,6 @@ const OnboardingLayout = ({ currentStep, children, showProgress = true, wide = f
                 </div>
             </div>
 
-            {/* Keyframes */}
-            <style>{`
-                @keyframes onbFloat1 {
-                    0%, 100% { top: 5%; left: 10%; transform: scale(1); }
-                    25% { top: 50%; left: 60%; transform: scale(1.2); }
-                    50% { top: 75%; left: 20%; transform: scale(0.9); }
-                    75% { top: 20%; left: 55%; transform: scale(1.1); }
-                }
-                @keyframes onbFloat2 {
-                    0%, 100% { top: 60%; left: 55%; transform: scale(1); }
-                    25% { top: 10%; left: 5%; transform: scale(0.95); }
-                    50% { top: 30%; left: 70%; transform: scale(1.15); }
-                    75% { top: 70%; left: 30%; transform: scale(1); }
-                }
-                @keyframes onbFloat3 {
-                    0%, 100% { top: 30%; left: 75%; transform: scale(1); }
-                    25% { top: 65%; left: 35%; transform: scale(1.1); }
-                    50% { top: 10%; left: 45%; transform: scale(0.85); }
-                    75% { top: 50%; left: 5%; transform: scale(1.05); }
-                }
-                @keyframes onbFloat4 {
-                    0%, 100% { top: 80%; left: 10%; transform: scale(1); }
-                    25% { top: 15%; left: 45%; transform: scale(1.15); }
-                    50% { top: 55%; left: 80%; transform: scale(0.9); }
-                    75% { top: 5%; left: 25%; transform: scale(1.1); }
-                }
-            `}</style>
         </div>
     );
 };

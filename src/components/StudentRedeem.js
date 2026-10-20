@@ -58,29 +58,29 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
     };
 
     return (
-        <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg p-6">
+        <div className="max-w-md mx-auto bg-white rounded-[28px] border border-[#e7ecf3] shadow-[0_40px_80px_-40px_rgba(19,35,63,0.5)] p-6 sm:p-8">
             <div className="mb-6">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Student Access</h3>
-                <p className="text-gray-600 text-sm">
+                <h3 className="text-[1.5rem] font-semibold tracking-[-0.02em] text-[#13233f] mb-1.5">Student access</h3>
+                <p className="text-[#1a2b4a]/65 text-[14px] leading-relaxed">
                     Enter your access code and graduation year to get free PetWise access.
                 </p>
             </div>
 
             <div className="space-y-4">
                 {!canRedeemStudentAccess() && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                        <p className="text-yellow-800 text-sm">
+                    <div className="bg-[#fffaf0] border border-[#f5e2b8] rounded-2xl p-3.5">
+                        <p className="text-[#13233f]/80 text-[13px]">
                             You currently have an active paid subscription. Please cancel your subscription first before redeeming student access.
                         </p>
                     </div>
                 )}
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-[13px] font-medium text-[#13233f] mb-1.5">
                         Access Code *
                     </label>
                     <input
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full border border-[#e7ecf3] rounded-2xl px-4 py-3 text-[15px] text-[#13233f] bg-white placeholder-[#1a2b4a]/35 focus:outline-none focus:border-[#3468bd] focus:ring-4 focus:ring-[#3468bd]/10 disabled:bg-[#f6f8fb] transition-all"
                         value={accessCode}
                         onChange={e => setAccessCode(e.target.value)}
                         placeholder="Enter your student access code"
@@ -89,11 +89,11 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-[13px] font-medium text-[#13233f] mb-1.5">
                         Graduation Year *
                     </label>
                     <select
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full border border-[#e7ecf3] rounded-2xl px-4 py-3 text-[15px] text-[#13233f] bg-white placeholder-[#1a2b4a]/35 focus:outline-none focus:border-[#3468bd] focus:ring-4 focus:ring-[#3468bd]/10 disabled:bg-[#f6f8fb] transition-all"
                         value={gradYear}
                         onChange={e => setGradYear(Number(e.target.value))}
                         disabled={loading || !!userData?.student_grad_year || !canRedeemStudentAccess()}
@@ -103,18 +103,18 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                         ))}
                     </select>
                     {userData?.student_grad_year && (
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-[#1a2b4a]/50 mt-1.5">
                             Graduation year is locked once set
                         </p>
                     )}
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-[13px] font-medium text-[#13233f] mb-1.5">
                         Student Email *
                     </label>
                     <input
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full border border-[#e7ecf3] rounded-2xl px-4 py-3 text-[15px] text-[#13233f] bg-white placeholder-[#1a2b4a]/35 focus:outline-none focus:border-[#3468bd] focus:ring-4 focus:ring-[#3468bd]/10 disabled:bg-[#f6f8fb] transition-all"
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         placeholder="name@school.edu"
@@ -125,8 +125,8 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                 </div>
 
                 {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-md p-3">
-                        <div className="text-red-600 text-sm">{error}</div>
+                    <div className="bg-[#fff6f6] border border-[#f6d5d5] rounded-2xl p-3.5">
+                        <div className="text-[#d64545] text-[13px]">{error}</div>
                     </div>
                 )}
 
@@ -134,7 +134,7 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                     <button
                         disabled={loading || !accessCode || !gradYear || !email || !canRedeemStudentAccess()}
                         onClick={redeem}
-                        className="flex-1 bg-primary-600 text-white py-2 px-4 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex-1 bg-[#3468bd] text-white py-3 px-5 rounded-full font-medium text-[14px] hover:bg-[#2a5298] focus:outline-none focus:ring-4 focus:ring-[#3468bd]/15 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         {loading ? "Applying..." : "Apply Student Access"}
                     </button>
@@ -142,7 +142,7 @@ export default function StudentRedeem({ onSuccess, onCancel, userData }) {
                     {onCancel && (
                         <button
                             onClick={onCancel}
-                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            className="px-5 py-3 border border-[#13233f]/15 rounded-full text-[#13233f] font-medium text-[14px] hover:border-[#13233f]/40 focus:outline-none transition-colors"
                             disabled={loading}
                         >
                             Cancel

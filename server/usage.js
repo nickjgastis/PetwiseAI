@@ -35,7 +35,9 @@ function getTier(userRow) {
 
     if (userRow.plan_label === 'student' && endDate && endDate > now) return 'student';
 
-    const hasActiveStatus = ['active', 'past_due'].includes(userRow.subscription_status);
+    const graceEnd = userRow.grace_period_end ? new Date(userRow.grace_period_end) : null;
+    const inGrace = userRow.subscription_status === 'past_due' && (!graceEnd || graceEnd > now);
+    const hasActiveStatus = userRow.subscription_status === 'active' || inGrace;
     if (hasActiveStatus && ['monthly', 'yearly'].includes(userRow.subscription_interval)) return 'paid';
 
     // Grandfather: in-flight trials stay unlimited until they convert or lapse
@@ -60,7 +62,7 @@ async function checkAndConsume(sub, feature, tz) {
 
     const { data: userRow, error: fetchError } = await usageSupabase
         .from('users')
-        .select('subscription_status, subscription_interval, subscription_end_date, plan_label')
+        .select('subscription_status, subscription_interval, subscription_end_date, grace_period_end, plan_label')
         .eq('auth0_user_id', sub)
         .single();
 

@@ -68,84 +68,86 @@ const CongratsStep = ({ onNext }) => {
         }
     };
 
+    const prefix = isStudentMode ? 'Student' : 'Dr.';
+
     return (
         <OnboardingLayout currentStep="congrats" showProgress={false}>
-            <div className="animate-fade-in text-center">
-                {/* Big congrats */}
-                <div className="mb-5 sm:mb-10">
-                    <p className="text-[#3db6fd] text-sm sm:text-base font-medium tracking-widest uppercase mb-4">Welcome to Petwise</p>
-                    <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white leading-none mb-4">
+            <div className="animate-fade-in">
+                <div className="text-center mb-7 sm:mb-9">
+                    <p className="text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-[#a8e6fa] mb-4">Welcome to PetWise</p>
+                    <h1 className="text-[2.5rem] sm:text-[3.5rem] lg:text-[4.25rem] font-semibold tracking-[-0.04em] text-white leading-[1.02] mb-4">
                         Congratulations!
                     </h1>
-                    <p className="text-white/70 text-lg sm:text-xl lg:text-2xl max-w-md mx-auto leading-relaxed">
+                    <p className="text-white/75 text-base sm:text-lg max-w-md mx-auto leading-relaxed">
                         You've taken your first step to saving countless hours writing SOAPs.
                     </p>
                 </div>
 
-                {/* Name form — clean, no card */}
-                <form onSubmit={handleSubmit} className="text-left space-y-4 max-w-sm mx-auto">
-                    <p className="text-white/50 text-xs text-center uppercase tracking-wider font-medium mb-1">Set up your profile</p>
-
-                    {/* Toggle */}
-                    <div className="flex justify-center">
-                        <button
-                            type="button"
-                            onClick={() => setIsStudentMode(!isStudentMode)}
-                            className="px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-300 bg-white/10 text-white/80 hover:bg-white/20 border border-white/20"
-                        >
-                            {isStudentMode ? 'Student Mode' : 'Doctor Mode'} · tap to switch
-                        </button>
-                    </div>
-
-                    {/* Phone number */}
-                    <div>
-                        <input
-                            type="tel"
-                            placeholder="Phone number"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            className="w-full px-3.5 py-3 rounded-lg border border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder-white/40 focus:outline-none focus:border-[#3db6fd] focus:bg-white/15 transition-all text-sm sm:text-base"
-                            required
-                            autoFocus
-                        />
-                    </div>
-
-                    {/* Name input */}
-                    <div>
-                        <div className="flex rounded-lg overflow-hidden border border-white/20 bg-white/10 backdrop-blur-sm focus-within:border-[#3db6fd] focus-within:bg-white/15 transition-all">
-                            <div className="flex items-center px-3.5 py-3 bg-white/10 text-white font-semibold text-sm border-r border-white/10">
-                                {isStudentMode ? 'Student' : 'Dr.'}
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Your name"
-                                value={dvmName1}
-                                onChange={(e) => setDvmName1(e.target.value)}
-                                className="flex-1 px-3.5 py-3 bg-transparent text-white placeholder-white/40 focus:outline-none text-sm sm:text-base"
-                                required
-                            />
+                <form
+                    onSubmit={handleSubmit}
+                    className="max-w-md mx-auto bg-white rounded-[28px] p-6 sm:p-8 shadow-[0_40px_80px_-40px_rgba(19,35,63,0.6)] text-left space-y-4"
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <h2 className="text-[17px] font-semibold tracking-tight text-[#13233f]">Set up your profile</h2>
+                        <div className="inline-flex rounded-full p-1 bg-[#f1f4f8]" role="group" aria-label="Account type">
+                            {[['Doctor', false], ['Student', true]].map(([label, value]) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => setIsStudentMode(value)}
+                                    aria-pressed={isStudentMode === value}
+                                    className={`px-3 py-1 rounded-full text-[12px] font-medium transition-all ${
+                                        isStudentMode === value ? 'bg-white text-[#13233f] shadow-sm' : 'text-[#13233f]/50 hover:text-[#13233f]'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    <p className="text-white/30 text-[11px] text-center">
-                        This appears as <span className="text-white/50">{isStudentMode ? 'Student' : 'Dr.'} {dvmName1 || 'Your Name'}</span> on reports and can't be changed.
+                    <input
+                        type="tel"
+                        placeholder="Phone number"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        className="w-full px-4 py-3 rounded-2xl border border-[#e7ecf3] bg-white text-[#13233f] placeholder-[#1a2b4a]/35 focus:outline-none focus:border-[#3468bd] focus:ring-4 focus:ring-[#3468bd]/10 transition-all text-[15px]"
+                        required
+                        autoFocus
+                    />
+
+                    <div className="flex rounded-2xl overflow-hidden border border-[#e7ecf3] bg-white focus-within:border-[#3468bd] focus-within:ring-4 focus-within:ring-[#3468bd]/10 transition-all">
+                        <div className="flex items-center px-4 bg-[#f6f8fb] text-[#13233f] font-medium text-[15px] border-r border-[#e7ecf3]">
+                            {prefix}
+                        </div>
+                        <input
+                            type="text"
+                            placeholder="Your name"
+                            value={dvmName1}
+                            onChange={(e) => setDvmName1(e.target.value)}
+                            className="flex-1 min-w-0 px-4 py-3 bg-transparent text-[#13233f] placeholder-[#1a2b4a]/35 focus:outline-none text-[15px]"
+                            required
+                        />
+                    </div>
+
+                    <p className="text-[12px] text-[#1a2b4a]/55">
+                        This appears as <span className="font-medium text-[#13233f]">{prefix} {dvmName1 || 'Your Name'}</span> on reports and can't be changed.
                     </p>
 
-                    {/* Terms checkbox */}
-                    <label className="flex items-start gap-2.5 p-2.5 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors">
+                    <label className="flex items-start gap-2.5 p-3 rounded-2xl bg-[#f6f8fb] border border-[#e7ecf3] cursor-pointer hover:border-[#d6e3f7] transition-colors">
                         <input
                             type="checkbox"
                             checked={acceptedTerms}
                             onChange={(e) => setAcceptedTerms(e.target.checked)}
-                            className="mt-0.5 w-4 h-4 flex-shrink-0 accent-[#3db6fd] cursor-pointer"
+                            className="mt-0.5 w-4 h-4 flex-shrink-0 accent-[#3468bd] cursor-pointer"
                         />
-                        <span className="text-white/75 text-[12px] sm:text-[13px] leading-snug">
+                        <span className="text-[#1a2b4a]/75 text-[13px] leading-snug">
                             I agree to the{' '}
-                            <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-[#3db6fd] hover:text-[#5ec4ff] underline underline-offset-2">
+                            <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-[#3468bd] hover:text-[#13233f] underline underline-offset-2">
                                 Terms of Service
                             </Link>{' '}
                             and{' '}
-                            <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#3db6fd] hover:text-[#5ec4ff] underline underline-offset-2">
+                            <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#3468bd] hover:text-[#13233f] underline underline-offset-2">
                                 Privacy Policy
                             </Link>
                             .
@@ -153,13 +155,13 @@ const CongratsStep = ({ onNext }) => {
                     </label>
 
                     {error && (
-                        <p className="text-red-300 text-sm text-center bg-red-500/10 rounded-lg py-2 px-3">{error}</p>
+                        <p className="text-[#d64545] text-[13px] text-center bg-[#fff6f6] border border-[#f6d5d5] rounded-2xl py-2 px-3">{error}</p>
                     )}
 
                     <button
                         type="submit"
                         disabled={isSubmitting || !phoneNumber.trim() || !dvmName1.trim() || !acceptedTerms}
-                        className="w-full py-3.5 bg-[#3db6fd] text-white font-semibold rounded-lg hover:bg-[#2da8ef] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-sm sm:text-base"
+                        className="w-full py-3.5 bg-[#3468bd] text-white font-medium rounded-full hover:bg-[#2a5298] shadow-[0_10px_30px_-12px_rgba(52,104,189,0.6)] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed text-[15px]"
                     >
                         {isSubmitting ? 'Saving...' : 'Continue'}
                     </button>

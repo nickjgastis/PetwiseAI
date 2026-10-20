@@ -112,14 +112,14 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
         >
             <button
                 onClick={onClose}
-                className="fixed top-4 right-4 flex items-center gap-2 px-4 py-2 text-[#13233f]/60 hover:text-[#13233f] hover:bg-[#13233f]/5 rounded-full transition-all text-sm z-20"
+                className="fixed top-4 right-4 flex items-center gap-2 px-4 py-2 text-[#13233f]/70 hover:text-[#13233f] bg-white/80 backdrop-blur border border-[#e7ecf3] shadow-sm rounded-full transition-all text-sm z-20"
             >
                 <FaTimes />
                 <span className="hidden sm:inline">{copy.dismiss}</span>
             </button>
 
             {showStudentRedeem && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10000] p-4">
+                <div className="fixed inset-0 bg-[#13233f]/40 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
                     <StudentRedeem
                         onSuccess={handleStudentRedeemSuccess}
                         onCancel={() => setShowStudentRedeem(false)}

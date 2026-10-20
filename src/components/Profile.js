@@ -9,6 +9,7 @@ import UsageMeter from './UsageMeter';
 import UpgradeModal from './UpgradeModal';
 import ManageAccount from './ManageAccount';
 import StudentRedeem from './StudentRedeem';
+import PaymentIssueBanner from './PaymentIssueBanner';
 import ManageSubscription from './ManageSubscription';
 import InstallPrompt from './InstallPrompt';
 import {
@@ -16,10 +17,6 @@ import {
     FaGraduationCap, FaEnvelope, FaCircle
 } from 'react-icons/fa';
 import { clearAppLocalStorage } from '../utils/clearUserData';
-
-const API_URL = process.env.NODE_ENV === 'production'
-    ? 'https://api.petwise.vet'
-    : 'http://localhost:3001';
 
 // Row inside a settings card: label left, value right
 const InfoRow = ({ label, children }) => (
@@ -74,14 +71,6 @@ const Profile = ({ isMobileSignup = false }) => {
             return new Date() < cutoffDate;
         }
         return true;
-    };
-
-    const getGracePeriodDays = () => {
-        if (userData?.grace_period_end && subscriptionStatus === 'past_due') {
-            const daysLeft = Math.ceil((new Date(userData.grace_period_end) - new Date()) / (1000 * 60 * 60 * 24));
-            return daysLeft > 0 ? daysLeft : 0;
-        }
-        return null;
     };
 
     const handleStudentRedeemSuccess = () => {
@@ -156,28 +145,6 @@ const Profile = ({ isMobileSignup = false }) => {
         else window.scrollTo(0, 0);
     }, [isMobileSignup, showCheckout, showManageAccount, showInstallPrompt]);
 
-    const handleBillingPortal = async () => {
-        try {
-            const response = await fetch(`${API_URL}/create-customer-portal`, {
-                method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: user.sub }),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Failed to access billing portal');
-            }
-
-            window.location.href = data.url;
-        } catch (error) {
-            console.error('Billing portal error:', error);
-            alert(`Unable to access billing portal: ${error.message}`);
-        }
-    };
-
     const formatDate = (date) => {
         return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric', month: 'long', day: 'numeric'
@@ -228,31 +195,12 @@ const Profile = ({ isMobileSignup = false }) => {
         cancel_at_period_end: cancelAtPeriodEnd
     };
 
-    const pastDueBanner = subscriptionStatus === 'past_due' && (
-        <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-5 flex items-start gap-3"
-        >
-            <span className="text-xl">⚠️</span>
-            <div className="flex-1">
-                <h3 className="text-red-800 text-sm font-bold mb-0.5">Subscription Past Due</h3>
-                <p className="text-red-700 text-[13px]">
-                    Your payment is past due.
-                    {getGracePeriodDays() !== null && getGracePeriodDays() > 0 && ` Your subscription will be canceled in ${getGracePeriodDays()} ${getGracePeriodDays() === 1 ? 'day' : 'days'} unless payment is resolved.`}
-                    {getGracePeriodDays() === 0 && ' Your grace period has expired. Please update your payment method immediately.'}
-                    {getGracePeriodDays() === null && ' Please update your payment method in Billing Settings.'}
-                </p>
-            </div>
-            {userData?.stripe_customer_id && (
-                <button
-                    className="bg-red-600 text-white px-4 py-2 rounded-full font-semibold text-xs hover:bg-red-700 transition-all whitespace-nowrap"
-                    onClick={handleBillingPortal}
-                >
-                    Fix Payment
-                </button>
-            )}
-        </motion.div>
+    const pastDueBanner = (
+        <PaymentIssueBanner
+            userData={{ ...userData, subscription_status: subscriptionStatus }}
+            userId={user?.sub}
+            className="mb-5"
+        />
     );
 
     // ================ MOBILE (PWA) LAYOUT ================
@@ -471,7 +419,7 @@ const Profile = ({ isMobileSignup = false }) => {
             )}
             {/* Student redeem modal (desktop) */}
             {showStudentRedeem && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4">
+                <div className="fixed inset-0 bg-[#13233f]/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
                     <StudentRedeem
                         onSuccess={handleStudentRedeemSuccess}
                         onCancel={() => setShowStudentRedeem(false)}

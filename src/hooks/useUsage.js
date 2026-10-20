@@ -28,7 +28,9 @@ export function getTier(userRow) {
 
     if (userRow.plan_label === 'student' && endDate && endDate > now) return 'student';
 
-    const hasActiveStatus = ['active', 'past_due'].includes(userRow.subscription_status);
+    const graceEnd = userRow.grace_period_end ? new Date(userRow.grace_period_end) : null;
+    const inGrace = userRow.subscription_status === 'past_due' && (!graceEnd || graceEnd > now);
+    const hasActiveStatus = userRow.subscription_status === 'active' || inGrace;
     if (hasActiveStatus && ['monthly', 'yearly'].includes(userRow.subscription_interval)) return 'paid';
     if (hasActiveStatus && ['trial', 'stripe_trial'].includes(userRow.subscription_interval)
         && endDate && endDate > now) return 'trial';
@@ -112,7 +114,7 @@ export function useUsage() {
 
         const { data, error } = await supabase
             .from('users')
-            .select('soap_notes_used, pet_queries_used, usage_period_start, subscription_status, subscription_interval, subscription_end_date, plan_label')
+            .select('soap_notes_used, pet_queries_used, usage_period_start, subscription_status, subscription_interval, subscription_end_date, grace_period_end, plan_label')
             .eq('auth0_user_id', user.sub)
             .single();
 

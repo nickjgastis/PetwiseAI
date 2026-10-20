@@ -21,24 +21,24 @@ const UpgradeNudge = ({ show, feature = 'soap', remaining = 1, onDismiss }) => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -12 }}
                     transition={{ duration: 0.3 }}
-                    className="w-full max-w-2xl mx-auto mb-3 flex items-center gap-3 px-4 py-3 rounded-xl border border-amber-300 bg-amber-50 shadow-sm"
+                    className="w-full max-w-2xl mx-auto mb-3 flex items-center gap-3 px-4 py-3 rounded-[20px] border border-[#d6e3f7] bg-[#eef4fc]"
                 >
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-[#3468bd] flex items-center justify-center">
                         <FaArrowUp className="text-white text-xs" />
                     </div>
-                    <p className="flex-1 text-sm text-amber-900">
-                        You have <span className="font-bold">{remaining} {label}</span> remaining today.
+                    <p className="flex-1 text-sm text-[#1a2b4a]/80">
+                        You have <span className="font-semibold text-[#13233f]">{remaining} {label}</span> remaining today.
                         Upgrade for unlimited use.
                     </p>
                     <button
                         onClick={() => navigate('/dashboard/profile', { state: { openCheckout: true } })}
-                        className="flex-shrink-0 px-3 py-1.5 bg-[#3468bd] text-white text-xs font-semibold rounded-lg hover:bg-[#2a5298] transition-colors"
+                        className="flex-shrink-0 px-4 py-1.5 bg-[#3468bd] text-white text-xs font-medium rounded-full hover:bg-[#2a5298] transition-colors"
                     >
                         Upgrade
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="flex-shrink-0 text-amber-500 hover:text-amber-700 transition-colors p-1"
+                        className="flex-shrink-0 text-[#1a2b4a]/40 hover:text-[#13233f] transition-colors p-1"
                         aria-label="Dismiss"
                     >
                         <FaTimes className="text-xs" />
