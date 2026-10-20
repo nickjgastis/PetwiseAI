@@ -84,10 +84,10 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -4, scale: 0.96 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute left-full bottom-0 ml-3 w-52 p-3.5 rounded-2xl bg-white border border-gray-100 shadow-[0_12px_40px_-8px_rgba(15,23,42,0.25)] z-[60] pointer-events-none"
+                        className="absolute left-full bottom-0 ml-3 w-52 p-3.5 rounded-2xl bg-white border border-[#e7ecf3] shadow-[0_12px_40px_-8px_rgba(15,23,42,0.25)] z-[60] pointer-events-none"
                     >
                         <div className="flex items-center justify-between mb-2.5">
-                            <span className="text-[12px] font-bold text-gray-900">Today's usage</span>
+                            <span className="text-[12px] font-bold text-[#13233f]">Today's usage</span>
                             <span
                                 className="text-[11px] font-bold px-1.5 py-0.5 rounded-md"
                                 style={{ color, background: `${color}1a` }}
@@ -103,14 +103,14 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                             ].map(({ label, p, maxed, used, limit }) => (
                                 <div key={label}>
                                     <div className="flex items-center justify-between mb-1">
-                                        <span className="text-[11px] font-medium text-gray-500">{label}</span>
+                                        <span className="text-[11px] font-medium text-[#1a2b4a]/55">{label}</span>
                                         {maxed ? (
                                             <span className="text-[10px] font-bold text-amber-600">Done for today</span>
                                         ) : (
-                                            <span className="text-[11px] font-semibold text-gray-700">{used} of {limit}</span>
+                                            <span className="text-[11px] font-semibold text-[#1a2b4a]/80">{used} of {limit}</span>
                                         )}
                                     </div>
-                                    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                    <div className="h-1.5 rounded-full bg-[#eef2f7] overflow-hidden">
                                         <div
                                             className="h-full rounded-full"
                                             style={{ width: `${p}%`, background: usageColor(p) }}
@@ -120,7 +120,7 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                             ))}
                         </div>
 
-                        <div className="text-[10px] text-gray-400 mt-2.5 pt-2.5 border-t border-gray-100">
+                        <div className="text-[10px] text-[#1a2b4a]/40 mt-2.5 pt-2.5 border-t border-[#e7ecf3]">
                             Resets {resetLabel}
                         </div>
 

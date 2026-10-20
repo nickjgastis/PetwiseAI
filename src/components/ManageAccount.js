@@ -91,7 +91,7 @@ const ManageAccount = ({ user, onBack }) => {
             {onBack && (
                 <button
                     onClick={onBack}
-                    className="flex items-center gap-2 text-gray-500 hover:text-gray-800 transition-colors mb-5 text-sm font-medium"
+                    className="flex items-center gap-2 text-[#1a2b4a]/55 hover:text-[#13233f] transition-colors mb-5 text-sm font-medium"
                 >
                     <FaArrowLeft className="text-xs" />
                     <span>Back to Profile</span>
@@ -112,27 +112,27 @@ const ManageAccount = ({ user, onBack }) => {
 
             <div className="space-y-5">
                 {/* Security */}
-                <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                    <h3 className="text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
+                <div className="rounded-[24px] border border-[#e7ecf3] bg-white p-5">
+                    <h3 className="text-sm font-bold text-[#13233f] mb-1 flex items-center gap-2">
                         <FaLock className="text-[#3468bd] text-xs" />
                         Security
                     </h3>
                     {isEmailPasswordUser ? (
                         <>
-                            <p className="text-gray-500 text-[13px] mb-4">
+                            <p className="text-[#1a2b4a]/55 text-[13px] mb-4">
                                 Change your account password. A reset link will be sent to your email.
                             </p>
                             <button
                                 onClick={handlePasswordChange}
                                 disabled={isPasswordChangeLoading}
-                                className="px-4 py-2.5 bg-[#3468bd] text-white font-semibold rounded-xl text-sm hover:bg-[#2a5298] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-5 py-2.5 bg-[#13233f] text-white font-medium rounded-full text-sm hover:bg-[#3468bd] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isPasswordChangeLoading ? 'Sending...' : 'Change Password'}
                             </button>
                         </>
                     ) : (
-                        <p className="text-gray-500 text-[13px] flex items-center gap-2 flex-wrap">
-                            <FaGoogle className="text-gray-400" />
+                        <p className="text-[#1a2b4a]/55 text-[13px] flex items-center gap-2 flex-wrap">
+                            <FaGoogle className="text-[#1a2b4a]/40" />
                             You signed in with Google. To change your password, visit your{' '}
                             <a
                                 href="https://myaccount.google.com/security"
@@ -147,19 +147,19 @@ const ManageAccount = ({ user, onBack }) => {
                 </div>
 
                 {/* Danger Zone */}
-                <div className="rounded-2xl border border-red-200 bg-white p-5">
+                <div className="rounded-[24px] border border-red-200 bg-white p-5">
                     <h3 className="text-sm font-bold text-red-600 mb-1 flex items-center gap-2">
                         <FaTrash className="text-xs" />
                         Danger Zone
                     </h3>
                     {!showConfirmDialog ? (
                         <>
-                            <p className="text-gray-500 text-[13px] mb-4">
+                            <p className="text-[#1a2b4a]/55 text-[13px] mb-4">
                                 Permanently delete your account and all associated data. This action cannot be undone.
                             </p>
                             <button
                                 onClick={handleDeleteAccount}
-                                className="px-4 py-2.5 bg-white text-red-600 font-semibold rounded-xl text-sm border border-red-200 hover:bg-red-50 transition-all"
+                                className="px-4 py-2.5 bg-white text-red-600 font-semibold rounded-full text-sm border border-red-200 hover:bg-red-50 transition-all"
                             >
                                 Delete Account
                             </button>
@@ -172,13 +172,13 @@ const ManageAccount = ({ user, onBack }) => {
                             <div className="flex flex-col sm:flex-row gap-3">
                                 <button
                                     onClick={handleDeleteAccount}
-                                    className="px-4 py-2.5 bg-red-600 text-white font-semibold rounded-xl text-sm hover:bg-red-700 transition-all"
+                                    className="px-4 py-2.5 bg-red-600 text-white font-semibold rounded-full text-sm hover:bg-red-700 transition-all"
                                 >
                                     Yes, Delete My Account
                                 </button>
                                 <button
                                     onClick={() => setShowConfirmDialog(false)}
-                                    className="px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm border border-gray-200 hover:bg-gray-50 transition-all"
+                                    className="px-4 py-2.5 bg-white text-[#1a2b4a]/80 font-semibold rounded-full text-sm border border-[#e7ecf3] hover:bg-gray-50 transition-all"
                                 >
                                     Cancel
                                 </button>
@@ -188,7 +188,7 @@ const ManageAccount = ({ user, onBack }) => {
                 </div>
             </div>
 
-            <p className="text-gray-400 text-xs mt-5">
+            <p className="text-[#1a2b4a]/40 text-xs mt-5">
                 Need help? Contact us at <a href="mailto:support@petwise.vet" className="text-[#3468bd] hover:underline">support@petwise.vet</a>
             </p>
         </div>

@@ -23,16 +23,16 @@ const API_URL = process.env.NODE_ENV === 'production'
 
 // Row inside a settings card: label left, value right
 const InfoRow = ({ label, children }) => (
-    <div className="flex items-center justify-between py-3.5 border-b border-gray-100 last:border-b-0">
-        <span className="text-[13px] font-medium text-gray-500">{label}</span>
-        <span className="text-[13px] font-semibold text-gray-800 text-right">{children}</span>
+    <div className="flex items-center justify-between py-3.5 border-b border-[#e7ecf3] last:border-b-0">
+        <span className="text-[13px] font-medium text-[#1a2b4a]/55">{label}</span>
+        <span className="text-[13px] font-semibold text-[#13233f] text-right">{children}</span>
     </div>
 );
 
 const SectionCard = ({ title, subtitle, children, className = '' }) => (
-    <div className={`rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 ${className}`}>
-        {title && <h3 className="text-sm font-bold text-gray-900">{title}</h3>}
-        {subtitle && <p className="text-[13px] text-gray-500 mt-0.5 mb-4">{subtitle}</p>}
+    <div className={`rounded-[24px] border border-[#e7ecf3] bg-white p-5 sm:p-6 ${className}`}>
+        {title && <h3 className="text-sm font-bold text-[#13233f]">{title}</h3>}
+        {subtitle && <p className="text-[13px] text-[#1a2b4a]/55 mt-0.5 mb-4">{subtitle}</p>}
         {!subtitle && title && <div className="mb-4" />}
         {children}
     </div>
@@ -201,7 +201,7 @@ const Profile = ({ isMobileSignup = false }) => {
             Yearly: 'bg-amber-50 text-amber-700 border-amber-200',
             Monthly: 'bg-blue-50 text-[#3468bd] border-blue-200',
             Trial: 'bg-sky-50 text-sky-700 border-sky-200',
-            Free: 'bg-gray-100 text-gray-600 border-gray-200'
+            Free: 'bg-gray-100 text-[#1a2b4a]/70 border-[#e7ecf3]'
         };
         return (
             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${styles[label]}`}>
@@ -214,8 +214,8 @@ const Profile = ({ isMobileSignup = false }) => {
     // Show loading state only when auth0 is loading or subscription is loading
     if (auth0Loading || (isAuthenticated && isSubscriptionLoading)) {
         return (
-            <div className={`${isMobileSignup ? 'min-h-full h-full' : 'min-h-screen'} bg-[#f7f8fb] flex items-center justify-center`}>
-                <div className="text-base text-gray-500 font-medium">Loading ...</div>
+            <div className={`${isMobileSignup ? 'min-h-full h-full' : 'min-h-screen'} bg-[#f6f8fb] flex items-center justify-center`}>
+                <div className="text-base text-[#1a2b4a]/55 font-medium">Loading ...</div>
             </div>
         );
     }
@@ -246,7 +246,7 @@ const Profile = ({ isMobileSignup = false }) => {
             </div>
             {userData?.stripe_customer_id && (
                 <button
-                    className="bg-red-600 text-white px-4 py-2 rounded-xl font-semibold text-xs hover:bg-red-700 transition-all whitespace-nowrap"
+                    className="bg-red-600 text-white px-4 py-2 rounded-full font-semibold text-xs hover:bg-red-700 transition-all whitespace-nowrap"
                     onClick={handleBillingPortal}
                 >
                     Fix Payment
@@ -259,7 +259,7 @@ const Profile = ({ isMobileSignup = false }) => {
     if (isMobileSignup) {
         if (showCheckout) {
             return (
-                <div className="min-h-full bg-[#f7f8fb] px-4 py-6">
+                <div className="min-h-full bg-[#f6f8fb] px-4 py-6">
                     <ManageSubscription
                         user={manageSubscriptionUser}
                         subscriptionStatus={subscriptionStatus}
@@ -272,7 +272,7 @@ const Profile = ({ isMobileSignup = false }) => {
         }
         if (showManageAccount) {
             return (
-                <div className="min-h-full bg-[#f7f8fb] px-4 py-6">
+                <div className="min-h-full bg-[#f6f8fb] px-4 py-6">
                     <ManageAccount user={user} onBack={() => setShowManageAccount(false)} />
                 </div>
             );
@@ -293,7 +293,7 @@ const Profile = ({ isMobileSignup = false }) => {
             .toUpperCase() || 'P';
 
         return (
-            <div className="min-h-full bg-[#f4f6fa]">
+            <div className="min-h-full bg-[#f6f8fb]">
                 <div className="px-4 pt-5 pb-8 space-y-4">
                     {/* Profile Header Card */}
                     <motion.div
@@ -304,17 +304,17 @@ const Profile = ({ isMobileSignup = false }) => {
                     >
                         <div className="absolute -top-12 -right-10 w-32 h-32 rounded-full bg-blue-100/60 blur-2xl pointer-events-none" />
                         <div className="relative flex items-center gap-4">
-                            <div className="w-14 h-14 flex-shrink-0 rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#5cccf0] text-white shadow-lg shadow-blue-200/70 flex items-center justify-center text-xl font-bold">
+                            <div className="w-14 h-14 flex-shrink-0 rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#5cccf0] text-white shadow-lg shadow-blue-200/70 flex items-center justify-center text-xl font-semibold tracking-tight">
                                 {profileInitial}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#3468bd]/70 mb-1">
                                     Your account
                                 </p>
-                                <h2 className="text-lg leading-tight font-bold tracking-tight text-gray-900 truncate">
+                                <h2 className="text-lg leading-tight font-bold tracking-tight text-[#13233f] truncate">
                                     {profileDisplayName}
                                 </h2>
-                                <p className="text-gray-500 text-xs truncate mt-1">{user?.email}</p>
+                                <p className="text-[#1a2b4a]/55 text-xs truncate mt-1">{user?.email}</p>
                             </div>
                             <div className="flex-shrink-0 self-start">{planBadge()}</div>
                         </div>
@@ -323,22 +323,22 @@ const Profile = ({ isMobileSignup = false }) => {
                     {pastDueBanner}
 
                     {/* Usage */}
-                    <div className="bg-white rounded-[22px] border border-gray-100 p-5 shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
+                    <div className="bg-white rounded-[24px] border border-[#e7ecf3] p-5 shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#3468bd] flex items-center justify-center">
                                 <FaChartPie className="text-sm" />
                             </div>
-                            <h3 className="text-sm leading-tight font-bold text-gray-900">Usage</h3>
+                            <h3 className="text-sm leading-tight font-bold text-[#13233f]">Usage</h3>
                         </div>
                         <UsageMeter usage={usage} onUpgrade={() => setShowCheckout(true)} />
                     </div>
 
                     {/* Subscription */}
-                    <div className="bg-gradient-to-br from-white to-blue-50/50 rounded-[22px] border border-blue-100/70 overflow-hidden shadow-[0_4px_20px_rgba(30,60,111,0.05)]">
+                    <div className="bg-white rounded-[24px] border border-[#e7ecf3] overflow-hidden">
                         <div className="p-5 pb-4 flex items-center justify-between">
                             <div>
-                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-gray-400">Membership</p>
-                                <h3 className="text-base font-bold text-gray-900 mt-1">{planLabel()} plan</h3>
+                                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#1a2b4a]/40">Membership</p>
+                                <h3 className="text-base font-semibold tracking-tight text-[#13233f] mt-1">{planLabel()} plan</h3>
                             </div>
                             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isSubscribed ? 'bg-emerald-50' : 'bg-gray-100'}`}>
                                 <FaCircle className={`text-[9px] ${isSubscribed ? 'text-emerald-500' : 'text-gray-300'}`} />
@@ -346,21 +346,21 @@ const Profile = ({ isMobileSignup = false }) => {
                         </div>
                         <div className="px-5 pb-4 space-y-2.5">
                             <div className="flex justify-between items-center">
-                                <span className="text-gray-500 text-xs">Status</span>
-                                <span className="text-gray-800 font-semibold text-xs">
+                                <span className="text-[#1a2b4a]/55 text-xs">Status</span>
+                                <span className="text-[#13233f] font-semibold text-xs">
                                     {isSubscribed ? 'Active' : 'Free access'}
                                 </span>
                             </div>
                             {subscriptionEndDate && subscriptionStatus === 'active' && (
                                 <div className="flex justify-between items-center">
-                                    <span className="text-gray-500 text-xs">{cancelAtPeriodEnd ? 'Ends' : 'Renews'}</span>
-                                    <span className="text-gray-800 font-semibold text-xs">{formatDate(subscriptionEndDate)}</span>
+                                    <span className="text-[#1a2b4a]/55 text-xs">{cancelAtPeriodEnd ? 'Ends' : 'Renews'}</span>
+                                    <span className="text-[#13233f] font-semibold text-xs">{formatDate(subscriptionEndDate)}</span>
                                 </div>
                             )}
                         </div>
                         <div className="px-5 pb-5">
                             <button
-                                className="w-full bg-gradient-to-r from-[#3468bd] to-[#2d5ca8] text-white py-3 rounded-xl font-semibold text-sm shadow-sm active:scale-[0.985] transition-transform"
+                                className="w-full bg-[#13233f] text-white py-3 rounded-full font-medium text-sm shadow-[0_10px_30px_-12px_rgba(19,35,63,0.6)] active:scale-[0.985] transition-transform"
                                 onClick={() => setShowCheckout(true)}
                             >
                                 {planLabel() === 'Free' ? 'Upgrade Plan' : 'Manage Subscription'}
@@ -370,9 +370,9 @@ const Profile = ({ isMobileSignup = false }) => {
 
                     {/* Account actions */}
                     <div className="pt-2 px-1">
-                        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-gray-400">Settings</h3>
+                        <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[#1a2b4a]/40">Settings</h3>
                     </div>
-                    <div className="bg-white rounded-[22px] border border-gray-100 overflow-hidden divide-y divide-gray-100 shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
+                    <div className="bg-white rounded-[24px] border border-[#e7ecf3] overflow-hidden divide-y divide-[#e7ecf3] shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
                         {!isStandaloneApp && (
                             <button
                                 className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors"
@@ -383,8 +383,8 @@ const Profile = ({ isMobileSignup = false }) => {
                                         <FaMobile className="text-emerald-600 text-sm" />
                                     </div>
                                     <div>
-                                        <p className="text-gray-900 font-semibold text-sm">Get the App</p>
-                                        <p className="text-gray-400 text-[11px] mt-0.5">Install Petwise on your home screen</p>
+                                        <p className="text-[#13233f] font-semibold text-sm">Get the App</p>
+                                        <p className="text-[#1a2b4a]/40 text-[11px] mt-0.5">Install Petwise on your home screen</p>
                                     </div>
                                 </div>
                                 <span className="text-gray-300 text-xl font-light">›</span>
@@ -399,8 +399,8 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <FaShieldAlt className="text-[#3468bd] text-sm" />
                                 </div>
                                 <div>
-                                    <p className="text-gray-900 font-semibold text-sm">Account Settings</p>
-                                    <p className="text-gray-400 text-[11px] mt-0.5">Security and account management</p>
+                                    <p className="text-[#13233f] font-semibold text-sm">Account Settings</p>
+                                    <p className="text-[#1a2b4a]/40 text-[11px] mt-0.5">Security and account management</p>
                                 </div>
                             </div>
                             <span className="text-gray-300 text-xl font-light">›</span>
@@ -425,14 +425,14 @@ const Profile = ({ isMobileSignup = false }) => {
                                 </div>
                                 <div>
                                     <p className="text-red-600 font-semibold text-sm">Log Out</p>
-                                    <p className="text-gray-400 text-[11px] mt-0.5">Sign out of your account</p>
+                                    <p className="text-[#1a2b4a]/40 text-[11px] mt-0.5">Sign out of your account</p>
                                 </div>
                             </div>
                             <span className="text-gray-300 text-xl font-light">›</span>
                         </button>
                     </div>
 
-                    <p className="text-center text-gray-400 text-[10px] tracking-wide pt-3">PETWISE · VERSION 1.0</p>
+                    <p className="text-center text-[#1a2b4a]/40 text-[10px] tracking-wide pt-3">PETWISE · VERSION 1.0</p>
                 </div>
             </div>
         );
@@ -456,7 +456,7 @@ const Profile = ({ isMobileSignup = false }) => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f7f8fb]">
+        <div className="min-h-screen bg-[#f6f8fb]">
             {trialPrompt.show && (
                 <UpgradeModal
                     user={user}
@@ -488,8 +488,8 @@ const Profile = ({ isMobileSignup = false }) => {
                     transition={{ duration: 0.3 }}
                     className="mb-8"
                 >
-                    <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Settings</h1>
-                    <p className="text-sm text-gray-500 mt-1">Manage your profile, plan, and account</p>
+                    <h1 className="text-[2rem] font-semibold text-[#13233f] tracking-[-0.03em]">Settings</h1>
+                    <p className="text-sm text-[#1a2b4a]/55 mt-1">Manage your profile, plan, and account</p>
                 </motion.div>
 
                 <div className="grid grid-cols-1 md:grid-cols-[230px,1fr] gap-8 items-start">
@@ -501,12 +501,12 @@ const Profile = ({ isMobileSignup = false }) => {
                         className="md:sticky md:top-8"
                     >
                         {/* User chip */}
-                        <div className="flex items-center gap-3 px-3 py-3 mb-4 rounded-2xl bg-white border border-gray-200">
+                        <div className="flex items-center gap-3 px-3 py-3 mb-4 rounded-[20px] bg-white border border-[#e7ecf3]">
                             <div className="min-w-0">
-                                <p className="text-[13px] font-bold text-gray-900 truncate">
+                                <p className="text-[13px] font-bold text-[#13233f] truncate">
                                     {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name}
                                 </p>
-                                <p className="text-[11px] text-gray-400 truncate">{user?.email}</p>
+                                <p className="text-[11px] text-[#1a2b4a]/40 truncate">{user?.email}</p>
                             </div>
                         </div>
 
@@ -517,18 +517,18 @@ const Profile = ({ isMobileSignup = false }) => {
                                     <li key={id} className="relative">
                                         <button
                                             onClick={() => setActiveSection(id)}
-                                            className={`relative w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${
-                                                isActive ? 'text-[#3468bd]' : 'text-gray-500 hover:text-gray-800'
+                                            className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-full text-[13px] font-medium transition-colors ${
+                                                isActive ? 'text-[#13233f]' : 'text-[#1a2b4a]/55 hover:text-[#13233f]'
                                             }`}
                                         >
                                             {isActive && (
                                                 <motion.span
                                                     layoutId="settings-active-pill"
-                                                    className="absolute inset-0 rounded-xl bg-blue-50 border border-blue-100"
+                                                    className="absolute inset-0 rounded-full bg-white border border-[#e7ecf3] shadow-[0_4px_14px_-8px_rgba(19,35,63,0.25)]"
                                                     transition={{ type: 'spring', stiffness: 500, damping: 38 }}
                                                 />
                                             )}
-                                            <Icon className={`relative text-xs ${isActive ? 'text-[#3468bd]' : 'text-gray-400'}`} />
+                                            <Icon className={`relative text-xs ${isActive ? 'text-[#3468bd]' : 'text-[#1a2b4a]/40'}`} />
                                             <span className="relative">{label}</span>
                                         </button>
                                     </li>
@@ -550,20 +550,20 @@ const Profile = ({ isMobileSignup = false }) => {
                                 transition={{ duration: 0.22, ease: 'easeOut' }}
                             >
                                 <div className="mb-5">
-                                    <h2 className="text-lg font-bold text-gray-900">{SECTION_TITLES[activeSection].title}</h2>
-                                    <p className="text-[13px] text-gray-500">{SECTION_TITLES[activeSection].subtitle}</p>
+                                    <h2 className="text-lg font-semibold tracking-tight text-[#13233f]">{SECTION_TITLES[activeSection].title}</h2>
+                                    <p className="text-[13px] text-[#1a2b4a]/55">{SECTION_TITLES[activeSection].subtitle}</p>
                                 </div>
 
                                 {/* ===== Profile ===== */}
                                 {activeSection === 'profile' && (
                                     <div className="space-y-5">
-                                        <div className="rounded-2xl border border-gray-200 bg-white p-6 flex items-center gap-5">
+                                        <div className="rounded-[24px] border border-[#e7ecf3] bg-white p-6 flex items-center gap-5">
                                             <div className="flex-1 min-w-0">
-                                                <h3 className="text-lg font-bold text-gray-900 truncate">
+                                                <h3 className="text-lg font-semibold tracking-tight text-[#13233f] truncate">
                                                     {userData?.dvm_name ? `Dr. ${userData.dvm_name}` : user?.name}
                                                 </h3>
-                                                <p className="text-[13px] text-gray-500 flex items-center gap-1.5 truncate">
-                                                    <FaEnvelope className="text-[10px] text-gray-400" />
+                                                <p className="text-[13px] text-[#1a2b4a]/55 flex items-center gap-1.5 truncate">
+                                                    <FaEnvelope className="text-[10px] text-[#1a2b4a]/40" />
                                                     {user?.email}
                                                 </p>
                                             </div>
@@ -596,16 +596,16 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <UsageMeter usage={usage} onUpgrade={() => setActiveSection('billing')} />
                                         </SectionCard>
                                         {!usage.isUnlimited && (
-                                            <div className="rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#2a5298] p-6 text-white flex flex-wrap items-center justify-between gap-4">
+                                            <div className="rounded-[24px] bg-[#13233f] bg-[radial-gradient(60%_140%_at_100%_0%,rgba(92,204,240,0.28)_0%,rgba(19,35,63,0)_70%)] p-6 text-white flex flex-wrap items-center justify-between gap-4">
                                                 <div>
-                                                    <h3 className="text-base font-bold">Go unlimited</h3>
+                                                    <h3 className="text-lg font-semibold tracking-tight">Go unlimited</h3>
                                                     <p className="text-white/75 text-[13px] mt-0.5">
                                                         Unlimited SOAP notes and PetQuery, every day.
                                                     </p>
                                                 </div>
                                                 <button
                                                     onClick={() => setActiveSection('billing')}
-                                                    className="px-5 py-2.5 bg-white text-[#3468bd] font-bold rounded-xl text-sm hover:bg-blue-50 transition-colors"
+                                                    className="px-5 py-2.5 bg-white text-[#13233f] font-medium rounded-full text-sm hover:bg-[#e9f6fd] transition-colors"
                                                 >
                                                     View plans
                                                 </button>
@@ -649,11 +649,11 @@ const Profile = ({ isMobileSignup = false }) => {
                                             <img
                                                 src="/PW QR CODE.png"
                                                 alt="PetWise Mobile App QR Code"
-                                                className="w-52 h-52 rounded-2xl border border-gray-200 shadow-sm"
+                                                className="w-52 h-52 rounded-[24px] border border-[#e7ecf3] shadow-sm"
                                             />
                                             <div className="text-center sm:text-left">
-                                                <h3 className="text-base font-bold text-gray-900 mb-2">PetWise on your phone</h3>
-                                                <p className="text-[13px] text-gray-500 leading-relaxed mb-4 max-w-sm">
+                                                <h3 className="text-base font-semibold tracking-tight text-[#13233f] mb-2">PetWise on your phone</h3>
+                                                <p className="text-[13px] text-[#1a2b4a]/55 leading-relaxed mb-4 max-w-sm">
                                                     Scan the QR code with your phone's camera, or go to{' '}
                                                     <span className="font-semibold text-[#3468bd]">petwise.vet</span>{' '}
                                                     on your phone and log in. Dictate in the exam room and your notes
@@ -662,7 +662,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                 {canRedeemStudentAccess() && !isStudentMode() && (
                                                     <button
                                                         onClick={() => setShowStudentRedeem(true)}
-                                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-700 font-semibold rounded-xl text-sm hover:bg-purple-100 transition-all border border-purple-100"
+                                                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-700 font-semibold rounded-full text-sm hover:bg-purple-100 transition-all border border-purple-100"
                                                     >
                                                         <FaGraduationCap />
                                                         Student Access

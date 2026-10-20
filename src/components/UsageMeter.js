@@ -10,9 +10,9 @@ export const usageColor = (pct) => {
     return '#3468bd';                  // brand blue
 };
 
-const FeatureRow = ({ label, value, valueClass = 'text-gray-900' }) => (
+const FeatureRow = ({ label, value, valueClass = 'text-[#13233f]' }) => (
     <div className="flex items-center justify-between py-2.5">
-        <span className="text-[13px] text-gray-500">{label}</span>
+        <span className="text-[13px] text-[#1a2b4a]/55">{label}</span>
         <span className={`text-[13px] font-semibold ${valueClass}`}>{value}</span>
     </div>
 );
@@ -23,8 +23,8 @@ export const UsagePips = ({ label, used, limit, remaining }) => {
     return (
         <div>
             <div className="flex items-center justify-between mb-2 text-[13px]">
-                <span className="font-medium text-gray-700">{label}</span>
-                <span className={`font-semibold ${nearCap ? 'text-amber-600' : 'text-gray-500'}`}>
+                <span className="font-medium text-[#1a2b4a]/80">{label}</span>
+                <span className={`font-semibold ${nearCap ? 'text-amber-600' : 'text-[#1a2b4a]/55'}`}>
                     {remaining === 0 ? 'None left' : `${remaining} left`}
                 </span>
             </div>
@@ -36,7 +36,7 @@ export const UsagePips = ({ label, used, limit, remaining }) => {
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ duration: 0.25, delay: i * 0.04 }}
                         className="h-2 flex-1 rounded-full"
-                        style={{ background: i < used ? usageColor(Math.round((used / limit) * 100)) : '#e5e7eb' }}
+                        style={{ background: i < used ? usageColor(Math.round((used / limit) * 100)) : '#eef2f7' }}
                     />
                 ))}
             </div>
@@ -51,13 +51,13 @@ export const UsageCountBar = ({ label, used, limit, remaining }) => {
     return (
         <div>
             <div className="flex items-center justify-between mb-2 text-[13px]">
-                <span className="font-medium text-gray-700">{label}</span>
+                <span className="font-medium text-[#1a2b4a]/80">{label}</span>
                 <span className="font-semibold" style={{ color: remaining <= 3 ? color : undefined }}>
-                    <span className="text-gray-900">{used}</span>
-                    <span className="text-gray-400 font-medium"> / {limit}</span>
+                    <span className="text-[#13233f]">{used}</span>
+                    <span className="text-[#1a2b4a]/40 font-medium"> / {limit}</span>
                 </span>
             </div>
-            <div className="h-2 rounded-full overflow-hidden bg-gray-100">
+            <div className="h-2 rounded-full overflow-hidden bg-[#eef2f7]">
                 <motion.div
                     className="h-full rounded-full"
                     style={{ background: color }}
@@ -75,7 +75,7 @@ const UpgradeButton = ({ onUpgrade, children }) => {
     return (
         <button
             onClick={onUpgrade}
-            className="w-full mt-1 px-4 py-2.5 bg-[#3468bd] text-white text-sm font-semibold rounded-xl hover:bg-[#2a5298] active:scale-[0.99] transition-all"
+            className="w-full mt-1 px-4 py-2.5 bg-[#13233f] text-white text-sm font-medium rounded-full hover:bg-[#3468bd] active:scale-[0.99] transition-all"
         >
             {children}
         </button>
@@ -100,10 +100,10 @@ const UsageMeter = ({ usage, onUpgrade }) => {
                     <div>
                         <div className="flex items-end justify-between gap-3 mb-3">
                             <div>
-                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#1a2b4a]/40">
                                     Trial
                                 </p>
-                                <p className={`text-2xl font-bold tracking-tight mt-0.5 ${lastDay ? 'text-amber-600' : 'text-gray-900'}`}>
+                                <p className={`text-2xl font-bold tracking-tight mt-0.5 ${lastDay ? 'text-amber-600' : 'text-[#13233f]'}`}>
                                     {lastDay ? 'Last day' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
                                 </p>
                             </div>
@@ -115,7 +115,7 @@ const UsageMeter = ({ usage, onUpgrade }) => {
                                 Unlimited
                             </span>
                         </div>
-                        <div className="h-2 rounded-full overflow-hidden bg-gray-100">
+                        <div className="h-2 rounded-full overflow-hidden bg-[#eef2f7]">
                             <motion.div
                                 className="h-full rounded-full"
                                 style={{ background: lastDay ? '#f59e0b' : '#3468bd' }}
@@ -124,13 +124,13 @@ const UsageMeter = ({ usage, onUpgrade }) => {
                                 transition={{ duration: 0.6, ease: 'easeOut' }}
                             />
                         </div>
-                        <p className="text-xs text-gray-400 mt-2 leading-relaxed">
+                        <p className="text-xs text-[#1a2b4a]/40 mt-2 leading-relaxed">
                             {lastDay
                                 ? 'Unlimited SOAP and PetQuery today. Tomorrow you move to PetWise Free, or upgrade to stay unlimited.'
                                 : `Unlimited SOAP notes and PetQuery for the rest of your ${TRIAL_DAYS}-day trial.`}
                         </p>
                     </div>
-                    <div className="divide-y divide-gray-100 border-t border-gray-100">
+                    <div className="divide-y divide-[#e7ecf3] border-t border-[#e7ecf3]">
                         <FeatureRow label="SOAP notes" value="Unlimited" valueClass="text-emerald-600" />
                         <FeatureRow label="PetQuery" value="Unlimited" valueClass="text-emerald-600" />
                     </div>
@@ -145,11 +145,11 @@ const UsageMeter = ({ usage, onUpgrade }) => {
                     <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-700">
                         Unlimited
                     </p>
-                    <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                    <p className="text-sm text-[#1a2b4a]/70 mt-1 leading-relaxed">
                         SOAP notes and PetQuery have no daily cap on your plan.
                     </p>
                 </div>
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-[#e7ecf3]">
                     <FeatureRow label="SOAP notes" value="Unlimited" valueClass="text-emerald-600" />
                     <FeatureRow label="PetQuery" value="Unlimited" valueClass="text-emerald-600" />
                 </div>
@@ -171,7 +171,7 @@ const UsageMeter = ({ usage, onUpgrade }) => {
                 limit={usage.query.limit}
                 remaining={usage.query.remaining}
             />
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-[#1a2b4a]/40 leading-relaxed">
                 Resets at midnight
                 {usage.hoursUntilReset ? ` · ${usage.hoursUntilReset}h left today` : ''}
             </p>
