@@ -36,9 +36,15 @@ router.get('/status', (req, res) => {
     return res.json(payload(state));
 });
 
+// scope=site is the public petwise.vet demo; it has its own counter so /vets campaign limits are untouched.
+const isSite = (req) => (req.query?.scope || req.body?.scope) === 'site';
+const queryLeft = (req, state) => (isSite(req) ? demo.remainingSite(state) : demo.remaining(state));
+const queryLimit = (req) => (isSite(req) ? demo.SITE_QUERY_LIMIT : demo.QUERY_LIMIT);
+
 router.get('/petquery', (req, res) => {
     const state = demo.getState(req);
     attach(res, state);
+    if (isSite(req)) return res.json({ remaining: demo.remainingSite(state), limit: demo.SITE_QUERY_LIMIT, token: state.token });
     return res.json(payload(state));
 });
 
@@ -92,11 +98,11 @@ router.post('/petquery', async (req, res) => {
     const state = demo.getState(req);
     attach(res, state);
 
-    if (demo.remaining(state) <= 0) {
+    if (queryLeft(req, state) <= 0) {
         return res.status(403).json({
             error: 'DEMO_LIMIT',
             remaining: 0,
-            limit: demo.QUERY_LIMIT,
+            limit: queryLimit(req),
             token: state.token
         });
     }
@@ -142,13 +148,13 @@ router.post('/petquery', async (req, res) => {
         const content = response.data?.choices?.[0]?.message?.content;
         if (!content) return res.status(502).json({ error: 'Invalid response from OpenAI' });
 
-        const next = demo.consume(state);
+        const next = isSite(req) ? demo.consumeSite(state) : demo.consume(state);
         attach(res, next);
 
         return res.json({
             answer: content,
-            remaining: demo.remaining(next),
-            limit: demo.QUERY_LIMIT,
+            remaining: queryLeft(req, next),
+            limit: queryLimit(req),
             token: next.token
         });
     } catch (err) {
