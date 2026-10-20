@@ -2,7 +2,8 @@ import React from 'react';
 import { FiActivity, FiBookOpen, FiDroplet, FiList, FiMessageSquare, FiUsers } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, softwareLd } from '../seo';
-import { CtaBand, FaqSection, FeatureGrid, ImageBand, Highlight, PageHero, Reveal, Section, SectionHeading, SignupButton, SplitFeature } from '../ui';
+import { Container, CtaBand, FaqSection, FeatureGrid, ImageBand, Highlight, Reveal, Section, SectionHeading, SplitFeature } from '../ui';
+import PetQueryLive from '../PetQueryLive';
 import { PetQueryAnswer } from '../demos';
 
 const QUESTIONS = [
@@ -50,28 +51,23 @@ const ClinicalAssistant = () => (
             path="/veterinary-clinical-assistant"
             jsonLd={[softwareLd, faqLd(FAQS)]}
         />
-        <PageHero
-            below="tint"
-            eyebrow="Veterinary clinical assistant"
-            title={
-                <>
-                    Clinical answers <Highlight>in seconds.</Highlight>
-                </>
-            }
-            body="Ask PetQuery about dosages, differentials, protocols, or how to explain a diagnosis to a client. Stop digging through PDFs and tabs mid exam."
-            media={
-                <img
-                    src="/site/petquery.png"
-                    alt="PetQuery answering a question about fluoxetine and trazodone dosing"
-                    className="w-full h-auto rounded-[20px] ring-1 ring-white/15 shadow-[0_60px_120px_-40px_rgba(19,35,63,0.55)]"
-                    width="1600"
-                    height="1097"
-                    fetchpriority="high"
-                />
-            }
-        >
-            <SignupButton placement="petquery_hero" variant="light">Try PetQuery free</SignupButton>
-        </PageHero>
+        <section className="relative bg-white overflow-hidden">
+            <div aria-hidden className="absolute inset-0 bg-[radial-gradient(50%_45%_at_50%_0%,#e2edfc_0%,rgba(255,255,255,0)_70%)]" />
+            <Container className="relative pt-10 sm:pt-14 pb-16 sm:pb-24">
+                <div className="max-w-3xl mx-auto text-center">
+                    <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">Veterinary clinical assistant</p>
+                    <h1 className="mt-4 text-[2.5rem] sm:text-[3.5rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
+                        Clinical answers <Highlight dark>in seconds.</Highlight>
+                    </h1>
+                    <p className="mt-5 text-lg text-[#1a2b4a]/65 text-balance">
+                        Try PetQuery right here. Ask about a dose, a differential or a protocol. Two free questions, no sign up.
+                    </p>
+                </div>
+                <div className="site-hero-media mt-10 sm:mt-12 max-w-5xl mx-auto">
+                    <PetQueryLive />
+                </div>
+            </Container>
+        </section>
 
         <Section tone="tint">
             <SectionHeading eyebrow="Ask it anything clinical" title="Questions vets ask PetQuery every day." />
