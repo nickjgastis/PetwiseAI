@@ -281,7 +281,7 @@ const Phone = ({ stage, seconds }) => {
 };
 
 // Phone dictation landing on the desktop app as a SOAP note, drawn to match the real PetWise UI.
-const DictationDemo = () => {
+const DictationDemo = ({ maxScale = 1 }) => {
     const wrapRef = useRef(null);
     const [scale, setScale] = useState(1);
     const [stage, setStage] = useState('idle');
@@ -290,12 +290,12 @@ const DictationDemo = () => {
     useLayoutEffect(() => {
         const el = wrapRef.current;
         if (!el) return undefined;
-        const fit = () => setScale(Math.min(1, el.clientWidth / W));
+        const fit = () => setScale(Math.min(maxScale, el.clientWidth / W));
         fit();
         const ro = new ResizeObserver(fit);
         ro.observe(el);
         return () => ro.disconnect();
-    }, []);
+    }, [maxScale]);
 
     useEffect(() => {
         const id = setTimeout(() => setStage((s) => NEXT[s]), STAGES[stage]);
@@ -312,7 +312,7 @@ const DictationDemo = () => {
     return (
         <div ref={wrapRef} className="relative w-full" style={{ height: H * scale }}>
             <div
-                className="absolute left-1/2 top-0 origin-top"
+                className="absolute left-1/2 top-0 origin-top text-left"
                 style={{
                     width: W,
                     height: H,

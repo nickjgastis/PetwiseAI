@@ -4,6 +4,7 @@ import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, organizationLd, softwareLd } from '../seo';
 import { PRESS } from '../siteConfig';
 import { SoapNote } from '../demos';
+import DictationDemo from '../DictationDemo';
 import { PRICES } from '../../constants/pricing';
 import {
     ButtonLink,
@@ -171,15 +172,10 @@ const Home = () => (
                             Record on your phone between rooms. The finished SOAP is waiting on your desktop when you sit down.
                         </p>
                     </Reveal>
-                    <Reveal delay={120} className="-mx-2 sm:mx-auto mt-10 sm:mt-16 max-w-5xl -mb-3 sm:-mb-28">
-                        <img
-                            src="/site/hero-desk-phone-crop.png"
-                            alt="PetWise QuickSOAP writing a SOAP note on desktop and phone"
-                            className="w-full h-auto drop-shadow-[0_40px_50px_rgba(19,35,63,0.4)]"
-                            width="1680"
-                            height="992"
-                            loading="lazy"
-                        />
+                    <Reveal delay={120} className="mx-auto mt-10 sm:mt-14 max-w-4xl pb-12 sm:pb-20">
+                        <div role="img" aria-label="Dictating on a phone, then the finished SOAP note appearing on the PetWise desktop app">
+                            <DictationDemo maxScale={1.4} />
+                        </div>
                     </Reveal>
                 </Container>
             </div>
