@@ -111,37 +111,25 @@ export const Highlight = ({ dark = false, children }) => (
     </span>
 );
 
-// Full-bleed photo with the copy on the empty side of the frame. Below lg the photo stacks under the copy.
-export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imagePosition = '75% center', footer }) => (
-    <section className="relative -mt-[76px] overflow-hidden bg-[#eceef0]">
-        <img
-            src={image}
-            alt={imageAlt}
-            className="hidden lg:block absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: imagePosition }}
-            fetchpriority="high"
-        />
-        <div aria-hidden className="hidden lg:block absolute inset-0 bg-gradient-to-r from-white/90 via-white/40 to-transparent" />
-        <div aria-hidden className="lg:hidden absolute inset-0 bg-gradient-to-b from-white to-[#eceef0]" />
-        <Container className="relative pt-36 sm:pt-44 lg:pt-40 pb-0 lg:pb-24 lg:min-h-[700px] lg:flex lg:flex-col lg:justify-center">
+// Photo bleeds off the right edge and fades into the background behind the copy. Below lg it stacks under the copy.
+export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imagePosition = 'center', badge }) => (
+    <section className="relative -mt-[76px] overflow-hidden bg-[#f6f1ec]">
+        <div className="hidden lg:block absolute inset-y-0 right-0 w-[64%] [mask-image:linear-gradient(to_right,transparent,black_38%)]">
+            <img src={image} alt={imageAlt} className="w-full h-full object-cover" style={{ objectPosition: imagePosition }} fetchpriority="high" />
+        </div>
+        <Container className="relative pt-36 sm:pt-44 lg:pt-40 pb-0 lg:pb-24 lg:min-h-[720px] lg:flex lg:flex-col lg:justify-center">
             <div className="site-hero-in max-w-xl">
                 {eyebrow && <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">{eyebrow}</p>}
-                <h1 className="mt-5 text-[2.75rem] sm:text-[4rem] lg:text-[4.25rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
+                <h1 className="mt-5 text-[2.75rem] sm:text-[4rem] lg:text-[4.5rem] leading-[1.02] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
                     {title}
                 </h1>
                 {body && <p className="mt-6 max-w-lg text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
                 {children && <div className="mt-9 flex flex-col sm:flex-row gap-3">{children}</div>}
                 {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
-                {footer && <div className="mt-12">{footer}</div>}
             </div>
+            {badge && <div className="site-hero-media mt-10 lg:mt-0 lg:absolute lg:right-8 lg:bottom-10">{badge}</div>}
         </Container>
-        <img
-            src={image}
-            alt=""
-            aria-hidden
-            className="lg:hidden relative mt-12 w-full aspect-[4/3] sm:aspect-[16/9] object-cover"
-            style={{ objectPosition: '88% center' }}
-        />
+        <img src={image} alt="" aria-hidden className="lg:hidden relative mt-12 w-full aspect-[4/3] sm:aspect-[16/9] object-cover" style={{ objectPosition: imagePosition }} />
     </section>
 );
 
@@ -192,7 +180,7 @@ export const Hero = ({ eyebrow, title, body, children, microcopy, media, mediaCl
     );
 };
 
-export const SplitHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imageClassName = '', media, badge, aspect = 'aspect-[4/3] lg:aspect-[5/6]' }) => (
+export const SplitHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imageClassName = '', media, badge, badgeClassName = 'left-3 bottom-3 sm:-left-8 sm:bottom-10', aspect = 'aspect-[4/3] lg:aspect-[5/6]' }) => (
     <section className="relative -mt-[76px] overflow-hidden bg-white">
         <div aria-hidden className="absolute inset-0 bg-[radial-gradient(45%_60%_at_82%_35%,#e2edfc_0%,rgba(255,255,255,0)_70%)]" />
         <Container className="relative pt-32 sm:pt-40 pb-16 sm:pb-24 grid lg:grid-cols-12 gap-14 lg:gap-10 items-center">
@@ -212,7 +200,7 @@ export const SplitHero = ({ eyebrow, title, body, children, microcopy, image, im
                         <div className={`relative overflow-hidden rounded-[32px] shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)] ${aspect}`}>
                             <img src={image} alt={imageAlt} className={`w-full h-full object-cover ${imageClassName}`} fetchpriority="high" />
                         </div>
-                        {badge && <div className="absolute left-3 bottom-3 sm:-left-8 sm:bottom-10">{badge}</div>}
+                        {badge && <div className={`absolute ${badgeClassName}`}>{badge}</div>}
                     </div>
                 )}
             </div>

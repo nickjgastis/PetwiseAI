@@ -4,7 +4,7 @@ import { FiCheck } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, softwareLd } from '../seo';
 import { FREE_DAILY, PLAN_FEATURES, PRICES, TRIAL_DAYS } from '../../constants/pricing';
-import { Container, CtaBand, FaqSection, Hero, Highlight, ImageBand, Reveal, SignupButton } from '../ui';
+import { Container, CtaBand, FaqSection, Highlight, ImageBand, Reveal, SignupButton } from '../ui';
 
 const FAQS = [
     {
@@ -74,35 +74,31 @@ const Pricing = () => {
                 jsonLd={[softwareLd, faqLd(FAQS)]}
             />
 
-            <Hero
-                eyebrow="Pricing"
-                title={
-                    <>
-                        Unlimited records. <Highlight>One simple price.</Highlight>
-                    </>
-                }
-                body={`Start with ${TRIAL_DAYS} days of everything, free. No credit card.`}
-                after={
-                    <div className="mt-10 inline-flex rounded-full border border-white/20 bg-white/[0.08] p-1 backdrop-blur" role="group" aria-label="Currency">
-                        {['usd', 'cad'].map((c) => (
-                            <button
-                                key={c}
-                                type="button"
-                                onClick={() => setCurrency(c)}
-                                aria-pressed={currency === c}
-                                className={`px-5 py-2 rounded-full text-[14px] font-medium transition-all ${
-                                    currency === c ? 'bg-white text-[#2d5fb8] shadow-sm' : 'text-white/75 hover:text-white'
-                                }`}
-                            >
-                                {c.toUpperCase()}
-                            </button>
-                        ))}
-                    </div>
-                }
-            />
-
             <section className="bg-white">
-                <Container className="pt-16 sm:pt-20 pb-20 sm:pb-28">
+                <Container className="pt-10 sm:pt-14 pb-20 sm:pb-28">
+                    <div className="max-w-6xl mx-auto mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+                        <div>
+                            <h1 className="text-[2.25rem] sm:text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-[#13233f]">
+                                Unlimited records. <Highlight dark>One simple price.</Highlight>
+                            </h1>
+                            <p className="mt-3 text-[16px] text-[#1a2b4a]/60">Start with {TRIAL_DAYS} days of everything, free. No credit card.</p>
+                        </div>
+                        <div className="inline-flex self-start sm:self-auto rounded-full bg-[#f1f4f9] p-1" role="group" aria-label="Currency">
+                            {['usd', 'cad'].map((c) => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setCurrency(c)}
+                                    aria-pressed={currency === c}
+                                    className={`px-5 py-2 rounded-full text-[14px] font-medium transition-all ${
+                                        currency === c ? 'bg-white text-[#2d5fb8] shadow-sm' : 'text-[#13233f]/55 hover:text-[#13233f]'
+                                    }`}
+                                >
+                                    {c.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                     <div className="grid gap-5 lg:grid-cols-3 max-w-6xl mx-auto">
                         <Reveal>
                             <PlanCard
