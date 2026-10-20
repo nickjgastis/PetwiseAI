@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
 import { Seo, softwareLd } from '../seo';
-import { CtaBand, FeatureGrid, ImageBand, Highlight, SplitHero, Section, SectionHeading, SignupButton, SplitFeature } from '../ui';
+import { Container, CtaBand, FeatureGrid, ImageBand, Highlight, Section, SectionHeading, SplitFeature } from '../ui';
 
 const DOCUMENTATION = [
     { icon: FiClipboard, title: 'QuickSOAP', body: 'AI SOAP notes from the appointment or your dictation.', to: '/' },
@@ -43,25 +43,18 @@ const Features = () => (
             path="/features"
             jsonLd={softwareLd}
         />
-        <SplitHero
-            eyebrow="Features"
-            title={
-                <>
-                    Everything the record needs. <Highlight dark>Nothing it doesn’t.</Highlight>
-                </>
-            }
-            body="PetWise brings documentation, clinical questions and client communication into one simple workspace."
-            image="/site/laptop-soap.jpg"
-            imageAlt="A veterinarian reviewing a PetWise SOAP note on a laptop"
-            imageClassName="object-[30%_center]"
-        >
-            <SignupButton placement="features_hero" />
-        </SplitHero>
-
-        <Section tone="tint">
-            <SectionHeading eyebrow="Documentation" title="Every kind of note, written for you." />
-            <FeatureGrid items={DOCUMENTATION} />
-        </Section>
+        <section className="bg-[#f6f8fb]">
+            <Container className="pt-10 sm:pt-14 pb-20 sm:pb-28">
+                <div className="max-w-2xl mb-10 sm:mb-14">
+                    <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">Documentation</p>
+                    <h1 className="mt-4 text-[2.25rem] sm:text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-[#13233f]">
+                        Every kind of note, <Highlight dark>written for you.</Highlight>
+                    </h1>
+                    <p className="mt-4 text-lg text-[#1a2b4a]/65">SOAP notes, callback notes, clinical summaries and client handouts, from one appointment.</p>
+                </div>
+                <FeatureGrid items={DOCUMENTATION} />
+            </Container>
+        </section>
 
         <div className="pt-3 sm:pt-5 bg-white">
             <ImageBand
