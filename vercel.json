@@ -1,0 +1,27 @@
+{
+    "redirects": [
+        { "source": "/home", "destination": "/", "statusCode": 301 },
+        { "source": "/veterinary-ai-scribe", "destination": "/", "statusCode": 301 },
+        { "source": "/solutions", "destination": "/", "statusCode": 301 },
+        { "source": "/product", "destination": "/", "statusCode": 301 },
+        { "source": "/membership", "destination": "/pricing", "statusCode": 301 },
+        { "source": "/support", "destination": "/help", "statusCode": 301 },
+        { "source": "/privacy-policy", "destination": "/privacy", "statusCode": 301 },
+        { "source": "/terms-of-service", "destination": "/terms", "statusCode": 301 },
+        { "source": "/app", "destination": "/install", "statusCode": 301 },
+        { "source": "/vet-students", "destination": "/students", "statusCode": 301 },
+        { "source": "/demo", "destination": "/signup", "statusCode": 301 },
+        { "source": "/complimentary-demos", "destination": "/signup", "statusCode": 301 },
+        { "source": "/webinar-earn-1-ce-hour", "destination": "/signup", "statusCode": 301 },
+        { "source": "/free-trial", "destination": "/signup", "statusCode": 301 },
+        { "source": "/new-page", "destination": "/", "statusCode": 301 },
+        { "source": "/test-12345", "destination": "/", "statusCode": 301 },
+        { "source": "/blog/earn-1-hour-of-free-ce-join-our-weekly-1-hour-webinar", "destination": "/blog", "statusCode": 301 },
+        { "source": "/blog/documentation-shouldnt-break-your-momentum-", "destination": "/blog/documentation-shouldnt-break-your-momentum", "statusCode": 301 },
+        { "source": "/blog/you-give-everything-lets-talk-about-protecting-whats-left-", "destination": "/blog/you-give-everything-lets-talk-about-protecting-whats-left", "statusCode": 301 },
+        { "source": "/blog/nidpx9am3ic4myup5c9ccio5ihci0j", "destination": "/blog/how-vets-are-saving-hours-each-week-with-petsoap", "statusCode": 301 },
+        { "source": "/blog/im-not-techy-good-you-dont-need-to-be-smy5x", "destination": "/blog/im-not-techy-good-you-dont-need-to-be", "statusCode": 301 },
+        { "source": "/blog/fkv8vbxmu4r6za39jc0wuaybfboar3", "destination": "/blog/i-didnt-trust-ai-then-i-tried-petwise", "statusCode": 301 }
+    ],
+    "rewrites": [{ "source": "/(.*)", "destination": "/app-shell.html" }]
+}
