@@ -8,9 +8,12 @@ const LIMIT = 2;
 const USED_KEY = 'pw_site_pq_used';
 
 const SUGGESTIONS = [
-    { category: 'Toxicology', question: '100g of 70% dark chocolate ingested by a 12 kg dog. Toxic dose, decontamination and treatment.' },
-    { category: 'Medication Guidance', question: 'Maropitant dose for a vomiting 4 kg cat, including route and frequency.' },
-    { category: 'Emergency Medicine', question: 'Emergency furosemide protocol for a dog in acute CHF with respiratory distress.' }
+    { id: 'toxicology', category: 'Toxicology', question: '100g of 70% dark chocolate ingested by a 12 kg dog. Toxic dose, decontamination and treatment.' },
+    { id: 'maropitant', category: 'Medication Guidance', question: 'Maropitant dose for a vomiting 4 kg cat, including route and frequency.' },
+    { id: 'chf', category: 'Emergency Medicine', question: 'Emergency furosemide protocol for a dog in acute CHF with respiratory distress.' },
+    { id: 'pupd', category: 'Internal Medicine', question: 'Top differentials and first diagnostics for PU/PD in a 13 year old cat.' },
+    { id: 'premed', category: 'Anesthesia', question: 'Premedication options for a healthy 30 kg dog having a dental cleaning.' },
+    { id: 'derm', category: 'Dermatology', question: 'Seasonal paw licking in a 2 year old Labrador. Differentials and first-line treatment.' }
 ];
 
 const SOURCE_PATTERNS = [
@@ -56,11 +59,10 @@ const BookIcon = () => (
     </svg>
 );
 
-// Public PetQuery demo, styled like the in-app QuickQuery. Two questions per browser:
-// localStorage blocks repeat visits, the API enforces the same limit per token and caps per IP.
+// Public PetQuery demo, styled like the in-app QuickQuery. Preset questions only (the API rejects
+// anything else and caches answers), two per browser via localStorage plus the API token.
 const PetQueryLive = () => {
     const [messages, setMessages] = useState([]);
-    const [input, setInput] = useState('');
     const [remaining, setRemaining] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -89,20 +91,21 @@ const PetQueryLive = () => {
 
     const locked = remaining === 0;
 
-    const ask = async (question) => {
-        const q = String(question || '').trim();
-        if (!q || loading || locked) return;
+    const asked = messages.filter((m) => m.role === 'user').map((m) => m.id);
+    const unasked = SUGGESTIONS.filter((s) => !asked.includes(s.id));
+
+    const ask = async (s) => {
+        if (!s || loading || locked) return;
 
         setError('');
-        setInput('');
-        setMessages((prev) => [...prev, { role: 'user', content: q }]);
+        setMessages((prev) => [...prev, { role: 'user', id: s.id, content: s.question }]);
         setLoading(true);
 
         try {
             const { data } = await demoRequest({
                 method: 'post',
                 url: `${DEMO_API}/api/demo/petquery`,
-                data: { question: q, history: messages.slice(-4), scope: 'site' },
+                data: { questionId: s.id, scope: 'site' },
                 headers: demoHeaders()
             });
             saveDemoToken(data.token);
@@ -155,10 +158,10 @@ const PetQueryLive = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
                             {SUGGESTIONS.map((s) => (
                                 <button
-                                    key={s.question}
+                                    key={s.id}
                                     type="button"
                                     disabled={locked}
-                                    onClick={() => ask(s.question)}
+                                    onClick={() => ask(s)}
                                     className="flex flex-col items-start text-left bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <h4 className="text-primary-600 font-semibold mb-2 text-base">{s.category}</h4>
@@ -242,37 +245,40 @@ const PetQueryLive = () => {
                         </SignupButton>
                     </div>
                 ) : (
-                    <form
-                        className="flex gap-3 items-start"
-                        onSubmit={(e) => {
-                            e.preventDefault();
-                            ask(input);
-                        }}
-                    >
-                        <textarea
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    ask(input);
-                                }
-                            }}
-                            maxLength={500}
-                            rows={1}
-                            disabled={loading}
-                            placeholder="Ask me anything about veterinary medicine..."
-                            className="flex-1 min-h-[52px] max-h-[120px] px-4 py-3 text-base border-2 border-gray-300 rounded-2xl bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none shadow-sm resize-none transition-all duration-200 disabled:opacity-70"
-                        />
-                        <button
-                            type="submit"
-                            disabled={loading || !input.trim()}
-                            aria-label="Send message"
-                            className="w-[52px] h-[52px] bg-[#3468bd] text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0"
-                        >
-                            <SendIcon />
-                        </button>
-                    </form>
+                    <>
+                        {messages.length > 0 && unasked.length > 0 && (
+                            <div className="flex gap-2 mb-3 overflow-x-auto pb-1 [scrollbar-width:none]">
+                                {unasked.map((s) => (
+                                    <button
+                                        key={s.id}
+                                        type="button"
+                                        title={s.question}
+                                        disabled={loading}
+                                        onClick={() => ask(s)}
+                                        className="shrink-0 px-3.5 py-1.5 text-sm font-medium text-primary-600 bg-white border border-gray-200 rounded-full hover:border-primary-300 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {s.category}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex gap-3 items-start">
+                            <textarea
+                                disabled
+                                rows={1}
+                                placeholder={messages.length ? 'Pick another question above. Sign up to ask your own.' : 'Pick a question above. Sign up to ask your own.'}
+                                className="flex-1 min-h-[52px] px-4 py-3 text-base border-2 border-gray-300 rounded-2xl bg-gray-50 shadow-sm resize-none cursor-not-allowed"
+                            />
+                            <button
+                                type="button"
+                                disabled
+                                aria-label="Send message"
+                                className="w-[52px] h-[52px] bg-gray-300 text-white rounded-full cursor-not-allowed flex items-center justify-center flex-shrink-0"
+                            >
+                                <SendIcon />
+                            </button>
+                        </div>
+                    </>
                 )}
             </div>
         </div>
