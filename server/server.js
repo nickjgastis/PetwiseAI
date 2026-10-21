@@ -1642,6 +1642,8 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
                 }
             }
 
+            await logUsageEvent(user?.sub, 'quicksoap');
+
             return res.status(200).json({ report, petName, recordType, usage: res.locals.usageInfo || null });
         }
 
