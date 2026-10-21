@@ -11,6 +11,7 @@ import { withHistory } from 'slate-history';
 import { Node } from 'slate';
 import { useNavigate } from 'react-router-dom';
 import SOAPView from './SOAPView';
+import { loadNoteIntoQuickSOAP } from '../utils/cases';
 
 const mainHeaders = [
     'Veterinary Medical Record:',
@@ -1089,78 +1090,7 @@ const SavedReports = () => {
     };
 
     const handleLoadQuickSOAP = (report) => {
-        // Clear QuickSOAP-specific localStorage items
-        localStorage.removeItem('quickSOAP_dictations');
-        localStorage.removeItem('quickSOAP_input');
-        localStorage.removeItem('quickSOAP_report');
-        localStorage.removeItem('quickSOAP_lastInput');
-        localStorage.removeItem('currentQuickSOAPReportId');
-        localStorage.removeItem('quickSOAP_reportName');
-        localStorage.removeItem('quickSOAP_recordType');
-
-        // Get the record type from the report (soap, summary, callback, or quicksoap for legacy)
-        const reportRecordType = report.record_type || report.form_data?.record_type || 'soap';
-        // Normalize 'quicksoap' to 'soap' for the UI
-        const normalizedRecordType = reportRecordType === 'quicksoap' ? 'soap' : reportRecordType;
-        localStorage.setItem('quickSOAP_recordType', normalizedRecordType);
-
-        // For mobile-generated reports (with report_text), load directly into generated view
-        if (report.report_text && report.form_data?.from_mobile) {
-            // Load the generated report text directly
-            localStorage.setItem('quickSOAP_report', report.report_text);
-            
-            // Load dictations if available (for reference)
-            if (report.form_data.dictations) {
-                localStorage.setItem('quickSOAP_dictations', JSON.stringify(report.form_data.dictations));
-            }
-            
-            // Load report name
-            if (report.report_name) {
-                localStorage.setItem('quickSOAP_reportName', report.report_name);
-            }
-            
-            // Store the report ID for updates
-            localStorage.setItem('currentQuickSOAPReportId', report.id);
-        } else {
-            // For other reports, load from form_data as before
-            if (report.form_data) {
-                const formData = report.form_data;
-                
-                if (formData.dictations) {
-                    localStorage.setItem('quickSOAP_dictations', JSON.stringify(formData.dictations));
-                }
-                if (formData.input !== undefined) {
-                    localStorage.setItem('quickSOAP_input', formData.input);
-                }
-                if (formData.report) {
-                    localStorage.setItem('quickSOAP_report', formData.report);
-                } else if (report.report_text) {
-                    // Fallback: use report_text if no form_data.report
-                    localStorage.setItem('quickSOAP_report', report.report_text);
-                }
-                if (formData.lastInput !== undefined) {
-                    localStorage.setItem('quickSOAP_lastInput', formData.lastInput);
-                }
-            } else {
-                // Fallback: if no form_data, use report_text as the report
-                if (report.report_text) {
-                    localStorage.setItem('quickSOAP_report', report.report_text);
-                }
-            }
-
-            // Load report name
-            if (report.report_name) {
-                localStorage.setItem('quickSOAP_reportName', report.report_name);
-            }
-
-            // Store the report ID for updates
-            localStorage.setItem('currentQuickSOAPReportId', report.id);
-        }
-        
-        // Set flag to indicate we're loading saved data
-        localStorage.setItem('loadQuickSOAPData', 'true');
-
-        // Navigate to QuickSOAP
+        loadNoteIntoQuickSOAP(report);
         navigate('/dashboard/quicksoap');
     };
 

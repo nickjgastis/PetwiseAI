@@ -10,6 +10,8 @@ import { AnimatePresence } from 'framer-motion';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
+import { useNavigate } from 'react-router-dom';
+import { CASE_KEY, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType } from '../utils/cases';
 
 // PDF Document component for print/export
 const QuickSOAPPDFDocument = ({ reportText, title }) => {
@@ -225,6 +227,8 @@ const parseSOAPReport = (text) => {
 
 const QuickSOAP = () => {
     const { user, isAuthenticated } = useAuth0();
+    const navigate = useNavigate();
+    const [activeCaseId, setActiveCaseIdState] = useState(() => (typeof window !== 'undefined' ? getActiveCaseId() : null));
     const [input, setInput] = useState(() => {
         // Initialize input synchronously from localStorage
         if (typeof window !== 'undefined') {
@@ -733,6 +737,9 @@ const QuickSOAP = () => {
         localStorage.removeItem('currentQuickSOAPReportId');
         localStorage.removeItem('quickSOAP_reportName');
         localStorage.removeItem('quickSOAP_selectedTemplate');
+        localStorage.removeItem(CASE_KEY);
+        localStorage.removeItem(NOTE_TYPE_KEY);
+        setActiveCaseIdState(null);
     }, []);
 
     // Helper to load draft data into component state
@@ -783,6 +790,7 @@ const QuickSOAP = () => {
         draftRecordIdRef.current = draftData.id;
         setDraftRecordId(draftData.id);
         localStorage.setItem('currentQuickSOAPReportId', draftData.id);
+        localStorage.removeItem(NOTE_TYPE_KEY);
     }, [isMobile]);
 
     // Load draft dictations from Supabase (for desktop)
@@ -1490,6 +1498,21 @@ const QuickSOAP = () => {
     };
     */
 
+    // A different note type in the same case gets its own record instead of overwriting the
+    // loaded one. Drafts (no type yet) are always filled in place.
+    const noteIdForType = (noteId, typeToSave) => {
+        const loadedType = localStorage.getItem(NOTE_TYPE_KEY);
+        if (noteId && loadedType && normalizeType(loadedType) !== normalizeType(typeToSave)) return null;
+        return noteId;
+    };
+
+    const leaveToCase = () => {
+        const caseId = activeCaseId;
+        clearAllQuickSOAPData();
+        localStorage.removeItem('quickSOAP_recordType');
+        navigate(caseId ? `/dashboard/cases/${caseId}` : '/dashboard/cases');
+    };
+
     // Auto-save helper function (extracted from handleSaveRecord)
     const autoSaveRecord = async (generatedReport, extractedPetName = null, saveRecordType = null) => {
         if (!isAuthenticated || !user) return;
@@ -1550,7 +1573,9 @@ const QuickSOAP = () => {
                 finalReportName = `${typeLabel} - ${dateStr}`;
             }
 
-            const reportIdToUse = loadedReportId || draftRecordId;
+            const caseId = await ensureCase(petNameToUse);
+            setActiveCaseIdState(caseId);
+            const reportIdToUse = noteIdForType(loadedReportId || draftRecordId, typeToSave);
 
             if (reportIdToUse) {
                 // Update existing report
@@ -1560,7 +1585,8 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: generatedReport,
                         form_data: formData,
-                        record_type: typeToSave
+                        record_type: typeToSave,
+                        case_id: caseId || undefined
                     })
                     .eq('id', reportIdToUse)
                     .eq('user_id', userId);
@@ -1568,6 +1594,7 @@ const QuickSOAP = () => {
                 if (updateError) {
                     console.error('Error auto-saving QuickSOAP record:', updateError);
                 } else {
+                    localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
                     // Clear draft flag since it's now a completed report
                     draftRecordIdRef.current = null;
                     setDraftRecordId(null);
@@ -1593,7 +1620,8 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: generatedReport,
                         form_data: formData,
-                        record_type: typeToSave
+                        record_type: typeToSave,
+                        case_id: caseId || undefined
                     }])
                     .select()
                     .single();
@@ -1603,6 +1631,7 @@ const QuickSOAP = () => {
                 } else {
                     // Store the new report ID
                     localStorage.setItem('currentQuickSOAPReportId', newReport.id);
+                    localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
                     // Mark as unopened and trigger notification
                     const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
                     if (!unopenedReports.includes(newReport.id)) {
@@ -1818,6 +1847,9 @@ const QuickSOAP = () => {
             localStorage.removeItem('currentQuickSOAPReportId');
             localStorage.removeItem('quickSOAP_reportName');
             localStorage.removeItem('quickSOAP_selectedTemplate');
+            localStorage.removeItem(CASE_KEY);
+            localStorage.removeItem(NOTE_TYPE_KEY);
+            setActiveCaseIdState(null);
             // Transition back to center: fade in centered input
             setTimeout(() => {
                 setIsTransitioning(false);
@@ -1925,7 +1957,9 @@ const QuickSOAP = () => {
                 finalReportName = `${typeLabel} - ${dateStr}`;
             }
 
-            const reportIdToUse = loadedReportId || draftRecordId;
+            const caseId = await ensureCase(petName);
+            setActiveCaseIdState(caseId);
+            const reportIdToUse = noteIdForType(loadedReportId || draftRecordId, typeToSave);
 
             if (reportIdToUse) {
                 // Update existing report (could be draft or completed)
@@ -1936,12 +1970,14 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: report, // Now has report - no longer a draft
                         form_data: formData,
-                        record_type: typeToSave
+                        record_type: typeToSave,
+                        case_id: caseId || undefined
                     })
                     .eq('id', reportIdToUse)
                     .eq('user_id', userId);
 
                 if (updateError) throw updateError;
+                localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
 
                 // Clear draft flag since it's now a completed report
                 draftRecordIdRef.current = null;
@@ -1955,7 +1991,8 @@ const QuickSOAP = () => {
                         report_name: finalReportName,
                         report_text: report,
                         form_data: formData,
-                        record_type: typeToSave
+                        record_type: typeToSave,
+                        case_id: caseId || undefined
                     }])
                     .select()
                     .single();
@@ -1964,6 +2001,7 @@ const QuickSOAP = () => {
 
                 // Store the new report ID
                 localStorage.setItem('currentQuickSOAPReportId', newReport.id);
+                localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
             }
 
             setSaveMessageVisible(true);
@@ -3404,6 +3442,16 @@ const QuickSOAP = () => {
                                         <p className="text-xs opacity-75 mt-0.5">This will be automatically saved. Feel free to name and edit it once generated.</p>
                                     </div>
                                 </div>
+                            )}
+                            {activeCaseId && hasReport && !isGenerating && (
+                                <button
+                                    type="button"
+                                    onClick={leaveToCase}
+                                    className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-600 hover:text-primary-700 bg-transparent border-none cursor-pointer p-0"
+                                    style={{ fontFamily: "'Inter', sans-serif" }}
+                                >
+                                    <FaArrowLeft className="text-[11px]" /> Back to case
+                                </button>
                             )}
                             {/* Report Title - Editable */}
                             <div className="mb-2">

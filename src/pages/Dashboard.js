@@ -15,7 +15,7 @@ import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen } from 'react-icons/fa';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
@@ -24,6 +24,8 @@ import { useUsage, trialPlanLabel, getTier } from '../hooks/useUsage';
 import PaymentIssueBanner from '../components/PaymentIssueBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import LoadingScreen from '../components/LoadingScreen';
+import Cases from './Cases';
+import { createCase } from '../utils/cases';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -161,7 +163,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                                 <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isQuickSOAP ? 'bg-blue-50' : ''}`}>
                                     <FaMicrophone className="text-lg" />
                                 </span>
-                                <span className={`text-[10px] mt-0.5 ${isQuickSOAP ? 'font-bold' : 'font-medium'}`}>QuickSOAP</span>
+                                <span className={`text-[10px] mt-0.5 ${isQuickSOAP ? 'font-bold' : 'font-medium'}`}>New case</span>
                             </Link>
                             <Link
                                 to="/dashboard/quick-query"
@@ -236,6 +238,7 @@ const Dashboard = () => {
     const { logout, user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
     const location = useLocation();
+    const isCasesPath = location.pathname.startsWith('/dashboard/cases');
 
     // Helper function to check if user is in student mode
     const isStudentMode = () => {
@@ -419,7 +422,7 @@ const Dashboard = () => {
                 // Double-check the draft still exists and hasn't been processed by another instance
                 const { data: finalDraftCheck } = await supabase
                     .from('saved_reports')
-                    .select('id, report_text, form_data')
+                    .select('*')
                     .eq('id', draftId)
                     .eq('user_id', userId)
                     .maybeSingle();
@@ -435,10 +438,13 @@ const Dashboard = () => {
                     return true; // Already processed, consider success
                 }
 
+                const caseId = finalDraftCheck.case_id || await createCase(extractedPetName || formData.petName);
+
                 // Update the draft to a report instead of inserting new (prevents duplicates)
                 const { data: savedReport, error: saveError } = await supabase
                     .from('saved_reports')
                     .update({
+                        case_id: caseId || undefined,
                         report_name: reportName,
                         report_text: generatedReport,
                         form_data: {
@@ -1441,7 +1447,7 @@ const Dashboard = () => {
                                     <Link
                                         to="/dashboard/quicksoap"
                                         onClick={closeMobileMenu}
-                                        data-tooltip="QuickSOAP"
+                                        data-tooltip="New case"
                                         data-tour="quicksoap"
                                         className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'text-white' : 'hover:text-white'}`}
                                         style={location.pathname === '/dashboard/quicksoap' ? { background: 'rgba(255,255,255,0.12)' } : {}}
@@ -1456,12 +1462,28 @@ const Dashboard = () => {
                                             )}
                                         </div>
                                         <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'} relative`}>
-                                            QuickSOAP
+                                            New case
                                             {/* Notification dot next to text when expanded */}
                                             {hasPendingDictation && !isMobile && !isSidebarCollapsed && (
                                                 <FaCircle className="inline-block ml-2 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
                                             )}
                                         </span>
+                                    </Link>
+                                </li>
+                                <li className="mx-3 my-0.5 relative">
+                                    <Link
+                                        to="/dashboard/cases"
+                                        onClick={closeMobileMenu}
+                                        data-tooltip="Cases"
+                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${isCasesPath ? 'text-white' : 'hover:text-white'}`}
+                                        style={isCasesPath ? { background: 'rgba(255,255,255,0.12)' } : {}}
+                                        onMouseEnter={(e) => { if (!isCasesPath) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                        onMouseLeave={(e) => { if (!isCasesPath) e.currentTarget.style.background = 'transparent'; }}
+                                    >
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: isCasesPath ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
+                                            <FaFolderOpen className="text-xs" />
+                                        </div>
+                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Cases</span>
                                     </Link>
                                 </li>
                                 <li className="mx-3 my-0.5 relative">
@@ -1783,6 +1805,8 @@ const Dashboard = () => {
                         />
                         <Route path="quick-query" element={<QuickQuery />} />
                         <Route path="quicksoap" element={<QuickSOAP />} />
+                        <Route path="cases" element={<Cases />} />
+                        <Route path="cases/:caseId" element={<Cases />} />
                         <Route
                             path="report-form"
                             element={
