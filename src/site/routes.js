@@ -1,5 +1,6 @@
 import { matchPath } from 'react-router-dom';
 import { POST_REDIRECTS } from '../content/blog/posts.generated';
+import { STUDENT_PROGRAM } from '../constants/features';
 
 export const SITE_PAGES = [
     { path: '/', page: 'Home' },
@@ -7,7 +8,7 @@ export const SITE_PAGES = [
     { path: '/veterinary-clinical-assistant', page: 'ClinicalAssistant' },
     { path: '/features', page: 'Features' },
     { path: '/pricing', page: 'Pricing' },
-    { path: '/students', page: 'Students' },
+    ...(STUDENT_PROGRAM ? [{ path: '/students', page: 'Students' }] : []),
     { path: '/about', page: 'About' },
     { path: '/help', page: 'Help' },
     { path: '/updates', page: 'Updates' },
@@ -29,7 +30,8 @@ export const SITE_REDIRECTS = {
     '/privacy-policy': '/privacy',
     '/terms-of-service': '/terms',
     '/app': '/install',
-    '/vet-students': '/students',
+    '/vet-students': STUDENT_PROGRAM ? '/students' : '/pricing',
+    ...(STUDENT_PROGRAM ? {} : { '/students': '/pricing' }),
     '/demo': '/signup',
     '/complimentary-demos': '/signup',
     '/webinar-earn-1-ce-hour': '/signup',

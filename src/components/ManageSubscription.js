@@ -6,6 +6,7 @@ import StudentRedeem from './StudentRedeem';
 import { useNavigate } from 'react-router-dom';
 import PlanCards, { CurrencyToggle } from './PlanCards';
 import { openPastDuePayment } from './PaymentIssueBanner';
+import { STUDENT_PROGRAM } from '../constants/features';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -263,7 +264,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
 
             {/* Secondary actions */}
             <div className="flex flex-wrap gap-3">
-                {!isStudentPlan && (
+                {STUDENT_PROGRAM && !isStudentPlan && (
                     <button
                         onClick={() => setShowStudentRedeem(true)}
                         disabled={isLoading !== null}

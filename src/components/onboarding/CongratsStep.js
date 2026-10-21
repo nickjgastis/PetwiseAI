@@ -4,6 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../../supabaseClient';
 import { trackOnboardingComplete } from '../../utils/pixelEvents';
 import OnboardingLayout from './OnboardingLayout';
+import { STUDENT_PROGRAM } from '../../constants/features';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -89,21 +90,23 @@ const CongratsStep = ({ onNext }) => {
                 >
                     <div className="flex items-center justify-between gap-3">
                         <h2 className="text-[17px] font-semibold tracking-tight text-[#13233f]">Set up your profile</h2>
-                        <div className="inline-flex rounded-full p-1 bg-[#f1f4f8]" role="group" aria-label="Account type">
-                            {[['Doctor', false], ['Student', true]].map(([label, value]) => (
-                                <button
-                                    key={label}
-                                    type="button"
-                                    onClick={() => setIsStudentMode(value)}
-                                    aria-pressed={isStudentMode === value}
-                                    className={`px-3 py-1 rounded-full text-[12px] font-medium transition-all ${
-                                        isStudentMode === value ? 'bg-white text-[#13233f] shadow-sm' : 'text-[#13233f]/50 hover:text-[#13233f]'
-                                    }`}
-                                >
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
+                        {STUDENT_PROGRAM && (
+                            <div className="inline-flex rounded-full p-1 bg-[#f1f4f8]" role="group" aria-label="Account type">
+                                {[['Doctor', false], ['Student', true]].map(([label, value]) => (
+                                    <button
+                                        key={label}
+                                        type="button"
+                                        onClick={() => setIsStudentMode(value)}
+                                        aria-pressed={isStudentMode === value}
+                                        className={`px-3 py-1 rounded-full text-[12px] font-medium transition-all ${
+                                            isStudentMode === value ? 'bg-white text-[#13233f] shadow-sm' : 'text-[#13233f]/50 hover:text-[#13233f]'
+                                        }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <input

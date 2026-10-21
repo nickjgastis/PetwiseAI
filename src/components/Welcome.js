@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
+import { STUDENT_PROGRAM } from '../constants/features';
 
 const Welcome = ({ onComplete }) => {
     const [dvmName1, setDvmName1] = useState('');
@@ -60,22 +61,24 @@ const Welcome = ({ onComplete }) => {
                     <p className="text-[#1a2b4a]/65 text-[15px] leading-relaxed">Enter your name as you'd like it to appear on reports.</p>
                 </div>
 
-                <div className="flex justify-center mb-5">
-                    <div className="inline-flex rounded-full p-1 bg-[#f1f4f8]" role="group" aria-label="Account type">
-                        {[['Doctor', false], ['Student', true]].map(([label, value]) => (
-                            <button
-                                key={label}
-                                type="button"
-                                onClick={() => setIsStudentMode(value)}
-                                aria-pressed={isStudentMode === value}
-                                className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${
-                                    isStudentMode === value ? 'bg-white text-[#13233f] shadow-sm' : 'text-[#13233f]/50 hover:text-[#13233f]'
-                                }`}
-                            >
-                                {label}
-                            </button>
-                        ))}
-                    </div>
+                <div className={STUDENT_PROGRAM ? 'flex justify-center mb-5' : 'hidden'}>
+                    {STUDENT_PROGRAM && (
+                        <div className="inline-flex rounded-full p-1 bg-[#f1f4f8]" role="group" aria-label="Account type">
+                            {[['Doctor', false], ['Student', true]].map(([label, value]) => (
+                                <button
+                                    key={label}
+                                    type="button"
+                                    onClick={() => setIsStudentMode(value)}
+                                    aria-pressed={isStudentMode === value}
+                                    className={`px-4 py-1.5 rounded-full text-[13px] font-medium transition-all ${
+                                        isStudentMode === value ? 'bg-white text-[#13233f] shadow-sm' : 'text-[#13233f]/50 hover:text-[#13233f]'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">

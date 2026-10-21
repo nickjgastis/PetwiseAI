@@ -1,3 +1,5 @@
+import { STUDENT_PROGRAM } from '../constants/features';
+
 export const SITE_URL = 'https://petwise.vet';
 export const SITE_NAME = 'PetWise';
 export const SUPPORT_EMAIL = 'support@petwise.vet';
@@ -34,7 +36,7 @@ export const FOOTER = [
             { label: 'About', to: '/about' },
             { label: 'Blog', to: '/blog' },
             { label: 'Updates', to: '/updates' },
-            { label: 'Vet students', to: '/students' }
+            ...(STUDENT_PROGRAM ? [{ label: 'Vet students', to: '/students' }] : [])
         ]
     },
     {

@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { FaCheck, FaGraduationCap, FaTimes, FaLock, FaChartPie } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
 import PlanCards, { CurrencyToggle } from './PlanCards';
+import { STUDENT_PROGRAM } from '../constants/features';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -186,14 +187,18 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
                     <span className="flex items-center gap-1.5"><FaLock className="text-[10px]" /> Secure Stripe checkout</span>
                     <span className="text-[#1a2b4a]/25">·</span>
                     <span className="flex items-center gap-1.5"><FaCheck className="text-[#3468bd] text-[10px]" /> Cancel anytime</span>
-                    <span className="text-[#1a2b4a]/25">·</span>
-                    <button
-                        onClick={() => setShowStudentRedeem(true)}
-                        disabled={isLoading !== null}
-                        className="flex items-center gap-1.5 text-[#3468bd] hover:text-[#13233f] underline underline-offset-2 transition-colors disabled:opacity-50"
-                    >
-                        <FaGraduationCap className="text-[10px]" /> Student? Get free access
-                    </button>
+                    {STUDENT_PROGRAM && (
+                        <>
+                            <span className="text-[#1a2b4a]/25">·</span>
+                            <button
+                                onClick={() => setShowStudentRedeem(true)}
+                                disabled={isLoading !== null}
+                                className="flex items-center gap-1.5 text-[#3468bd] hover:text-[#13233f] underline underline-offset-2 transition-colors disabled:opacity-50"
+                            >
+                                <FaGraduationCap className="text-[10px]" /> Student? Get free access
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </motion.div>

@@ -5,6 +5,7 @@ import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, softwareLd } from '../seo';
 import { FREE_DAILY, PLAN_FEATURES, PRICES, TRIAL_DAYS } from '../../constants/pricing';
 import { Container, CtaBand, FaqSection, Highlight, ImageBand, Reveal, SignupButton } from '../ui';
+import { STUDENT_PROGRAM } from '../../constants/features';
 
 const FAQS = [
     {
@@ -23,10 +24,10 @@ const FAQS = [
         q: 'Do you offer clinic or team pricing?',
         a: 'Yes. For multi vet clinics and groups, email support@petwise.vet and we will put together a plan for your team.'
     },
-    {
+    ...(STUDENT_PROGRAM ? [{
         q: 'Is PetWise free for veterinary students?',
         a: 'Yes. Vet students get PetWise free while they study. See the students page for how to get your access code.'
-    },
+    }] : []),
     {
         q: 'Which currencies do you support?',
         a: 'Plans are available in US dollars and Canadian dollars.'
@@ -140,7 +141,7 @@ const Pricing = () => {
                         </Reveal>
                     </div>
 
-                    <div className="mt-10 grid gap-4 sm:grid-cols-2 max-w-6xl mx-auto">
+                    <div className={`mt-10 grid gap-4 mx-auto ${STUDENT_PROGRAM ? 'sm:grid-cols-2 max-w-6xl' : 'max-w-3xl'}`}>
                         <div className="rounded-[24px] bg-[#f6f8fb] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 className="font-semibold text-[#13233f]">Clinics and groups</h2>
@@ -150,7 +151,7 @@ const Pricing = () => {
                                 Contact us
                             </a>
                         </div>
-                        <div className="rounded-[24px] bg-[#f6f8fb] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        {STUDENT_PROGRAM && <div className="rounded-[24px] bg-[#f6f8fb] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                                 <h2 className="font-semibold text-[#13233f]">Vet students</h2>
                                 <p className="mt-1 text-[15px] text-[#1a2b4a]/60">PetWise is free while you study.</p>
@@ -158,7 +159,7 @@ const Pricing = () => {
                             <Link to="/students" className="text-[15px] font-medium text-[#3468bd] hover:underline underline-offset-4">
                                 Learn more
                             </Link>
-                        </div>
+                        </div>}
                     </div>
                 </Container>
             </section>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import OnboardingLayout from './OnboardingLayout';
+import { STUDENT_PROGRAM } from '../../constants/features';
 
 const QUIZ_DATA = {
     quiz1: {
@@ -9,7 +10,7 @@ const QUIZ_DATA = {
             { id: 'veterinarian', label: 'Veterinarian' },
             { id: 'vet_tech', label: 'Veterinary technician / nurse' },
             { id: 'practice_owner', label: 'Practice owner or manager' },
-            { id: 'student', label: 'Veterinary student' },
+            ...(STUDENT_PROGRAM ? [{ id: 'student', label: 'Veterinary student' }] : []),
             { id: 'other', label: 'Other clinic staff' },
         ]
     },

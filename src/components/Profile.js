@@ -17,6 +17,7 @@ import {
     FaGraduationCap, FaEnvelope, FaCircle
 } from 'react-icons/fa';
 import { clearAppLocalStorage } from '../utils/clearUserData';
+import { STUDENT_PROGRAM } from '../constants/features';
 
 // Row inside a settings card: label left, value right
 const InfoRow = ({ label, children }) => (
@@ -612,7 +613,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                                     on your phone and log in. Dictate in the exam room and your notes
                                                     appear here on desktop.
                                                 </p>
-                                                {canRedeemStudentAccess() && !isStudentMode() && (
+                                                {STUDENT_PROGRAM && canRedeemStudentAccess() && !isStudentMode() && (
                                                     <button
                                                         onClick={() => setShowStudentRedeem(true)}
                                                         className="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-50 text-purple-700 font-semibold rounded-full text-sm hover:bg-purple-100 transition-all border border-purple-100"
