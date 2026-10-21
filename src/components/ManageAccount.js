@@ -11,7 +11,7 @@ const API_URL = process.env.NODE_ENV === 'production'
 // Inline account panel — rendered inside the Profile settings layout (desktop)
 // or as a full page on mobile (pass onBack to show the back row).
 const ManageAccount = ({ user, onBack }) => {
-    const { logout } = useAuth0();
+    const { logout, getAccessTokenSilently } = useAuth0();
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -54,32 +54,25 @@ const ManageAccount = ({ user, onBack }) => {
         }
 
         try {
+            const token = await getAccessTokenSilently();
             const response = await fetch(`${API_URL}/delete-account`, {
                 method: 'POST',
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: user.sub })
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.message || 'Failed to delete account');
+                const body = await response.json().catch(() => ({}));
+                throw new Error(body.error || 'Failed to delete account');
             }
 
-            // Clear all app data
             clearAppLocalStorage();
 
-            // First logout from Auth0 without returnTo
-            await logout({
-                clientId: process.env.REACT_APP_AUTH0_CLIENT_ID,
-                federated: true
-            });
-
-            // Then force redirect - PWA stays on app domain
+            // PWA stays on the app domain; browsers go to the marketing homepage.
             const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
                                 window.navigator.standalone === true;
-            window.location.href = isStandalone ? window.location.origin : 'https://petwise.vet';
-
+            await logout({
+                logoutParams: { returnTo: isStandalone ? window.location.origin : 'https://petwise.vet' }
+            });
         } catch (error) {
             console.error('Delete error:', error);
             setError(error.message);
