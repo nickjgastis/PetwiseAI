@@ -8,7 +8,7 @@ const router = express.Router();
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN || process.env.REACT_APP_AUTH0_DOMAIN;
 const tokenCache = new Map();
 
-const TABLES = new Set(['users', 'saved_reports', 'templates', 'onboarding']);
+const TABLES = new Set(['users', 'saved_reports', 'templates', 'onboarding', 'cases']);
 const METHODS = new Set(['select', 'insert', 'update', 'upsert', 'delete']);
 
 const USERS_WRITE = new Set([
@@ -28,9 +28,12 @@ const REPORTS_WRITE = new Set([
     'report_text',
     'form_data',
     'record_type',
+    'case_id',
 ]);
 
 const TEMPLATES_WRITE = new Set(['template_name', 'template_text']);
+
+const CASES_WRITE = new Set(['pet_name', 'title']);
 
 const ONBOARDING_WRITE = new Set([
     'status',
@@ -44,8 +47,9 @@ const FILTER_OPS = new Set(['eq', 'in', 'is']);
 
 const FILTER_COLS = {
     users: new Set(['auth0_user_id', 'id']),
-    saved_reports: new Set(['id', 'user_id', 'record_type', 'report_text']),
+    saved_reports: new Set(['id', 'user_id', 'record_type', 'report_text', 'case_id']),
     templates: new Set(['id', 'user_id']),
+    cases: new Set(['id', 'user_id']),
     onboarding: new Set(['id', 'auth0_user_id']),
 };
 
@@ -238,8 +242,18 @@ router.post('/', requireUser, async (req, res) => {
                 });
             }
 
-            const writeSet = table === 'saved_reports' ? REPORTS_WRITE : TEMPLATES_WRITE;
+            const writeSet = table === 'saved_reports' ? REPORTS_WRITE : table === 'cases' ? CASES_WRITE : TEMPLATES_WRITE;
             const extraFilters = (filters || []).filter((f) => f.k !== 'user_id' && f.k !== 'auth0_user_id');
+
+            if (table === 'saved_reports' && (method === 'insert' || method === 'update')) {
+                const caseIds = [...new Set(rows.map((r) => r && r.case_id).filter(Boolean))];
+                if (caseIds.length) {
+                    const { data: owned, error: caseErr } = await supabase
+                        .from('cases').select('id').eq('user_id', uid).in('id', caseIds);
+                    if (caseErr) throw caseErr;
+                    if ((owned || []).length !== caseIds.length) throw fail(403, 'Unknown case', '403');
+                }
+            }
 
             if (method === 'select') {
                 q = supabase.from(table).select(cols).eq('user_id', uid);
