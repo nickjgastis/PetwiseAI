@@ -2979,19 +2979,25 @@ app.get('/admin/user-usage', requireAdmin, async (req, res) => {
         const sub = req.query.sub;
         if (!sub) return res.status(400).json({ error: 'Missing sub' });
 
-        const { data, error } = await supabase.rpc('admin_user_usage', { p_auth0_user_id: sub });
+        const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const [{ data, error }, recent] = await Promise.all([
+            supabase.rpc('admin_user_usage', { p_auth0_user_id: sub }),
+            supabase.from('usage_events').select('event_type').eq('auth0_user_id', sub).gte('created_at', since24h)
+        ]);
         if (error) throw error;
 
-        const usage = { quicksoap: {}, petsoap: {}, petquery: {} };
-        (data || []).forEach(r => {
-            usage[r.event_type] = {
-                total: Number(r.total) || 0,
-                last30d: Number(r.last_30d) || 0,
-                last7d: Number(r.last_7d) || 0,
-            };
-        });
+        const usage = {};
         ['quicksoap', 'petsoap', 'petquery'].forEach(k => {
-            if (!usage[k].total) usage[k] = { total: 0, last30d: 0, last7d: 0 };
+            usage[k] = { total: 0, last30d: 0, last7d: 0, last24h: 0 };
+        });
+        (data || []).forEach(r => {
+            if (!usage[r.event_type]) return;
+            usage[r.event_type].total = Number(r.total) || 0;
+            usage[r.event_type].last30d = Number(r.last_30d) || 0;
+            usage[r.event_type].last7d = Number(r.last_7d) || 0;
+        });
+        (recent.data || []).forEach(r => {
+            if (usage[r.event_type]) usage[r.event_type].last24h++;
         });
 
         res.json({ sub, usage });
