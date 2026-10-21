@@ -70,7 +70,7 @@ const GROUPS = [
         faqs: [
             {
                 q: 'What happens when my 10 day trial ends?',
-                a: 'You move to PetWise Free automatically, with 5 SOAPs and 5 PetQuery questions a day. Upgrade any time for unlimited use.'
+                a: 'You move to PetWise Free automatically, with 2 SOAPs and 3 PetQuery questions a day. Upgrade any time for unlimited use.'
             },
             {
                 q: 'How do I change or cancel my plan?',

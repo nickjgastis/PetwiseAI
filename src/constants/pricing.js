@@ -14,4 +14,4 @@ export const PLAN_FEATURES = [
 
 export const TRIAL_DAYS = 10;
 
-export const FREE_DAILY = { soap: 5, query: 5 };
+export const FREE_DAILY = { soap: 2, query: 3 };

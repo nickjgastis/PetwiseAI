@@ -39,7 +39,7 @@ const FAQS = [
     },
     {
         q: 'Is PetQuery included in my plan?',
-        a: 'Yes. Paid plans include unlimited PetQuery. PetWise Free includes 5 questions a day.'
+        a: 'Yes. Paid plans include unlimited PetQuery. PetWise Free includes 3 questions a day.'
     }
 ];
 

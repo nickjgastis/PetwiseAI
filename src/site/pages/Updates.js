@@ -17,7 +17,7 @@ const RELEASES = [
         tag: 'Plans',
         title: '10 days unlimited, then PetWise Free',
         body: 'Every new account now starts with 10 days of unlimited PetWise, no credit card. When the trial ends you keep PetWise Free with a daily allowance of SOAPs and PetQuery questions.',
-        points: ['Unlimited SOAPs and PetQuery for 10 days', 'PetWise Free: 5 SOAPs and 5 questions a day', 'Upgrade any time from your profile']
+        points: ['Unlimited SOAPs and PetQuery for 10 days', 'PetWise Free: 2 SOAPs and 3 questions a day', 'Upgrade any time from your profile']
     },
     {
         date: '2026',

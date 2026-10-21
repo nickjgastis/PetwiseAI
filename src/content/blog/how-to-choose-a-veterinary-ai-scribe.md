@@ -58,6 +58,6 @@ A demo shows you the best case. A free trial shows you your actual Tuesday. Use 
 
 PetWise checks every box above. QuickSOAP listens to the appointment or your dictation and writes a complete SOAP note in seconds. Your templates shape every record. Mobile dictation syncs to your desktop. PetQuery answers clinical questions right next to your notes.
 
-You can try everything free for 10 days. After that, PetWise Free still gives you 5 SOAP notes and 5 PetQuery questions every day.
+You can try everything free for 10 days. After that, PetWise Free still gives you 2 SOAP notes and 3 PetQuery questions every day.
 
 [Start your free trial](/signup) and see how it handles your next appointment.

@@ -239,7 +239,7 @@ const VetsDemoWalkthrough = () => {
                             </div>
                             <div className="border-t border-gray-100 pt-4">
                                 <ul className="space-y-2">
-                                    {['5 SOAP reports per day', '5 PetQuery messages per day', 'Templates'].map((f) => (
+                                    {['2 SOAP reports per day', '3 PetQuery messages per day', 'Templates'].map((f) => (
                                         <li key={f} className="flex items-center gap-2.5 text-gray-600 text-[13px]">
                                             <FaCheck className="text-gray-400 flex-shrink-0 text-[11px]" />
                                             {f}

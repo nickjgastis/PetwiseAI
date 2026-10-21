@@ -16,8 +16,8 @@ const usageSupabase = createClient(
 
 // Daily allowances (reset at the user's local midnight, no rollover)
 const FREE_LIMITS = {
-    soap: Number(process.env.FREE_SOAP_LIMIT || 5),    // QuickSOAP + PetSOAP combined pool
-    query: Number(process.env.FREE_QUERY_LIMIT || 5)  // PetQuery
+    soap: Number(process.env.FREE_SOAP_LIMIT || 2),    // QuickSOAP + PetSOAP combined pool
+    query: Number(process.env.FREE_QUERY_LIMIT || 3)  // PetQuery
 };
 
 // No-card trial granted on signup. After this, getTier() falls through to free.

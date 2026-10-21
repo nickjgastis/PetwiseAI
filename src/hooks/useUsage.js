@@ -6,8 +6,8 @@ import { useAuth0 } from '@auth0/auth0-react';
 // Free-tier DAILY limits — keep in sync with server/usage.js FREE_LIMITS.
 // Reset at the user's local midnight; unused quota never rolls over.
 export const FREE_LIMITS = {
-    soap: 5,    // QuickSOAP + PetSOAP combined pool
-    query: 5    // PetQuery
+    soap: 2,    // QuickSOAP + PetSOAP combined pool
+    query: 3    // PetQuery
 };
 
 // The browser's IANA timezone — sent with generation requests so the server

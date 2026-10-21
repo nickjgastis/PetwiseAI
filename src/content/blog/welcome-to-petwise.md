@@ -45,7 +45,7 @@ You’ll never guess what’s appropriate or Google for answers again.
 We’ve designed pricing for both solo vets and entire clinics:
 
 - **Free trial**: 10 days of unlimited everything. No credit card.
-- **PetWise Free**: 5 SOAPs and 5 PetQuery questions a day, forever.
+- **PetWise Free**: 2 SOAPs and 3 PetQuery questions a day, forever.
 - **Monthly**: $79 USD per month.
 - **Yearly**: $69 USD per month, billed $828 yearly.
 

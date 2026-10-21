@@ -97,7 +97,7 @@ const FAQS = [
     },
     {
         q: 'Is there a free trial?',
-        a: 'Yes. Every account starts with 10 days of unlimited use and no credit card. After that, choose a paid plan or keep PetWise Free with 5 SOAPs and 5 PetQuery questions a day.'
+        a: 'Yes. Every account starts with 10 days of unlimited use and no credit card. After that, choose a paid plan or keep PetWise Free with 2 SOAPs and 3 PetQuery questions a day.'
     },
     {
         q: 'How accurate is it with veterinary terminology?',
