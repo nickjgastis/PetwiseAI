@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { supabase } from '../supabaseClient';
+import LoadingScreen from './LoadingScreen';
 
 const SubscriptionGate = ({ children }) => {
     const { user } = useAuth0();
@@ -26,7 +27,7 @@ const SubscriptionGate = ({ children }) => {
         checkSubscription();
     }, [user]);
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <LoadingScreen />;
 
     return hasSubscription ? children : (
         <div>

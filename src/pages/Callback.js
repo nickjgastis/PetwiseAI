@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import LoadingScreen from '../components/LoadingScreen';
 
 const Callback = () => {
     const { isLoading, isAuthenticated, error } = useAuth0();
@@ -35,9 +36,7 @@ const Callback = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#3369bd] flex items-center justify-center">
-            <div className="text-white text-xl">Loading...</div>
-        </div>
+        <LoadingScreen label="Signing you in" />
     );
 };
 

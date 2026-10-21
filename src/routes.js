@@ -12,6 +12,7 @@ import Callback from './pages/Callback';
 import Refresh from './pages/Refresh';
 import { SITE_PAGES, SITE_REDIRECTS, findSitePage } from './site/routes';
 import { LAZY_PAGES } from './site/lazyPages';
+import LoadingScreen from './components/LoadingScreen';
 
 // Public marketing / campaign landing pages — code-split so they don't bloat
 // the authenticated app bundle.
@@ -44,9 +45,7 @@ const AppRoutes = () => {
 
     if (isLoading && !isSiteRoute) {
         return (
-            <div className="min-h-screen bg-[#3369bd] flex items-center justify-center">
-                <div className="text-white text-xl">Loading...</div>
-            </div>
+            <LoadingScreen />
         );
     }
 

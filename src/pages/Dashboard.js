@@ -23,6 +23,7 @@ import UsageRing from '../components/UsageRing';
 import { useUsage, trialPlanLabel, getTier } from '../hooks/useUsage';
 import PaymentIssueBanner from '../components/PaymentIssueBanner';
 import UpgradeModal from '../components/UpgradeModal';
+import LoadingScreen from '../components/LoadingScreen';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -1110,9 +1111,7 @@ const Dashboard = () => {
     // ================ LOADING STATE ================
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-[#3369bd] flex items-center justify-center">
-                <div className="text-white text-xl">Loading...</div>
-            </div>
+            <LoadingScreen />
         );
     }
 
