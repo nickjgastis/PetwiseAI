@@ -25,6 +25,7 @@ function planOf(u) {
     if (u.plan_label === 'student' && end > now) return 'Student';
     if (u.subscription_status === 'past_due') return 'Past due';
     if (u.subscription_status === 'active') {
+        if (['monthly', 'yearly'].includes(u.subscription_interval) && !u.stripe_customer_id) return 'Comp';
         if (u.subscription_interval === 'monthly') return 'Monthly';
         if (u.subscription_interval === 'yearly') return 'Yearly';
         if (['trial', 'stripe_trial'].includes(u.subscription_interval) && end > now) return 'Trial';
@@ -41,6 +42,7 @@ const PLAN_STYLES = {
     Trial: 'bg-sky-50 text-sky-700 ring-sky-200',
     'Past due': 'bg-red-50 text-red-700 ring-red-200',
     Student: 'bg-purple-50 text-purple-700 ring-purple-200',
+    Comp: 'bg-amber-50 text-amber-700 ring-amber-200',
     Free: 'bg-gray-50 text-gray-500 ring-gray-200'
 };
 
@@ -164,9 +166,10 @@ const AdminDashboard = () => {
     }, []);
 
     const counts = useMemo(() => {
-        const c = { all: users.length, paying: 0, monthly: 0, yearly: 0, trial: 0, free: 0, past_due: 0 };
+        const c = { all: users.length, paying: 0, monthly: 0, yearly: 0, trial: 0, free: 0, past_due: 0, comp: 0 };
         users.forEach((u) => {
             const p = planOf(u);
+            if (p === 'Comp') c.comp++;
             if (p === 'Monthly') { c.paying++; c.monthly++; }
             if (p === 'Yearly') { c.paying++; c.yearly++; }
             if (p === 'Trial') c.trial++;
@@ -252,7 +255,7 @@ const AdminDashboard = () => {
                 )}
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <Stat label="Paying" value={counts.paying} sub={`${counts.monthly} monthly · ${counts.yearly} yearly`} onClick={() => pick('paying')} active={filter === 'paying'} />
+                    <Stat label="Paying" value={counts.paying} sub={`${counts.monthly} monthly · ${counts.yearly} yearly${counts.comp ? ` · ${counts.comp} comp` : ''}`} onClick={() => pick('paying')} active={filter === 'paying'} />
                     <Stat label="On trial" value={counts.trial} onClick={() => pick('trial')} active={filter === 'trial'} />
                     <Stat label="Free" value={counts.free} sub={counts.past_due ? `+ ${counts.past_due} past due` : null} onClick={() => pick('free')} active={filter === 'free'} />
                     <Stat label="Today" value={today.soaps} sub={`SOAPs · ${today.queries} queries · ${today.signups} signups`} />
