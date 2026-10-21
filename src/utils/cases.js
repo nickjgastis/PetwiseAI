@@ -100,13 +100,3 @@ export function loadNoteIntoQuickSOAP(report) {
     setActiveCaseId(report.case_id || null);
     localStorage.setItem('loadQuickSOAPData', 'true');
 }
-
-// Open QuickSOAP on an empty note inside an existing case, reusing the visit's dictation.
-export function startNoteInCase(caseId, sourceReport) {
-    clearQuickSOAPStorage();
-    localStorage.removeItem('quickSOAP_selectedTemplate');
-    const formData = sourceReport?.form_data || {};
-    if (formData.dictations?.length) localStorage.setItem('quickSOAP_dictations', JSON.stringify(formData.dictations));
-    if (formData.input) localStorage.setItem('quickSOAP_input', formData.input);
-    setActiveCaseId(caseId);
-}
