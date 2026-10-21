@@ -5,6 +5,7 @@ import { FaArrowLeft, FaCreditCard, FaGraduationCap } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
 import { useNavigate } from 'react-router-dom';
 import PlanCards, { CurrencyToggle } from './PlanCards';
+import { openPastDuePayment } from './PaymentIssueBanner';
 
 const stripePromise = loadStripe(
     process.env.NODE_ENV === 'production'
@@ -31,6 +32,9 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
         new Date(user.subscription_end_date) > new Date();
 
     const requestPlan = (planType) => {
+        if (subscriptionStatus === 'past_due') {
+            return openPastDuePayment(user.sub).catch((err) => alert(`Unable to open payment page: ${err.message}`));
+        }
         const isSwitch = ['monthly', 'yearly'].includes(subscriptionInterval) && subscriptionStatus === 'active';
         if (!isSwitch) return handleCheckout(planType);
         setSwitchError('');

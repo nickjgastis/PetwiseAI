@@ -123,6 +123,11 @@ const Profile = ({ isMobileSignup = false }) => {
         }
     }, [isAuthenticated, user, checkSubscription]);
 
+    useEffect(() => {
+        window.addEventListener('subscriptionUpdated', checkSubscription);
+        return () => window.removeEventListener('subscriptionUpdated', checkSubscription);
+    }, [checkSubscription]);
+
     // Deep links from elsewhere in the app
     useEffect(() => {
         if (location.state?.openCheckout) {
