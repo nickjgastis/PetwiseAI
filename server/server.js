@@ -1793,16 +1793,17 @@ app.post('/create-checkout-session', async (req, res) => {
             const item = liveSub.items.data[0];
             const targetPrice = PRICE_IDS[`${planType}_${liveSub.currency}`] || priceId;
 
-            if (item.price.id === targetPrice && !liveSub.cancel_at_period_end) {
-                return res.json({ switched: true, interval: planType });
-            }
-
-            const updated = await stripe.subscriptions.update(liveSub.id, {
-                items: [{ id: item.id, price: targetPrice }],
-                proration_behavior: 'always_invoice',
-                payment_behavior: 'error_if_incomplete',
-                cancel_at_period_end: false
-            });
+            // Same plan: just undo a pending cancellation. Different plan: hard cut,
+            // full price of the new plan charged today and the cycle restarts.
+            const updated = item.price.id === targetPrice
+                ? await stripe.subscriptions.update(liveSub.id, { cancel_at_period_end: false })
+                : await stripe.subscriptions.update(liveSub.id, {
+                    items: [{ id: item.id, price: targetPrice }],
+                    proration_behavior: 'none',
+                    billing_cycle_anchor: 'now',
+                    payment_behavior: 'error_if_incomplete',
+                    cancel_at_period_end: false
+                });
 
             await supabase
                 .from('users')

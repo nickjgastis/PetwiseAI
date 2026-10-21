@@ -196,8 +196,8 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                         </h3>
                         <p className="text-sm text-[#1a2b4a]/65 mt-2 leading-relaxed">
                             {pendingSwitch === 'yearly'
-                                ? "You'll be charged the yearly price today, minus credit for the unused part of this month. Your plan renews yearly from today."
-                                : "Your plan switches to monthly today. Credit for the unused part of your year is applied to your monthly invoices until it runs out."}
+                                ? "You'll be charged the full yearly price today, and your plan renews yearly from today. Your current monthly plan ends now with no credit for unused time."
+                                : "You'll be charged the full monthly price today, and your plan renews monthly from today. Your current yearly plan ends now with no credit for unused time."}
                         </p>
                         {switchError && (
                             <p className="mt-3 rounded-xl bg-[#fff6f6] border border-[#f6d5d5] px-3 py-2 text-[13px] text-[#d64545]">
