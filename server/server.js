@@ -2544,95 +2544,92 @@ app.post('/test-cancellation-flow/:userId', async (req, res) => {
     }
 });
 
-// Add this new endpoint for account deletion
+// Management API must be called on the tenant domain (e.g. petwise.us.auth0.com), not the custom domain.
+// Requires an M2M app authorized for the Management API with the delete:users scope.
+async function deleteAuth0User(sub) {
+    const domain = process.env.AUTH0_MGMT_DOMAIN;
+    const clientId = process.env.AUTH0_MGMT_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
+    const clientSecret = process.env.AUTH0_MGMT_CLIENT_SECRET || process.env.AUTH0_CLIENT_SECRET;
+    if (!domain || !clientId || !clientSecret) {
+        console.warn('Auth0 user not deleted: AUTH0_MGMT_DOMAIN / client credentials not set');
+        return false;
+    }
+    const tokenRes = await fetch(`https://${domain}/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            grant_type: 'client_credentials',
+            client_id: clientId,
+            client_secret: clientSecret,
+            audience: `https://${domain}/api/v2/`
+        })
+    });
+    if (!tokenRes.ok) throw new Error(`Auth0 token ${tokenRes.status}: ${await tokenRes.text()}`);
+    const { access_token } = await tokenRes.json();
+    const delRes = await fetch(`https://${domain}/api/v2/users/${encodeURIComponent(sub)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${access_token}` }
+    });
+    if (!delRes.ok && delRes.status !== 404) throw new Error(`Auth0 delete ${delRes.status}: ${await delRes.text()}`);
+    return true;
+}
+
 app.post('/delete-account', async (req, res) => {
     try {
-        const { user_id } = req.body;
-        console.log('Attempting to delete user:', user_id);
-
-        if (!user_id) {
-            return res.status(400).json({ error: 'user_id is required' });
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Missing Authorization header' });
         }
+        const infoRes = await fetch(`https://${AUTH0_DOMAIN}/userinfo`, { headers: { Authorization: authHeader } });
+        if (!infoRes.ok) return res.status(401).json({ error: 'Invalid token' });
+        const { sub: user_id } = await infoRes.json();
+        if (!user_id) return res.status(401).json({ error: 'Invalid token' });
 
-        // First check if user exists in Supabase
+        console.log('Deleting account:', user_id);
+
         const { data: userData, error: userError } = await supabase
             .from('users')
-            .select('*')
+            .select('id, stripe_customer_id')
             .eq('auth0_user_id', user_id)
-            .single();
+            .maybeSingle();
+        if (userError) throw userError;
 
-        console.log('Found user data:', userData);
-
-        if (userError) {
-            console.error('Error finding user:', userError);
-            throw userError;
-        }
-
-        // Delete templates first
-        const { error: templateError } = await supabase
-            .from('templates')
-            .delete()
-            .eq('user_id', userData.id);
-
-        if (templateError) {
-            console.error('Template deletion error:', templateError);
-            throw templateError;
-        }
-
-        // Delete user data from Supabase with explicit response checking
-        const { data: deleteData, error: deleteError } = await supabase
-            .from('users')
-            .delete()
-            .eq('auth0_user_id', user_id)
-            .select(); // Add .select() to get back the deleted row
-
-        console.log('Delete response:', { deleteData, deleteError }); // Add this log
-
-        if (deleteError) {
-            console.error('Supabase delete error:', deleteError);
-            throw deleteError;
-        }
-
-        if (!deleteData || deleteData.length === 0) {
-            throw new Error('User deletion failed - no rows deleted');
-        }
-
-        // Only try to delete Stripe data if it exists
+        // Stripe first, and abort on failure, so a paying user can't end up deleted but still billed.
+        const warnings = [];
         if (userData?.stripe_customer_id) {
             try {
-                console.log('Starting Stripe deletion for customer:', userData.stripe_customer_id);
-
-                const subscriptions = await stripe.subscriptions.list({
-                    customer: userData.stripe_customer_id,
-                    limit: 1,
-                });
-                console.log('Found subscriptions:', subscriptions.data);
-
-                if (subscriptions.data.length > 0) {
-                    console.log('Cancelling subscription:', subscriptions.data[0].id);
-                    await stripe.subscriptions.cancel(subscriptions.data[0].id);
-                    console.log('Subscription cancelled successfully');
+                const subs = await stripe.subscriptions.list({ customer: userData.stripe_customer_id, status: 'all', limit: 100 });
+                for (const s of subs.data) {
+                    if (!['canceled', 'incomplete_expired'].includes(s.status)) await stripe.subscriptions.cancel(s.id);
                 }
-
-                console.log('Deleting Stripe customer');
                 await stripe.customers.del(userData.stripe_customer_id);
-                console.log('Stripe customer deleted successfully');
-            } catch (stripeError) {
-                console.error('Stripe deletion error:', stripeError);
-                throw stripeError; // Throw error to see full details
+            } catch (e) {
+                if (e.code !== 'resource_missing') {
+                    console.error('Stripe cleanup error:', e);
+                    return res.status(502).json({ error: 'Could not cancel your subscription. Please try again or contact support.' });
+                }
             }
         }
 
-        res.json({
-            success: true,
-            deletedUser: deleteData[0]
-        });
+        if (userData) {
+            const { error: templateError } = await supabase.from('templates').delete().eq('user_id', userData.id);
+            if (templateError) throw templateError;
+            const { error: deleteError } = await supabase.from('users').delete().eq('auth0_user_id', user_id);
+            if (deleteError) throw deleteError;
+        }
+        await supabase.from('usage_events').delete().eq('auth0_user_id', user_id);
+
+        try {
+            if (!(await deleteAuth0User(user_id))) warnings.push('auth0_not_configured');
+        } catch (e) {
+            console.error('Auth0 delete error:', e);
+            warnings.push('auth0');
+        }
+
+        res.json({ success: true, warnings });
     } catch (error) {
         console.error('Delete account error:', error);
-        res.status(500).json({
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
