@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { FaArrowLeft, FaCreditCard, FaGraduationCap } from 'react-icons/fa';
 import StudentRedeem from './StudentRedeem';
@@ -22,21 +23,21 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
     const [isLoading, setIsLoading] = useState(null);
     const [currency, setCurrency] = useState('usd');
     const [showStudentRedeem, setShowStudentRedeem] = useState(false);
+    const [pendingSwitch, setPendingSwitch] = useState(null);
+    const [switchError, setSwitchError] = useState('');
 
     const isStudentPlan = user?.plan_label === 'student' &&
         user?.subscription_end_date &&
         new Date(user.subscription_end_date) > new Date();
 
-    const handleCheckout = async (planType) => {
+    const requestPlan = (planType) => {
         const isSwitch = ['monthly', 'yearly'].includes(subscriptionInterval) && subscriptionStatus === 'active';
-        if (isSwitch && !window.confirm(
-            planType === 'yearly'
-                ? 'Switch to the Yearly plan? You will be charged the yearly price now, minus credit for the unused part of this month.'
-                : 'Switch to the Monthly plan? Credit for the unused part of your year will be applied to your monthly invoices.'
-        )) {
-            return;
-        }
+        if (!isSwitch) return handleCheckout(planType);
+        setSwitchError('');
+        setPendingSwitch(planType);
+    };
 
+    const handleCheckout = async (planType) => {
         setIsLoading(planType);
         try {
             const stripe = await stripePromise;
@@ -57,6 +58,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             }
 
             if (session.switched) {
+                setPendingSwitch(null);
                 if (onSubscriptionChange) onSubscriptionChange();
                 window.dispatchEvent(new CustomEvent('subscriptionUpdated'));
                 setIsLoading(null);
@@ -76,7 +78,8 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             }
         } catch (error) {
             console.error('Checkout error:', error);
-            alert(`Unable to change plan: ${error.message}`);
+            if (pendingSwitch) setSwitchError(error.message);
+            else alert(`Unable to change plan: ${error.message}`);
             setIsLoading(null);
         }
     };
@@ -177,6 +180,51 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                 </div>
             )}
 
+            {pendingSwitch && createPortal(
+                <div
+                    className="fixed inset-0 bg-[#13233f]/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+                    onClick={() => isLoading === null && setPendingSwitch(null)}
+                >
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full max-w-md rounded-[24px] bg-white p-6 sm:p-7 shadow-[0_24px_60px_-20px_rgba(19,35,63,0.35)]"
+                    >
+                        <h3 className="text-xl font-semibold tracking-tight text-[#13233f]">
+                            Switch to {pendingSwitch === 'yearly' ? 'Yearly' : 'Monthly'}?
+                        </h3>
+                        <p className="text-sm text-[#1a2b4a]/65 mt-2 leading-relaxed">
+                            {pendingSwitch === 'yearly'
+                                ? "You'll be charged the yearly price today, minus credit for the unused part of this month. Your plan renews yearly from today."
+                                : "Your plan switches to monthly today. Credit for the unused part of your year is applied to your monthly invoices until it runs out."}
+                        </p>
+                        {switchError && (
+                            <p className="mt-3 rounded-xl bg-[#fff6f6] border border-[#f6d5d5] px-3 py-2 text-[13px] text-[#d64545]">
+                                {switchError}
+                            </p>
+                        )}
+                        <div className="mt-6 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+                            <button
+                                onClick={() => setPendingSwitch(null)}
+                                disabled={isLoading !== null}
+                                className="px-5 py-2.5 rounded-full text-sm font-medium text-[#13233f] border border-[#13233f]/15 hover:border-[#13233f]/40 transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleCheckout(pendingSwitch)}
+                                disabled={isLoading !== null}
+                                className="px-5 py-2.5 rounded-full text-sm font-medium text-white bg-[#3468bd] hover:bg-[#2b5aa6] transition-colors disabled:opacity-60"
+                            >
+                                {isLoading === pendingSwitch ? 'Switching...' : `Switch to ${pendingSwitch === 'yearly' ? 'Yearly' : 'Monthly'}`}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
             {onBack && (
                 <button
                     onClick={onBack}
@@ -199,7 +247,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
             <div className="mb-6">
                 <PlanCards
                     currency={currency}
-                    onCheckout={handleCheckout}
+                    onCheckout={requestPlan}
                     isLoading={isLoading}
                     currentPlan={['monthly', 'yearly'].find((plan) => isCurrentPlan(plan)) || null}
                     labels={{
