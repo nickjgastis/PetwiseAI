@@ -11,15 +11,11 @@ const EASE = [0.2, 0.7, 0.2, 1];
 const SEEN_KEY = 'petwise_upgrade_cases_v1';
 const NEW_ACCOUNT_MS = 3 * 24 * 60 * 60 * 1000;
 
-// TEMP: shows on every refresh in `npm run dev`. Remove before launch.
-const ALWAYS_SHOW_IN_DEV = process.env.NODE_ENV === 'development';
-
 const seenKey = (sub) => `${SEEN_KEY}:${sub || 'anon'}`;
 
 // Existing users only: brand-new accounts get the AppTour instead.
 export const shouldShowUpgrade = (userData, sub) => {
     if (!userData || userData.has_seen_app_tour === false) return false;
-    if (ALWAYS_SHOW_IN_DEV) return true;
     if (localStorage.getItem(seenKey(sub))) return false;
     const created = userData.created_at ? new Date(userData.created_at).getTime() : 0;
     return !created || Date.now() - created > NEW_ACCOUNT_MS;
