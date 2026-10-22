@@ -28,6 +28,7 @@ import CaseTarget from '../components/CaseTarget';
 import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
 import { GRADIENT_TEXT, TYPE_STYLES } from '../components/caseStyles';
+import GeneratingLoader from '../components/GeneratingLoader';
 
 // PDF Document component for print/export
 const QuickSOAPPDFDocument = ({ reportText, title }) => {
@@ -2750,85 +2751,7 @@ const QuickSOAP = () => {
 
             {/* Fullscreen Animated Loader - Desktop Only */}
             {isGenerating && !isMobile && !hasReport && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden transition-opacity duration-500"
-                    style={{ left: isSidebarCollapsed ? '80px' : '224px' }}
-                >
-                    {/* Animated background with blurred orbs - SOAP colors */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-50 to-white">
-                        {/* Subjective - Blue */}
-                        <div className="absolute w-32 h-32 rounded-full opacity-70 blur-2xl"
-                            style={{
-                                background: '#3b82f6',
-                                animation: 'float1 20s ease-in-out infinite'
-                            }}
-                        />
-                        {/* Objective - Green */}
-                        <div className="absolute w-28 h-28 rounded-full opacity-70 blur-2xl"
-                            style={{
-                                background: '#10b981',
-                                animation: 'float2 25s ease-in-out infinite'
-                            }}
-                        />
-                        {/* Assessment - Amber */}
-                        <div className="absolute w-36 h-36 rounded-full opacity-60 blur-2xl"
-                            style={{
-                                background: '#f59e0b',
-                                animation: 'float3 22s ease-in-out infinite'
-                            }}
-                        />
-                        {/* Plan - Red */}
-                        <div className="absolute w-24 h-24 rounded-full opacity-60 blur-2xl"
-                            style={{
-                                background: '#ef4444',
-                                animation: 'float4 28s ease-in-out infinite'
-                            }}
-                        />
-                    </div>
-                    {/* Content */}
-                    <div className="relative z-10 text-center">
-                        <div className="mb-6">
-                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 backdrop-blur-sm shadow-lg">
-                                {recordType === 'soap' && <FaClipboardList className="text-blue-600" />}
-                                {recordType === 'summary' && <FaFileAlt className="text-emerald-600" />}
-                                {recordType === 'callback' && <FaPhoneAlt className="text-amber-600" />}
-                                <span className="font-semibold text-primary-700">
-                                    {recordType === 'soap' ? 'SOAP Record' : recordType === 'summary' ? 'Summary' : 'Callback'}
-                                </span>
-                            </div>
-                        </div>
-                        <h2 className="text-3xl font-bold text-primary-700 mb-3">
-                            Generating your {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...
-                        </h2>
-                        <p className="text-primary-600/70 text-lg">This will be automatically saved to your records</p>
-                    </div>
-                    <style>{`
-                        @keyframes float1 {
-                            0%, 100% { top: 15%; left: 20%; transform: scale(1); }
-                            25% { top: 60%; left: 70%; transform: scale(1.2); }
-                            50% { top: 75%; left: 25%; transform: scale(0.8); }
-                            75% { top: 30%; left: 65%; transform: scale(1.1); }
-                        }
-                        @keyframes float2 {
-                            0%, 100% { top: 70%; left: 60%; transform: scale(1); }
-                            25% { top: 20%; left: 15%; transform: scale(0.9); }
-                            50% { top: 40%; left: 75%; transform: scale(1.3); }
-                            75% { top: 80%; left: 35%; transform: scale(1); }
-                        }
-                        @keyframes float3 {
-                            0%, 100% { top: 40%; left: 80%; transform: scale(1); }
-                            25% { top: 75%; left: 40%; transform: scale(1.1); }
-                            50% { top: 10%; left: 55%; transform: scale(0.9); }
-                            75% { top: 55%; left: 10%; transform: scale(1.2); }
-                        }
-                        @keyframes float4 {
-                            0%, 100% { top: 85%; left: 15%; transform: scale(1); }
-                            25% { top: 25%; left: 50%; transform: scale(1.2); }
-                            50% { top: 65%; left: 85%; transform: scale(0.85); }
-                            75% { top: 10%; left: 30%; transform: scale(1.1); }
-                        }
-                    `}</style>
-                </div>
+                <GeneratingLoader recordType={recordType} left={isSidebarCollapsed ? '80px' : '224px'} />
             )}
 
             <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full ${isGenerating && !isMobile && !hasReport ? 'invisible' : ''}`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>

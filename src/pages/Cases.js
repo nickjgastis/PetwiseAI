@@ -19,6 +19,8 @@ import {
     markMobileNotesViewed
 } from '../utils/cases';
 import { CaseCreatedOverlay } from '../components/CaseBar';
+import GeneratingLoader from '../components/GeneratingLoader';
+import { createPortal } from 'react-dom';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -546,6 +548,15 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
             transition={{ height: { duration: 0.38, ease: EASE }, opacity: { duration: 0.25 } }}
             className="overflow-hidden"
         >
+            {generating &&
+                createPortal(
+                    <GeneratingLoader
+                        recordType={type}
+                        left={Math.max(0, document.querySelector('main')?.getBoundingClientRect().left || 0)}
+                        subtitle="It will be added to this case"
+                    />,
+                    document.body
+                )}
             <div className="rounded-[24px] border border-[#e7ecf3] bg-white p-3 sm:p-4 mb-6 shadow-[0_18px_40px_-30px_rgba(19,35,63,0.3)]">
                 <div className="flex items-center gap-2 mb-3">
                     <div className="bg-[#f6f8fb] rounded-full p-0.5 inline-flex gap-0.5 max-w-full overflow-x-auto">
