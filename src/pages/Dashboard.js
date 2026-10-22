@@ -1588,9 +1588,9 @@ const Dashboard = () => {
                             <div className="mx-3 my-3 relative" ref={accountMenuRef}>
                                 <div
                                     className="p-3 rounded-xl flex items-center gap-3 transition-colors duration-200"
-                                    style={{ background: showAccountMenu ? 'rgba(45,95,184,0.08)' : 'transparent' }}
-                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(45,95,184,0.05)'; }}
-                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'transparent'; }}
+                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.35)', border: '1px solid rgba(45,95,184,0.08)' }}
+                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.55)'; }}
+                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.35)'; }}
                                 >
                                     <button
                                         onClick={() => setShowAccountMenu((v) => !v)}
