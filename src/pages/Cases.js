@@ -13,14 +13,20 @@ import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles'
 import {
     normalizeType,
     loadNoteIntoQuickSOAP,
-    requestNewCase
+    createCase
 } from '../utils/cases';
+import { CaseCreatedOverlay } from '../components/CaseBar';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
 const NAME_LABELS = { soap: 'QuickSOAP', summary: 'Summary', callback: 'Callback' };
+const TYPE_BLURBS = {
+    soap: 'The full medical record for the visit.',
+    summary: 'A clear write-up for the client.',
+    callback: 'Notes for a follow-up call.'
+};
 const FONT = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
 const EASE = [0.2, 0.7, 0.2, 1];
 
@@ -86,8 +92,78 @@ const PageHeader = ({ title, subtitle, action }) => (
     </div>
 );
 
+const NewCaseDialog = ({ onClose, onCreated }) => {
+    const [name, setName] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
+
+    const submit = async (e) => {
+        e.preventDefault();
+        if (saving) return;
+        setSaving(true);
+        setError('');
+        const id = await createCase(name.trim() || null);
+        if (!id) {
+            setSaving(false);
+            setError('Couldn’t create the case. Please try again.');
+            return;
+        }
+        onCreated(id);
+    };
+
+    return (
+        <motion.div
+            className="fixed inset-0 z-[70] flex items-center justify-center px-4 bg-[#13233f]/30 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => !saving && onClose()}
+            style={FONT}
+        >
+            <motion.form
+                onSubmit={submit}
+                onClick={(e) => e.stopPropagation()}
+                initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                transition={{ duration: 0.26, ease: EASE }}
+                className="w-full max-w-[420px] bg-white rounded-[28px] p-6 sm:p-7 shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)]"
+            >
+                <div className="flex items-start justify-between gap-4">
+                    <h3 className={`m-0 pb-0.5 text-[24px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>New case</h3>
+                    <button type="button" onClick={onClose} className="w-8 h-8 -mr-1 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
+                        <FiX />
+                    </button>
+                </div>
+                <p className="mt-1 mb-5 text-[14px] text-[#1a2b4a]/55">Name it after the patient. You can change it later.</p>
+                <input
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Bella Smith"
+                    className="w-full px-4 py-3 rounded-2xl bg-[#f6f8fb] border border-transparent text-[#13233f] placeholder:text-[#1a2b4a]/35 focus:outline-none focus:border-[#2d5fb8]/30 focus:bg-white transition-colors"
+                />
+                {error && <p className="mt-2 mb-0 text-[13px] text-red-500">{error}</p>}
+                <div className="flex justify-end gap-2 mt-6">
+                    <PillButton variant="secondary" onClick={onClose} disabled={saving}>Cancel</PillButton>
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors disabled:opacity-60"
+                    >
+                        {saving && <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />}
+                        Create case
+                    </button>
+                </div>
+            </motion.form>
+        </motion.div>
+    );
+};
+
 const CaseList = () => {
     const navigate = useNavigate();
+    const [naming, setNaming] = useState(false);
     const [cases, setCases] = useState([]);
     const [typesByCase, setTypesByCase] = useState({});
     const [loading, setLoading] = useState(true);
@@ -151,7 +227,7 @@ const CaseList = () => {
                     title="Cases"
                     subtitle="Every patient’s SOAPs, summaries and callbacks, kept together."
                     action={(
-                        <PillButton onClick={() => requestNewCase(navigate)}>
+                        <PillButton onClick={() => setNaming(true)}>
                             <FiPlus /> New case
                         </PillButton>
                     )}
@@ -183,7 +259,7 @@ const CaseList = () => {
                         <span className="mx-auto w-14 h-14 rounded-2xl bg-[#e9f6fd] text-[#3468bd] flex items-center justify-center text-2xl mb-4"><FiFolder /></span>
                         <p className="text-lg font-semibold text-[#13233f]">No cases yet</p>
                         <p className="text-[14px] text-[#1a2b4a]/60 mt-1 mb-6">Record your first visit and it will show up here.</p>
-                        <PillButton onClick={() => requestNewCase(navigate)}><FiPlus /> Start a new case</PillButton>
+                        <PillButton onClick={() => setNaming(true)}><FiPlus /> Start a new case</PillButton>
                     </motion.div>
                 ) : groups.length === 0 ? (
                     <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No patients match “{search}”.</p>
@@ -227,6 +303,15 @@ const CaseList = () => {
                     ))
                 )}
             </div>
+            <AnimatePresence>
+                {naming && (
+                    <NewCaseDialog
+                        key="new-case"
+                        onClose={() => setNaming(false)}
+                        onCreated={(id) => navigate(`/dashboard/cases/${id}`)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 };
@@ -293,11 +378,11 @@ const visitInput = (notes) => {
 
 const SWAP = { initial: { opacity: 0, scale: 0.97 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.97 }, transition: { duration: 0.18, ease: EASE } };
 
-const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onBusy }) => {
+const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimit, onBusy }) => {
     const { user } = useAuth0();
     const usage = useUsage();
     const dictation = useDictation();
-    const [type, setType] = useState(() => (notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap'));
+    const [type, setType] = useState(() => initialType || (notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap'));
     const [text, setText] = useState('');
     const baseInput = useMemo(() => visitInput(notes), [notes]);
     const [includeEarlier, setIncludeEarlier] = useState(false);
@@ -531,7 +616,8 @@ const CaseDetail = ({ caseId }) => {
     const [nameDraft, setNameDraft] = useState('');
     const [adding, setAdding] = useState(false);
     const [panelBusy, setPanelBusy] = useState(false);
-    const [newNoteId, setNewNoteId] = useState(null);
+    const [addType, setAddType] = useState(null);
+    const [announcement, setAnnouncement] = useState(null);
     const [showUpgrade, setShowUpgrade] = useState(false);
 
     const load = useCallback(async () => {
@@ -593,10 +679,19 @@ const CaseDetail = ({ caseId }) => {
     };
 
     const onCreated = (saved, extractedPetName) => {
-        setNotes((prev) => [...prev, saved]);
-        if (!caseRow.pet_name && extractedPetName) setCaseRow({ ...caseRow, pet_name: extractedPetName });
-        setNewNoteId(saved.id);
-        setAdding(false);
+        const type = normalizeType(saved.record_type);
+        const label = TYPE_STYLES[type]?.label || 'Note';
+        setAnnouncement({
+            kind: 'added',
+            title: `${caseRow.pet_name || extractedPetName || label} · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+            typeLabel: label === 'SOAP' ? 'SOAP' : label.toLowerCase()
+        });
+        setTimeout(() => openInEditor(saved), 1400);
+    };
+
+    const startNote = (type) => {
+        setAddType(type);
+        setAdding(true);
     };
 
     const counts = notes.reduce((acc, n) => {
@@ -681,7 +776,13 @@ const CaseDetail = ({ caseId }) => {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2 shrink-0">
-                            <PillButton onClick={() => setAdding((v) => !v)} disabled={panelBusy}>
+                            <PillButton
+                                onClick={() => {
+                                    setAddType(null);
+                                    setAdding((v) => !v);
+                                }}
+                                disabled={panelBusy}
+                            >
                                 <motion.span animate={{ rotate: adding ? 45 : 0 }} transition={{ duration: 0.25, ease: EASE }} className="flex"><FiPlus /></motion.span>
                                 {adding ? 'Close' : 'Add a note'}
                             </PillButton>
@@ -692,9 +793,10 @@ const CaseDetail = ({ caseId }) => {
                 <AnimatePresence initial={false}>
                     {adding && (
                         <AddNotePanel
-                            key="add"
+                            key={`add-${addType || 'default'}`}
                             caseRow={caseRow}
                             notes={notes}
+                            initialType={addType}
                             onCreated={onCreated}
                             onCancel={() => setAdding(false)}
                             onLimit={() => setShowUpgrade(true)}
@@ -704,14 +806,37 @@ const CaseDetail = ({ caseId }) => {
                 </AnimatePresence>
 
                 {notes.length === 0 ? (
-                    <FadeIn delay={0.05} className="rounded-[28px] border border-dashed border-[#d6e3f7] bg-white/60 py-14 text-center">
-                        <p className="text-[15px] text-[#1a2b4a]/60">No notes in this case yet.</p>
-                    </FadeIn>
+                    !adding && (
+                        <FadeIn delay={0.05}>
+                            <p className="text-[14px] font-semibold text-[#1a2b4a]/50 mb-3 ml-1">Start this case with</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {['soap', 'summary', 'callback'].map((t) => {
+                                    const s = TYPE_STYLES[t];
+                                    const Icon = s.icon;
+                                    return (
+                                        <motion.button
+                                            key={t}
+                                            type="button"
+                                            {...LIFT}
+                                            onClick={() => startNote(t)}
+                                            className={`group text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${s.hover}`}
+                                        >
+                                            <span className={`w-10 h-10 rounded-2xl flex items-center justify-center text-[17px] ${s.soft}`}>
+                                                <Icon />
+                                            </span>
+                                            <span className="block mt-4 text-[16px] font-semibold text-[#13233f]">{s.label}</span>
+                                            <span className="block mt-1 text-[13.5px] text-[#1a2b4a]/55">{TYPE_BLURBS[t]}</span>
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+                        </FadeIn>
+                    )
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {notes.map((note, i) => (
-                            <FadeIn key={note.id} delay={note.id === newNoteId ? 0 : 0.05 + Math.min(i, 8) * 0.035}>
-                                <NoteBox note={note} onOpen={openInEditor} isNew={note.id === newNoteId} previewPending={pendingPreviews.has(note.id)} />
+                            <FadeIn key={note.id} delay={0.05 + Math.min(i, 8) * 0.035}>
+                                <NoteBox note={note} onOpen={openInEditor} previewPending={pendingPreviews.has(note.id)} />
                             </FadeIn>
                         ))}
                     </div>
@@ -727,6 +852,7 @@ const CaseDetail = ({ caseId }) => {
                     onClose={() => setShowUpgrade(false)}
                 />
             )}
+            <CaseCreatedOverlay announcement={announcement} />
         </div>
     );
 };
