@@ -1573,7 +1573,7 @@ const Dashboard = () => {
                                 <button
                                     onClick={() => setShowAccountMenu((v) => !v)}
                                     className="w-8 h-8 rounded-full flex items-center justify-center text-[#1a2b4a]/55 hover:text-[#13233f] transition-all cursor-pointer border-none"
-                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)' }}
+                                    style={{ background: showAccountMenu ? 'rgba(45,95,184,0.10)' : 'rgba(45,95,184,0.05)' }}
                                     data-tooltip="Account"
                                     aria-label="Account menu"
                                 >
@@ -1588,9 +1588,9 @@ const Dashboard = () => {
                             <div className="mx-3 my-3 relative" ref={accountMenuRef}>
                                 <div
                                     className="p-3 rounded-xl flex items-center gap-3 transition-colors duration-200"
-                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)', border: '1px solid rgba(45,95,184,0.10)' }}
-                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.95)'; }}
-                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.6)'; }}
+                                    style={{ background: showAccountMenu ? 'rgba(45,95,184,0.08)' : 'transparent' }}
+                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(45,95,184,0.05)'; }}
+                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'transparent'; }}
                                 >
                                     <button
                                         onClick={() => setShowAccountMenu((v) => !v)}
