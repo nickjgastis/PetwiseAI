@@ -15,7 +15,8 @@ import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen, FaPlus } from 'react-icons/fa';
+import { FaSearch, FaUser, FaSignOutAlt, FaMicrophone, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen } from 'react-icons/fa';
+import { FiArchive, FiClipboard, FiFileText, FiFolder, FiHelpCircle, FiMessageCircle, FiPlus } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
@@ -208,24 +209,24 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
 };
 
 const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour, tooltip, badge, secondary }) => (
-    <li className="mx-3 my-0.5 relative">
+    <li className="mx-3 my-[3px] relative">
         <Link
             to={to}
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`relative flex items-center no-underline font-medium rounded-xl transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[12.5px] py-1.5 px-2.5' : 'text-[13.5px] py-2 px-2.5'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#13233f]' : secondary ? 'text-[#1a2b4a]/55 hover:text-[#13233f] hover:bg-white/50' : 'text-[#1a2b4a]/75 hover:text-[#13233f] hover:bg-white/60'}`}
+            className={`group relative flex items-center no-underline rounded-[12px] transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[14px] h-10 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#1e4a94] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f] hover:bg-[#2d5fb8]/[0.06]`}`}
         >
             {active && (
                 <motion.span
                     layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-xl bg-white shadow-[0_8px_20px_-12px_rgba(19,35,63,0.35)]"
+                    className="absolute inset-0 rounded-[12px] bg-[#2d5fb8]/[0.11] shadow-[inset_0_0_0_1px_rgba(45,95,184,0.10)]"
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
             )}
-            <span className={`relative flex items-center justify-center shrink-0 ${secondary ? 'w-7 h-7' : 'w-8 h-8 rounded-lg'} ${active || !secondary ? 'text-[#2d5fb8]' : ''}`} style={secondary ? undefined : { background: active ? 'rgba(45,95,184,0.12)' : 'rgba(45,95,184,0.07)' }}>
-                <Icon className="text-xs" />
-                {dot && <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] animate-pulse" style={{ fontSize: '8px' }} />}
+            <span className={`relative flex items-center justify-center shrink-0 w-5 ${secondary ? 'text-[15px]' : 'text-[17px]'} ${active ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]/45 group-hover:text-[#2d5fb8]'} transition-colors`}>
+                <Icon />
+                {dot && <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#5cccf0] ring-2 ring-[#eef4fc] animate-pulse" />}
             </span>
             <span className={`relative transition-all duration-300 ${collapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>{label}</span>
             {badge && !collapsed && (
@@ -1513,7 +1514,7 @@ const Dashboard = () => {
                     {/* Navigation Menu (user info now lives in the footer below) */}
                     <ul className="relative list-none p-0 m-0 flex-1 mt-1">
                         {/* Primary action */}
-                        <li className={`mx-3 mt-3 mb-3 relative ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
+                        <li className={`mx-3 mt-4 mb-4 relative ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
                             <Link
                                 to="/dashboard/quicksoap"
                                 onClick={(e) => {
@@ -1523,18 +1524,20 @@ const Dashboard = () => {
                                 }}
                                 data-tooltip="Start new case"
                                 data-tour="quicksoap"
-                                className={`relative flex items-center justify-center gap-2 no-underline font-semibold text-[13.5px] text-white bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] rounded-full shadow-[0_12px_28px_-12px_rgba(45,95,184,0.7)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_16px_32px_-12px_rgba(45,95,184,0.8)] ${isSidebarCollapsed ? 'w-11 h-11' : 'w-full py-2.5 px-4'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/70 ring-offset-2 ring-offset-[#eef4fc]' : ''}`}
+                                className={`group relative flex items-center no-underline font-semibold text-[14px] text-white rounded-[14px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] shadow-[0_10px_24px_-12px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.22)] transition-all duration-200 hover:brightness-[1.06] hover:shadow-[0_14px_28px_-12px_rgba(45,95,184,0.85),inset_0_1px_0_rgba(255,255,255,0.22)] active:scale-[0.98] ${isSidebarCollapsed ? 'w-11 h-11 justify-center' : 'w-full h-11 pl-1.5 pr-4 gap-2.5'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/70 ring-offset-2 ring-offset-[#eef4fc]' : ''}`}
                             >
-                                <FaPlus className="text-[11px]" />
+                                <span className={`flex items-center justify-center rounded-[10px] ${isSidebarCollapsed ? 'text-[18px]' : 'w-8 h-8 bg-white/[0.18] text-[16px] transition-transform duration-200 group-hover:rotate-90'}`}>
+                                    <FiPlus />
+                                </span>
                                 {!isSidebarCollapsed && <span>New case</span>}
                                 {hasPendingDictation && !isMobile && (
-                                    <FaCircle className="absolute -top-0.5 -right-0.5 text-[#5cccf0] animate-pulse" style={{ fontSize: '9px' }} />
+                                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#5cccf0] ring-2 ring-[#eef4fc] animate-pulse" />
                                 )}
                             </Link>
                         </li>
 
-                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={FaFolderOpen} label="Cases" tour="cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
-                        <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={FaSearch} label="PetQUERY" tooltip="PetQUERY" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={FiFolder} label="Cases" tour="cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
+                        <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={FiMessageCircle} label="PetQuery" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
 
                         {subscriptionStatus === 'past_due' && (
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
@@ -1556,10 +1559,10 @@ const Dashboard = () => {
                                 <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
                         </li>
-                        <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={FaSave} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink secondary to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={FaClipboard} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={FaFileAlt} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={FaQuestionCircle} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={FiArchive} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={FiClipboard} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={FiFileText} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={FiHelpCircle} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                     </ul>
 
                     {/* User Footer — name, plan, usage ring */}
