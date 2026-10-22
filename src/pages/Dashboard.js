@@ -215,12 +215,12 @@ const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`group relative flex items-center no-underline rounded-[12px] transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
+            className={`group relative flex items-center no-underline rounded-[12px] outline-none focus-visible:ring-2 focus-visible:ring-[#2d5fb8]/30 transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
         >
             {active && (
                 <motion.span
                     layoutId="sidebar-active"
-                    className="absolute -left-3 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[#2d5fb8]"
+                    className="absolute -left-3 inset-y-0 my-auto h-5 w-[3px] rounded-r-full bg-[#2d5fb8]"
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
             )}
@@ -1524,7 +1524,7 @@ const Dashboard = () => {
                                 }}
                                 data-tooltip="Start new case"
                                 data-tour="quicksoap"
-                                className={`group relative flex items-center no-underline font-semibold text-[14px] text-white rounded-[14px] bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] shadow-[0_10px_24px_-12px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.22)] transition-all duration-200 hover:brightness-[1.06] hover:shadow-[0_14px_28px_-12px_rgba(45,95,184,0.85),inset_0_1px_0_rgba(255,255,255,0.22)] active:scale-[0.98] ${isSidebarCollapsed ? 'w-11 h-11 justify-center' : 'w-full h-11 pl-1.5 pr-4 gap-2.5'}`}
+                                className={`group relative flex items-center no-underline font-semibold text-[14px] text-white rounded-[14px] bg-gradient-to-r from-[#6aa5ef] via-[#4f8ce2] to-[#3d78d2] shadow-[0_10px_22px_-12px_rgba(61,120,210,0.6),inset_0_1px_0_rgba(255,255,255,0.3)] transition-all duration-200 hover:brightness-[1.05] hover:shadow-[0_14px_26px_-12px_rgba(61,120,210,0.7),inset_0_1px_0_rgba(255,255,255,0.3)] active:scale-[0.98] ${isSidebarCollapsed ? 'w-11 h-11 justify-center' : 'w-full h-11 pl-1.5 pr-4 gap-2.5'}`}
                             >
                                 <span className={`flex items-center justify-center rounded-[10px] ${isSidebarCollapsed ? 'text-[18px]' : 'w-8 h-8 bg-white/[0.18] text-[16px] transition-transform duration-200 group-hover:rotate-90'}`}>
                                     <FiPlus />
