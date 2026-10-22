@@ -13,7 +13,10 @@ import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles'
 import {
     normalizeType,
     loadNoteIntoQuickSOAP,
-    createCase
+    createCase,
+    requestNewCase,
+    isUnviewedMobileNote,
+    markMobileNotesViewed
 } from '../utils/cases';
 import { CaseCreatedOverlay } from '../components/CaseBar';
 
@@ -161,11 +164,12 @@ const NewCaseDialog = ({ onClose, onCreated }) => {
     );
 };
 
-const CaseList = () => {
+const CaseList = ({ mobile = false }) => {
     const navigate = useNavigate();
     const [naming, setNaming] = useState(false);
     const [cases, setCases] = useState([]);
     const [typesByCase, setTypesByCase] = useState({});
+    const [unviewed, setUnviewed] = useState(() => new Set());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
@@ -185,15 +189,18 @@ const CaseList = () => {
         if (ids.length) {
             const { data: notes } = await supabase
                 .from('saved_reports')
-                .select('id, case_id, record_type, report_text')
+                .select('id, case_id, record_type, report_text, form_data, created_at')
                 .in('case_id', ids);
             const map = {};
+            const fresh = new Set();
             (notes || []).filter((n) => n.report_text).forEach((n) => {
                 const t = normalizeType(n.record_type);
                 map[n.case_id] = map[n.case_id] || {};
                 map[n.case_id][t] = (map[n.case_id][t] || 0) + 1;
+                if (isUnviewedMobileNote(n)) fresh.add(n.case_id);
             });
             setTypesByCase(map);
+            setUnviewed(fresh);
         }
         setLoading(false);
     }, []);
@@ -222,19 +229,26 @@ const CaseList = () => {
 
     return (
         <div style={FONT}>
-            <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-8 sm:pt-12 pb-16">
-                <PageHeader
-                    title="Cases"
-                    subtitle="Every patient’s SOAPs, summaries and callbacks, kept together."
-                    action={(
-                        <PillButton onClick={() => setNaming(true)}>
-                            <FiPlus /> New case
-                        </PillButton>
-                    )}
-                />
+            <div className={`max-w-5xl mx-auto px-4 sm:px-8 ${mobile ? 'pt-6 pb-8' : 'pt-8 sm:pt-12 pb-16'}`}>
+                {mobile ? (
+                    <div className="mb-5">
+                        <h1 className={`m-0 text-[2rem] leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>Cases</h1>
+                        <p className="mt-1 mb-0 text-[14.5px] text-[#1a2b4a]/55">Tap a case to dictate into it.</p>
+                    </div>
+                ) : (
+                    <PageHeader
+                        title="Cases"
+                        subtitle="Every patient’s SOAPs, summaries and callbacks, kept together."
+                        action={(
+                            <PillButton onClick={() => setNaming(true)}>
+                                <FiPlus /> New case
+                            </PillButton>
+                        )}
+                    />
+                )}
 
                 {cases.length > 0 && (
-                    <div className="relative mb-8 max-w-md">
+                    <div className={`relative max-w-md ${mobile ? 'mb-6' : 'mb-8'}`}>
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1a2b4a]/40" />
                         <input
                             value={search}
@@ -258,39 +272,44 @@ const CaseList = () => {
                     >
                         <span className="mx-auto w-14 h-14 rounded-2xl bg-[#e9f6fd] text-[#3468bd] flex items-center justify-center text-2xl mb-4"><FiFolder /></span>
                         <p className="text-lg font-semibold text-[#13233f]">No cases yet</p>
-                        <p className="text-[14px] text-[#1a2b4a]/60 mt-1 mb-6">Record your first visit and it will show up here.</p>
-                        <PillButton onClick={() => setNaming(true)}><FiPlus /> Start a new case</PillButton>
+                        <p className={`text-[14px] text-[#1a2b4a]/60 mt-1 ${mobile ? 'mb-0' : 'mb-6'}`}>Record your first visit and it will show up here.</p>
+                        {!mobile && <PillButton onClick={() => setNaming(true)}><FiPlus /> Start a new case</PillButton>}
                     </motion.div>
                 ) : groups.length === 0 ? (
                     <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No patients match “{search}”.</p>
                 ) : (
                     groups.map((g, gi) => (
-                        <section key={g.label} className="mb-10">
+                        <section key={g.label} className={mobile ? 'mb-7' : 'mb-10'}>
                             <h2 className="text-[14px] font-semibold text-[#1a2b4a]/50 mb-3 ml-1">{g.label}</h2>
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                                 {g.items.map((c, i) => {
                                     const types = typesByCase[c.id] || {};
                                     const total = Object.values(types).reduce((a, b) => a + b, 0);
+                                    const isNew = !mobile && unviewed.has(c.id);
                                     return (
                                         <FadeIn key={c.id} delay={Math.min(gi * 3 + i, 10) * 0.03}>
                                         <motion.button
                                             type="button"
                                             {...LIFT}
-                                            onClick={() => navigate(`/dashboard/cases/${c.id}`)}
-                                            className="group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)]"
+                                            onClick={() => (mobile ? requestNewCase(navigate, c.id) : navigate(`/dashboard/cases/${c.id}`))}
+                                            className={`group w-full text-left border bg-white cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${mobile ? 'rounded-[20px] p-4' : 'rounded-[24px] p-5'} ${isNew ? 'border-[#2d5fb8]/35 shadow-[0_14px_34px_-22px_rgba(45,95,184,0.55)]' : 'border-[#e7ecf3] hover:border-[#d6e3f7]'}`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="text-[16px] font-semibold text-[#13233f] truncate">{c.pet_name || c.title || 'Unnamed patient'}</p>
+                                                    <p className="flex items-center gap-2 m-0 text-[16px] font-semibold text-[#13233f]">
+                                                        {isNew && <span title="New from your phone" className="shrink-0 w-2.5 h-2.5 rounded-full bg-[#2d5fb8] ring-4 ring-[#2d5fb8]/15" />}
+                                                        <span className="truncate">{c.pet_name || c.title || 'Unnamed patient'}</span>
+                                                    </p>
                                                     <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5">
                                                         {formatDateTime(c.updated_at)}
                                                         {total > 0 && ` · ${total} ${total === 1 ? 'note' : 'notes'}`}
+                                                        {isNew && <span className="font-medium text-[#2d5fb8]"> · New from phone</span>}
                                                     </p>
                                                 </div>
                                                 <FiChevronRight className="text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] group-hover:translate-x-0.5 transition-all" />
                                             </div>
                                             {total > 0 && (
-                                                <div className="flex flex-wrap gap-1.5 mt-4">
+                                                <div className={`flex flex-wrap gap-1.5 ${mobile ? 'mt-3' : 'mt-4'}`}>
                                                     {['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)}
                                                 </div>
                                             )}
@@ -617,6 +636,7 @@ const CaseDetail = ({ caseId }) => {
     const [adding, setAdding] = useState(false);
     const [panelBusy, setPanelBusy] = useState(false);
     const [addType, setAddType] = useState(null);
+    const [freshNoteIds, setFreshNoteIds] = useState(() => new Set());
     const [announcement, setAnnouncement] = useState(null);
     const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -631,6 +651,9 @@ const CaseDetail = ({ caseId }) => {
         ]);
         setCaseRow(c || null);
         setNotes((n || []).filter((r) => r.report_text));
+        const fromPhone = (n || []).filter((r) => isUnviewedMobileNote(r)).map((r) => r.id);
+        if (fromPhone.length) setFreshNoteIds((prev) => new Set([...prev, ...fromPhone]));
+        markMobileNotesViewed(n || []);
         setLoading(false);
     }, [caseId]);
 
@@ -836,7 +859,7 @@ const CaseDetail = ({ caseId }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {notes.map((note, i) => (
                             <FadeIn key={note.id} delay={0.05 + Math.min(i, 8) * 0.035}>
-                                <NoteBox note={note} onOpen={openInEditor} previewPending={pendingPreviews.has(note.id)} />
+                                <NoteBox note={note} onOpen={openInEditor} isNew={freshNoteIds.has(note.id)} previewPending={pendingPreviews.has(note.id)} />
                             </FadeIn>
                         ))}
                     </div>
@@ -857,9 +880,9 @@ const CaseDetail = ({ caseId }) => {
     );
 };
 
-const Cases = ({ caseId: caseIdProp }) => {
+const Cases = ({ caseId: caseIdProp, mobile = false }) => {
     const params = useParams();
-    const caseId = params.caseId || caseIdProp;
+    const caseId = mobile ? null : params.caseId || caseIdProp;
     return (
         <motion.div
             key={caseId || 'list'}
@@ -868,7 +891,7 @@ const Cases = ({ caseId: caseIdProp }) => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}
         >
-            {caseId ? <CaseDetail caseId={caseId} /> : <CaseList />}
+            {caseId ? <CaseDetail caseId={caseId} /> : <CaseList mobile={mobile} />}
         </motion.div>
     );
 };

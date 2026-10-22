@@ -13,6 +13,31 @@ export const requestNewCase = (navigate, caseId = null) => {
     navigate('/dashboard/quicksoap');
 };
 
+const VIEWED_MOBILE_KEY = 'viewedMobileSOAPReports';
+const UNVIEWED_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
+const readViewedMobile = () => {
+    try {
+        return JSON.parse(localStorage.getItem(VIEWED_MOBILE_KEY) || '[]');
+    } catch {
+        return [];
+    }
+};
+
+// Older mobile notes predate view tracking, so only recent ones can count as unviewed.
+export const isUnviewedMobileNote = (note, viewed = readViewedMobile()) => {
+    const fd = note.form_data || {};
+    if (!fd.from_mobile || !note.report_text) return false;
+    const at = new Date(fd.generated_at || note.created_at || 0).getTime();
+    return Date.now() - at < UNVIEWED_WINDOW_MS && !viewed.includes(note.id);
+};
+
+export const markMobileNotesViewed = (notes) => {
+    const viewed = readViewedMobile();
+    const fresh = notes.filter((n) => n.form_data?.from_mobile && !viewed.includes(n.id)).map((n) => n.id);
+    if (fresh.length) localStorage.setItem(VIEWED_MOBILE_KEY, JSON.stringify([...viewed, ...fresh]));
+};
+
 export const takeNewCaseRequest = () => {
     const raw = localStorage.getItem(NEW_CASE_REQUEST_KEY);
     if (!raw) return null;

@@ -1254,7 +1254,7 @@ const Dashboard = () => {
         if (casesMatch) {
             return (
                 <MobileAppShell visible={mobileAppVisible} location={location}>
-                    <Cases caseId={casesMatch[1]} />
+                    <Cases mobile />
                 </MobileAppShell>
             );
         }
