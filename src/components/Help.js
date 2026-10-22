@@ -1,798 +1,259 @@
 import React, { useEffect, useState } from 'react';
-import { useAuth0 } from "@auth0/auth0-react";
+import { useAuth0 } from '@auth0/auth0-react';
+import { Link } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FiArrowRight, FiChevronDown, FiFolder, FiMail, FiMessageCircle, FiMic, FiPlay, FiSmartphone } from 'react-icons/fi';
 import Footer from './Footer';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaTimes, FaArrowRight, FaArrowLeft, FaMicrophone, FaMobile, FaFileAlt, FaClipboardList, FaPhoneAlt, FaBolt, FaBrain, FaRocket, FaMagic, FaColumns, FaChevronDown, FaSearch, FaRegLightbulb } from 'react-icons/fa';
+import Guide, { StepBody, NAME_SCRIPT, SPEAK_TIPS } from './Guide';
+import { GRADIENT_TEXT } from './caseStyles';
+
+const EASE = [0.2, 0.7, 0.2, 1];
+
+const START = [
+    {
+        guide: 'records',
+        icon: FiMic,
+        title: 'Make a record',
+        text: 'Dictate a visit and get a SOAP, summary or callback in seconds.',
+        to: '/dashboard/quicksoap',
+        cta: 'New case'
+    },
+    {
+        guide: 'cases',
+        icon: FiFolder,
+        title: 'Manage cases',
+        text: 'Find a patient, open their records and add new ones.',
+        to: '/dashboard/cases',
+        cta: 'Cases'
+    },
+    {
+        guide: 'petquery',
+        icon: FiMessageCircle,
+        title: 'Ask PetQuery',
+        text: 'Doses, differentials and protocols, answered in plain language.',
+        to: '/dashboard/quick-query',
+        cta: 'PetQuery'
+    },
+    {
+        guide: 'phone',
+        icon: FiSmartphone,
+        title: 'Put it on your phone',
+        text: 'Dictate in the exam room and send it to your desktop.'
+    }
+];
+
+const FAQ = [
+    {
+        title: 'Records and cases',
+        items: [
+            {
+                q: 'How does a case get its name?',
+                a: 'Say the pet\u2019s name at the start of your dictation and PetWise names the case for you. You can rename it any time with the pencil on the case page.'
+            },
+            {
+                q: 'Do I need to save?',
+                a: 'The record is saved to its case as soon as it is generated. If you edit it afterwards, hit Save. PetWise asks before you leave with unsaved edits.'
+            },
+            {
+                q: 'How do I add a callback or summary to an existing patient?',
+                a: 'Open the case from Cases, click Add a record, pick the type, then dictate or type. Tick "Include earlier dictation" to build on what you already said.'
+            },
+            {
+                q: 'Can I type instead of dictating?',
+                a: 'Yes. On New case, click "Or type and paste notes instead". You can also mix both.'
+            },
+            {
+                q: 'Where are my older records?',
+                a: 'Records made before cases existed are in Saved Records, under More in the sidebar.'
+            }
+        ]
+    },
+    {
+        title: 'Dictation',
+        items: [
+            {
+                q: 'The mic is not working',
+                a: 'Your browser needs microphone permission. Click the lock icon next to the address bar, allow the microphone, then reload. On a phone, check Settings for your browser\u2019s mic access.'
+            },
+            {
+                q: 'How long can I talk for?',
+                a: 'As long as you need. Long recordings can take up to a few minutes to transcribe. You can also split a visit into several dictations with Add more.'
+            },
+            {
+                q: 'I said something wrong',
+                a: 'Say "correction" and the right value, e.g. "correction, weight is 28 kilos". Or just fix it in the editor afterwards.'
+            }
+        ]
+    },
+    {
+        title: 'Phone',
+        items: [
+            {
+                q: 'Do I need to download an app?',
+                a: 'No. Open petwise.vet on your phone, log in, and add it to your home screen. It opens like an app.'
+            },
+            {
+                q: 'My phone dictation has not shown up',
+                a: 'Keep PetWise open and logged in on your computer. It writes the record as soon as it sees the dictation, and it lands in Cases with a blue dot.'
+            }
+        ]
+    },
+    {
+        title: 'PetQuery',
+        items: [
+            {
+                q: 'How accurate is it?',
+                a: 'PetQuery draws on veterinary references, journals and guidelines, and shows its sources under each answer. Treat it like a knowledgeable colleague: always confirm doses and decisions with your own judgment.'
+            },
+            {
+                q: 'What sources does it use?',
+                a: 'Standard references such as the Merck Veterinary Manual and Blackwell\u2019s Five-Minute Veterinary Consult, peer reviewed journals (JVIM, JFMS, JAAHA, Veterinary Clinics of North America and more), veterinary schools like Cornell, UC Davis and the Royal Veterinary College, and organisations such as the AVMA and WOAH.'
+            }
+        ]
+    }
+];
+
+const Section = ({ eyebrow, title, children, className = '' }) => (
+    <section className={`mb-14 ${className}`}>
+        {eyebrow && <p className="m-0 mb-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#2d5fb8]">{eyebrow}</p>}
+        <h2 className="m-0 mb-5 text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-[#13233f]">{title}</h2>
+        {children}
+    </section>
+);
+
+const FaqItem = ({ q, a }) => {
+    const [open, setOpen] = useState(false);
+    return (
+        <div className="border-b border-[#eef2f7] last:border-b-0">
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full flex items-center justify-between gap-4 py-4 px-1 text-left bg-transparent border-none cursor-pointer text-[15.5px] font-semibold text-[#13233f] hover:text-[#2d5fb8] transition-colors"
+            >
+                {q}
+                <FiChevronDown className={`shrink-0 text-[#1a2b4a]/40 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence initial={false}>
+                {open && (
+                    <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: EASE }} className="overflow-hidden">
+                        <p className="m-0 px-1 pb-5 text-[15px] text-[#1a2b4a]/70 leading-relaxed max-w-[720px]">{a}</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 const Help = () => {
     const { isAuthenticated } = useAuth0();
-    const navigate = useNavigate();
+    const [guide, setGuide] = useState(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
-        document.body.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
     }, []);
-
-    const [expandedSections, setExpandedSections] = useState({});
-    const [showWhatsNew, setShowWhatsNew] = useState(false);
-    const [whatsNewStep, setWhatsNewStep] = useState(0);
-    const [showQRModal, setShowQRModal] = useState(false);
-
-    const openTutorial = (tutorialType) => {
-        // Set localStorage flag to trigger tutorial
-        localStorage.setItem(`open${tutorialType}Tutorial`, 'true');
-        
-        // Navigate to the appropriate page
-        if (tutorialType === 'QuickSOAP') {
-            navigate('/dashboard/quicksoap');
-        } else if (tutorialType === 'PetSOAP') {
-            navigate('/dashboard/report-form');
-        } else if (tutorialType === 'PetQuery') {
-            navigate('/dashboard/quick-query');
-        }
-    };
-
-    const toggleSection = (sectionId) => {
-        setExpandedSections(prev => ({
-            ...prev,
-            [sectionId]: !prev[sectionId]
-        }));
-    };
-
-    const formatText = (text) => {
-        return text.split('\n').map((line, i) => {
-            const formattedLine = line.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            return (
-                <React.Fragment key={i}>
-                    <span dangerouslySetInnerHTML={{ __html: formattedLine }} />
-                    <br />
-                </React.Fragment>
-            );
-        });
-    };
-
-    const helpSections = [
-        {
-            id: 'getting-started',
-            title: 'Getting Started',
-            content: [
-                {
-                    question: 'How do I create my first report?',
-                    answer: 'To create your first report:\n1. Navigate to "Report Genereator" on the dashboard\n2. Select the species and enter patient details\n3. Fill in the clinical findings\n4. Click "Generate Report"\n5. Review and edit the generated report as needed\n6. Save or download your report'
-                },
-                {
-                    question: 'What information should I include?',
-                    answer: 'Focus on clinical findings, symptoms, and observations. Key details to include:\n- Species and breed\n- Age and weight\n- Symptoms and duration\n- Physical examination findings\n- Any test results or diagnostics'
-                }
-            ]
-        },
-        {
-            id: 'report-generator',
-            title: 'PetNote',
-            content: [
-                {
-                    question: 'How does the AI generate records?',
-                    answer: 'Our AI analyzes your input data and generates comprehensive records based on veterinary best practices. It structures information into clear sections including history, examination findings, assessment, and treatment plans.'
-                },
-                {
-                    question: 'Can I edit generated records?',
-                    answer: 'Yes! After generation, you can:\n- Edit any section of the record\n- Add or remove information\n- Customize the format\n- Save multiple versions'
-                }
-            ]
-        },
-        {
-            id: 'quickmed-query',
-            title: 'PetQuery',
-            content: [
-                {
-                    question: 'What is PetQuery?',
-                    answer: 'PetQuery is your AI medical assistant. Use it to:\n- Get drug dosage information\n- Check treatment protocols\n- Find diagnostic criteria\n- Access current medical guidelines'
-                },
-                {
-                    question: 'How accurate is the information?',
-                    answer: 'PetQuery uses current veterinary medical databases and literature. However, always verify critical information and use professional judgment for clinical decisions.'
-                },
-                {
-                    question: 'Training Modules',
-                    isTrainingSection: true,
-                    trainingSections: [
-                        {
-                            id: 'training-1',
-                            title: 'Example 1: Seizure Treatment Plan',
-                            description: 'Learn how to generate a detailed 24-hour treatment plan for a dog with seizures, including medication schedules and monitoring parameters.',
-                            image: 'QQ Training 1.png'
-                        },
-                        {
-                            id: 'training-2',
-                            title: 'Example 2: Anxiety Management Protocol',
-                            description: 'See how to create comprehensive treatment plans and client handouts for dogs with generalized anxiety, including fluoxetine dosing and behavior modification strategies.',
-                            image: 'QQ Training 2.png'
-                        },
-                        {
-                            id: 'training-3',
-                            title: 'Example 3: Fluid Therapy Calculation',
-                            description: 'Master fluid therapy calculations for dehydrated patients, including how to determine replacement rates and monitoring schedules to achieve target PCV values.',
-                            image: 'QQ Training 3.png'
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            id: 'saved-reports',
-            title: 'Managing Records',
-            content: [
-                {
-                    question: 'How do I access saved records?',
-                    answer: 'Access your saved records by:\n1. Going to the Dashboard\n2. Clicking "Saved Records"\n3. Viewing your list of records'
-                },
-                {
-                    question: 'What can I do with my records?',
-                    answer: 'You can:\n- Search through your records\n- View any saved record\n- Print records\n- Make copies of records\n- Download as PDF'
-                }
-            ]
-        },
-        {
-            id: 'templates',
-            title: 'Templates',
-            content: [
-                {
-                    question: 'What can I save as templates?',
-                    answer: 'Templates help streamline your workflow. You can save:\n- Common drug protocols and dosages\n- Frequently used PetQuery responses\n- Treatment plans for common conditions\n- Client communication templates\n- Any other content you frequently reference or reuse'
-                },
-                {
-                    question: 'How do I use templates?',
-                    answer: 'Access your templates by:\n1. Click "My Templates" in the sidebar\n2. Click "Create New Template" in the top right to make a new one\n3. Select an existing template to view or edit it\n\nTo save a new template:\n1. Create your content\n2. Click "Save as Template"\n3. Name your template for easy reference'
-                }
-            ]
-        },
-        {
-            id: 'sourced-material',
-            title: 'Sourced Literature',
-            content: [
-                {
-                    question: 'What sources does PetWise use?',
-                    answer: 'PetWise sources a comprehensive collection of veterinary medical literature. This is a partial list and not exhaustive:\n\n**Veterinary Medical Literature:**\n- The Merck Veterinary Manual (Online Edition)\n- Blackwell\'s Five-Minute Veterinary Consult\n- Small Animal Clinical Diagnosis by Laboratory Methods\n- Large Animal Internal Medicine by Bradford P. Smith\n- Small Animal Surgery by Theresa Fossum\n- Journal of Veterinary Internal Medicine\n- Journal of Small Animal Practice\n- Journal of the American Animal Hospital Association\n- Equine Veterinary Journal\n- Veterinary Parasitology\n- Veterinary Pathology\n- Journal of Veterinary Pharmacology and Therapeutics\n- Journal of Feline Medicine and Surgery\n- Journal of Dairy Science\n- Veterinary Microbiology\n- Veterinary Immunology and Immunopathology\n- Journal of Exotic Pet Medicine\n- Veterinary Ophthalmology\n- Frontiers in Veterinary Science\n- BMC Veterinary Research\n- Veterinary Clinics of North America\n\n**University and Academic Resources:**\n- Cornell University College of Veterinary Medicine\n- University of California, Davis School of Veterinary Medicine\n- Royal Veterinary College, University of London\n- University of Pennsylvania School of Veterinary Medicine\n- University of Edinburgh Royal (Dick) School of Veterinary Studies\n- Colorado State University College of Veterinary Medicine and Biomedical Sciences\n- University of Wisconsin-Madison School of Veterinary Medicine\n- Utrecht University Faculty of Veterinary Medicine\n- University of Melbourne Faculty of Veterinary and Agricultural Sciences\n- University of Sydney Faculty of Veterinary Science\n\n**Government and Regulatory Agencies:**\n- CDC Zoonotic Diseases\n- World Organization for Animal Health (WOAH)\n- USDA APHIS\n\n**Open-Access Research and Journals:**\n- PLOS ONE Veterinary Science\n- PubMed Central\n- Scientific Reports\n\n**Animal Welfare Organizations:**\n- ASPCA\n- RSPCA\n- World Animal Protection\n\n**Professional Veterinary Organizations:**\n- American Veterinary Medical Association\n- Royal College of Veterinary Surgeons\n- Canadian Veterinary Medical Association\n\nAnd many more sources including veterinary guidelines, clinical pathology journals, breed-specific resources, and ongoing research publications.'
-                },
-                {
-                    question: 'How current is the information?',
-                    answer: 'Our system is regularly updated with new veterinary research and guidelines. However, always verify critical information and use your professional judgment for clinical decisions.'
-                }
-            ]
-        }
-    ]
-
-    const formatContent = (item, index) => {
-        if (item.isTrainingSection) {
-            return (
-                <div key={index} className="px-5 sm:px-6 py-4 border-t border-gray-100">
-                    <h3 className="text-[13px] font-bold text-gray-900 mb-3">{item.question}</h3>
-                    <div className="flex flex-col gap-2.5">
-                        {item.trainingSections.map((training) => (
-                            <div
-                                key={training.id}
-                                className="border border-gray-200 rounded-xl overflow-hidden"
-                            >
-                                <button
-                                    onClick={() => toggleSection(training.id)}
-                                    className="w-full cursor-pointer px-4 py-3 flex justify-between items-center text-left text-[13px] font-semibold text-gray-800 hover:bg-gray-50 transition-colors bg-transparent border-none"
-                                >
-                                    {training.title}
-                                    <FaChevronDown className={`text-gray-400 text-[11px] transition-transform duration-300 ${expandedSections[training.id] ? 'rotate-180' : ''}`} />
-                                </button>
-                                <div className={`overflow-hidden transition-all duration-300 ${expandedSections[training.id] ? 'max-h-[1200px] opacity-100 px-4 pb-4' : 'max-h-0 opacity-0'}`}>
-                                    <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">{training.description}</p>
-                                    <img src={training.image} alt={training.title} className="w-full h-auto rounded-xl border border-gray-100" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        }
-        return (
-            <div key={index} className="px-5 sm:px-6 py-4 border-t border-gray-100">
-                <h3 className="text-[13px] sm:text-sm font-bold text-gray-900 mb-1.5">{item.question}</h3>
-                <p className="text-[13px] text-gray-600 leading-relaxed m-0">{formatText(item.answer)}</p>
-            </div>
-        );
-    };
 
     return (
         <>
-            <div className="min-h-screen bg-[#f7f8fb]">
-                <div className="max-w-4xl mx-auto px-6 py-10">
-                    {/* Page header */}
-                    <div className="mb-8">
-                        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Help Center</h1>
-                        <p className="text-sm text-gray-500 mt-1">Everything you need to get the most out of PetWise</p>
-                    </div>
+            <div className="min-h-screen bg-gradient-to-b from-[#f6f8fb] to-white" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-16">
+                    <motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }} className="mb-12">
+                        <h1 className={`m-0 pb-1 text-[2.4rem] sm:text-[3rem] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>Help center</h1>
+                        <p className="m-0 mt-2 text-[17px] text-[#1a2b4a]/60 max-w-[560px]">Everything you need to make records, manage cases and get answers. Each guide takes about a minute.</p>
+                    </motion.header>
 
-                    {/* Tutorials & guides */}
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5 sm:p-6 mb-5">
-                        <h3 className="text-sm font-bold text-gray-900">Tutorials &amp; guides</h3>
-                        <p className="text-[13px] text-gray-500 mt-0.5 mb-4">Interactive walkthroughs for each tool</p>
-                        <div className="flex flex-wrap gap-2.5">
+                    <Section eyebrow="Start here" title="The basics">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            {START.map((s, i) => {
+                                const Icon = s.icon;
+                                return (
+                                    <motion.div
+                                        key={s.guide}
+                                        initial={{ opacity: 0, y: 12 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.4, ease: EASE, delay: 0.05 * i }}
+                                        className="rounded-[28px] bg-white border border-[#e7ecf3] p-6 sm:p-7 flex flex-col shadow-[0_18px_40px_-34px_rgba(19,35,63,0.35)]"
+                                    >
+                                        <span className="w-12 h-12 rounded-[16px] text-white flex items-center justify-center text-[20px] mb-4 shadow-[0_12px_26px_-14px_rgba(45,95,184,0.8)]" style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}>
+                                            <Icon />
+                                        </span>
+                                        <p className="m-0 text-[19px] font-semibold text-[#13233f]">{s.title}</p>
+                                        <p className="m-0 mt-1 mb-5 text-[15px] text-[#1a2b4a]/60 leading-relaxed">{s.text}</p>
+                                        <div className="mt-auto flex flex-wrap items-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setGuide(s.guide)}
+                                                className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-[14px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-14px_rgba(45,95,184,0.7)] transition-colors"
+                                            >
+                                                <FiPlay className="text-[12px]" /> Show me how
+                                            </button>
+                                            {s.to && isAuthenticated && (
+                                                <Link to={s.to} className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[14px] font-semibold text-[#13233f] hover:text-[#2d5fb8] no-underline transition-colors">
+                                                    Go to {s.cta} <FiArrowRight />
+                                                </Link>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
+                        </div>
+                    </Section>
+
+                    <Section eyebrow="Dictation" title="How to dictate a great record">
+                        <div className="grid lg:grid-cols-2 gap-6 items-start">
+                            <div>
+                                <p className="m-0 mb-4 text-[16px] text-[#1a2b4a]/70 leading-relaxed">
+                                    Start with the patient’s name and signalment, then talk through the visit the way you would tell a colleague. PetWise sorts it into the right sections.
+                                </p>
+                                <StepBody step={{ script: NAME_SCRIPT }} />
+                            </div>
+                            <StepBody step={{ tips: SPEAK_TIPS }} />
+                        </div>
+                    </Section>
+
+                    <Section eyebrow="Phone" title="Get PetWise on your phone">
+                        <div className="rounded-[28px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] p-6 sm:p-8">
+                            <StepBody step={{ install: true }} />
                             <button
-                                onClick={() => setShowWhatsNew(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 text-amber-700 font-semibold rounded-xl text-sm hover:bg-amber-100 transition-all border border-amber-200"
+                                type="button"
+                                onClick={() => setGuide('phone')}
+                                className="mt-6 inline-flex items-center gap-2 h-10 px-5 rounded-full text-[14px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 hover:text-[#2d5fb8] cursor-pointer transition-colors"
                             >
-                                <FaRegLightbulb className="text-xs" />
-                                What's New
-                            </button>
-                            <button
-                                onClick={() => openTutorial('QuickSOAP')}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
-                            >
-                                <FaMicrophone className="text-[#3468bd] text-xs" />
-                                QuickSOAP
-                            </button>
-                            <button
-                                onClick={() => openTutorial('PetQuery')}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
-                            >
-                                <FaSearch className="text-[#3468bd] text-xs" />
-                                PetQuery
-                            </button>
-                            <button
-                                onClick={() => openTutorial('PetSOAP')}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
-                            >
-                                <FaFileAlt className="text-[#3468bd] text-xs" />
-                                PetSOAP
-                            </button>
-                            <button
-                                onClick={() => setShowQRModal(true)}
-                                className="flex items-center gap-2 px-4 py-2.5 bg-white text-gray-700 font-semibold rounded-xl text-sm hover:bg-gray-50 transition-all border border-gray-200"
-                            >
-                                <FaMobile className="text-[#3468bd] text-xs" />
-                                Mobile App
+                                <FiPlay className="text-[12px]" /> How dictating from your phone works
                             </button>
                         </div>
-                    </div>
+                    </Section>
 
-                    {/* FAQ accordions */}
-                    <div className="mb-5">
-                        <h2 className="text-lg font-bold text-gray-900 mb-1">Frequently asked</h2>
-                        <p className="text-[13px] text-gray-500 mb-4">Tap a topic to expand</p>
-                        <div className="space-y-3">
-                            {helpSections.map(section => (
-                                <div key={section.id} className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                                    <button
-                                        onClick={() => toggleSection(section.id)}
-                                        className="w-full cursor-pointer px-5 sm:px-6 py-4 flex justify-between items-center text-left text-sm font-bold text-gray-900 hover:bg-gray-50 transition-colors bg-transparent border-none"
-                                    >
-                                        {section.title}
-                                        <FaChevronDown className={`text-gray-400 text-xs transition-transform duration-300 ${expandedSections[section.id] ? 'rotate-180' : ''}`} />
-                                    </button>
-                                    <div className={`overflow-hidden transition-all duration-500 ${expandedSections[section.id] ? (section.id === 'sourced-material' ? 'max-h-[3000px]' : 'max-h-[2000px]') + ' opacity-100' : 'max-h-0 opacity-0'}`}>
-                                        {section.content.map((item, index) => formatContent(item, index))}
-                                    </div>
+                    <Section eyebrow="FAQ" title="Common questions">
+                        <div className="grid gap-5">
+                            {FAQ.map((group) => (
+                                <div key={group.title} className="rounded-[24px] bg-white border border-[#e7ecf3] px-5 sm:px-7 pt-5 pb-1">
+                                    <p className="m-0 mb-1 text-[13px] font-bold uppercase tracking-[0.08em] text-[#1a2b4a]/45">{group.title}</p>
+                                    {group.items.map((item) => <FaqItem key={item.q} {...item} />)}
                                 </div>
                             ))}
                         </div>
-                    </div>
+                    </Section>
 
-                    {/* Book a Demo CTA */}
-                    <div className="rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 p-6 text-white flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <div className="rounded-[28px] p-7 sm:p-8 text-white flex flex-wrap items-center justify-between gap-5" style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}>
                         <div>
-                            <h3 className="text-base font-bold">Book a complimentary 1-on-1 demo</h3>
-                            <p className="text-white/85 text-[13px] mt-0.5">
-                                Walk through PetWise with <strong>Dr. Stacey Gastis</strong>. Real clinical use cases, completely free.
-                            </p>
+                            <p className="m-0 text-[20px] font-semibold">Still stuck?</p>
+                            <p className="m-0 mt-1 text-[15px] text-white/80">Email us and we’ll help you out.</p>
                         </div>
-                        <a
-                            href="https://calendar.app.google/msd3h7YsD4qK3Rvo7"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-5 py-2.5 bg-white text-amber-700 font-bold rounded-xl text-sm hover:bg-amber-50 transition-colors whitespace-nowrap no-underline"
-                        >
-                            Book a demo →
+                        <a href="mailto:support@petwise.vet" className="inline-flex items-center gap-2 h-11 px-6 rounded-full bg-white text-[#2d5fb8] text-[14.5px] font-semibold no-underline hover:bg-[#f3f7fd] transition-colors">
+                            <FiMail /> support@petwise.vet
                         </a>
                     </div>
-
-                    {/* Contact Support */}
-                    <div className="rounded-2xl bg-gradient-to-br from-[#3468bd] to-[#2a5298] p-6 text-white">
-                        <h3 className="text-base font-bold mb-1">Contact support</h3>
-                        <p className="text-white/85 text-[13px]">
-                            Need more help? Email us at <a href="mailto:support@petwise.vet" className="font-semibold underline underline-offset-2 text-white">support@petwise.vet</a>
-                        </p>
-                        <p className="text-white/70 text-[12px] mt-2">
-                            View our <Link to="/privacy" className="text-white/90 hover:underline no-underline font-medium">Privacy Policy</Link> and <Link to="/terms" className="text-white/90 hover:underline no-underline font-medium">Terms of Service</Link>
-                        </p>
-                    </div>
+                    <p className="mt-6 text-center text-[13px] text-[#1a2b4a]/45">
+                        <Link to="/privacy" className="text-inherit hover:text-[#2d5fb8] no-underline">Privacy Policy</Link>
+                        <span className="mx-2">·</span>
+                        <Link to="/terms" className="text-inherit hover:text-[#2d5fb8] no-underline">Terms of Service</Link>
+                    </p>
                 </div>
             </div>
             {!isAuthenticated && <Footer />}
-
-            {/* What's New Tutorial Modal */}
-            {showWhatsNew && (
-                <div
-                    className="fixed bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fadeIn"
-                    onClick={() => setShowWhatsNew(false)}
-                    style={{
-                        left: '0',
-                        right: '0',
-                        top: '0',
-                        bottom: '0',
-                        animation: 'fadeIn 0.3s ease-out'
-                    }}
-                >
-                    <div
-                        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all"
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                            animation: 'slideUpScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
-                        }}
-                    >
-                        {/* Tutorial Header */}
-                        <div className="bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-between flex-shrink-0 px-6 py-4">
-                            <h2 className="font-bold text-white text-2xl">What's New in PetWise</h2>
-                            <button
-                                onClick={() => setShowWhatsNew(false)}
-                                className="text-white hover:text-gray-200 transition-colors flex-shrink-0"
-                            >
-                                <FaTimes className="text-xl" />
-                            </button>
-                        </div>
-
-                        {/* Tutorial Content */}
-                        <div className="flex-1 overflow-y-auto p-8">
-                            {whatsNewStep === 0 && (
-                                <div className="space-y-6">
-                                    <div className="text-center">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-primary-700 rounded-full text-xs font-semibold mb-3 tracking-wide uppercase">
-                                            <FaBolt className="text-[10px]" /> Major Update
-                                        </div>
-                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">Smarter, Faster, More Accurate</h3>
-                                        <p className="text-gray-500 text-base max-w-lg mx-auto">We've completely upgraded the intelligence behind PetWise. Records are now generated with deeper clinical understanding and significantly improved accuracy.</p>
-                                    </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-                                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-5 text-center">
-                                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
-                                                <FaBrain className="text-white text-lg" />
-                                            </div>
-                                            <p className="font-semibold text-gray-800 text-sm mb-1">Deeper Context</p>
-                                            <p className="text-gray-500 text-xs">Understands more of what you dictate. Catches nuance, medications, and clinical details that matter</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-200 p-5 text-center">
-                                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg">
-                                                <FaRocket className="text-white text-lg" />
-                                            </div>
-                                            <p className="font-semibold text-gray-800 text-sm mb-1">Noticeably Faster</p>
-                                            <p className="text-gray-500 text-xs">Records generate quicker than before. Less waiting, more documenting</p>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl border border-violet-200 p-5 text-center">
-                                            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg">
-                                                <FaMagic className="text-white text-lg" />
-                                            </div>
-                                            <p className="font-semibold text-gray-800 text-sm mb-1">Higher Accuracy</p>
-                                            <p className="text-gray-500 text-xs">Better medical terminology, cleaner formatting, and fewer corrections needed</p>
-                                        </div>
-                                    </div>
-                                    <div className="bg-gradient-to-r from-primary-50 to-blue-50 rounded-xl p-4 border border-primary-100">
-                                        <p className="text-gray-600 text-sm text-center">This applies to all record types: SOAP, Summary, and Callback records all benefit from the upgrade.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 1 && (
-                                <div className="space-y-6">
-                                    <div className="text-center">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-blue-100 to-indigo-100 text-primary-700 rounded-full text-xs font-semibold mb-3 tracking-wide uppercase">
-                                            <FaColumns className="text-[10px]" /> Layout Update
-                                        </div>
-                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">Redesigned QuickSOAP Workspace</h3>
-                                        <p className="text-gray-500 text-base max-w-lg mx-auto">The dictation controls have moved from the sidebar to a dedicated top bar above your record, giving you a wider editing area and a cleaner workflow.</p>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                                        <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-5 border-b border-gray-200">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
-                                                    <FaMicrophone className="text-white text-sm" />
-                                                </div>
-                                                <div className="flex-1 h-8 bg-white rounded-lg border border-gray-200 flex items-center px-3">
-                                                    <span className="text-gray-300 text-xs italic">Add extra notes or context...</span>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                    <div className="px-3 py-1.5 bg-primary-600 text-white text-xs rounded-lg font-medium">Regenerate</div>
-                                                    <div className="px-3 py-1.5 bg-gray-200 text-gray-600 text-xs rounded-lg font-medium">Start New</div>
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <div className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-100">
-                                                    <div className="text-[10px] text-blue-400 font-medium mb-1">Dictation 1</div>
-                                                    <div className="text-[10px] text-gray-400">Summary preview...</div>
-                                                </div>
-                                                <div className="flex-1 bg-blue-50 rounded-lg p-2 border border-blue-100">
-                                                    <div className="text-[10px] text-blue-400 font-medium mb-1">Dictation 2</div>
-                                                    <div className="text-[10px] text-gray-400">Summary preview...</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="p-4 space-y-2">
-                                            <div className="h-6 bg-gradient-to-r from-blue-500 to-blue-600 rounded text-white text-xs flex items-center px-3 font-semibold">Subjective</div>
-                                            <div className="h-10 bg-gray-50 rounded border border-gray-100"></div>
-                                            <div className="h-6 bg-gradient-to-r from-green-500 to-green-600 rounded text-white text-xs flex items-center px-3 font-semibold">Objective</div>
-                                            <div className="h-10 bg-gray-50 rounded border border-gray-100"></div>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                                            <p className="font-semibold text-gray-800 text-sm mb-1">Wider editing area</p>
-                                            <p className="text-gray-500 text-xs">Your SOAP sections now stretch across the full width. No more cramped text fields</p>
-                                        </div>
-                                        <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
-                                            <p className="font-semibold text-gray-800 text-sm mb-1">Everything in one flow</p>
-                                            <p className="text-gray-500 text-xs">Dictations, notes, and controls are all above your record. Scroll down to edit</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 2 && (
-                                <div className="space-y-6">
-                                    <div className="text-center">
-                                        <h3 className="font-bold text-gray-800 mb-2 text-2xl">New Record Types in QuickSOAP</h3>
-                                        <p className="text-gray-600 text-lg">QuickSOAP now supports three different record types to match your workflow needs.</p>
-                                    </div>
-                                    <div className="flex justify-center">
-                                        <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
-                                            <div className="px-3 py-2 text-sm font-medium rounded-lg bg-white text-primary-600 shadow-sm flex items-center gap-1.5">
-                                                <FaClipboardList className="text-xs" />
-                                                SOAP
-                                            </div>
-                                            <div className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 flex items-center gap-1.5">
-                                                <FaFileAlt className="text-xs" />
-                                                Summary
-                                            </div>
-                                            <div className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 flex items-center gap-1.5">
-                                                <FaPhoneAlt className="text-xs" />
-                                                Callback
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-blue-50 to-primary-50 rounded-xl border-2 border-blue-200 p-6">
-                                        <div className="flex flex-col items-center justify-center space-y-4">
-                                            <div className="rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg w-16 h-16">
-                                                <FaClipboardList className="text-white text-2xl" />
-                                            </div>
-                                            <div className="text-center">
-                                                <p className="text-gray-700 font-semibold mb-2 text-lg">SOAP Record</p>
-                                                <p className="text-gray-600">Classic SOAP format with Subjective, Objective, Assessment, and Plan sections</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 p-5">
-                                            <div className="flex flex-col items-center justify-center space-y-3">
-                                                <div className="rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg w-14 h-14">
-                                                    <FaFileAlt className="text-white text-xl" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-gray-700 font-semibold mb-1">Summary</p>
-                                                    <p className="text-gray-600 text-sm">Clinical summaries with professional medical terminology</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-xl border-2 border-amber-200 p-5">
-                                            <div className="flex flex-col items-center justify-center space-y-3">
-                                                <div className="rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg w-14 h-14">
-                                                    <FaPhoneAlt className="text-white text-xl" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <p className="text-gray-700 font-semibold mb-1">Callback</p>
-                                                    <p className="text-gray-600 text-sm">Document phone conversations with clients</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 3 && (
-                                <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">SOAP Records</h3>
-                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-                                        <div className="space-y-4">
-                                            <div className="flex items-start gap-4">
-                                                <div className="rounded-full bg-blue-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaClipboardList className="text-white text-sm" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Structured SOAP Format</p>
-                                                    <p className="text-gray-600 text-sm">Your dictation is automatically organized into Subjective, Objective, Assessment, and Plan sections</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-primary-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaMicrophone className="text-white text-sm" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Voice Dictation</p>
-                                                    <p className="text-gray-600 text-sm">Simply speak naturally - PetWise will structure your notes into professional SOAP format</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                                        <div className="flex border-b border-gray-200">
-                                            <div className="flex-1 border-r border-gray-200">
-                                                <div className="bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-2">
-                                                    <span className="text-white font-semibold text-sm">S – Subjective</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-2">
-                                                    <span className="text-white font-semibold text-sm">O – Objective</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex">
-                                            <div className="flex-1 border-r border-gray-200">
-                                                <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2">
-                                                    <span className="text-white font-semibold text-sm">A – Assessment</span>
-                                                </div>
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="bg-gradient-to-r from-red-500 to-red-600 px-4 py-2">
-                                                    <span className="text-white font-semibold text-sm">P – Plan</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-blue-50 rounded-lg p-4 border-l-4 border-blue-600">
-                                        <p className="text-gray-700 text-sm"><strong>Best for:</strong> Complete patient encounters, examinations, and detailed medical documentation.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 4 && (
-                                <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Clinical Summaries</h3>
-                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-                                        <div className="space-y-4">
-                                            <div className="flex items-start gap-4">
-                                                <div className="rounded-full bg-emerald-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaFileAlt className="text-white text-sm" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Professional Medical Language</p>
-                                                    <p className="text-gray-600 text-sm">Summaries use formal veterinary terminology and proper medical phrasing</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-green-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <span className="text-white font-bold text-xs">Rx</span>
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Treatment Documentation</p>
-                                                    <p className="text-gray-600 text-sm">Medications, vaccines, and treatments are automatically formatted and listed</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                                        <div className="bg-emerald-600 px-4 py-3">
-                                            <h4 className="text-white font-semibold flex items-center gap-2">
-                                                <FaFileAlt className="text-sm" /> Clinical Summary
-                                            </h4>
-                                        </div>
-                                        <div className="p-4 bg-gray-50">
-                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                <p className="text-gray-700 text-sm italic">Your clinical summary will appear as a single editable text area...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-emerald-50 rounded-lg p-4 border-l-4 border-emerald-600">
-                                        <p className="text-gray-700 text-sm"><strong>Best for:</strong> Patient histories, case summaries, referral notes, and general medical documentation.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 5 && (
-                                <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Callback Notes</h3>
-                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-                                        <div className="space-y-4">
-                                            <div className="flex items-start gap-4">
-                                                <div className="rounded-full bg-amber-600 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <FaPhoneAlt className="text-white text-sm" />
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Client Communication</p>
-                                                    <p className="text-gray-600 text-sm">Document phone conversations with pet owners, including questions asked and advice given</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-start gap-4 mt-4">
-                                                <div className="rounded-full bg-yellow-500 flex items-center justify-center shadow-md flex-shrink-0 w-12 h-12">
-                                                    <span className="text-white font-bold text-xs">📞</span>
-                                                </div>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-800 mb-1">Structured Call Notes</p>
-                                                    <p className="text-gray-600 text-sm">Automatically formats call type, discussion summary, concerns, and next steps</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-                                        <div className="bg-amber-600 px-4 py-3">
-                                            <h4 className="text-white font-semibold flex items-center gap-2">
-                                                <FaPhoneAlt className="text-sm" /> Callback Notes
-                                            </h4>
-                                        </div>
-                                        <div className="p-4 bg-gray-50">
-                                            <div className="bg-white rounded-lg border border-gray-200 p-4">
-                                                <p className="text-gray-700 text-sm italic">Your callback notes will appear as a single editable text area...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-amber-50 rounded-lg p-4 border-l-4 border-amber-600">
-                                        <p className="text-gray-700 text-sm"><strong>Best for:</strong> Follow-up calls, medication questions, appointment scheduling, and client concerns.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 6 && (
-                                <div className="space-y-6">
-                                    <h3 className="font-bold text-gray-800 mb-4 text-2xl">Organized Saved Records</h3>
-                                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-6">
-                                        <p className="text-gray-600 mb-4">All record types are now filterable in Saved Records for easy access:</p>
-                                        <div className="flex justify-center mb-4">
-                                            <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
-                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg bg-white text-primary-600 shadow-sm">All</div>
-                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">QuickSOAP</div>
-                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">PetSOAP</div>
-                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">Summary</div>
-                                                <div className="px-2 py-1.5 text-xs font-medium rounded-lg text-gray-600">Callback</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-white rounded-lg border border-gray-200 p-4 mt-4">
-                                        <p className="text-gray-600 text-sm mb-4 font-medium">Example record items:</p>
-                                        <div className="space-y-2">
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white text-xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
-                                                    quicksoap
-                                                </div>
-                                                <span className="font-medium text-sm flex-1 min-w-0 truncate text-gray-800">
-                                                    Max - SOAP Record
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
-                                                    summary
-                                                </div>
-                                                <span className="font-medium text-sm flex-1 min-w-0 truncate text-gray-800">
-                                                    Bella - Clinical Summary
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                                <div className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-semibold px-2 py-1 rounded-lg uppercase tracking-wide flex-shrink-0">
-                                                    callback
-                                                </div>
-                                                <span className="font-medium text-sm flex-1 min-w-0 truncate text-gray-800">
-                                                    Rocky - Callback Notes
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-purple-50 rounded-lg p-4 border-l-4 border-purple-600">
-                                        <p className="text-gray-700 text-sm"><strong>Tip:</strong> Click on any Summary or Callback record to open it in QuickSOAP for editing.</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {whatsNewStep === 7 && (
-                                <div className="space-y-6">
-                                    <div className="text-center">
-                                        <h3 className="font-bold text-gray-800 mb-4 text-2xl">Ready to Get Started?</h3>
-                                        <p className="text-gray-600 text-lg mb-6">Choose the right record type for your needs and let PetWise handle the formatting.</p>
-                                    </div>
-                                    <div className="bg-gradient-to-br from-primary-50 to-blue-50 rounded-xl border-2 border-primary-200 p-6">
-                                        <h4 className="font-semibold text-gray-800 mb-3 text-lg">How to Use</h4>
-                                        <div className="space-y-3">
-                                            <div className="flex items-start gap-3">
-                                                <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">1</span>
-                                                <p className="text-gray-700">Go to QuickSOAP from the sidebar</p>
-                                            </div>
-                                            <div className="flex items-start gap-3">
-                                                <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">2</span>
-                                                <p className="text-gray-700">Select your record type: SOAP, Summary, or Callback</p>
-                                            </div>
-                                            <div className="flex items-start gap-3">
-                                                <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">3</span>
-                                                <p className="text-gray-700">Record your dictation and click Generate</p>
-                                            </div>
-                                            <div className="flex items-start gap-3">
-                                                <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center flex-shrink-0 text-sm font-bold">4</span>
-                                                <p className="text-gray-700">Edit and save - your record will be in Saved Records</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-green-50 rounded-lg p-4 border-l-4 border-green-600">
-                                        <p className="text-gray-700 text-sm"><strong>Works on mobile too!</strong> Select your record type on mobile and send to desktop for generation.</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Tutorial Footer */}
-                        <div className="bg-gray-50 px-6 py-4 flex items-center justify-between flex-shrink-0 border-t border-gray-200">
-                            <div className="flex items-center gap-1.5">
-                                {[0, 1, 2, 3, 4, 5, 6, 7].map((step) => (
-                                    <div
-                                        key={step}
-                                        className={`h-2 rounded-full transition-all ${whatsNewStep === step ? 'bg-primary-600 w-6' : 'bg-gray-300 w-2'}`}
-                                    />
-                                ))}
-                            </div>
-                            <div className="flex items-center gap-3">
-                                {whatsNewStep > 0 && (
-                                    <button
-                                        onClick={() => setWhatsNewStep(whatsNewStep - 1)}
-                                        className="px-4 py-2 rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all flex items-center gap-2"
-                                    >
-                                        <FaArrowLeft className="text-sm" />
-                                        Previous
-                                    </button>
-                                )}
-                                {whatsNewStep < 7 ? (
-                                    <button
-                                        onClick={() => setWhatsNewStep(whatsNewStep + 1)}
-                                        className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all flex items-center gap-2"
-                                    >
-                                        Next
-                                        <FaArrowRight className="text-sm" />
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => setShowWhatsNew(false)}
-                                        className="px-4 py-2 rounded-lg bg-[#3369bd] text-white hover:bg-[#2c5aa3] transition-all"
-                                    >
-                                        Get Started
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* QR Code Modal */}
-            {showQRModal && (
-                <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-                    onClick={() => setShowQRModal(false)}
-                >
-                    <div
-                        className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-6 max-w-md w-full"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between mb-5">
-                            <div>
-                                <h2 className="text-lg font-bold text-gray-900">Mobile App</h2>
-                                <p className="text-[13px] text-gray-500 mt-0.5">Take PetWise into the exam room</p>
-                            </div>
-                            <button
-                                onClick={() => setShowQRModal(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <FaTimes className="text-lg" />
-                            </button>
-                        </div>
-                        <div className="flex flex-col items-center text-center">
-                            <img src="/PW QR CODE.png" alt="PetWise Mobile App QR Code" className="w-52 h-52 rounded-2xl border border-gray-200 shadow-sm mb-4" />
-                            <p className="text-[13px] text-gray-500 leading-relaxed max-w-xs">
-                                Scan this code, or go to <span className="font-semibold text-[#3468bd]">petwise.vet</span> on your phone and log in.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>{guide && <Guide key={guide} id={guide} onClose={() => setGuide(null)} />}</AnimatePresence>
         </>
     );
 };
 
-export default Help; 
+export default Help;

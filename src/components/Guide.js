@@ -22,14 +22,14 @@ import { TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
 
 const EASE = [0.2, 0.7, 0.2, 1];
 
-const NAME_SCRIPT = [
+export const NAME_SCRIPT = [
     'This is Bella, a 6 year old spayed female Labrador, 28 kilos.',
     'Owner says she has been vomiting for two days and eating less.',
     'Temp 39.4, heart rate 120, mild pain on cranial abdomen.',
     'Plan: maropitant 1 mg per kg subQ once daily for 3 days, bland diet, recheck Friday.'
 ];
 
-const SPEAK_TIPS = [
+export const SPEAK_TIPS = [
     { title: 'Say the name first', text: 'Name, species, age, sex and weight. The name is what labels the case.' },
     { title: 'Talk like you would to a colleague', text: 'Normal pace, full sentences. No need to say "subjective" or "objective".' },
     { title: 'Give doses in full', text: 'Drug, dose with units, route, how often and for how long.' },
@@ -81,7 +81,7 @@ export const GUIDES = {
                 icon: FiCopy,
                 title: 'Edit and copy it out',
                 points: [
-                    { title: 'Edit', text: 'Click into any section and type. Changes save on their own.' },
+                    { title: 'Edit', text: 'Click into any section and type, then hit Save. If you leave with unsaved edits, PetWise asks first.' },
                     { title: 'Copy', text: 'Copy one section, or Copy all, and paste into your practice software.' },
                     { title: 'Back', text: 'Takes you to the case with all its records.' }
                 ]
