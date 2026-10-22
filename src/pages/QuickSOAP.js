@@ -31,14 +31,12 @@ import WaveBars, { RecordingStatus } from '../components/WaveBars';
 import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES, RECORD_TYPES } from '../components/caseStyles';
 import GeneratingLoader from '../components/GeneratingLoader';
 import Guide from '../components/Guide';
-import DentalRecordPanel from '../components/DentalRecordPanel';
+import DentalWorkspace from '../components/DentalWorkspace';
 import CountBadge from '../components/CountBadge';
-import { PiTooth } from 'react-icons/pi';
 
 const TEXT_RECORDS = {
     summary: { bar: 'from-emerald-500 to-emerald-600', icon: FaFileAlt, title: 'Clinical Summary', placeholder: 'Your clinical summary will appear here...' },
-    callback: { bar: 'from-amber-500 to-amber-600', icon: FaPhoneAlt, title: 'Callback Notes', placeholder: 'Your callback notes will appear here...' },
-    dental: { bar: 'from-violet-500 to-violet-600', icon: PiTooth, title: 'Dental Record', placeholder: 'Your dental record will appear here...' }
+    callback: { bar: 'from-amber-500 to-amber-600', icon: FaPhoneAlt, title: 'Callback Notes', placeholder: 'Your callback notes will appear here...' }
 };
 
 const readStoredDental = () => {
@@ -1610,13 +1608,6 @@ const QuickSOAP = () => {
         const snap = readSavedSnapshot();
         if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
     }, [hasReport, report]);
-
-    // Dental text grows with its content so the page scrolls, not the box, while the chart stays put.
-    const growTextarea = (el) => {
-        if (!el) return;
-        el.style.height = 'auto';
-        el.style.height = `${el.scrollHeight}px`;
-    };
 
     // Chart edits save straight to the open note, debounced so a run of taps is one write.
     const dentalSaveRef = useRef(null);
@@ -3715,7 +3706,17 @@ const QuickSOAP = () => {
                                     }}
                                 >
                                     {/* Record Card - SOAP has sections, Summary/Callback have single textarea */}
-                                    <div className={recordType === 'dental' ? 'grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] items-start' : ''}>
+                                    {recordType === 'dental' ? (
+                                        <DentalWorkspace
+                                            report={report}
+                                            onReportChange={setReport}
+                                            dental={dental}
+                                            onDentalChange={handleDentalChange}
+                                            onCopy={copyAll}
+                                            onPrint={handlePrint}
+                                            copied={copiedSection === 'all'}
+                                        />
+                                    ) : (
                                     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)' }}>
                                         {recordType === 'soap' ? (
                                             // SOAP Record - Section-based display
@@ -3839,18 +3840,16 @@ const QuickSOAP = () => {
                                                     </h3>
                                                 </div>
                                                 <textarea
-                                                    ref={recordType === 'dental' ? growTextarea : undefined}
                                                     value={report}
                                                     onChange={(e) => {
                                                         setReport(e.target.value);
-                                                        if (recordType === 'dental') growTextarea(e.target);
                                                     }}
-                                                    className={`w-full border-none focus:outline-none resize-none text-gray-800 bg-white flex-1 rounded-b-2xl ${recordType === 'dental' ? 'px-6 py-5 overflow-hidden' : 'px-5 py-4'}`}
+                                                    className="w-full px-5 py-4 border-none focus:outline-none resize-none text-gray-800 bg-white flex-1 rounded-b-2xl"
                                                     style={{
                                                         fontFamily: "var(--font-sans)",
                                                         fontSize: '14px',
                                                         lineHeight: '1.8',
-                                                        minHeight: recordType === 'dental' ? '360px' : 'calc(100vh - 350px)',
+                                                        minHeight: 'calc(100vh - 350px)',
                                                         whiteSpace: 'pre-wrap',
                                                         wordWrap: 'break-word'
                                                     }}
@@ -3882,16 +3881,7 @@ const QuickSOAP = () => {
                                             </button>
                                         </div>
                                     </div>
-                                    {recordType === 'dental' && (
-                                        <div className="order-first xl:order-none xl:sticky xl:top-6">
-                                            <DentalRecordPanel
-                                                dental={dental || { species: 'canine', teeth: {} }}
-                                                onChange={handleDentalChange}
-                                                chartMaxHeight="max(360px, min(calc(100vh - 320px), 640px))"
-                                            />
-                                        </div>
                                     )}
-                                    </div>
                                 </div>
                             )}
                         </div>

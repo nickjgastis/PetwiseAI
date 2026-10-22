@@ -1,9 +1,32 @@
-import React, { useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { buildChart } from '../dental/geometry';
 import { STATUSES, STATUS_ORDER } from '../dental/teeth';
 
+export const Swatch = ({ s, className = 'w-2.5 h-2.5' }) => (
+    <span
+        className={`shrink-0 rounded-[3px] ${className}`}
+        style={{ background: STATUSES[s].fill === 'none' ? 'transparent' : STATUSES[s].fill, border: `1.5px ${STATUSES[s].dashed ? 'dashed' : 'solid'} ${STATUSES[s].stroke}` }}
+    />
+);
+
+export const ChartLegend = ({ teeth = {}, className = '' }) => {
+    const used = new Set(Object.values(teeth).map((t) => t?.status).filter(Boolean));
+    return (
+        <div className={`flex flex-wrap justify-center gap-1.5 ${className}`}>
+            {STATUS_ORDER.filter((s) => s === 'normal' || used.has(s) || !used.size).map((s) => (
+                <span key={s} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${STATUSES[s].chip}`}>
+                    <Swatch s={s} />
+                    {STATUSES[s].label}
+                </span>
+            ))}
+        </div>
+    );
+};
+
 // Top-down canine/feline chart. `teeth` maps Triadan id -> { status }; unlisted teeth are normal.
-const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '', maxHeight }) => {
+// Label size reads `--tf` so a zooming parent can keep labels from growing with the zoom.
+// `maxHeight` caps the width by aspect ratio instead of letterboxing, so the svg box always matches its viewBox.
+const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '', maxHeight, svgRef }) => {
     const chart = useMemo(() => buildChart(species), [species]);
     const [hover, setHover] = useState(null);
     if (!chart) return null;
@@ -13,16 +36,23 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
     const h = bounds.maxY - bounds.minY;
     const font = unit * 3.4;
     const midY = (chart.upperDepth + chart.lowerTop) / 2;
-    const used = new Set(Object.values(teeth).map((t) => t?.status).filter(Boolean));
+    const fs = (k = 1) => ({ fontSize: k === 1 ? 'var(--tf)' : `calc(var(--tf) * ${k})` });
 
     return (
         <div className={className}>
-            <svg viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`} className="block w-full h-auto select-none" style={maxHeight ? { maxHeight } : undefined} role="img" aria-label={`${species === 'feline' ? 'Feline' : 'Canine'} dental chart`}>
-                <text x={bounds.minX + unit * 1.5} y={midY} fontSize={font * 1.05} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" letterSpacing="0.08em">RIGHT</text>
-                <text x={bounds.maxX - unit * 1.5} y={midY} fontSize={font * 1.05} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" textAnchor="end" letterSpacing="0.08em">LEFT</text>
+            <svg
+                ref={svgRef}
+                viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`}
+                className="block w-full h-auto mx-auto select-none"
+                style={{ '--tf': `${font}px`, ...(maxHeight ? { maxWidth: `calc(${maxHeight} * ${(w / h).toFixed(4)})` } : {}) }}
+                role="img"
+                aria-label={`${species === 'feline' ? 'Feline' : 'Canine'} dental chart`}
+            >
+                <text x={bounds.minX + unit * 1.5} y={midY} style={fs(1.05)} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" letterSpacing="0.08em">RIGHT</text>
+                <text x={bounds.maxX - unit * 1.5} y={midY} style={fs(1.05)} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" textAnchor="end" letterSpacing="0.08em">LEFT</text>
                 <line x1={0} x2={0} y1={bounds.minY + unit * 4} y2={bounds.maxY - unit * 4} stroke="#1a2b4a" strokeOpacity="0.06" strokeDasharray={`${unit} ${unit}`} vectorEffect="non-scaling-stroke" />
-                <text x={0} y={chart.upperDepth * 0.42} fontSize={font} fill="#1a2b4a" fillOpacity="0.3" textAnchor="middle" letterSpacing="0.08em">MAXILLA</text>
-                <text x={0} y={chart.lowerTop + (bounds.maxY - chart.lowerTop) * 0.58} fontSize={font} fill="#1a2b4a" fillOpacity="0.3" textAnchor="middle" letterSpacing="0.08em">MANDIBLE</text>
+                <text x={0} y={chart.upperDepth * 0.42} style={fs()} fill="#1a2b4a" fillOpacity="0.3" textAnchor="middle" letterSpacing="0.08em">MAXILLA</text>
+                <text x={0} y={chart.lowerTop + (bounds.maxY - chart.lowerTop) * 0.58} style={fs()} fill="#1a2b4a" fillOpacity="0.3" textAnchor="middle" letterSpacing="0.08em">MANDIBLE</text>
 
                 {chart.teeth.map((t) => {
                     const st = STATUSES[teeth[t.id]?.status] || STATUSES.normal;
@@ -32,6 +62,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                         <g
                             key={t.id}
                             data-tooth={t.id}
+                            data-quadrant={t.quadrant}
                             onClick={onToothClick ? (e) => onToothClick(t.id, e) : undefined}
                             onMouseEnter={() => setHover(t.id)}
                             onMouseLeave={() => setHover((h0) => (h0 === t.id ? null : h0))}
@@ -53,13 +84,12 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                             <text
                                 x={t.label[0]}
                                 y={t.label[1]}
-                                fontSize={font}
                                 textAnchor="middle"
                                 dominantBaseline="middle"
                                 fill={isSel || isHover ? '#2d5fb8' : '#1a2b4a'}
                                 fillOpacity={isSel || isHover ? 1 : 0.5}
                                 fontWeight={isSel ? 700 : 500}
-                                style={{ fontFeatureSettings: "'tnum'" }}
+                                style={{ ...fs(), fontFeatureSettings: "'tnum'" }}
                             >
                                 {t.id}
                             </text>
@@ -67,21 +97,9 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                     );
                 })}
             </svg>
-            {showLegend && (
-                <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-                    {STATUS_ORDER.filter((s) => s === 'normal' || used.has(s) || !used.size).map((s) => (
-                        <span key={s} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium ${STATUSES[s].chip}`}>
-                            <span
-                                className="w-2.5 h-2.5 rounded-[3px]"
-                                style={{ background: STATUSES[s].fill === 'none' ? 'transparent' : STATUSES[s].fill, border: `1.5px ${STATUSES[s].dashed ? 'dashed' : 'solid'} ${STATUSES[s].stroke}` }}
-                            />
-                            {STATUSES[s].label}
-                        </span>
-                    ))}
-                </div>
-            )}
+            {showLegend && <ChartLegend teeth={teeth} className="mt-3" />}
         </div>
     );
 };
 
-export default DentalChart;
+export default memo(DentalChart);

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import DentalChart from '../components/DentalChart';
-import DentalRecordPanel from '../components/DentalRecordPanel';
+import DentalWorkspace from '../components/DentalWorkspace';
 import { STATUS_ORDER, toothLabel } from '../dental/teeth';
 
 // Dev-only sandbox for the dental chart (mounted at /dev/dental in development).
@@ -21,7 +21,25 @@ const RECORD = {
     }
 };
 
+const REPORT = `Dental Procedure Summary
+Max, an 8-year-old Labrador, was examined and treated under general anesthesia. Overall oral assessment was consistent with grade 3 periodontal disease.
+
+Tooth Findings
+104: enamel chip, watch
+108: slab fracture with pulp exposure, extracted
+201: missing
+202: missing
+309: furcation exposure stage 2
+409: PD 6 mm, mobility 2, extracted
+
+Treatment
+108 was surgically extracted with flap elevation and closure using 4-0 Monocryl. 409 was extracted. Infraorbital and mandibular nerve blocks were performed with bupivacaine.
+
+Home Care and Follow-up
+Soft food was recommended for 10 days. Recheck advised in 2 weeks.`;
+
 const DentalPreview = () => {
+    const [report, setReport] = useState(REPORT);
     const [state, setState] = useState(SAMPLE);
     const [record, setRecord] = useState(RECORD);
     const [selected, setSelected] = useState(null);
@@ -62,10 +80,8 @@ const DentalPreview = () => {
                         </div>
                     ))}
                 </div>
-                <p className="mt-12 mb-4 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record panel</p>
-                <div className="max-w-[560px]">
-                    <DentalRecordPanel dental={record} onChange={setRecord} />
-                </div>
+                <p className="mt-12 mb-4 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record workspace</p>
+                <DentalWorkspace report={report} onReportChange={setReport} dental={record} onDentalChange={setRecord} onCopy={() => {}} onPrint={() => {}} />
             </div>
         </div>
     );
