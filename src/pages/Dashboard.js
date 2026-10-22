@@ -215,12 +215,12 @@ const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`group relative flex items-center no-underline rounded-[12px] transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[14px] h-10 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#1e4a94] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f] hover:bg-[#2d5fb8]/[0.06]`}`}
+            className={`group relative flex items-center no-underline rounded-[12px] transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[14px] h-10 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
         >
             {active && (
                 <motion.span
                     layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-[12px] bg-[#2d5fb8]/[0.11] shadow-[inset_0_0_0_1px_rgba(45,95,184,0.10)]"
+                    className="absolute -left-3 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[#2d5fb8]"
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
             )}
@@ -1512,7 +1512,7 @@ const Dashboard = () => {
                         </Link>
                     </div>
                     {/* Navigation Menu (user info now lives in the footer below) */}
-                    <ul className="relative list-none p-0 m-0 flex-1 mt-1">
+                    <ul className="relative list-none p-0 m-0 flex-1 mt-1 pb-3 flex flex-col">
                         {/* Primary action */}
                         <li className={`mx-3 mt-4 mb-4 relative ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
                             <Link
@@ -1524,7 +1524,7 @@ const Dashboard = () => {
                                 }}
                                 data-tooltip="Start new case"
                                 data-tour="quicksoap"
-                                className={`group relative flex items-center no-underline font-semibold text-[14px] text-white rounded-[14px] bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] shadow-[0_10px_24px_-12px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.22)] transition-all duration-200 hover:brightness-[1.06] hover:shadow-[0_14px_28px_-12px_rgba(45,95,184,0.85),inset_0_1px_0_rgba(255,255,255,0.22)] active:scale-[0.98] ${isSidebarCollapsed ? 'w-11 h-11 justify-center' : 'w-full h-11 pl-1.5 pr-4 gap-2.5'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/70 ring-offset-2 ring-offset-[#eef4fc]' : ''}`}
+                                className={`group relative flex items-center no-underline font-semibold text-[14px] text-white rounded-[14px] bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] shadow-[0_10px_24px_-12px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.22)] transition-all duration-200 hover:brightness-[1.06] hover:shadow-[0_14px_28px_-12px_rgba(45,95,184,0.85),inset_0_1px_0_rgba(255,255,255,0.22)] active:scale-[0.98] ${isSidebarCollapsed ? 'w-11 h-11 justify-center' : 'w-full h-11 pl-1.5 pr-4 gap-2.5'}`}
                             >
                                 <span className={`flex items-center justify-center rounded-[10px] ${isSidebarCollapsed ? 'text-[18px]' : 'w-8 h-8 bg-white/[0.18] text-[16px] transition-transform duration-200 group-hover:rotate-90'}`}>
                                     <FiPlus />
@@ -1554,7 +1554,7 @@ const Dashboard = () => {
                             </li>
                         )}
 
-                        <li className="mx-3 mt-5 mb-1" style={{ borderTop: '1px solid rgba(45,95,184,0.10)' }}>
+                        <li className="mx-3 mt-auto mb-1" style={{ borderTop: '1px solid rgba(45,95,184,0.10)' }}>
                             {!isSidebarCollapsed && (
                                 <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
