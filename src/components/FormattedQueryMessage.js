@@ -34,6 +34,7 @@ const stripBold = (t) => String(t ?? '').replace(/\*\*(.*?)\*\*/g, '$1').replace
 const FIELD_LINE = /^(?:-\s+)?\*\*([^*]{1,40}?):\*\*\s*(.*)$/;
 
 const SECTION_BREAK = 'mt-7 pt-6 border-t border-[#2d5fb8]/10';
+const SUBHEAD_CLASS = 'mt-7 mb-2 text-[15px] md:text-[16px] font-semibold tracking-[-0.01em] text-[#13233f]';
 const NOTE_CLASS = 'mt-3 pl-3.5 border-l-2 border-[#2d5fb8]/25 text-[14px] leading-[1.65] text-[#1a2b4a]/85';
 
 const FormattedQueryMessage = ({ content }) => {
@@ -218,7 +219,7 @@ const FormattedQueryMessage = ({ content }) => {
                     return (
                         <div key={i} className={i > 0 ? 'mt-5 pt-5 border-t border-[#2d5fb8]/10' : ''}>
                             {hasName && (
-                                <div className="mb-1.5 text-[15px] md:text-[16px] font-semibold text-[#13233f]">{renderInline(stripBold(g[0].value))}</div>
+                                <div className="mb-1 text-[15px] font-semibold text-[#2d5fb8]">{renderInline(stripBold(g[0].value))}</div>
                             )}
                             {plainRows(hasName ? g.slice(1) : g, hasName)}
                         </div>
@@ -278,7 +279,7 @@ const FormattedQueryMessage = ({ content }) => {
                 const sub = t.text.match(/^\*\*(.*?):?\*\*:?\s*$/);
                 out.push(
                     sub ? (
-                        <h5 key={key++} className="mt-5 mb-1.5 font-semibold text-[#13233f]">
+                        <h5 key={key++} className={SUBHEAD_CLASS}>
                             {renderInline(sub[1])}
                         </h5>
                     ) : (
@@ -297,7 +298,7 @@ const FormattedQueryMessage = ({ content }) => {
                     break;
                 }
                 out.push(
-                    <h5 key={key++} className="mt-5 mb-1.5 font-semibold text-[#13233f]">
+                    <h5 key={key++} className={SUBHEAD_CLASS}>
                         {renderInline(t.text)}
                     </h5>
                 );
@@ -315,7 +316,7 @@ const FormattedQueryMessage = ({ content }) => {
                     );
                 } else if (!t.value.trim()) {
                     out.push(
-                        <h5 key={key++} className="mt-5 mb-1.5 font-semibold text-[#13233f]">
+                        <h5 key={key++} className={SUBHEAD_CLASS}>
                             {renderInline(t.label)}
                         </h5>
                     );
