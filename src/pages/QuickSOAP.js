@@ -27,7 +27,7 @@ import {
 import CaseTarget from '../components/CaseTarget';
 import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
-import { GRADIENT_TEXT } from '../components/caseStyles';
+import { GRADIENT_TEXT, TYPE_STYLES } from '../components/caseStyles';
 
 // PDF Document component for print/export
 const QuickSOAPPDFDocument = ({ reportText, title }) => {
@@ -2403,6 +2403,8 @@ const QuickSOAP = () => {
         };
     };
 
+    const startCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
+
     return (
         <>
             <CaseCreatedOverlay announcement={caseAnnouncement} />
@@ -2780,46 +2782,16 @@ const QuickSOAP = () => {
                             }`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
-                                <div className={`${isMobile ? 'mb-4 mt-2' : dictations.length ? 'mb-8' : 'mb-12'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
+                                <div className={`${isMobile ? 'mb-6 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
                                     {dictations.length === 0 ? (
                                         <>
-                                            <div className="flex items-center justify-center gap-3">
-                                                <h1 className={`${isMobile ? 'text-[2rem]' : 'text-[2.75rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT} mb-1`}>
-                                                    {activeCaseId ? 'Add a note' : 'Start a new case'}
-                                                </h1>
-                                                <div className="relative group mb-2">
-                                                    <button
-                                                        onClick={() => {
-                                                            setShowTutorial(true);
-                                                            setTutorialStep(0);
-                                                        }}
-                                                        className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
-                                                        title="Quick SOAP tutorial"
-                                                    >
-                                                        <FaQuestionCircle className="text-gray-600 text-sm" />
-                                                    </button>
-                                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                        Quick SOAP tutorial
-                                                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                                                    </div>
-                                                </div>
-                                                {!isMobile && (
-                                                    <div className="relative group mb-2">
-                                                        <button
-                                                            onClick={() => setShowQRModal(true)}
-                                                            className="w-6 h-6 rounded-full bg-primary-600 hover:bg-primary-700 flex items-center justify-center transition-all cursor-pointer"
-                                                            title="Mobile App"
-                                                        >
-                                                            <FaMobile className="text-white text-xs" />
-                                                        </button>
-                                                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                            Mobile App
-                                                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-800"></div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className={isMobile ? 'mt-3' : 'mt-4'}>
+                                            <h1 className={`m-0 ${isMobile ? 'text-[2rem]' : 'text-[2.5rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
+                                                {activeCaseId ? 'Add a note' : 'Start a new case'}
+                                            </h1>
+                                            <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
+                                                {activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the note.'}
+                                            </p>
+                                            <div className={isMobile ? 'mt-4' : 'mt-5'}>
                                                 <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
                                             </div>
                                         </>
@@ -2915,9 +2887,14 @@ const QuickSOAP = () => {
 
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
+                                <div
+                                    className={startCard
+                                        ? 'w-full max-w-[400px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)] px-7 pt-9 pb-6 flex flex-col items-center'
+                                        : 'contents'}
+                                >
                                 {/* Mic: front and center before the first dictation, "Add more" after */}
                                 {!isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex flex-col items-center ${isMobile ? 'mb-5 flex-shrink-0' : dictations.length ? 'mb-6' : 'mb-12'}`}>
+                                    <div className={`flex flex-col items-center ${startCard ? '' : isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
                                         <motion.button
                                             type="button"
                                             onClick={startRecording}
@@ -2925,56 +2902,52 @@ const QuickSOAP = () => {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                                            className={`relative ${dictations.length ? (isMobile ? 'w-20 h-20' : 'w-24 h-24') : (isMobile ? 'w-24 h-24' : 'w-28 h-28')} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_18px_40px_-14px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            className={`relative ${dictations.length ? 'w-20 h-20' : 'w-24 h-24'} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_18px_40px_-14px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed`}
                                             style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
                                             title={dictations.length ? 'Add more dictation' : 'Start dictating'}
                                         >
                                             <FiMic className={`relative ${dictations.length ? 'text-3xl' : 'text-4xl'}`} />
                                         </motion.button>
-                                        <p className="mt-3 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
+                                        <p className="mt-4 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
+                                        {startCard && (
+                                            <p className="mt-1 mb-0 text-[13px] text-[#1a2b4a]/50">Talk through the visit. Pause any time.</p>
+                                        )}
                                     </div>
                                 )}
 
                                 {/* Record Type Selector - Show before first dictation */}
                                 {!isRecording && !isTranscribing && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
-                                    <div className="relative mb-6">
-                                        <p className="text-center mb-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Select note type</p>
-                                        <div className="flex justify-center">
-                                            <div className="bg-white border border-[#e7ecf3] rounded-full p-1 inline-flex gap-1 shadow-[0_6px_20px_-14px_rgba(19,35,63,0.3)]">
-                                                <button
-                                                    onClick={() => setRecordType('soap')}
-                                                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'soap'
-                                                        ? 'bg-blue-500 text-white shadow-sm'
-                                                        : 'text-[#1a2b4a]/60 hover:text-[#13233f] hover:bg-[#f6f8fb]'
-                                                        }`}
-                                                >
-                                                    <FaClipboardList className="text-xs" />
-                                                    SOAP
-                                                </button>
-                                                <button
-                                                    onClick={() => setRecordType('summary')}
-                                                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'summary'
-                                                        ? 'bg-emerald-500 text-white shadow-sm'
-                                                        : 'text-[#1a2b4a]/60 hover:text-[#13233f] hover:bg-[#f6f8fb]'
-                                                        }`}
-                                                >
-                                                    <FaFileAlt className="text-xs" />
-                                                    Summary
-                                                </button>
-                                                <button
-                                                    onClick={() => setRecordType('callback')}
-                                                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'callback'
-                                                        ? 'bg-amber-500 text-white shadow-sm'
-                                                        : 'text-[#1a2b4a]/60 hover:text-[#13233f] hover:bg-[#f6f8fb]'
-                                                        }`}
-                                                >
-                                                    <FaPhoneAlt className="text-xs" />
-                                                    Callback
-                                                </button>
-                                            </div>
+                                    <div className={startCard ? 'w-full mt-7 pt-6 border-t border-[#eef2f7]' : 'w-full max-w-[400px] mb-6'}>
+                                        <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Note type</p>
+                                        <div className="flex w-full gap-1 p-1 rounded-full bg-[#f3f6fa]">
+                                            {['soap', 'summary', 'callback'].map((t) => {
+                                                const s = TYPE_STYLES[t];
+                                                const Icon = s.icon;
+                                                const on = recordType === t;
+                                                return (
+                                                    <button
+                                                        key={t}
+                                                        type="button"
+                                                        onClick={() => setRecordType(t)}
+                                                        className={`relative flex-1 h-9 rounded-full text-[13.5px] font-semibold border-none cursor-pointer bg-transparent transition-colors ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                                                    >
+                                                        {on && (
+                                                            <motion.span
+                                                                layoutId="start-note-type"
+                                                                className={`absolute inset-0 rounded-full ${s.solid} shadow-sm`}
+                                                                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                                                            />
+                                                        )}
+                                                        <span className="relative inline-flex items-center justify-center gap-1.5">
+                                                            <Icon className="text-[13px]" /> {s.label}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 )}
+                                </div>
 
                                 {/* Recording */}
                                 {isRecording && (
@@ -3012,16 +2985,16 @@ const QuickSOAP = () => {
 
                                 {/* Additional Notes Section - Show in un-generated view */}
                                 {!hasReport && !isMobile && !isRecording && !isTranscribing && !showStartNotes && !input.trim() && (
-                                    <div className="flex justify-center mb-4">
+                                    <div className={`flex justify-center mb-4 ${startCard ? 'mt-5' : ''}`}>
                                         <button
                                             type="button"
                                             onClick={() => {
                                                 setShowStartNotes(true);
                                                 setTimeout(() => inputTextareaRef.current?.focus(), 50);
                                             }}
-                                            className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[13px] font-semibold text-[#2d5fb8] bg-transparent border border-[#e7ecf3] hover:bg-[#f6f8fb] hover:border-[#2d5fb8]/25 cursor-pointer transition-colors"
+                                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-medium text-[#1a2b4a]/55 hover:text-[#2d5fb8] hover:bg-white bg-transparent border-none cursor-pointer transition-colors"
                                         >
-                                            <FiEdit3 className="text-[13px]" /> Type or paste notes
+                                            <FiEdit3 className="text-[13px]" /> Or type and paste notes instead
                                         </button>
                                     </div>
                                 )}
@@ -3030,7 +3003,7 @@ const QuickSOAP = () => {
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
-                                        className="mb-4 w-full max-w-2xl flex-shrink-0"
+                                        className={`mb-4 w-full max-w-2xl flex-shrink-0 ${startCard ? 'mt-6' : ''}`}
                                     >
                                         <textarea
                                             ref={inputTextareaRef}
@@ -3104,6 +3077,33 @@ const QuickSOAP = () => {
 
                                 {/* Free-tier daily usage: banner only when 1 SOAP left */}
                                 <UpgradeNudge show={showNudge} feature="soap" remaining={soapRemaining} onDismiss={dismissNudge} />
+
+                                {(startCard || (isMobile && dictations.length === 0 && !isRecording && !isTranscribing)) && (
+                                    <div className="flex justify-center items-center gap-1 mt-6 text-[12.5px] text-[#1a2b4a]/40">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowTutorial(true);
+                                                setTutorialStep(0);
+                                            }}
+                                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-transparent border-none cursor-pointer text-inherit hover:text-[#2d5fb8] transition-colors"
+                                        >
+                                            <FaQuestionCircle className="text-[12px]" /> How it works
+                                        </button>
+                                        {!isMobile && (
+                                            <>
+                                                <span aria-hidden>·</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowQRModal(true)}
+                                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-transparent border-none cursor-pointer text-inherit hover:text-[#2d5fb8] transition-colors"
+                                                >
+                                                    <FaMobile className="text-[12px]" /> Dictate from your phone
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
 
                             </div>
                         </div>
