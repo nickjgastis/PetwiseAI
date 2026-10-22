@@ -17,13 +17,13 @@ const CountBadge = ({ count }) => {
     return (
         <motion.span
             key={blink}
-            initial={false}
+            initial={{ backgroundColor: SOFT, color: SOLID, scale: 1 }}
             animate={
                 blink
                     ? { backgroundColor: [SOFT, SOLID, SOFT, SOLID, SOFT], color: [SOLID, '#fff', SOLID, '#fff', SOLID], scale: [1, 1.18, 1, 1.18, 1] }
                     : { backgroundColor: SOFT, color: SOLID, scale: 1 }
             }
-            transition={{ duration: 1.3, ease: 'easeInOut' }}
+            transition={{ duration: 1.3, ease: 'easeInOut', times: [0, 0.2, 0.5, 0.7, 1] }}
             className="min-w-[20px] h-5 px-1.5 rounded-full text-[11px] font-semibold flex items-center justify-center"
         >
             {count}
