@@ -1134,11 +1134,19 @@ app.post('/api/note-previews', async (req, res) => {
     const notes = Array.isArray(req.body?.notes) ? req.body.notes.slice(0, 12) : [];
     if (!notes.length) return res.json({ previews: {} });
 
-    const kinds = { soap: 'SOAP note', quicksoap: 'SOAP note', summary: 'visit summary', callback: 'callback note' };
+    const kinds = { soap: 'SOAP record', quicksoap: 'SOAP record', summary: 'visit summary', callback: 'callback record' };
+    const labels = {
+        soap: ['Findings', 'Assessment', 'Plan'],
+        quicksoap: ['Findings', 'Assessment', 'Plan'],
+        summary: ['Reason', 'Findings', 'Next steps'],
+        callback: ['Update', 'Advice', 'Follow-up']
+    };
+    const clean = (s, max) => String(s || '').replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/\s+/g, ' ').trim().slice(0, max);
     const previews = {};
     await Promise.all(notes.map(async (n) => {
         const text = String(n?.text || '').slice(0, 4000).trim();
         if (!n?.id || !text) return;
+        const allowed = labels[n.type] || labels.soap;
         try {
             const r = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -1148,18 +1156,35 @@ app.post('/api/note-previews', async (req, res) => {
                 },
                 body: JSON.stringify({
                     model: 'gpt-5.4-nano',
+                    response_format: { type: 'json_object' },
                     messages: [{
                         role: 'user',
-                        content: `Write a preview of this veterinary ${kinds[n.type] || 'note'} in at most 2 short sentences. Lead with the main problem, finding or outcome, then the plan. Keep exact drug names and diagnoses. Plain text only, no labels, no headings, no em dashes.\n\n"""${text}"""`
+                        content: [
+                            `Summarize this veterinary ${kinds[n.type] || 'record'} for a small preview card.`,
+                            'Return JSON: {"title": string, "points": [{"label": string, "text": string}]}.',
+                            'title: the main problem or reason for the visit in 2 to 6 words, e.g. "Acute vomiting and diarrhea". No patient name, no date, no record type.',
+                            `points: 2 or 3 items, labels only from ${allowed.map((l) => `"${l}"`).join(', ')}, in that order. Each text at most 10 words. Keep exact diagnoses, drug names and doses. Skip a label if the record has nothing for it.`,
+                            'Plain words, no markdown, no em dashes.',
+                            '',
+                            `"""${text}"""`
+                        ].join('\n')
                     }],
-                    max_tokens: 120,
-                    temperature: 0.3
+                    max_completion_tokens: 1200,
+                    reasoning_effort: 'low'
                 })
             });
-            if (!r.ok) return;
+            if (!r.ok) {
+                console.error('[NotePreviews]', r.status, (await r.text()).slice(0, 300));
+                return;
+            }
             const data = await r.json();
-            const out = (data.choices?.[0]?.message?.content || '').trim().replace(/\s*\u2014\s*/g, ', ');
-            if (out) previews[n.id] = out;
+            const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+            const title = clean(parsed.title, 60);
+            const points = (Array.isArray(parsed.points) ? parsed.points : [])
+                .filter((p) => p && allowed.includes(p.label) && p.text)
+                .slice(0, 3)
+                .map((p) => ({ label: p.label, text: clean(p.text, 110) }));
+            if (title || points.length) previews[n.id] = { title, points };
         } catch (err) {
             console.error('[NotePreviews] failed for', n.id, err.message);
         }
