@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiFolder, FiSearch, FiX, FiChevronRight, FiPlus } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
-import { normalizeType } from '../utils/cases';
+import { normalizeType, pendingCaseIds, caseName } from '../utils/cases';
 import { TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
 
 const dayLabel = (d) => {
@@ -18,6 +18,7 @@ const dayLabel = (d) => {
 const CasePicker = ({ onPick, onClose }) => {
     const [cases, setCases] = useState(null);
     const [types, setTypes] = useState({});
+    const [pending, setPending] = useState(() => new Set());
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -34,7 +35,7 @@ const CasePicker = ({ onPick, onClose }) => {
             if (!ids.length) return;
             const { data: notes } = await supabase
                 .from('saved_reports')
-                .select('case_id, record_type, report_text')
+                .select('case_id, record_type, report_text, form_data')
                 .in('case_id', ids);
             const map = {};
             (notes || []).filter((n) => n.report_text).forEach((n) => {
@@ -42,7 +43,9 @@ const CasePicker = ({ onPick, onClose }) => {
                 map[n.case_id] = map[n.case_id] || new Set();
                 map[n.case_id].add(t);
             });
-            if (alive) setTypes(map);
+            if (!alive) return;
+            setTypes(map);
+            setPending(pendingCaseIds(notes));
         })();
         return () => { alive = false; };
     }, []);
@@ -101,7 +104,7 @@ const CasePicker = ({ onPick, onClose }) => {
                                 className="group w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left bg-transparent border-none cursor-pointer hover:bg-[#f6f8fb] transition-colors"
                             >
                                 <span className="min-w-0 flex-1">
-                                    <span className="block text-[15px] font-medium text-[#13233f] truncate">{c.pet_name || 'Unnamed patient'}</span>
+                                    <span className="block text-[15px] font-medium text-[#13233f] truncate">{caseName(c, pending)}</span>
                                     <span className="block text-[12px] text-[#1a2b4a]/50">{dayLabel(c.updated_at)}</span>
                                 </span>
                                 <span className="flex gap-1">
@@ -134,10 +137,15 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
         }
         if (caseRow?.id === caseId) return undefined;
         supabase.from('cases').select('id, pet_name, created_at').eq('id', caseId).maybeSingle()
-            .then(({ data }) => {
+            .then(async ({ data }) => {
                 if (!alive) return;
-                if (data) setCaseRow(data);
-                else onChangeRef.current(null);
+                if (!data) return onChangeRef.current(null);
+                let pending = false;
+                if (!data.pet_name) {
+                    const { data: notes } = await supabase.from('saved_reports').select('case_id, report_text, form_data').eq('case_id', caseId);
+                    pending = pendingCaseIds(notes).has(caseId);
+                }
+                if (alive) setCaseRow({ ...data, pending });
             });
         return () => { alive = false; };
     }, [caseId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -157,8 +165,8 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
                     >
                         <FiFolder className="ml-1.5 text-[14px] text-[#2d5fb8]" />
                         <span>
-                            Adding to <span className="font-semibold">{caseRow.pet_name || 'Unnamed patient'}</span>
-                            <span className="opacity-50"> · {dayLabel(caseRow.created_at)}</span>
+                            Adding to <span className="font-semibold">{caseRow.pet_name || (caseRow.pending ? 'this case' : 'Unnamed patient')}</span>
+                            <span className="opacity-50"> · {caseRow.pending ? 'Waiting to generate' : dayLabel(caseRow.created_at)}</span>
                         </span>
                         {!disabled && (
                             <>

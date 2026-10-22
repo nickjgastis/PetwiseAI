@@ -53,6 +53,23 @@ export const NOTE_LABELS = { soap: 'SOAP', summary: 'Summary', callback: 'Callba
 
 export const normalizeType = (t) => (!t || t === 'quicksoap' ? 'soap' : t);
 
+export const PENDING_CASE_LABEL = 'Waiting to generate';
+
+// The pet name is only filled in when the desktop generates a record, so a case holding just a
+// phone draft would otherwise read "Unnamed patient". Needs saved_reports rows with case_id, report_text, form_data.
+export const pendingCaseIds = (notes) => {
+    const generated = new Set();
+    const sent = new Set();
+    (notes || []).forEach((n) => {
+        if (n.report_text) generated.add(n.case_id);
+        else if (n.form_data?.sent_to_desktop) sent.add(n.case_id);
+    });
+    return new Set([...sent].filter((id) => !generated.has(id)));
+};
+
+export const caseName = (c, pending, pendingLabel = PENDING_CASE_LABEL) =>
+    c.pet_name || c.title || (pending?.has(c.id) ? pendingLabel : 'Unnamed patient');
+
 export const getActiveCaseId = () => localStorage.getItem(CASE_KEY) || null;
 
 export const setActiveCaseId = (id) => {

@@ -16,7 +16,9 @@ import {
     createCase,
     requestNewCase,
     isUnviewedMobileNote,
-    markMobileNotesViewed
+    markMobileNotesViewed,
+    pendingCaseIds,
+    caseName
 } from '../utils/cases';
 import { CaseCreatedOverlay } from '../components/CaseBar';
 import GeneratingLoader from '../components/GeneratingLoader';
@@ -172,6 +174,7 @@ const CaseList = ({ mobile = false }) => {
     const [cases, setCases] = useState([]);
     const [typesByCase, setTypesByCase] = useState({});
     const [unviewed, setUnviewed] = useState(() => new Set());
+    const [pending, setPending] = useState(() => new Set());
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
@@ -203,6 +206,7 @@ const CaseList = ({ mobile = false }) => {
             });
             setTypesByCase(map);
             setUnviewed(fresh);
+            setPending(pendingCaseIds(notes));
         }
         setLoading(false);
     }, []);
@@ -215,6 +219,12 @@ const CaseList = ({ mobile = false }) => {
         window.addEventListener('newMobileSOAPGenerated', load);
         return () => window.removeEventListener('newMobileSOAPGenerated', load);
     }, [load]);
+
+    useEffect(() => {
+        if (!pending.size) return undefined;
+        const id = setInterval(load, 8000);
+        return () => clearInterval(id);
+    }, [pending, load]);
 
     const groups = useMemo(() => {
         const q = search.trim().toLowerCase();
@@ -288,6 +298,7 @@ const CaseList = ({ mobile = false }) => {
                                     const types = typesByCase[c.id] || {};
                                     const total = Object.values(types).reduce((a, b) => a + b, 0);
                                     const isNew = !mobile && unviewed.has(c.id);
+                                    const isPending = !c.pet_name && !c.title && pending.has(c.id);
                                     return (
                                         <FadeIn key={c.id} delay={Math.min(gi * 3 + i, 10) * 0.03}>
                                         <motion.button
@@ -300,7 +311,7 @@ const CaseList = ({ mobile = false }) => {
                                                 <div className="min-w-0 flex-1">
                                                     <p className="flex items-center gap-2 m-0 text-[16px] font-semibold text-[#13233f]">
                                                         {isNew && <span title="New from your phone" className="shrink-0 w-2.5 h-2.5 rounded-full bg-[#2d5fb8] ring-4 ring-[#2d5fb8]/15" />}
-                                                        <span className="truncate">{c.pet_name || c.title || 'Unnamed patient'}</span>
+                                                        <span className={`truncate ${isPending ? 'text-[#1a2b4a]/45' : ''}`}>{caseName(c, pending, mobile ? 'Waiting to generate' : 'Generating…')}</span>
                                                     </p>
                                                     <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5 truncate">
                                                         {formatDateTime(c.updated_at)}
@@ -313,6 +324,11 @@ const CaseList = ({ mobile = false }) => {
                                             <div className="mt-auto flex items-center gap-1.5 overflow-hidden h-[26px] shrink-0">
                                                 {total > 0 ? (
                                                     ['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)
+                                                ) : pending.has(c.id) ? (
+                                                    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#2d5fb8]/80">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#2d5fb8] animate-pulse" />
+                                                        <span className="truncate">{mobile ? 'Generates when your desktop is open' : 'From your phone'}</span>
+                                                    </span>
                                                 ) : (
                                                     <span className="text-[12.5px] text-[#1a2b4a]/40">No records yet</span>
                                                 )}
@@ -679,6 +695,7 @@ const CaseDetail = ({ caseId }) => {
     const [panelBusy, setPanelBusy] = useState(false);
     const [addType, setAddType] = useState(null);
     const [freshNoteIds, setFreshNoteIds] = useState(() => new Set());
+    const [generating, setGenerating] = useState(false);
     const [announcement, setAnnouncement] = useState(null);
     const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -693,6 +710,7 @@ const CaseDetail = ({ caseId }) => {
         ]);
         setCaseRow(c || null);
         setNotes((n || []).filter((r) => r.report_text));
+        setGenerating(pendingCaseIds(n).has(caseId));
         const fromPhone = (n || []).filter((r) => isUnviewedMobileNote(r)).map((r) => r.id);
         if (fromPhone.length) setFreshNoteIds((prev) => new Set([...prev, ...fromPhone]));
         markMobileNotesViewed(n || []);
@@ -828,7 +846,7 @@ const CaseDetail = ({ caseId }) => {
                                         title="Rename"
                                     >
                                         <h1 className={`text-[1.9rem] sm:text-[2.2rem] leading-[1.15] pb-1 font-bold tracking-[-0.03em] truncate ${GRADIENT_TEXT}`}>
-                                            {caseRow.pet_name || 'Unnamed patient'}
+                                            {caseRow.pet_name || (generating ? 'Generating…' : 'Unnamed patient')}
                                         </h1>
                                         <FiEdit2 className="text-[14px] shrink-0 text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] transition-colors" />
                                     </button>
