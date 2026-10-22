@@ -11,8 +11,9 @@ import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
 import { useNavigate } from 'react-router-dom';
-import { CASE_KEY, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType, setActiveCaseId } from '../utils/cases';
+import { CASE_KEY, NOTE_LABELS, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType, setActiveCaseId } from '../utils/cases';
 import CaseTarget from '../components/CaseTarget';
+import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
 import { GRADIENT_TEXT } from '../components/caseStyles';
 
 // PDF Document component for print/export
@@ -231,6 +232,8 @@ const QuickSOAP = () => {
     const { user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
     const [activeCaseId, setActiveCaseIdState] = useState(() => (typeof window !== 'undefined' ? getActiveCaseId() : null));
+    const [caseAnnouncement, setCaseAnnouncement] = useState(null);
+    const [caseBarKey, setCaseBarKey] = useState(0);
     const selectCase = useCallback((id) => {
         setActiveCaseId(id);
         setActiveCaseIdState(id);
@@ -1582,6 +1585,7 @@ const QuickSOAP = () => {
             const caseId = await ensureCase(petNameToUse);
             setActiveCaseIdState(caseId);
             const reportIdToUse = noteIdForType(loadedReportId || draftRecordId, typeToSave);
+            const bumpCaseBar = () => setCaseBarKey((k) => k + 1);
 
             if (reportIdToUse) {
                 // Update existing report
@@ -1600,6 +1604,7 @@ const QuickSOAP = () => {
                 if (updateError) {
                     console.error('Error auto-saving QuickSOAP record:', updateError);
                 } else {
+                    bumpCaseBar();
                     localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
                     // Clear draft flag since it's now a completed report
                     draftRecordIdRef.current = null;
@@ -1636,6 +1641,7 @@ const QuickSOAP = () => {
                     console.error('Error auto-saving QuickSOAP record:', insertError);
                 } else {
                     // Store the new report ID
+                    bumpCaseBar();
                     localStorage.setItem('currentQuickSOAPReportId', newReport.id);
                     localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
                     // Mark as unopened and trigger notification
@@ -1770,10 +1776,17 @@ const QuickSOAP = () => {
                     const extractedPetName = response.data.petName;
                     setLastUsage(response.data.usage || null);
                     notifyUsageUpdated();
+                    const noteLabel = NOTE_LABELS[normalizeType(recordType)] || 'Note';
+                    const announcement = isAuthenticated ? {
+                        kind: activeCaseId ? 'added' : 'created',
+                        title: `${extractedPetName || noteLabel} · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
+                        typeLabel: noteLabel === 'SOAP' ? 'SOAP' : noteLabel.toLowerCase()
+                    } : null;
+                    setCaseAnnouncement(announcement);
                     // Start transition - fade out loader smoothly
                     setIsTransitioning(true);
 
-                    // Delay before showing report to allow loader fade
+                    // Delay before showing report to allow loader fade (longer when announcing the case)
                     setTimeout(() => {
                         setReport(generatedReport);
                         // Store pet name if extracted
@@ -1808,8 +1821,9 @@ const QuickSOAP = () => {
                         // Fade in sidebar and report after a short delay
                         setTimeout(() => {
                             setIsTransitioning(false);
+                            setCaseAnnouncement(null);
                         }, 100);
-                    }, 300);
+                    }, announcement ? 1700 : 300);
                 } else {
                     throw new Error('No report generated');
                 }
@@ -1822,6 +1836,7 @@ const QuickSOAP = () => {
                 }
                 setIsTransitioning(false);
                 setIsGenerating(false);
+                setCaseAnnouncement(null);
             }
         }
     };
@@ -2302,6 +2317,7 @@ const QuickSOAP = () => {
 
     return (
         <>
+            <CaseCreatedOverlay announcement={caseAnnouncement} />
             <style>{`
                 @keyframes fadeIn {
                     from {
@@ -3450,15 +3466,8 @@ const QuickSOAP = () => {
                                     </div>
                                 </div>
                             )}
-                            {activeCaseId && hasReport && !isGenerating && (
-                                <button
-                                    type="button"
-                                    onClick={leaveToCase}
-                                    className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary-600 hover:text-primary-700 bg-transparent border-none cursor-pointer p-0"
-                                    style={{ fontFamily: "'Inter', sans-serif" }}
-                                >
-                                    <FaArrowLeft className="text-[11px]" /> Back to case
-                                </button>
+                            {activeCaseId && hasReport && (
+                                <CaseBar caseId={activeCaseId} recordType={recordType} onBack={leaveToCase} refreshKey={caseBarKey} />
                             )}
                             {/* Report Title - Editable */}
                             <div className="mb-2">
