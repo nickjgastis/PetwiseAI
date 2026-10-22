@@ -249,7 +249,8 @@ const CaseList = () => {
     );
 };
 
-const NoteBox = ({ note, onOpen, isNew }) => {
+const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
+    const preview = note.form_data?.preview;
     const info = typeStyle(note.record_type || note.form_data?.record_type);
     const Icon = info.icon;
     return (
@@ -259,7 +260,7 @@ const NoteBox = ({ note, onOpen, isNew }) => {
             initial={isNew ? { scale: 0.94 } : false}
             animate={{ scale: 1 }}
             onClick={() => onOpen(note)}
-            className={`group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col h-60 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover} ${isNew ? 'ring-2 ring-[#5cccf0]/50' : ''}`}
+            className={`group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col min-h-[188px] cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover} ${isNew ? 'ring-2 ring-[#5cccf0]/50' : ''}`}
         >
             <div className={`h-1.5 w-full bg-gradient-to-r ${info.bar}`} />
             <div className="p-5 flex flex-col flex-1 min-h-0">
@@ -269,9 +270,25 @@ const NoteBox = ({ note, onOpen, isNew }) => {
                     </span>
                     <span className="text-[12px] text-[#1a2b4a]/45">{formatDateTime(note.created_at)}</span>
                 </div>
-                <p className="text-[13.5px] text-[#1a2b4a]/70 leading-relaxed whitespace-pre-line overflow-hidden flex-1" style={{ maskImage: 'linear-gradient(to bottom, black 65%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent)' }}>
-                    {plain(note.report_text).trim()}
-                </p>
+                <div className="flex-1">
+                    <AnimatePresence mode="wait" initial={false}>
+                        {preview ? (
+                            <motion.p key="preview" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="text-[14.5px] text-[#13233f]/80 leading-relaxed m-0">
+                                {preview}
+                            </motion.p>
+                        ) : previewPending ? (
+                            <motion.div key="loading" exit={{ opacity: 0 }} className="space-y-2 pt-1">
+                                <div className="h-3 rounded-full bg-[#eef2f7] animate-pulse w-full" />
+                                <div className="h-3 rounded-full bg-[#eef2f7] animate-pulse w-11/12" />
+                                <div className="h-3 rounded-full bg-[#eef2f7] animate-pulse w-2/3" />
+                            </motion.div>
+                        ) : (
+                            <motion.p key="raw" className="text-[13.5px] text-[#1a2b4a]/70 leading-relaxed m-0 line-clamp-3">
+                                {plain(note.report_text).trim()}
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
+                </div>
                 <span className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 group-hover:opacity-100 transition-opacity">
                     <FiEdit2 className="text-[11px]" /> Open and edit
                 </span>
@@ -582,6 +599,31 @@ const CaseDetail = ({ caseId }) => {
         return () => window.removeEventListener('newMobileSOAPGenerated', load);
     }, [load]);
 
+    const [pendingPreviews, setPendingPreviews] = useState(() => new Set());
+    const requestedPreviews = useRef(new Set());
+    useEffect(() => {
+        const missing = notes.filter((n) => !n.form_data?.preview && !requestedPreviews.current.has(n.id)).slice(0, 12);
+        if (!missing.length) return;
+        missing.forEach((n) => requestedPreviews.current.add(n.id));
+        const ids = missing.map((n) => n.id);
+        setPendingPreviews((prev) => new Set([...prev, ...ids]));
+        axios.post(`${API_URL}/api/note-previews`, {
+            notes: missing.map((n) => ({ id: n.id, type: n.record_type, text: plain(n.report_text) }))
+        }).then(({ data }) => {
+            const previews = data?.previews || {};
+            setNotes((prev) => prev.map((n) => (previews[n.id] ? { ...n, form_data: { ...(n.form_data || {}), preview: previews[n.id] } } : n)));
+            missing.filter((n) => previews[n.id]).forEach((n) => {
+                supabase.from('saved_reports').update({ form_data: { ...(n.form_data || {}), preview: previews[n.id] } }).eq('id', n.id).then(() => {});
+            });
+        }).catch(() => {}).finally(() => {
+            setPendingPreviews((prev) => {
+                const next = new Set(prev);
+                ids.forEach((id) => next.delete(id));
+                return next;
+            });
+        });
+    }, [notes]);
+
     const saveName = async () => {
         const name = nameDraft.trim();
         setEditingName(false);
@@ -715,7 +757,7 @@ const CaseDetail = ({ caseId }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {notes.map((note, i) => (
                             <FadeIn key={note.id} delay={note.id === newNoteId ? 0 : 0.05 + Math.min(i, 8) * 0.035}>
-                                <NoteBox note={note} onOpen={openInEditor} isNew={note.id === newNoteId} />
+                                <NoteBox note={note} onOpen={openInEditor} isNew={note.id === newNoteId} previewPending={pendingPreviews.has(note.id)} />
                             </FadeIn>
                         ))}
                     </div>
