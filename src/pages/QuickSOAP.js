@@ -3363,13 +3363,13 @@ const QuickSOAP = () => {
                                                 setIsEditingReportName(false);
                                             }
                                         }}
-                                        className="w-full text-[22px] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none pb-1 tracking-tight"
+                                        className="block w-full p-0 pb-1 m-0 text-[22px] leading-[1.3] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none tracking-tight"
                                         style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         autoFocus
                                     />
                                 ) : (
                                     <h2
-                                        className="m-0 text-[22px] font-semibold text-[#13233f] cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-[#2d5fb8]/30 tracking-tight"
+                                        className="m-0 text-[22px] leading-[1.3] font-semibold text-[#13233f] cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-[#2d5fb8]/30 tracking-tight"
                                         style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         onClick={() => setIsEditingReportName(true)}
                                         title="Click to rename"

@@ -77,12 +77,6 @@ const PillButton = ({ onClick, children, disabled, variant = 'primary', classNam
     </button>
 );
 
-const Avatar = ({ name, size = 'md' }) => (
-    <span className={`${size === 'lg' ? 'w-16 h-16 text-2xl' : 'w-11 h-11 text-base'} rounded-full shrink-0 flex items-center justify-center font-semibold text-white bg-gradient-to-br from-[#5b8fe0] to-[#2d5fb8] shadow-[0_8px_20px_-10px_rgba(45,95,184,0.8)]`}>
-        {(name || '?')[0].toUpperCase()}
-    </span>
-);
-
 const TypeChip = ({ type, count }) => {
     const info = typeStyle(type);
     return (
@@ -222,7 +216,6 @@ const CaseList = () => {
                                             className="group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)]"
                                         >
                                             <div className="flex items-center gap-3">
-                                                <Avatar name={c.pet_name} />
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-[16px] font-semibold text-[#13233f] truncate">{c.pet_name || c.title || 'Unnamed patient'}</p>
                                                     <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5">
@@ -676,7 +669,6 @@ const CaseDetail = ({ caseId }) => {
                     <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(92,204,240,0.18) 0%, rgba(92,204,240,0) 70%)' }} />
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                         <div className="flex items-center gap-4 min-w-0">
-                            <Avatar name={caseRow.pet_name} size="lg" />
                             <div className="min-w-0">
                                 {editingName ? (
                                     <input
@@ -689,7 +681,7 @@ const CaseDetail = ({ caseId }) => {
                                         }}
                                         placeholder="Pet name"
                                         autoFocus
-                                        className="text-[1.9rem] font-bold tracking-[-0.03em] text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none w-full max-w-xs"
+                                        className="block p-0 pb-1 m-0 text-[1.9rem] sm:text-[2.2rem] leading-[1.15] font-bold tracking-[-0.03em] text-[#2d5fb8] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none w-full max-w-md"
                                     />
                                 ) : (
                                     <button

@@ -100,9 +100,6 @@ const CasePicker = ({ onPick, onClose }) => {
                                 onClick={() => onPick(c)}
                                 className="group w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left bg-transparent border-none cursor-pointer hover:bg-[#f6f8fb] transition-colors"
                             >
-                                <span className="w-10 h-10 rounded-full bg-[#e9f6fd] text-[#2d5fb8] font-semibold flex items-center justify-center shrink-0">
-                                    {(c.pet_name || '?')[0].toUpperCase()}
-                                </span>
                                 <span className="min-w-0 flex-1">
                                     <span className="block text-[15px] font-medium text-[#13233f] truncate">{c.pet_name || 'Unnamed patient'}</span>
                                     <span className="block text-[12px] text-[#1a2b4a]/50">{dayLabel(c.updated_at)}</span>
@@ -158,9 +155,7 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
                         className={`inline-flex items-center gap-2 rounded-full pl-1.5 pr-1.5 py-1.5 text-[13px] ${base}`}
                     >
-                        <span className="w-6 h-6 rounded-full bg-[#2d5fb8] text-white text-[11px] font-semibold flex items-center justify-center">
-                            {(caseRow.pet_name || '?')[0].toUpperCase()}
-                        </span>
+                        <FiFolder className="ml-1.5 text-[14px] text-[#2d5fb8]" />
                         <span>
                             Adding to <span className="font-semibold">{caseRow.pet_name || 'Unnamed patient'}</span>
                             <span className="opacity-50"> · {dayLabel(caseRow.created_at)}</span>

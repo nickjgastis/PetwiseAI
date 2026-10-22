@@ -52,9 +52,6 @@ export const CaseBar = ({ caseId, recordType, onBack, refreshKey }) => {
                         transition={{ duration: 0.3, ease: EASE }}
                         className="min-w-0 flex-1 flex items-center gap-3 text-left bg-transparent border-none p-0 cursor-pointer"
                     >
-                        <span className="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-semibold text-white bg-gradient-to-br from-[#5b8fe0] to-[#2d5fb8]">
-                            {(info.pet_name || '?')[0].toUpperCase()}
-                        </span>
                         <span className="min-w-0">
                             <span className={`block text-[18px] leading-tight font-bold tracking-tight truncate ${GRADIENT_TEXT}`}>
                                 {info.pet_name || 'Unnamed patient'}
@@ -68,7 +65,6 @@ export const CaseBar = ({ caseId, recordType, onBack, refreshKey }) => {
                     <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-w-0 flex-1 flex items-center gap-3">
                         {caseId ? (
                             <>
-                                <span className="w-10 h-10 rounded-full bg-[#eef2f7] animate-pulse" />
                                 <span className="space-y-1.5">
                                     <span className="block h-3.5 w-32 rounded-full bg-[#eef2f7] animate-pulse" />
                                     <span className="block h-2.5 w-24 rounded-full bg-[#eef2f7] animate-pulse" />
