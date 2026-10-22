@@ -133,6 +133,7 @@ export const GUIDES = {
                 icon: FiMic,
                 title: 'Dictate in the exam room',
                 numbered: [
+                    'Tap New case, or open the patient from Cases to add to their case.',
                     'Pick the record type.',
                     'Tap the mic and say the patient\u2019s name first.',
                     'Tap Done. Add more if you need to.'
@@ -142,11 +143,11 @@ export const GUIDES = {
             {
                 icon: FiSend,
                 title: 'Send it to your desktop',
-                body: 'Tap Send to desktop. Keep PetWise open on your computer and it writes the record for you, filed under the patient\u2019s case.',
+                body: 'Tap Send to desktop. Keep PetWise open on your computer and it writes the record into the case you dictated in.',
                 points: [
                     { title: 'Blue dot', text: 'New phone records are marked in Cases until you open them.' },
-                    { title: 'Next patient', text: 'Tap Start the next case.' },
-                    { title: 'Same patient', text: 'Tap Add another record to this case, e.g. the callback later.' }
+                    { title: 'Next patient', text: 'Tap Start the next case so it does not go into the last one.' },
+                    { title: 'Same patient', text: 'Tap Add another record to this case, or open the patient from Cases first, e.g. for the callback later.' }
                 ]
             },
             {

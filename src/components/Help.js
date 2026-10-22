@@ -94,7 +94,7 @@ const FAQ = [
             },
             {
                 q: 'My phone dictation has not shown up',
-                a: 'Keep PetWise open and logged in on your computer. It writes the record as soon as it sees the dictation, and it lands in Cases with a blue dot.'
+                a: 'Keep PetWise open and logged in on your computer. It writes the record as soon as it sees the dictation and puts it in the case you dictated in on your phone, marked with a blue dot.'
             }
         ]
     },

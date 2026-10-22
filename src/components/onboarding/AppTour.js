@@ -53,7 +53,7 @@ const STEPS = [
         icon: FaMobileAlt,
         iconBg: 'from-[#3468bd] to-[#2a5298]',
         title: () => 'Get PetWise on your phone',
-        body: () => 'Scan this code, log in, and add PetWise to your home screen. Dictate in the exam room and the record lands in the right case here on your desktop.'
+        body: () => 'Scan this code, log in, and add PetWise to your home screen. Open or start a case, dictate in the exam room, and the record shows up in that case here on your desktop.'
     }
 ];
 

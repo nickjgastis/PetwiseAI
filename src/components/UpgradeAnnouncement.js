@@ -84,7 +84,7 @@ const DESKTOP_SLIDES = [
             { icon: FiPlus, title: 'New case', text: 'Start a visit from the top of the sidebar, dictate, and generate.' },
             { icon: FiFolder, title: 'Cases', text: 'Find any patient and see all their records together.' },
             { icon: FiMic, title: 'Record types', text: 'SOAP, Summary and Callback can all live in the same case.' },
-            { icon: FiSmartphone, title: 'Your phone', text: 'Dictations sent from your phone land in the right case on their own.' }
+            { icon: FiSmartphone, title: 'Your phone', text: 'Open a patient’s case on your phone to add to it, or start a new case. Whatever you send goes into that case.' }
         ]
     },
     {
@@ -99,7 +99,7 @@ const MOBILE_SLIDES = [
     {
         eyebrow: 'What’s new',
         title: 'PetWise has been upgraded',
-        body: 'Every patient visit is now a case. Dictate here and it lands in that patient’s case on your desktop.',
+        body: 'Every patient visit is now a case. Start a new case or open an existing one, dictate, and the record goes into that case on your desktop.',
         visual: true
     },
     {
@@ -112,7 +112,7 @@ const MOBILE_SLIDES = [
         title: 'Your patients are here too',
         features: [
             { icon: FiFolder, title: 'Cases tab', text: 'Search and scroll every patient.' },
-            { icon: FiPlus, title: 'Tap a patient', text: 'Dictate another record straight into their case.' }
+            { icon: FiPlus, title: 'Tap a patient', text: 'To add to their case, open it first and dictate from there. Otherwise you start a new case.' }
         ]
     }
 ];
@@ -146,7 +146,7 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
                 {slide.mobileSteps && (
                     <StepBody
                         step={{
-                            numbered: ['Pick the record type.', 'Tap the mic. Start with the patient’s name.', 'Tap Done, then Send to desktop.'],
+                            numbered: ['Tap New case, or open the patient from Cases.', 'Pick the record type.', 'Tap the mic. Start with the patient’s name.', 'Tap Done, then Send to desktop.'],
                             script: NAME_SCRIPT.slice(0, 2)
                         }}
                     />
