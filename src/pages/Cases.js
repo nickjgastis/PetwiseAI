@@ -3,15 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import {
-    FaArrowLeft, FaPlus, FaPen, FaSearch, FaFolderOpen, FaCheck, FaTimes,
-    FaClipboardList, FaFileAlt, FaPhoneAlt, FaCopy, FaExternalLinkAlt
-} from 'react-icons/fa';
+import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiCheck, FiX, FiCopy, FiExternalLink, FiMic, FiChevronRight } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
+import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
 import {
-    NOTE_LABELS,
     normalizeType,
     loadNoteIntoQuickSOAP,
     clearQuickSOAPStorage,
@@ -22,52 +19,75 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-// Same colors as the record-type picker on the New case page.
-const TYPES = {
-    soap: { label: 'SOAP', icon: FaClipboardList, solid: 'bg-blue-500', soft: 'bg-blue-50 text-blue-700', bar: 'bg-blue-500', ring: 'hover:border-blue-300' },
-    summary: { label: 'Summary', icon: FaFileAlt, solid: 'bg-emerald-500', soft: 'bg-emerald-50 text-emerald-700', bar: 'bg-emerald-500', ring: 'hover:border-emerald-300' },
-    callback: { label: 'Callback', icon: FaPhoneAlt, solid: 'bg-amber-500', soft: 'bg-amber-50 text-amber-700', bar: 'bg-amber-500', ring: 'hover:border-amber-300' }
-};
-const typeInfo = (t) => TYPES[normalizeType(t)] || { label: NOTE_LABELS[t] || t, icon: FaFileAlt, solid: 'bg-gray-500', soft: 'bg-gray-50 text-gray-700', bar: 'bg-gray-400', ring: 'hover:border-gray-300' };
 const NAME_LABELS = { soap: 'QuickSOAP', summary: 'Summary', callback: 'Callback' };
-
 const FONT = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
+const EASE = [0.2, 0.7, 0.2, 1];
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const formatTime = (d) => new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 const formatDateTime = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const plain = (text) => (text || '').replace(/[*#_`>]/g, '');
 
-const TypeBadge = ({ type, count }) => {
-    const info = typeInfo(type);
+const dayBucket = (d) => {
+    const date = new Date(d);
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((start - new Date(date.getFullYear(), date.getMonth(), date.getDate())) / 86400000);
+    if (diffDays <= 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return 'This week';
+    return 'Earlier';
+};
+
+// Leaves an in-progress dictation alone; a finished note is already saved to its case.
+const goToNewCase = (navigate, caseId = null) => {
+    if (localStorage.getItem('quickSOAP_report')) {
+        clearQuickSOAPStorage();
+        localStorage.removeItem('quickSOAP_selectedTemplate');
+    }
+    setActiveCaseId(caseId);
+    navigate('/dashboard/quicksoap');
+};
+
+const PillButton = ({ onClick, children, disabled, variant = 'primary', className = '' }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        className={`inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-semibold border cursor-pointer transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${variant === 'primary'
+            ? 'bg-[#2d5fb8] hover:bg-[#2350a3] text-white border-transparent shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] hover:-translate-y-px'
+            : 'bg-white hover:bg-[#f6f8fb] text-[#13233f] border-[#e7ecf3]'
+            } ${className}`}
+    >
+        {children}
+    </button>
+);
+
+const Avatar = ({ name, size = 'md' }) => (
+    <span className={`${size === 'lg' ? 'w-16 h-16 text-2xl' : 'w-11 h-11 text-base'} rounded-full shrink-0 flex items-center justify-center font-semibold text-white bg-gradient-to-br from-[#5b8fe0] to-[#2d5fb8] shadow-[0_8px_20px_-10px_rgba(45,95,184,0.8)]`}>
+        {(name || '?')[0].toUpperCase()}
+    </span>
+);
+
+const TypeChip = ({ type, count }) => {
+    const info = typeStyle(type);
     return (
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${info.soft}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${info.soft}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${info.dot}`} />
             {info.label}
             {count > 1 && <span className="opacity-60">×{count}</span>}
         </span>
     );
 };
 
-// A finished note on the New case page is already saved to its case, so starting fresh is safe.
-// An in-progress dictation that hasn't been generated yet is left alone.
-const goToNewCase = (navigate) => {
-    if (localStorage.getItem('quickSOAP_report')) {
-        clearQuickSOAPStorage();
-        localStorage.removeItem('quickSOAP_selectedTemplate');
-        setActiveCaseId(null);
-    }
-    navigate('/dashboard/quicksoap');
-};
-
-const PrimaryButton = ({ onClick, children, disabled }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        disabled={disabled}
-        className="inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-sm font-semibold border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 2px 8px rgba(51,105,189,0.2)' }}
-    >
-        {children}
-    </button>
+const PageHeader = ({ title, subtitle, action }) => (
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div>
+            <h1 className={`text-[2.1rem] sm:text-[2.6rem] leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>{title}</h1>
+            {subtitle && <p className="text-[15px] sm:text-[16px] text-[#1a2b4a]/60 mt-1">{subtitle}</p>}
+        </div>
+        {action}
+    </div>
 );
 
 const CaseList = () => {
@@ -78,133 +98,167 @@ const CaseList = () => {
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
 
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            const { data, error: caseErr } = await supabase
-                .from('cases')
-                .select('id, pet_name, title, created_at, updated_at')
-                .order('updated_at', { ascending: false });
-            if (!alive) return;
-            if (caseErr) {
-                setError('Could not load cases.');
-                setLoading(false);
-                return;
-            }
-            setCases(data || []);
-            const ids = (data || []).map((c) => c.id);
-            if (ids.length) {
-                const { data: notes } = await supabase
-                    .from('saved_reports')
-                    .select('id, case_id, record_type, report_text')
-                    .in('case_id', ids);
-                const map = {};
-                (notes || []).filter((n) => n.report_text).forEach((n) => {
-                    const t = normalizeType(n.record_type);
-                    map[n.case_id] = map[n.case_id] || {};
-                    map[n.case_id][t] = (map[n.case_id][t] || 0) + 1;
-                });
-                if (alive) setTypesByCase(map);
-            }
-            if (alive) setLoading(false);
-        })();
-        return () => { alive = false; };
+    const load = useCallback(async () => {
+        const { data, error: caseErr } = await supabase
+            .from('cases')
+            .select('id, pet_name, title, created_at, updated_at')
+            .order('updated_at', { ascending: false });
+        if (caseErr) {
+            setError('Could not load cases.');
+            setLoading(false);
+            return;
+        }
+        setCases(data || []);
+        const ids = (data || []).map((c) => c.id);
+        if (ids.length) {
+            const { data: notes } = await supabase
+                .from('saved_reports')
+                .select('id, case_id, record_type, report_text')
+                .in('case_id', ids);
+            const map = {};
+            (notes || []).filter((n) => n.report_text).forEach((n) => {
+                const t = normalizeType(n.record_type);
+                map[n.case_id] = map[n.case_id] || {};
+                map[n.case_id][t] = (map[n.case_id][t] || 0) + 1;
+            });
+            setTypesByCase(map);
+        }
+        setLoading(false);
     }, []);
 
-    const filtered = useMemo(() => {
+    useEffect(() => {
+        load();
+        localStorage.removeItem('hasNewMobileSOAP');
+        localStorage.removeItem('mobileSOAPCount');
+        window.dispatchEvent(new CustomEvent('clearMobileSOAPNotification'));
+        window.addEventListener('newMobileSOAPGenerated', load);
+        return () => window.removeEventListener('newMobileSOAPGenerated', load);
+    }, [load]);
+
+    const groups = useMemo(() => {
         const q = search.trim().toLowerCase();
-        return q ? cases.filter((c) => (c.pet_name || c.title || '').toLowerCase().includes(q)) : cases;
+        const list = q ? cases.filter((c) => (c.pet_name || c.title || '').toLowerCase().includes(q)) : cases;
+        const out = [];
+        list.forEach((c) => {
+            const label = dayBucket(c.updated_at);
+            const g = out.find((x) => x.label === label);
+            if (g) g.items.push(c);
+            else out.push({ label, items: [c] });
+        });
+        return out;
     }, [cases, search]);
 
     return (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8" style={FONT}>
-            <div className="flex items-center justify-between gap-3 mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Cases</h1>
-                    <p className="text-[13px] text-gray-500 mt-0.5">Every note you generate is filed under its case.</p>
-                </div>
-                <PrimaryButton onClick={() => goToNewCase(navigate)}>
-                    <FaPlus className="text-xs" /> New case
-                </PrimaryButton>
+        <div className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white" style={FONT}>
+            <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-8 sm:pt-12 pb-16">
+                <PageHeader
+                    title="Cases"
+                    subtitle="Every patient’s SOAPs, summaries and callbacks, kept together."
+                    action={(
+                        <PillButton onClick={() => goToNewCase(navigate)}>
+                            <FiPlus /> New case
+                        </PillButton>
+                    )}
+                />
+
+                {cases.length > 0 && (
+                    <div className="relative mb-8 max-w-md">
+                        <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1a2b4a]/40" />
+                        <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Find a patient"
+                            className="w-full pl-11 pr-4 py-3 bg-white border border-[#e7ecf3] rounded-full text-[15px] shadow-[0_6px_20px_-14px_rgba(19,35,63,0.25)] focus:outline-none focus:border-[#2d5fb8]/30 transition-colors"
+                        />
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[0, 1, 2].map((i) => <div key={i} className="h-[132px] rounded-[24px] bg-white border border-[#e7ecf3] animate-pulse" />)}
+                    </div>
+                ) : error ? (
+                    <p className="text-sm text-red-500 py-12 text-center">{error}</p>
+                ) : cases.length === 0 ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}
+                        className="rounded-[28px] border border-[#e7ecf3] bg-white py-16 px-6 text-center"
+                    >
+                        <span className="mx-auto w-14 h-14 rounded-2xl bg-[#e9f6fd] text-[#3468bd] flex items-center justify-center text-2xl mb-4"><FiFolder /></span>
+                        <p className="text-lg font-semibold text-[#13233f]">No cases yet</p>
+                        <p className="text-[14px] text-[#1a2b4a]/60 mt-1 mb-6">Record your first visit and it will show up here.</p>
+                        <PillButton onClick={() => goToNewCase(navigate)}><FiPlus /> Start a new case</PillButton>
+                    </motion.div>
+                ) : groups.length === 0 ? (
+                    <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No patients match “{search}”.</p>
+                ) : (
+                    groups.map((g, gi) => (
+                        <section key={g.label} className="mb-10">
+                            <h2 className="text-[14px] font-semibold text-[#1a2b4a]/50 mb-3 ml-1">{g.label}</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {g.items.map((c, i) => {
+                                    const types = typesByCase[c.id] || {};
+                                    const total = Object.values(types).reduce((a, b) => a + b, 0);
+                                    return (
+                                        <motion.button
+                                            key={c.id}
+                                            type="button"
+                                            initial={{ opacity: 0, y: 14 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.45, ease: EASE, delay: Math.min(gi * 3 + i, 12) * 0.035 }}
+                                            onClick={() => navigate(`/dashboard/cases/${c.id}`)}
+                                            className="group text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)]"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Avatar name={c.pet_name} />
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-[16px] font-semibold text-[#13233f] truncate">{c.pet_name || c.title || 'Unnamed patient'}</p>
+                                                    <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5">
+                                                        {g.label === 'Today' || g.label === 'Yesterday' ? formatTime(c.updated_at) : formatDate(c.updated_at)}
+                                                        {total > 0 && ` · ${total} ${total === 1 ? 'note' : 'notes'}`}
+                                                    </p>
+                                                </div>
+                                                <FiChevronRight className="text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] group-hover:translate-x-0.5 transition-all" />
+                                            </div>
+                                            {total > 0 && (
+                                                <div className="flex flex-wrap gap-1.5 mt-4">
+                                                    {['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)}
+                                                </div>
+                                            )}
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+                        </section>
+                    ))
+                )}
             </div>
-
-            {cases.length > 0 && (
-                <div className="relative mb-4">
-                    <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs" />
-                    <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by pet name"
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                    />
-                </div>
-            )}
-
-            {loading ? (
-                <p className="text-sm text-gray-400 py-12 text-center">Loading cases…</p>
-            ) : error ? (
-                <p className="text-sm text-red-500 py-12 text-center">{error}</p>
-            ) : cases.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-16 text-center">
-                    <FaFolderOpen className="mx-auto text-3xl text-gray-300 mb-3" />
-                    <p className="text-gray-700 font-semibold">No cases yet</p>
-                    <p className="text-[13px] text-gray-500 mt-1 mb-5">Generate a SOAP, summary or callback and it will show up here.</p>
-                    <PrimaryButton onClick={() => goToNewCase(navigate)}>
-                        <FaPlus className="text-xs" /> New case
-                    </PrimaryButton>
-                </div>
-            ) : (
-                <div className="rounded-2xl border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
-                    {filtered.map((c) => {
-                        const types = typesByCase[c.id] || {};
-                        return (
-                            <button
-                                key={c.id}
-                                type="button"
-                                onClick={() => navigate(`/dashboard/cases/${c.id}`)}
-                                className="w-full text-left px-5 py-4 flex items-center gap-4 bg-white hover:bg-blue-50/40 border-none cursor-pointer transition-colors"
-                            >
-                                <div className="w-10 h-10 rounded-full bg-primary-50 text-primary-700 flex items-center justify-center font-bold shrink-0">
-                                    {(c.pet_name || '?')[0].toUpperCase()}
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="font-semibold text-gray-900 truncate">{c.pet_name || c.title || 'Unnamed patient'}</p>
-                                    <p className="text-[12px] text-gray-400 mt-0.5">{formatDate(c.created_at)}</p>
-                                </div>
-                                <div className="flex flex-wrap justify-end gap-1.5">
-                                    {['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeBadge key={t} type={t} count={types[t]} />)}
-                                </div>
-                            </button>
-                        );
-                    })}
-                    {filtered.length === 0 && <p className="text-sm text-gray-400 py-10 text-center">No cases match.</p>}
-                </div>
-            )}
         </div>
     );
 };
 
 const NoteBox = ({ note, onOpen, isNew }) => {
-    const info = typeInfo(note.record_type || note.form_data?.record_type);
+    const info = typeStyle(note.record_type || note.form_data?.record_type);
     const Icon = info.icon;
     return (
         <motion.button
             type="button"
             layout
-            initial={isNew ? { opacity: 0, scale: 0.96 } : false}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={isNew ? { opacity: 0, scale: 0.94, y: 10 } : { opacity: 0, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: EASE }}
             onClick={() => onOpen(note)}
-            className={`text-left rounded-2xl border border-gray-200 bg-white overflow-hidden flex flex-col h-56 cursor-pointer transition-all hover:shadow-md ${info.ring}`}
+            className={`group text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col h-60 cursor-pointer transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover}`}
         >
-            <div className={`h-1.5 w-full ${info.bar}`} />
-            <div className="p-4 flex flex-col flex-1 min-h-0">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[12px] font-semibold ${info.soft}`}>
-                        <Icon className="text-[10px]" /> {info.label}
+            <div className={`h-1.5 w-full bg-gradient-to-r ${info.bar}`} />
+            <div className="p-5 flex flex-col flex-1 min-h-0">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold ${info.soft}`}>
+                        <Icon className="text-[11px]" /> {info.label}
                     </span>
-                    <span className="text-[11px] text-gray-400">{formatDateTime(note.created_at)}</span>
+                    <span className="text-[12px] text-[#1a2b4a]/45">{formatDateTime(note.created_at)}</span>
                 </div>
-                <p className="text-[13px] text-gray-600 leading-relaxed whitespace-pre-line overflow-hidden flex-1" style={{ maskImage: 'linear-gradient(to bottom, black 70%, transparent)' }}>
+                <p className="text-[13.5px] text-[#1a2b4a]/70 leading-relaxed whitespace-pre-line overflow-hidden flex-1" style={{ maskImage: 'linear-gradient(to bottom, black 65%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent)' }}>
                     {plain(note.report_text).trim()}
                 </p>
             </div>
@@ -214,9 +268,15 @@ const NoteBox = ({ note, onOpen, isNew }) => {
 
 const NoteViewer = ({ note, onClose, onOpenInEditor }) => {
     const [copied, setCopied] = useState(false);
-    const info = typeInfo(note.record_type || note.form_data?.record_type);
+    const info = typeStyle(note.record_type || note.form_data?.record_type);
     const Icon = info.icon;
     const text = plain(note.report_text).trim();
+
+    useEffect(() => {
+        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [onClose]);
 
     const copy = () => {
         navigator.clipboard.writeText(text);
@@ -226,33 +286,41 @@ const NoteViewer = ({ note, onClose, onOpenInEditor }) => {
 
     return (
         <>
-            <motion.div className="fixed inset-0 bg-black/30 z-40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
             <motion.div
-                className="fixed inset-x-4 top-[6vh] bottom-[6vh] sm:inset-x-auto sm:left-1/2 sm:w-[720px] sm:-ml-[360px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden"
+                className="fixed inset-0 bg-[#13233f]/30 backdrop-blur-[3px] z-[60]"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={onClose}
+            />
+            <motion.div
+                className="fixed inset-x-3 top-[5vh] bottom-[5vh] sm:inset-x-auto sm:left-1/2 sm:w-[740px] sm:-ml-[370px] bg-white rounded-[28px] shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)] z-[61] flex flex-col overflow-hidden"
                 style={FONT}
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 16 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 36 }}
+                initial={{ opacity: 0, y: 28, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 28, scale: 0.98 }}
+                transition={{ type: 'spring', stiffness: 360, damping: 34 }}
             >
-                <div className={`h-1.5 w-full ${info.bar}`} />
-                <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                <div className={`h-1.5 w-full bg-gradient-to-r ${info.bar}`} />
+                <div className="px-6 py-5 border-b border-[#eef2f7] flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                        <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[12px] font-semibold ${info.soft}`}>
-                            <Icon className="text-[10px]" /> {info.label}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold ${info.soft}`}>
+                            <Icon className="text-[11px]" /> {info.label}
                         </span>
-                        <p className="text-[13px] font-semibold text-gray-900 mt-1.5 truncate">{note.report_name}</p>
+                        <p className="text-[14px] font-semibold text-[#13233f] mt-2 truncate">{note.report_name}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                        <button type="button" onClick={copy} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 border-none cursor-pointer">
-                            {copied ? <FaCheck className="text-[10px] text-emerald-500" /> : <FaCopy className="text-[10px]" />} {copied ? 'Copied' : 'Copy'}
+                    <div className="flex items-center gap-2 shrink-0">
+                        <PillButton variant="secondary" onClick={copy} className="!px-4 !py-2 !text-[13px]">
+                            {copied ? <FiCheck className="text-emerald-500" /> : <FiCopy />} {copied ? 'Copied' : 'Copy'}
+                        </PillButton>
+                        <PillButton variant="secondary" onClick={() => onOpenInEditor(note)} className="!px-4 !py-2 !text-[13px]">
+                            <FiExternalLink /> Edit
+                        </PillButton>
+                        <button type="button" onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
+                            <FiX />
                         </button>
-                        <button type="button" onClick={() => onOpenInEditor(note)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 border-none cursor-pointer">
-                            <FaExternalLinkAlt className="text-[10px]" /> Edit
-                        </button>
-                        <button type="button" onClick={onClose} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 border-none bg-transparent cursor-pointer"><FaTimes /></button>
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto px-6 py-5">
-                    <p className="text-[14px] text-gray-800 leading-relaxed whitespace-pre-wrap">{text}</p>
+                <div className="flex-1 overflow-y-auto px-7 py-6">
+                    <p className="text-[15px] text-[#1a2b4a]/85 leading-relaxed whitespace-pre-wrap">{text}</p>
                 </div>
             </motion.div>
         </>
@@ -271,7 +339,7 @@ const visitInput = (notes) => {
     return '';
 };
 
-const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit }) => {
+const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }) => {
     const { user } = useAuth0();
     const usage = useUsage();
     const [type, setType] = useState(() => (notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap'));
@@ -283,7 +351,7 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit }) => {
     const generate = async () => {
         const input = [baseInput, extra.trim()].filter(Boolean).join('\n\n');
         if (!input) {
-            setError('This case has no dictation to work from. Add some notes below.');
+            setError('There’s nothing to write from yet. Add a few details below, or record into this case.');
             return;
         }
         if (!usage.isUnlimited && usage.soap.remaining <= 0) {
@@ -327,15 +395,13 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit }) => {
                 .select()
                 .single();
             if (saveError || !saved) throw new Error('Could not save the note');
-            if (!caseRow.pet_name && res.data.petName) {
-                await supabase.from('cases').update({ pet_name: res.data.petName }).eq('id', caseRow.id);
-            }
+            await supabase.from('cases').update({ pet_name: petName }).eq('id', caseRow.id);
             onCreated(saved, res.data.petName);
         } catch (err) {
             if (err.response?.status === 403 && err.response?.data?.error === 'USAGE_LIMIT_REACHED') {
                 onLimit();
             } else {
-                setError(err.response?.data?.error || err.message || 'Generation failed. Please try again.');
+                setError(err.response?.data?.error || err.message || 'Something went wrong. Please try again.');
             }
         } finally {
             setGenerating(false);
@@ -344,55 +410,81 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit }) => {
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-            className="rounded-2xl border border-gray-200 bg-white p-5 mb-6"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: EASE }}
+            className="overflow-hidden"
         >
-            <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-bold text-gray-900">Add a note to this case</p>
-                {!generating && (
-                    <button type="button" onClick={onCancel} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 border-none bg-transparent cursor-pointer"><FaTimes /></button>
-                )}
-            </div>
-
-            <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1 mb-4">
-                {Object.entries(TYPES).map(([key, info]) => {
-                    const Icon = info.icon;
-                    return (
-                        <button
-                            key={key}
-                            type="button"
-                            disabled={generating}
-                            onClick={() => setType(key)}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 border-none cursor-pointer ${type === key ? `${info.solid} text-white shadow-sm` : 'bg-transparent text-gray-600 hover:text-gray-800 hover:bg-gray-200'}`}
-                        >
-                            <Icon className="text-xs" /> {info.label}
+            <div className="rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-7 mb-8 shadow-[0_24px_48px_-32px_rgba(19,35,63,0.3)]">
+                <div className="flex items-start justify-between gap-3 mb-5">
+                    <div>
+                        <p className={`text-[1.35rem] font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT}`}>Add a note</p>
+                        <p className="text-[14px] text-[#1a2b4a]/60">
+                            {baseInput ? 'We’ll write it from this visit’s dictation.' : 'Type a few details and we’ll write it up.'}
+                        </p>
+                    </div>
+                    {!generating && (
+                        <button type="button" onClick={onCancel} className="w-9 h-9 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
+                            <FiX />
                         </button>
-                    );
-                })}
-            </div>
-
-            <p className="text-[12px] text-gray-500 mb-2">
-                {baseInput ? 'Uses this visit\'s dictation. Add anything else for this note (optional):' : 'No dictation saved on this case. Type the details for this note:'}
-            </p>
-            <textarea
-                value={extra}
-                onChange={(e) => setExtra(e.target.value)}
-                disabled={generating}
-                rows={3}
-                placeholder={type === 'callback' ? 'e.g. Owner reports eating well, recheck in 2 weeks' : 'Extra findings or instructions'}
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/20 resize-y"
-            />
-
-            {error && <p className="text-[13px] text-red-500 mt-2">{error}</p>}
-
-            <div className="flex justify-end mt-4">
-                <PrimaryButton onClick={generate} disabled={generating}>
-                    {generating ? (
-                        <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Generating {typeInfo(type).label}…</>
-                    ) : (
-                        <>Generate {typeInfo(type).label}</>
                     )}
-                </PrimaryButton>
+                </div>
+
+                <div className="bg-[#f6f8fb] rounded-full p-1 inline-flex gap-1 mb-5">
+                    {Object.entries(TYPE_STYLES).map(([key, info]) => {
+                        const Icon = info.icon;
+                        return (
+                            <button
+                                key={key}
+                                type="button"
+                                disabled={generating}
+                                onClick={() => setType(key)}
+                                className={`relative px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap flex items-center gap-1.5 border-none cursor-pointer bg-transparent transition-colors ${type === key ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                            >
+                                {type === key && (
+                                    <motion.span layoutId="addnote-type" className={`absolute inset-0 rounded-full ${info.solid} shadow-sm`} transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
+                                )}
+                                <span className="relative flex items-center gap-1.5"><Icon className="text-xs" /> {info.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <textarea
+                    value={extra}
+                    onChange={(e) => setExtra(e.target.value)}
+                    disabled={generating}
+                    rows={3}
+                    placeholder={type === 'callback' ? 'Anything to add? e.g. owner says she’s eating well, recheck in 2 weeks' : 'Anything to add? (optional)'}
+                    className="w-full px-4 py-3 bg-[#f6f8fb] border border-transparent rounded-2xl text-[15px] focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors resize-y"
+                />
+
+                <AnimatePresence>
+                    {error && (
+                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-[13px] text-red-500 mt-2">
+                            {error}
+                        </motion.p>
+                    )}
+                </AnimatePresence>
+
+                <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 mt-5">
+                    <button
+                        type="button"
+                        onClick={onRecord}
+                        disabled={generating}
+                        className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#2d5fb8] hover:text-[#2350a3] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
+                    >
+                        <FiMic /> Record something new instead
+                    </button>
+                    <PillButton onClick={generate} disabled={generating}>
+                        {generating ? (
+                            <><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Writing {typeStyle(type).label}…</>
+                        ) : (
+                            <>Create {typeStyle(type).label}</>
+                        )}
+                    </PillButton>
+                </div>
             </div>
         </motion.div>
     );
@@ -426,7 +518,11 @@ const CaseDetail = ({ caseId }) => {
         setLoading(false);
     }, [caseId]);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => {
+        load();
+        window.addEventListener('newMobileSOAPGenerated', load);
+        return () => window.removeEventListener('newMobileSOAPGenerated', load);
+    }, [load]);
 
     const saveName = async () => {
         const name = nameDraft.trim();
@@ -449,92 +545,126 @@ const CaseDetail = ({ caseId }) => {
         setOpenNote(saved);
     };
 
-    if (loading) return <p className="text-sm text-gray-400 py-16 text-center" style={FONT}>Loading case…</p>;
+    const counts = notes.reduce((acc, n) => {
+        const t = normalizeType(n.record_type);
+        acc[t] = (acc[t] || 0) + 1;
+        return acc;
+    }, {});
+
+    if (loading) {
+        return (
+            <div className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white" style={FONT}>
+                <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-12">
+                    <div className="h-36 rounded-[28px] bg-white border border-[#e7ecf3] animate-pulse" />
+                </div>
+            </div>
+        );
+    }
 
     if (!caseRow) {
         return (
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-16 text-center" style={FONT}>
-                <p className="text-gray-700 font-semibold">Case not found</p>
-                <button type="button" onClick={() => navigate('/dashboard/cases')} className="mt-3 text-primary-600 text-sm font-semibold bg-transparent border-none cursor-pointer">
-                    Back to cases
-                </button>
+            <div className="max-w-5xl mx-auto px-4 sm:px-8 py-20 text-center" style={FONT}>
+                <p className="text-lg font-semibold text-[#13233f]">We couldn’t find that case</p>
+                <PillButton variant="secondary" className="mt-5" onClick={() => navigate('/dashboard/cases')}>
+                    <FiArrowLeft /> Back to cases
+                </PillButton>
             </div>
         );
     }
 
     return (
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8" style={FONT}>
-            <button
-                type="button"
-                onClick={() => navigate('/dashboard/cases')}
-                className="mb-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-gray-500 hover:text-gray-800 bg-transparent border-none cursor-pointer p-0"
-            >
-                <FaArrowLeft className="text-[11px]" /> All cases
-            </button>
+        <div className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white" style={FONT}>
+            <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10 pb-16">
+                <button
+                    type="button"
+                    onClick={() => navigate('/dashboard/cases')}
+                    className="group mb-5 inline-flex items-center gap-1.5 text-[14px] font-medium text-[#1a2b4a]/55 hover:text-[#2d5fb8] bg-transparent border-none cursor-pointer p-0 transition-colors"
+                >
+                    <FiArrowLeft className="group-hover:-translate-x-0.5 transition-transform" /> All cases
+                </button>
 
-            <div className="flex items-start justify-between gap-4 mb-6">
-                <div className="min-w-0">
-                    {editingName ? (
-                        <div className="flex items-center gap-2">
-                            <input
-                                value={nameDraft}
-                                onChange={(e) => setNameDraft(e.target.value)}
-                                onBlur={saveName}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') saveName();
-                                    if (e.key === 'Escape') setEditingName(false);
-                                }}
-                                placeholder="Pet name"
-                                autoFocus
-                                className="text-2xl font-bold text-gray-900 tracking-tight bg-transparent border-b-2 border-primary-400 focus:outline-none"
-                            />
-                            <FaCheck className="text-primary-500" />
+                <motion.div
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}
+                    className="relative overflow-hidden rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-8 mb-8"
+                >
+                    <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(92,204,240,0.18) 0%, rgba(92,204,240,0) 70%)' }} />
+                    <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+                        <div className="flex items-center gap-4 min-w-0">
+                            <Avatar name={caseRow.pet_name} size="lg" />
+                            <div className="min-w-0">
+                                {editingName ? (
+                                    <input
+                                        value={nameDraft}
+                                        onChange={(e) => setNameDraft(e.target.value)}
+                                        onBlur={saveName}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') saveName();
+                                            if (e.key === 'Escape') setEditingName(false);
+                                        }}
+                                        placeholder="Pet name"
+                                        autoFocus
+                                        className="text-[1.9rem] font-bold tracking-[-0.03em] text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none w-full max-w-xs"
+                                    />
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => { setNameDraft(caseRow.pet_name || ''); setEditingName(true); }}
+                                        className="group inline-flex items-center gap-2 bg-transparent border-none cursor-pointer p-0 text-left"
+                                        title="Rename"
+                                    >
+                                        <h1 className={`text-[1.9rem] sm:text-[2.2rem] leading-[1.15] pb-1 font-bold tracking-[-0.03em] truncate ${GRADIENT_TEXT}`}>
+                                            {caseRow.pet_name || 'Unnamed patient'}
+                                        </h1>
+                                        <FiEdit2 className="text-[14px] text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] transition-colors" />
+                                    </button>
+                                )}
+                                <p className="text-[14px] text-[#1a2b4a]/55">
+                                    Started {formatDate(caseRow.created_at)} · {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+                                </p>
+                                {notes.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mt-2.5">
+                                        {['soap', 'summary', 'callback'].filter((t) => counts[t]).map((t) => <TypeChip key={t} type={t} count={counts[t]} />)}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => { setNameDraft(caseRow.pet_name || ''); setEditingName(true); }}
-                            className="group inline-flex items-center gap-2 bg-transparent border-none cursor-pointer p-0 text-left"
-                            title="Edit pet name"
-                        >
-                            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{caseRow.pet_name || 'Unnamed patient'}</h1>
-                            <FaPen className="text-xs text-gray-300 group-hover:text-primary-500" />
-                        </button>
+                        <div className="flex flex-wrap gap-2 shrink-0">
+                            <PillButton variant="secondary" onClick={() => goToNewCase(navigate, caseRow.id)}>
+                                <FiMic /> Record
+                            </PillButton>
+                            <PillButton onClick={() => setAdding((v) => !v)}>
+                                <motion.span animate={{ rotate: adding ? 45 : 0 }} transition={{ duration: 0.25 }} className="flex"><FiPlus /></motion.span>
+                                {adding ? 'Close' : 'Add a note'}
+                            </PillButton>
+                        </div>
+                    </div>
+                </motion.div>
+
+                <AnimatePresence initial={false}>
+                    {adding && (
+                        <AddNotePanel
+                            caseRow={caseRow}
+                            notes={notes}
+                            onCreated={onCreated}
+                            onCancel={() => setAdding(false)}
+                            onLimit={() => setShowUpgrade(true)}
+                            onRecord={() => goToNewCase(navigate, caseRow.id)}
+                        />
                     )}
-                    <p className="text-[13px] text-gray-500 mt-1">
-                        {formatDate(caseRow.created_at)} · {notes.length} {notes.length === 1 ? 'note' : 'notes'}
-                    </p>
-                </div>
-                {!adding && (
-                    <PrimaryButton onClick={() => setAdding(true)}>
-                        <FaPlus className="text-xs" /> Add note
-                    </PrimaryButton>
+                </AnimatePresence>
+
+                {notes.length === 0 ? (
+                    <div className="rounded-[28px] border border-dashed border-[#d6e3f7] bg-white/60 py-14 text-center">
+                        <p className="text-[15px] text-[#1a2b4a]/60">No notes in this case yet.</p>
+                    </div>
+                ) : (
+                    <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {notes.map((note) => (
+                            <NoteBox key={note.id} note={note} onOpen={setOpenNote} isNew={note.id === newNoteId} />
+                        ))}
+                    </motion.div>
                 )}
             </div>
-
-            <AnimatePresence>
-                {adding && (
-                    <AddNotePanel
-                        caseRow={caseRow}
-                        notes={notes}
-                        onCreated={onCreated}
-                        onCancel={() => setAdding(false)}
-                        onLimit={() => setShowUpgrade(true)}
-                    />
-                )}
-            </AnimatePresence>
-
-            {notes.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-gray-200 bg-white py-14 text-center">
-                    <p className="text-gray-600 font-medium">No notes in this case yet.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {notes.map((note) => (
-                        <NoteBox key={note.id} note={note} onOpen={setOpenNote} isNew={note.id === newNoteId} />
-                    ))}
-                </div>
-            )}
 
             <AnimatePresence>
                 {openNote && <NoteViewer note={openNote} onClose={() => setOpenNote(null)} onOpenInEditor={openInEditor} />}
@@ -553,9 +683,23 @@ const CaseDetail = ({ caseId }) => {
     );
 };
 
-const Cases = () => {
-    const { caseId } = useParams();
-    return caseId ? <CaseDetail caseId={caseId} /> : <CaseList />;
+const Cases = ({ caseId: caseIdProp }) => {
+    const params = useParams();
+    const caseId = params.caseId || caseIdProp;
+    return (
+        <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+                key={caseId || 'list'}
+                className="min-h-full"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: EASE }}
+            >
+                {caseId ? <CaseDetail caseId={caseId} /> : <CaseList />}
+            </motion.div>
+        </AnimatePresence>
+    );
 };
 
 export default Cases;
