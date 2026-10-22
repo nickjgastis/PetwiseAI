@@ -24,7 +24,7 @@ import {
 
 const STEPS = [
     { title: 'Dictate on the go', body: 'Between consults, walking out of treatment, or right after a case. Your phone is the microphone.' },
-    { title: 'It syncs instantly', body: 'Every dictation lands in your PetWise dashboard on the desktop, already organized by patient.' },
+    { title: 'It syncs instantly', body: 'Every dictation lands in the patient’s case, ready on your desktop when you sit down.' },
     { title: 'Finish at your desk', body: 'Review the generated SOAP, polish anything you want, and paste it into your PIMS.' }
 ];
 
@@ -52,7 +52,7 @@ const FAQS = [
     },
     {
         q: 'Can I dictate several patients and finish later?',
-        a: 'Yes. Each dictation is saved and synced, so you can record through a busy block and review everything when you sit down.'
+        a: 'Yes. Each dictation is saved to its case and synced, so you can record through a busy block and review everything when you sit down.'
     },
     {
         q: 'How do I get PetWise on my phone?',
@@ -103,7 +103,7 @@ const Dictation = () => (
             <Reveal className="mt-16 sm:mt-20">
                 <RoundedPhoto
                     src="/site/quicksoap-phone-laptop.jpg"
-                    alt="QuickSOAP on a phone with the synced SOAP note open on a laptop"
+                    alt="PetWise on a phone with the synced SOAP note open on a laptop"
                     aspect="aspect-[16/10] sm:aspect-[21/9]"
                     className="object-[center_40%]"
                 />

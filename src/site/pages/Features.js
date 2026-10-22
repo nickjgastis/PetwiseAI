@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-    FiArchive,
     FiClipboard,
     FiDownload,
     FiFileText,
+    FiFolder,
     FiLayers,
     FiMessageCircle,
     FiMic,
@@ -18,7 +18,7 @@ import { Seo, softwareLd } from '../seo';
 import { Container, CtaBand, FeatureGrid, ImageBand, Highlight, Section, SectionHeading, SplitFeature } from '../ui';
 
 const DOCUMENTATION = [
-    { icon: FiClipboard, title: 'QuickSOAP', body: 'AI SOAP notes from the appointment or your dictation.', to: '/' },
+    { icon: FiClipboard, title: 'SOAP notes', body: 'AI SOAP notes from the appointment or your dictation.', to: '/' },
     { icon: FiFileText, title: 'Clinical summaries', body: 'Treatments, medications and vaccines clearly organized for review and sharing.' },
     { icon: FiPhoneCall, title: 'Callback notes', body: 'Document client calls: what was discussed, what you advised, what comes next.' },
     { icon: FiZap, title: 'PetSOAP', body: 'Fill in a few exam fields and generate a full record with diagnosis and treatment plan.' },
@@ -30,7 +30,7 @@ const WORKFLOW = [
     { icon: FiMic, title: 'Voice dictation', body: 'Speak naturally. No commands or special phrasing.', to: '/veterinary-dictation' },
     { icon: FiMessageCircle, title: 'PetQuery', body: 'A clinical assistant for dosages, differentials and protocols.', to: '/veterinary-clinical-assistant' },
     { icon: FiRefreshCw, title: 'Phone to desktop sync', body: 'Record on your phone, finish on your computer.' },
-    { icon: FiArchive, title: 'Saved records', body: 'Every record saved, searchable and ready to revisit.' },
+    { icon: FiFolder, title: 'Cases', body: 'Each patient gets a case with all its records together, searchable and ready to revisit.' },
     { icon: FiDownload, title: 'Copy or PDF', body: 'Paste into any PIMS, or export a clean PDF for clients.' },
     { icon: FiSmartphone, title: 'Installs on your phone', body: 'Add PetWise to your home screen. No app store needed.', to: '/install' }
 ];
@@ -70,9 +70,9 @@ const Features = () => (
             <SplitFeature
                 eyebrow="Workspace"
                 title="All your tools in one dashboard."
-                body="QuickSOAP, PetQuery, saved records and templates live side by side. Move from documentation to a clinical question and back without losing your place."
+                body="Cases, PetQuery and templates live side by side. Move from a patient’s records to a clinical question and back without losing your place."
                 image="/site/desk-quicksoap.png"
-                imageAlt="The PetWise dashboard with QuickSOAP, PetQuery, saved records and templates"
+                imageAlt="The PetWise dashboard with cases, PetQuery and templates"
             />
         </Section>
 

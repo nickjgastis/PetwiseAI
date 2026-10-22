@@ -4,10 +4,10 @@ export const PRICES = {
 };
 
 export const PLAN_FEATURES = [
-    'Unlimited SOAP reports',
-    'QuickSOAP voice dictation',
+    'Unlimited SOAPs, summaries and callbacks',
+    'Voice dictation on phone and desktop',
     'Unlimited PetQuery AI assistant',
-    'Saved reports library',
+    'Cases that keep each patient together',
     'Custom templates',
     'Priority support'
 ];

@@ -112,7 +112,7 @@ const Pricing = () => {
                                     `${TRIAL_DAYS} days unlimited to start`,
                                     `${FREE_DAILY.soap} SOAP notes a day`,
                                     `${FREE_DAILY.query} PetQuery questions a day`,
-                                    'Saved records',
+                                    'Saved cases and records',
                                     'No credit card required'
                                 ]}
                                 cta={<SignupButton placement="pricing_free" variant="outline" className="w-full">Start free</SignupButton>}
@@ -170,7 +170,7 @@ const Pricing = () => {
                 alt="A smiling veterinarian with a finished SOAP note on her computer"
                 imageClassName="object-[60%_25%]"
                 title="Every tool, every day, no limits."
-                body="QuickSOAP, dictation, PetQuery, templates and client communication. One plan covers all of it."
+                body="SOAP notes, dictation, cases, PetQuery, templates and client communication. One plan covers all of it."
             />
             <div className="h-3 sm:h-5 bg-white" />
 

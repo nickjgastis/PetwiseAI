@@ -11,7 +11,7 @@ const GROUPS = [
         faqs: [
             {
                 q: 'How do I create my first SOAP note?',
-                a: 'Sign in, open QuickSOAP, choose SOAP and tap the microphone. Run the appointment or dictate your findings, then stop recording. Your SOAP appears in seconds, ready to review.'
+                a: 'Sign in, tap New case, choose SOAP as the record type and tap the microphone. Run the appointment or dictate your findings, then stop recording. Your SOAP appears in seconds, saved to the case and ready to review.'
             },
             {
                 q: 'What should I say when dictating?',
@@ -24,11 +24,15 @@ const GROUPS = [
         ]
     },
     {
-        title: 'QuickSOAP and records',
+        title: 'Cases and records',
         faqs: [
             {
+                q: 'What is a case?',
+                a: 'A case is one patient. Start one with New case, and every SOAP, summary and callback you make for that patient stays together in it. Open the case again any time to add another record.'
+            },
+            {
                 q: 'What is the difference between SOAP, Summary and Callback?',
-                a: 'SOAP creates a full medical record with assessment and plan. Summary creates a concise clinical summary. Callback documents a phone conversation with a client and the next steps.'
+                a: 'They are the record types you pick before you dictate. SOAP creates a full medical record with assessment and plan. Summary creates a concise clinical summary. Callback documents a phone conversation with a client and the next steps.'
             },
             {
                 q: 'Can I edit generated records?',
@@ -40,7 +44,7 @@ const GROUPS = [
             },
             {
                 q: 'Where are my saved records?',
-                a: 'Open Saved Records in the dashboard. Records are organized and searchable, and you can reopen any of them to edit.'
+                a: 'Open Cases in the dashboard and search by patient. Every record is inside its case, and you can reopen any of them to edit. Saved Records, under More, also lists them all in one place.'
             },
             {
                 q: 'How do templates work?',
@@ -78,7 +82,7 @@ const GROUPS = [
             },
             {
                 q: 'Can I use PetWise on my phone?',
-                a: 'Yes. Open petwise.vet on your phone, sign in and add it to your home screen. Dictations sync to your desktop automatically.'
+                a: 'Yes. Open petwise.vet on your phone, sign in and add it to your home screen. Dictations go into the case open on your phone and sync to your desktop automatically.'
             }
         ]
     },
@@ -109,7 +113,7 @@ const Help = () => (
     <SiteLayout>
         <Seo
             title="Help Center | PetWise"
-            description="Answers to common questions about PetWise: QuickSOAP, dictation, PetQuery, templates, saved records, billing and installing the app on your phone."
+            description="Answers to common questions about PetWise: cases, record types, dictation, PetQuery, templates, billing and installing the app on your phone."
             path="/help"
             jsonLd={faqLd(ALL_FAQS)}
         />

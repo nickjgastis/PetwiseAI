@@ -13,6 +13,13 @@ import {
 
 const RELEASES = [
     {
+        date: 'October 2026',
+        tag: 'Major update',
+        title: 'Cases: every patient in one place',
+        body: 'Start a new case, pick a record type and dictate. Every SOAP, summary and callback for that patient now stays together in its case, on your phone and your desktop.',
+        points: ['New case replaces QuickSOAP', 'Add more records to a case any time', 'Dictate from your phone into the case you have open']
+    },
+    {
         date: 'August 2026',
         tag: 'Plans',
         title: '10 days unlimited, then PetWise Free',
@@ -29,7 +36,7 @@ const RELEASES = [
     {
         date: '2026',
         tag: 'Workspace',
-        title: 'Redesigned QuickSOAP workspace',
+        title: 'Redesigned dictation workspace',
         body: 'Dictation controls moved to a dedicated top bar above your record, giving you a wider editing area and a cleaner flow.',
         points: ['Full width SOAP sections', 'Dictations, notes and controls in one place', 'Regenerate with extra context in one click']
     },
@@ -37,13 +44,13 @@ const RELEASES = [
         date: 'January 2026',
         tag: 'New features',
         title: 'Callback Notes and Clinical Summaries',
-        body: 'Two new record types in QuickSOAP. Callback Notes document client phone conversations and next steps. Clinical Summaries create clear, organized summaries with treatments, medications and vaccines laid out.',
+        body: 'Two new record types. Callback Notes document client phone conversations and next steps. Clinical Summaries create clear, organized summaries with treatments, medications and vaccines laid out.',
         points: ['Choose SOAP, Summary or Callback before recording', 'Each appears as a single editable field', 'Works on phone and desktop']
     },
     {
         date: 'November 2025',
         tag: 'New feature',
-        title: 'QuickSOAP: voice powered SOAP notes',
+        title: 'Voice powered SOAP notes',
         body: 'Create complete SOAP reports with your voice. Record on your phone or desktop, and your dictations sync instantly to your dashboard for review.',
         points: ['Speak naturally, PetWise handles formatting', 'Phone to desktop sync', 'Trained for veterinary language and abbreviations']
     },
@@ -60,7 +67,7 @@ const Updates = () => (
     <SiteLayout>
         <Seo
             title="Product Updates | What’s New in PetWise"
-            description="The latest PetWise releases: QuickSOAP voice dictation, Callback Notes, Clinical Summaries, faster and more accurate records, and the 10 day unlimited trial."
+            description="The latest PetWise releases: cases and record types, voice dictation, Callback Notes, Clinical Summaries, faster and more accurate records, and the 10 day unlimited trial."
             path="/updates"
         />
         <Hero
