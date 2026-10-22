@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiCheck, FiX, FiCopy, FiExternalLink, FiMic, FiChevronRight } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
+import { useDictation } from '../hooks/useDictation';
 import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
 import {
     normalizeType,
@@ -22,6 +23,18 @@ const API_URL = process.env.NODE_ENV === 'production'
 const NAME_LABELS = { soap: 'QuickSOAP', summary: 'Summary', callback: 'Callback' };
 const FONT = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
 const EASE = [0.2, 0.7, 0.2, 1];
+
+// Entrance lives on a wrapper and the hover lift on the card, so the two never fight over transform.
+const FadeIn = ({ delay = 0, children, className = '' }) => (
+    <motion.div className={className} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE, delay }}>
+        {children}
+    </motion.div>
+);
+const LIFT = {
+    whileHover: { y: -4 },
+    whileTap: { scale: 0.985 },
+    transition: { type: 'spring', stiffness: 420, damping: 30 }
+};
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 const formatTime = (d) => new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
@@ -149,7 +162,7 @@ const CaseList = () => {
     }, [cases, search]);
 
     return (
-        <div className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white" style={FONT}>
+        <div style={FONT}>
             <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-8 sm:pt-12 pb-16">
                 <PageHeader
                     title="Cases"
@@ -200,14 +213,12 @@ const CaseList = () => {
                                     const types = typesByCase[c.id] || {};
                                     const total = Object.values(types).reduce((a, b) => a + b, 0);
                                     return (
+                                        <FadeIn key={c.id} delay={Math.min(gi * 3 + i, 10) * 0.03}>
                                         <motion.button
-                                            key={c.id}
                                             type="button"
-                                            initial={{ opacity: 0, y: 14 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ duration: 0.45, ease: EASE, delay: Math.min(gi * 3 + i, 12) * 0.035 }}
+                                            {...LIFT}
                                             onClick={() => navigate(`/dashboard/cases/${c.id}`)}
-                                            className="group text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)]"
+                                            className="group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)]"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <Avatar name={c.pet_name} />
@@ -226,6 +237,7 @@ const CaseList = () => {
                                                 </div>
                                             )}
                                         </motion.button>
+                                        </FadeIn>
                                     );
                                 })}
                             </div>
@@ -243,12 +255,11 @@ const NoteBox = ({ note, onOpen, isNew }) => {
     return (
         <motion.button
             type="button"
-            layout
-            initial={isNew ? { opacity: 0, scale: 0.94, y: 10 } : { opacity: 0, y: 12 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: EASE }}
+            {...LIFT}
+            initial={isNew ? { scale: 0.94 } : false}
+            animate={{ scale: 1 }}
             onClick={() => onOpen(note)}
-            className={`group text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col h-60 cursor-pointer transition-[transform,box-shadow,border-color] duration-300 hover:-translate-y-1 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover}`}
+            className={`group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col h-60 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover} ${isNew ? 'ring-2 ring-[#5cccf0]/50' : ''}`}
         >
             <div className={`h-1.5 w-full bg-gradient-to-r ${info.bar}`} />
             <div className="p-5 flex flex-col flex-1 min-h-0">
@@ -261,69 +272,11 @@ const NoteBox = ({ note, onOpen, isNew }) => {
                 <p className="text-[13.5px] text-[#1a2b4a]/70 leading-relaxed whitespace-pre-line overflow-hidden flex-1" style={{ maskImage: 'linear-gradient(to bottom, black 65%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent)' }}>
                     {plain(note.report_text).trim()}
                 </p>
+                <span className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <FiEdit2 className="text-[11px]" /> Open and edit
+                </span>
             </div>
         </motion.button>
-    );
-};
-
-const NoteViewer = ({ note, onClose, onOpenInEditor }) => {
-    const [copied, setCopied] = useState(false);
-    const info = typeStyle(note.record_type || note.form_data?.record_type);
-    const Icon = info.icon;
-    const text = plain(note.report_text).trim();
-
-    useEffect(() => {
-        const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [onClose]);
-
-    const copy = () => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-    };
-
-    return (
-        <>
-            <motion.div
-                className="fixed inset-0 bg-[#13233f]/30 backdrop-blur-[3px] z-[60]"
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                onClick={onClose}
-            />
-            <motion.div
-                className="fixed inset-x-3 top-[5vh] bottom-[5vh] sm:inset-x-auto sm:left-1/2 sm:w-[740px] sm:-ml-[370px] bg-white rounded-[28px] shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)] z-[61] flex flex-col overflow-hidden"
-                style={FONT}
-                initial={{ opacity: 0, y: 28, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 28, scale: 0.98 }}
-                transition={{ type: 'spring', stiffness: 360, damping: 34 }}
-            >
-                <div className={`h-1.5 w-full bg-gradient-to-r ${info.bar}`} />
-                <div className="px-6 py-5 border-b border-[#eef2f7] flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold ${info.soft}`}>
-                            <Icon className="text-[11px]" /> {info.label}
-                        </span>
-                        <p className="text-[14px] font-semibold text-[#13233f] mt-2 truncate">{note.report_name}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                        <PillButton variant="secondary" onClick={copy} className="!px-4 !py-2 !text-[13px]">
-                            {copied ? <FiCheck className="text-emerald-500" /> : <FiCopy />} {copied ? 'Copied' : 'Copy'}
-                        </PillButton>
-                        <PillButton variant="secondary" onClick={() => onOpenInEditor(note)} className="!px-4 !py-2 !text-[13px]">
-                            <FiExternalLink /> Edit
-                        </PillButton>
-                        <button type="button" onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
-                            <FiX />
-                        </button>
-                    </div>
-                </div>
-                <div className="flex-1 overflow-y-auto px-7 py-6">
-                    <p className="text-[15px] text-[#1a2b4a]/85 leading-relaxed whitespace-pre-wrap">{text}</p>
-                </div>
-            </motion.div>
-        </>
     );
 };
 
@@ -339,19 +292,123 @@ const visitInput = (notes) => {
     return '';
 };
 
-const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }) => {
+const fmtClock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const SWAP = { initial: { opacity: 0, scale: 0.97 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.97 }, transition: { duration: 0.18, ease: EASE } };
+
+const DictationPad = ({ dictation, onStart, onStop }) => {
+    const { status, levels, seconds, pause, resume } = dictation;
+    const live = status === 'recording';
+    return (
+        <div className="rounded-[24px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] px-5 py-6 min-h-[168px] flex items-center justify-center">
+            <AnimatePresence mode="wait" initial={false}>
+                {status === 'idle' && (
+                    <motion.div key="idle" {...SWAP} className="flex flex-col items-center text-center">
+                        <motion.button
+                            type="button"
+                            onClick={onStart}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                            className="relative w-[72px] h-[72px] rounded-full border-none cursor-pointer text-white text-2xl flex items-center justify-center shadow-[0_14px_34px_-12px_rgba(45,95,184,0.8)]"
+                            style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
+                            aria-label="Start dictating"
+                        >
+                            <span className="absolute inset-0 rounded-full animate-ping bg-[#5cccf0]/20" style={{ animationDuration: '2.4s' }} />
+                            <FiMic className="relative" />
+                        </motion.button>
+                        <p className="mt-3 text-[15px] font-semibold text-[#13233f]">Tap to dictate</p>
+                        <p className="text-[13px] text-[#1a2b4a]/55">or type below</p>
+                    </motion.div>
+                )}
+                {(status === 'recording' || status === 'paused') && (
+                    <motion.div key="rec" {...SWAP} className="w-full flex flex-col items-center">
+                        <div className="flex items-center gap-2 mb-3 text-[13px] font-medium text-[#1a2b4a]/70">
+                            <span className={`w-2 h-2 rounded-full ${live ? 'bg-red-500 animate-pulse' : 'bg-[#1a2b4a]/30'}`} />
+                            {live ? 'Listening' : 'Paused'} · <span className="tabular-nums">{fmtClock(seconds)}</span>
+                        </div>
+                        <div className="flex items-center justify-center gap-[3px] h-14 w-full max-w-sm">
+                            {levels.map((l, i) => (
+                                <span
+                                    key={i}
+                                    className={`w-[4px] rounded-full transition-[height] duration-100 ${live ? 'bg-[#2d5fb8]' : 'bg-[#1a2b4a]/20'}`}
+                                    style={{ height: `${live ? 6 + l * 50 : 6}px`, opacity: live ? 0.45 + l * 0.55 : 1 }}
+                                />
+                            ))}
+                        </div>
+                        <div className="flex items-center gap-2 mt-4">
+                            <PillButton variant="secondary" onClick={live ? pause : resume} className="!px-4 !py-2 !text-[13px]">
+                                {live ? <><FiPause /> Pause</> : <><FiPlay /> Resume</>}
+                            </PillButton>
+                            <PillButton onClick={onStop} className="!px-4 !py-2 !text-[13px]">
+                                <FiSquare className="text-[11px]" /> Done
+                            </PillButton>
+                        </div>
+                    </motion.div>
+                )}
+                {status === 'transcribing' && (
+                    <motion.div key="tx" {...SWAP} className="flex flex-col items-center">
+                        <span className="w-8 h-8 rounded-full border-[3px] border-[#2d5fb8]/20 border-t-[#2d5fb8] animate-spin" />
+                        <p className="mt-3 text-[14px] font-medium text-[#13233f]">Transcribing…</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
+const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, recordSignal, onBusy }) => {
     const { user } = useAuth0();
     const usage = useUsage();
+    const dictation = useDictation();
     const [type, setType] = useState(() => (notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap'));
-    const [extra, setExtra] = useState('');
+    const [text, setText] = useState('');
+    const baseInput = useMemo(() => visitInput(notes), [notes]);
+    const [includeEarlier, setIncludeEarlier] = useState(() => type !== 'soap');
+    const includeTouched = useRef(false);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState('');
-    const baseInput = useMemo(() => visitInput(notes), [notes]);
+    const busy = generating || dictation.status !== 'idle';
+
+    useEffect(() => { onBusy(busy); }, [busy, onBusy]);
+    useEffect(() => () => onBusy(false), [onBusy]);
+    useEffect(() => {
+        if (!includeTouched.current) setIncludeEarlier(type !== 'soap');
+    }, [type]);
+
+    const startDictation = useCallback(async () => {
+        if (dictation.status !== 'idle') return;
+        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
+            onLimit();
+            return;
+        }
+        setError('');
+        try {
+            await dictation.start();
+        } catch {
+            setError('Couldn’t reach the microphone. Check your browser’s mic permission.');
+        }
+    }, [dictation, usage, onLimit]);
+
+    const stopDictation = async () => {
+        try {
+            const t = await dictation.stop();
+            if (t) setText((prev) => (prev.trim() ? `${prev.trim()}\n\n${t}` : t));
+        } catch (err) {
+            setError(err.message || 'Transcription failed. Please try again.');
+        }
+    };
+
+    useEffect(() => {
+        if (recordSignal) startDictation();
+    }, [recordSignal]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const useEarlier = includeEarlier && !!baseInput;
 
     const generate = async () => {
-        const input = [baseInput, extra.trim()].filter(Boolean).join('\n\n');
+        const fresh = text.trim();
+        const input = [useEarlier ? baseInput : '', fresh].filter(Boolean).join('\n\n');
         if (!input) {
-            setError('There’s nothing to write from yet. Add a few details below, or record into this case.');
+            setError('Dictate or type something first.');
             return;
         }
         if (!usage.isUnlimited && usage.soap.remaining <= 0) {
@@ -374,6 +431,10 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }
             const petName = caseRow.pet_name || res.data.petName || null;
             const reportName = `${petName ? `${petName} - ` : ''}${NAME_LABELS[type]} - ${new Date().toLocaleString()}`;
             const source = notes[notes.length - 1]?.form_data || {};
+            const dictations = [
+                ...(useEarlier ? source.dictations || [] : []),
+                ...(fresh ? [{ id: Date.now(), fullText: fresh, summary: fresh.slice(0, 100) + (fresh.length > 100 ? '...' : ''), expanded: false }] : [])
+            ];
             const { data: saved, error: saveError } = await supabase
                 .from('saved_reports')
                 .insert([{
@@ -383,8 +444,8 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }
                     case_id: caseRow.id,
                     form_data: {
                         record_type: type,
-                        dictations: source.dictations || [],
-                        input: [source.input || '', extra.trim()].filter(Boolean).join('\n\n'),
+                        dictations,
+                        input: useEarlier && !(source.dictations || []).length ? source.input || '' : '',
                         lastInput: input,
                         report,
                         petName,
@@ -413,25 +474,20 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.4, ease: EASE }}
+            transition={{ height: { duration: 0.38, ease: EASE }, opacity: { duration: 0.25 } }}
             className="overflow-hidden"
         >
-            <div className="rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-7 mb-8 shadow-[0_24px_48px_-32px_rgba(19,35,63,0.3)]">
+            <div className="rounded-[28px] border border-[#e7ecf3] bg-white p-5 sm:p-7 mb-8 shadow-[0_24px_48px_-32px_rgba(19,35,63,0.3)]">
                 <div className="flex items-start justify-between gap-3 mb-5">
-                    <div>
-                        <p className={`text-[1.35rem] font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT}`}>Add a note</p>
-                        <p className="text-[14px] text-[#1a2b4a]/60">
-                            {baseInput ? 'We’ll write it from this visit’s dictation.' : 'Type a few details and we’ll write it up.'}
-                        </p>
-                    </div>
-                    {!generating && (
+                    <p className={`text-[1.35rem] font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT}`}>Add a note</p>
+                    {!busy && (
                         <button type="button" onClick={onCancel} className="w-9 h-9 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
                             <FiX />
                         </button>
                     )}
                 </div>
 
-                <div className="bg-[#f6f8fb] rounded-full p-1 inline-flex gap-1 mb-5">
+                <div className="bg-[#f6f8fb] rounded-full p-1 inline-flex gap-1 mb-5 max-w-full overflow-x-auto">
                     {Object.entries(TYPE_STYLES).map(([key, info]) => {
                         const Icon = info.icon;
                         return (
@@ -451,14 +507,28 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }
                     })}
                 </div>
 
+                <DictationPad dictation={dictation} onStart={startDictation} onStop={stopDictation} />
+
                 <textarea
-                    value={extra}
-                    onChange={(e) => setExtra(e.target.value)}
-                    disabled={generating}
-                    rows={3}
-                    placeholder={type === 'callback' ? 'Anything to add? e.g. owner says she’s eating well, recheck in 2 weeks' : 'Anything to add? (optional)'}
-                    className="w-full px-4 py-3 bg-[#f6f8fb] border border-transparent rounded-2xl text-[15px] focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors resize-y"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    disabled={generating || dictation.status === 'transcribing'}
+                    rows={text ? 5 : 2}
+                    placeholder={type === 'callback' ? 'e.g. Owner says she’s eating well, recheck in 2 weeks' : 'Your dictation shows up here. You can also type.'}
+                    className="mt-4 w-full px-4 py-3 bg-[#f6f8fb] border border-transparent rounded-2xl text-[15px] leading-relaxed focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors resize-y"
                 />
+
+                {baseInput && (
+                    <label className="mt-3 flex items-center gap-2.5 text-[14px] text-[#1a2b4a]/70 cursor-pointer select-none w-fit">
+                        <input
+                            type="checkbox"
+                            checked={includeEarlier}
+                            onChange={(e) => { includeTouched.current = true; setIncludeEarlier(e.target.checked); }}
+                            className="w-4 h-4 accent-[#2d5fb8]"
+                        />
+                        Include the earlier dictation from this case
+                    </label>
+                )}
 
                 <AnimatePresence>
                     {error && (
@@ -468,16 +538,8 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onRecord }
                     )}
                 </AnimatePresence>
 
-                <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 mt-5">
-                    <button
-                        type="button"
-                        onClick={onRecord}
-                        disabled={generating}
-                        className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#2d5fb8] hover:text-[#2350a3] bg-transparent border-none cursor-pointer p-0 disabled:opacity-50"
-                    >
-                        <FiMic /> Record something new instead
-                    </button>
-                    <PillButton onClick={generate} disabled={generating}>
+                <div className="flex justify-end mt-5">
+                    <PillButton onClick={generate} disabled={busy}>
                         {generating ? (
                             <><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Writing {typeStyle(type).label}…</>
                         ) : (
@@ -500,7 +562,8 @@ const CaseDetail = ({ caseId }) => {
     const [editingName, setEditingName] = useState(false);
     const [nameDraft, setNameDraft] = useState('');
     const [adding, setAdding] = useState(false);
-    const [openNote, setOpenNote] = useState(null);
+    const [panelBusy, setPanelBusy] = useState(false);
+    const [recordSignal, setRecordSignal] = useState(0);
     const [newNoteId, setNewNoteId] = useState(null);
     const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -537,12 +600,16 @@ const CaseDetail = ({ caseId }) => {
         navigate('/dashboard/quicksoap');
     };
 
+    const record = () => {
+        setAdding(true);
+        setRecordSignal((n) => n + 1);
+    };
+
     const onCreated = (saved, extractedPetName) => {
         setNotes((prev) => [...prev, saved]);
         if (!caseRow.pet_name && extractedPetName) setCaseRow({ ...caseRow, pet_name: extractedPetName });
         setNewNoteId(saved.id);
         setAdding(false);
-        setOpenNote(saved);
     };
 
     const counts = notes.reduce((acc, n) => {
@@ -553,9 +620,11 @@ const CaseDetail = ({ caseId }) => {
 
     if (loading) {
         return (
-            <div className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white" style={FONT}>
-                <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-12">
-                    <div className="h-36 rounded-[28px] bg-white border border-[#e7ecf3] animate-pulse" />
+            <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10" style={FONT}>
+                <div className="h-5 w-24 mb-5" />
+                <div className="h-[148px] rounded-[28px] bg-white border border-[#e7ecf3] animate-pulse mb-8" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[0, 1, 2].map((i) => <div key={i} className="h-60 rounded-[24px] bg-white border border-[#e7ecf3] animate-pulse" />)}
                 </div>
             </div>
         );
@@ -573,7 +642,7 @@ const CaseDetail = ({ caseId }) => {
     }
 
     return (
-        <div className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white" style={FONT}>
+        <div style={FONT}>
             <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10 pb-16">
                 <button
                     type="button"
@@ -583,10 +652,7 @@ const CaseDetail = ({ caseId }) => {
                     <FiArrowLeft className="group-hover:-translate-x-0.5 transition-transform" /> All cases
                 </button>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}
-                    className="relative overflow-hidden rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-8 mb-8"
-                >
+                <FadeIn className="relative overflow-hidden rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-8 mb-8">
                     <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(92,204,240,0.18) 0%, rgba(92,204,240,0) 70%)' }} />
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                         <div className="flex items-center gap-4 min-w-0">
@@ -609,13 +675,13 @@ const CaseDetail = ({ caseId }) => {
                                     <button
                                         type="button"
                                         onClick={() => { setNameDraft(caseRow.pet_name || ''); setEditingName(true); }}
-                                        className="group inline-flex items-center gap-2 bg-transparent border-none cursor-pointer p-0 text-left"
+                                        className="group inline-flex items-center gap-2 bg-transparent border-none cursor-pointer p-0 text-left max-w-full"
                                         title="Rename"
                                     >
                                         <h1 className={`text-[1.9rem] sm:text-[2.2rem] leading-[1.15] pb-1 font-bold tracking-[-0.03em] truncate ${GRADIENT_TEXT}`}>
                                             {caseRow.pet_name || 'Unnamed patient'}
                                         </h1>
-                                        <FiEdit2 className="text-[14px] text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] transition-colors" />
+                                        <FiEdit2 className="text-[14px] shrink-0 text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] transition-colors" />
                                     </button>
                                 )}
                                 <p className="text-[14px] text-[#1a2b4a]/55">
@@ -629,46 +695,46 @@ const CaseDetail = ({ caseId }) => {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2 shrink-0">
-                            <PillButton variant="secondary" onClick={() => goToNewCase(navigate, caseRow.id)}>
+                            <PillButton variant="secondary" onClick={record} disabled={panelBusy}>
                                 <FiMic /> Record
                             </PillButton>
-                            <PillButton onClick={() => setAdding((v) => !v)}>
-                                <motion.span animate={{ rotate: adding ? 45 : 0 }} transition={{ duration: 0.25 }} className="flex"><FiPlus /></motion.span>
+                            <PillButton onClick={() => setAdding((v) => !v)} disabled={panelBusy}>
+                                <motion.span animate={{ rotate: adding ? 45 : 0 }} transition={{ duration: 0.25, ease: EASE }} className="flex"><FiPlus /></motion.span>
                                 {adding ? 'Close' : 'Add a note'}
                             </PillButton>
                         </div>
                     </div>
-                </motion.div>
+                </FadeIn>
 
                 <AnimatePresence initial={false}>
                     {adding && (
                         <AddNotePanel
+                            key="add"
                             caseRow={caseRow}
                             notes={notes}
                             onCreated={onCreated}
                             onCancel={() => setAdding(false)}
                             onLimit={() => setShowUpgrade(true)}
-                            onRecord={() => goToNewCase(navigate, caseRow.id)}
+                            recordSignal={recordSignal}
+                            onBusy={setPanelBusy}
                         />
                     )}
                 </AnimatePresence>
 
                 {notes.length === 0 ? (
-                    <div className="rounded-[28px] border border-dashed border-[#d6e3f7] bg-white/60 py-14 text-center">
+                    <FadeIn delay={0.05} className="rounded-[28px] border border-dashed border-[#d6e3f7] bg-white/60 py-14 text-center">
                         <p className="text-[15px] text-[#1a2b4a]/60">No notes in this case yet.</p>
-                    </div>
+                    </FadeIn>
                 ) : (
-                    <motion.div layout className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {notes.map((note) => (
-                            <NoteBox key={note.id} note={note} onOpen={setOpenNote} isNew={note.id === newNoteId} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {notes.map((note, i) => (
+                            <FadeIn key={note.id} delay={note.id === newNoteId ? 0 : 0.05 + Math.min(i, 8) * 0.035}>
+                                <NoteBox note={note} onOpen={openInEditor} isNew={note.id === newNoteId} />
+                            </FadeIn>
                         ))}
-                    </motion.div>
+                    </div>
                 )}
             </div>
-
-            <AnimatePresence>
-                {openNote && <NoteViewer note={openNote} onClose={() => setOpenNote(null)} onOpenInEditor={openInEditor} />}
-            </AnimatePresence>
 
             {showUpgrade && (
                 <UpgradeModal
@@ -687,18 +753,15 @@ const Cases = ({ caseId: caseIdProp }) => {
     const params = useParams();
     const caseId = params.caseId || caseIdProp;
     return (
-        <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-                key={caseId || 'list'}
-                className="min-h-full"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: EASE }}
-            >
-                {caseId ? <CaseDetail caseId={caseId} /> : <CaseList />}
-            </motion.div>
-        </AnimatePresence>
+        <motion.div
+            key={caseId || 'list'}
+            className="min-h-full bg-gradient-to-b from-[#f6f8fb] to-white"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+        >
+            {caseId ? <CaseDetail caseId={caseId} /> : <CaseList />}
+        </motion.div>
     );
 };
 
