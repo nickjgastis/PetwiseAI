@@ -1,7 +1,7 @@
 import { FiClipboard, FiFileText, FiPhone } from 'react-icons/fi';
 import { normalizeType } from '../utils/cases';
 
-export const GRADIENT_TEXT = 'bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] bg-clip-text text-transparent';
+export const GRADIENT_TEXT = 'font-display bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] bg-clip-text text-transparent';
 
 // Note-type colors, shared by the New case picker, the Cases pages and the case picker.
 export const TYPE_STYLES = {

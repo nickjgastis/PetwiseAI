@@ -208,8 +208,6 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
     );
 };
 
-const WORDMARK_FONT = { fontFamily: "'Outfit', 'Inter', sans-serif" };
-
 const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour, tooltip, badge, secondary }) => (
     <li className="mx-3 my-[3px] relative">
         <Link
@@ -1507,7 +1505,7 @@ const Dashboard = () => {
                                     <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-accent-400 rounded-full animate-pulse" style={{ boxShadow: '0 0 6px rgba(92,204,240,0.5)' }}></div>
                                 )}
                             </div>
-                            <span className={`text-[22px] transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`} style={WORDMARK_FONT}>
+                            <span className={`font-display text-[22px] transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
                                 <span className="font-semibold text-[#13233f] tracking-[-0.03em]">Petwise</span>
                                 <span className="font-normal text-[#13233f]/35 tracking-[-0.03em]">.vet</span>
                             </span>

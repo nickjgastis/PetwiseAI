@@ -181,7 +181,7 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
         <AnimatePresence mode="wait" initial={false}>
             <motion.div key={i} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.22, ease: EASE }}>
                 <p className="m-0 mb-2 text-[12px] font-bold uppercase tracking-[0.12em] text-[#2d5fb8]">{slide.eyebrow}</p>
-                <h2 className={`m-0 mb-4 pb-1 font-bold tracking-[-0.03em] leading-tight ${i === 0 ? `${GRADIENT_TEXT} text-[32px] sm:text-[40px]` : 'text-[#13233f] text-[26px] sm:text-[32px]'}`}>{slide.title}</h2>
+                <h2 className={`m-0 mb-4 pb-1 font-bold tracking-[-0.03em] leading-tight ${i === 0 ? `${GRADIENT_TEXT} text-[32px] sm:text-[40px]` : 'font-display text-[#13233f] text-[26px] sm:text-[32px]'}`}>{slide.title}</h2>
                 {slide.body && <p className="m-0 mb-6 text-[16px] sm:text-[17px] text-[#1a2b4a]/70 leading-relaxed">{slide.body}</p>}
                 {slide.visual && isMobile && <CaseMock compact />}
                 {slide.features && (

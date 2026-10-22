@@ -6,6 +6,9 @@ module.exports = {
     ],
     theme: {
         extend: {
+            fontFamily: {
+                display: ['Outfit', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+            },
             colors: {
                 // Primary Brand Colors
                 'primary': {
