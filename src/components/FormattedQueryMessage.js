@@ -1,6 +1,6 @@
 import React from 'react';
 
-const renderInline = (text) => {
+const renderInline = (text, soft = false) => {
     const s = String(text ?? '')
         .replace(/\\text\{([^}]+)\}/g, '$1')
         .replace(/\\quad/g, '    ')
@@ -13,7 +13,11 @@ const renderInline = (text) => {
         .map((part, i) => {
             if (!part) return null;
             if (/^\*\*[^*]+\*\*$/.test(part)) {
-                return <strong key={i} className="font-semibold text-[#13233f]">{part.slice(2, -2)}</strong>;
+                return (
+                    <strong key={i} className={soft ? 'font-medium text-[#13233f]' : 'font-semibold text-[#13233f]'}>
+                        {part.slice(2, -2)}
+                    </strong>
+                );
             }
             if (/^\\\([\s\S]*\\\)$/.test(part)) {
                 return <span key={i} className="font-serif italic text-[#2d5fb8]">{part.slice(2, -2).trim()}</span>;
@@ -73,7 +77,7 @@ const FormattedQueryMessage = ({ content }) => {
             }
             return;
         }
-        if ((m = line.match(FIELD_LINE))) {
+        if (!line.startsWith('-') && (m = line.match(FIELD_LINE))) {
             if (/^recommendation/i.test(m[1])) {
                 tokens.push({ type: 'text', text: `Recommendation: ${m[2]}` });
             } else {
@@ -140,7 +144,37 @@ const FormattedQueryMessage = ({ content }) => {
     const isRecText = (s) => /^\*{0,2}recommendations?\b/i.test(s);
     const recStrip = (s) => stripBold(s).replace(/^recommendations?:?\s*/i, '');
 
+    let fieldBuf = [];
+    const flushFields = () => {
+        if (fieldBuf.length === 0) return;
+        const rows = fieldBuf;
+        fieldBuf = [];
+        const stacked = rows.some((r) => stripBold(r.value).length > 70);
+        out.push(
+            stacked ? (
+                <div key={key++} className="mt-3 mb-2 space-y-4">
+                    {rows.map((f, i) => (
+                        <div key={i}>
+                            <div className="font-semibold text-[#13233f]">{renderInline(f.label)}</div>
+                            <div className="mt-0.5">{renderInline(f.value, true)}</div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div key={key++} className="my-2 space-y-1.5">
+                    {rows.map((f, i) => (
+                        <p key={i}>
+                            <span className="font-semibold text-[#13233f]">{renderInline(f.label)}: </span>
+                            {renderInline(f.value)}
+                        </p>
+                    ))}
+                </div>
+            )
+        );
+    };
+
     tokens.forEach((t) => {
+        if (!(t.type === 'field' && !isNotesLabel(t.label) && t.value.trim())) flushFields();
         if (recBuf) {
             if (t.type === 'bullet' || (t.type === 'text' && !/^\*{0,2}additional notes/i.test(t.text))) {
                 recommendation(isRecText(t.text) ? recStrip(t.text) : t.text);
@@ -214,19 +248,22 @@ const FormattedQueryMessage = ({ content }) => {
                 break;
 
             case 'field':
-                out.push(
-                    isNotesLabel(t.label) ? (
+                if (isNotesLabel(t.label)) {
+                    out.push(
                         <p key={key++} className={NOTE_CLASS}>
                             <span className="font-semibold text-[#13233f]">{t.label}: </span>
                             {renderInline(t.value)}
                         </p>
-                    ) : (
-                        <p key={key++} className="my-1">
-                            <span className="font-semibold text-[#13233f]">{t.label}: </span>
-                            {renderInline(t.value)}
-                        </p>
-                    )
-                );
+                    );
+                } else if (!t.value.trim()) {
+                    out.push(
+                        <h5 key={key++} className="mt-5 mb-1.5 font-semibold text-[#13233f]">
+                            {renderInline(t.label)}
+                        </h5>
+                    );
+                } else {
+                    fieldBuf.push(t);
+                }
                 break;
 
             case 'bullet':
@@ -258,6 +295,7 @@ const FormattedQueryMessage = ({ content }) => {
                 }
         }
     });
+    flushFields();
     flushRec();
 
     return <div className="text-sm md:text-[15px] leading-[1.7] text-[#1a2b4a]">{out}</div>;

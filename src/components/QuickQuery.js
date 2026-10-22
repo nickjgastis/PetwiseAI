@@ -1270,6 +1270,13 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     <div className="flex-shrink-0 border-b border-[#eef2f7] bg-white/80 backdrop-blur-md">
                         <div className="max-w-6xl mx-auto h-[60px] px-4 flex items-center justify-between">
                             <h2 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>PetQuery</h2>
+                            <button
+                                type="button"
+                                onClick={handleClear}
+                                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors"
+                            >
+                                New chat
+                            </button>
                         </div>
                     </div>
                 )}
@@ -1546,7 +1553,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 )}
                             </div>
                             {/* Input form - ChatGPT style on mobile */}
-                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-end'}`}>
+                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'relative gap-3 items-end'}`}>
                                 {isMobile ? (
                                     <div className={`relative flex-1 min-h-[46px] max-h-[112px] rounded-[23px] border transition-all duration-200 flex items-end ${
                                         isRecording
@@ -1691,7 +1698,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     <button
                                         type="button"
                                         onClick={handleClear}
-                                        className="inline-flex items-center gap-1.5 h-[52px] px-5 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 hover:text-[#2d5fb8] cursor-pointer transition-colors flex-shrink-0 shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)]"
+                                        className="absolute left-full bottom-0 ml-3 inline-flex items-center gap-1.5 h-[52px] px-5 whitespace-nowrap rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 hover:text-[#2d5fb8] cursor-pointer transition-colors flex-shrink-0 shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)]"
                                     >
                                         <FiPlus className="text-[15px]" />
                                         New chat
