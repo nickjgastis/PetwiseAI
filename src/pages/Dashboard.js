@@ -218,12 +218,12 @@ const SideLink = ({ to, active, icon: BaseIcon, activeIcon, label, collapsed, on
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`group relative flex items-center no-underline rounded-[12px] font-display tracking-[-0.01em] outline-none focus-visible:ring-2 focus-visible:ring-[#2d5fb8]/30 transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
+            className={`group relative flex items-center no-underline rounded-[12px] font-display tracking-[-0.01em] outline-none focus-visible:ring-2 focus-visible:ring-[#2d5fb8]/30 transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f] hover:bg-[#2d5fb8]/[0.06]`}`}
         >
             {active && (
                 <motion.span
                     layoutId="sidebar-active"
-                    className="absolute -left-3 inset-y-0 my-auto h-5 w-[3px] rounded-r-full bg-[#2d5fb8]"
+                    className="absolute inset-0 rounded-[12px] bg-[#2d5fb8]/[0.09]"
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
             )}
