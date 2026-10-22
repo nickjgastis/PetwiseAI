@@ -26,7 +26,7 @@ import PaymentIssueBanner from '../components/PaymentIssueBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import LoadingScreen from '../components/LoadingScreen';
 import Cases from './Cases';
-import { createCase } from '../utils/cases';
+import { createCase, requestNewCase } from '../utils/cases';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -81,6 +81,7 @@ const slideDownStyle = `
 // Mobile/PWA chrome: header + one scroller + bottom nav in a 100dvh flex column.
 // Prevents the iOS nested-scroll "catch" (html/body + min-h-screen + fixed nav).
 const MobileAppShell = ({ visible, location, children, lockScroll = false }) => {
+    const navigate = useNavigate();
     const shellRef = useRef(null);
 
     useEffect(() => {
@@ -160,6 +161,10 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                         <div className="flex items-center justify-around h-16">
                             <Link
                                 to="/dashboard/quicksoap"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    requestNewCase(navigate);
+                                }}
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isQuickSOAP ? 'text-[#3468bd]' : 'text-gray-400'}`}
                             >
                                 <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isQuickSOAP ? 'bg-blue-50' : ''}`}>
@@ -1501,7 +1506,11 @@ const Dashboard = () => {
                         <li className={`mx-3 mt-3 mb-3 relative ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
                             <Link
                                 to="/dashboard/quicksoap"
-                                onClick={closeMobileMenu}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    closeMobileMenu();
+                                    requestNewCase(navigate);
+                                }}
                                 data-tooltip="Start new case"
                                 data-tour="quicksoap"
                                 className={`relative flex items-center justify-center gap-2 no-underline font-semibold text-[13.5px] text-[#2d5fb8] bg-white rounded-full shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_14px_34px_-12px_rgba(0,0,0,0.5)] ${isSidebarCollapsed ? 'w-11 h-11' : 'w-full py-2.5 px-4'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/60 ring-offset-2 ring-offset-[#2a59ad]' : ''}`}

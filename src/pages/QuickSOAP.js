@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
@@ -12,7 +12,18 @@ import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
 import { useNavigate } from 'react-router-dom';
-import { CASE_KEY, NOTE_LABELS, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType, setActiveCaseId } from '../utils/cases';
+import {
+    CASE_KEY,
+    NEW_CASE_EVENT,
+    NOTE_LABELS,
+    NOTE_TYPE_KEY,
+    SAVED_SNAPSHOT_KEY,
+    ensureCase,
+    getActiveCaseId,
+    normalizeType,
+    setActiveCaseId,
+    takeNewCaseRequest
+} from '../utils/cases';
 import CaseTarget from '../components/CaseTarget';
 import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
@@ -768,6 +779,7 @@ const QuickSOAP = () => {
         localStorage.removeItem('quickSOAP_selectedTemplate');
         localStorage.removeItem(CASE_KEY);
         localStorage.removeItem(NOTE_TYPE_KEY);
+        localStorage.removeItem(SAVED_SNAPSHOT_KEY);
         setActiveCaseIdState(null);
     }, []);
 
@@ -1535,12 +1547,82 @@ const QuickSOAP = () => {
         return noteId;
     };
 
+    // Last saved text of the open note, keyed by note id so a different note gets a fresh baseline.
+    const readSavedSnapshot = () => {
+        try {
+            return JSON.parse(localStorage.getItem(SAVED_SNAPSHOT_KEY));
+        } catch {
+            return null;
+        }
+    };
+    const markSaved = (text) => {
+        localStorage.setItem(
+            SAVED_SNAPSHOT_KEY,
+            JSON.stringify({ id: localStorage.getItem('currentQuickSOAPReportId'), text })
+        );
+    };
+
+    useEffect(() => {
+        if (!hasReport || !report) return;
+        const snap = readSavedSnapshot();
+        if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
+    }, [hasReport, report]);
+
+    const hasUnsavedWork = () => {
+        if (hasReport) {
+            const snap = readSavedSnapshot();
+            return !!snap && snap.text !== report;
+        }
+        return dictations.length > 0 || !!input.trim();
+    };
+
+    // { kind: 'new', caseId } or { kind: 'back' }, waiting on the save prompt.
+    const [pendingLeave, setPendingLeave] = useState(null);
+
     const leaveToCase = () => {
         const caseId = activeCaseId;
         clearAllQuickSOAPData();
         localStorage.removeItem('quickSOAP_recordType');
         navigate(caseId ? `/dashboard/cases/${caseId}` : '/dashboard/cases');
     };
+
+    const startFreshCase = (caseId = null) => {
+        clearAllQuickSOAPData();
+        setIsEditingReportName(false);
+        setShowStartNotes(false);
+        setShowDictations(false);
+        setError('');
+        if (caseId) {
+            setActiveCaseId(caseId);
+            setActiveCaseIdState(caseId);
+        }
+    };
+
+    const runLeave = (action) => {
+        if (action.kind === 'back') leaveToCase();
+        else startFreshCase(action.caseId);
+    };
+
+    const requestLeave = (action) => {
+        if (isRecording || isTranscribing) {
+            setError('Tap Done on your dictation first.');
+            return;
+        }
+        if (hasUnsavedWork()) setPendingLeave(action);
+        else runLeave(action);
+    };
+
+    const requestLeaveRef = useRef(requestLeave);
+    requestLeaveRef.current = requestLeave;
+    useLayoutEffect(() => {
+        const handle = () => {
+            const req = takeNewCaseRequest();
+            if (req) requestLeaveRef.current({ kind: 'new', caseId: req.caseId || null });
+        };
+        handle();
+        window.addEventListener(NEW_CASE_EVENT, handle);
+        return () => window.removeEventListener(NEW_CASE_EVENT, handle);
+    }, []);
 
     // Auto-save helper function (extracted from handleSaveRecord)
     const autoSaveRecord = async (generatedReport, extractedPetName = null, saveRecordType = null) => {
@@ -1626,6 +1708,7 @@ const QuickSOAP = () => {
                 } else {
                     bumpCaseBar();
                     localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
+                    markSaved(generatedReport);
                     // Clear draft flag since it's now a completed report
                     draftRecordIdRef.current = null;
                     setDraftRecordId(null);
@@ -1664,6 +1747,7 @@ const QuickSOAP = () => {
                     bumpCaseBar();
                     localStorage.setItem('currentQuickSOAPReportId', newReport.id);
                     localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
+                    markSaved(generatedReport);
                     // Mark as unopened and trigger notification
                     const unopenedReports = JSON.parse(localStorage.getItem('unopenedDesktopQuickSOAPReports') || '[]');
                     if (!unopenedReports.includes(newReport.id)) {
@@ -1890,6 +1974,7 @@ const QuickSOAP = () => {
             localStorage.removeItem('quickSOAP_selectedTemplate');
             localStorage.removeItem(CASE_KEY);
             localStorage.removeItem(NOTE_TYPE_KEY);
+            localStorage.removeItem(SAVED_SNAPSHOT_KEY);
             setActiveCaseIdState(null);
             // Transition back to center: fade in centered input
             setTimeout(() => {
@@ -2025,11 +2110,14 @@ const QuickSOAP = () => {
                 localStorage.setItem(NOTE_TYPE_KEY, typeToSave);
             }
 
+            markSaved(report);
             setSaveMessageVisible(true);
             setTimeout(() => setSaveMessageVisible(false), 2000);
+            return true;
         } catch (err) {
             console.error('Error saving QuickSOAP record:', err);
             setError('Failed to save record. Please try again.');
+            return false;
         } finally {
             setIsSaving(false);
         }
@@ -2453,6 +2541,81 @@ const QuickSOAP = () => {
                     </div>
                 </div>
             )}
+
+            <AnimatePresence>
+                {pendingLeave && (
+                    <motion.div
+                        key="leave-prompt"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="fixed inset-0 z-[120] flex items-center justify-center px-4 bg-[#13233f]/30 backdrop-blur-sm"
+                        onClick={() => !isSaving && setPendingLeave(null)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            transition={{ duration: 0.24, ease: [0.2, 0.7, 0.2, 1] }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-[440px] bg-white rounded-[24px] p-6 shadow-[0_30px_80px_-30px_rgba(19,35,63,0.45)]"
+                        >
+                            <h3 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>
+                                {hasReport ? 'Save your changes?' : 'Discard this dictation?'}
+                            </h3>
+                            <p className="mt-2 mb-6 text-[14.5px] leading-relaxed text-[#1a2b4a]/65">
+                                {hasReport
+                                    ? "You've edited this note since it was last saved. If you leave now those edits will be lost."
+                                    : "Your dictation hasn't been turned into a note yet. Leaving will clear it."}
+                            </p>
+                            <div className="flex flex-wrap justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingLeave(null)}
+                                    disabled={isSaving}
+                                    className="h-10 px-4 rounded-full text-[14px] font-semibold text-[#1a2b4a]/70 bg-transparent border-none hover:bg-[#f6f8fb] cursor-pointer transition-colors disabled:opacity-50"
+                                >
+                                    Keep editing
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const action = pendingLeave;
+                                        setPendingLeave(null);
+                                        runLeave(action);
+                                    }}
+                                    disabled={isSaving}
+                                    className="h-10 px-4 rounded-full text-[14px] font-semibold text-red-600 bg-white border border-red-200 hover:bg-red-50 cursor-pointer transition-colors disabled:opacity-50"
+                                >
+                                    Discard
+                                </button>
+                                {hasReport && (
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            const action = pendingLeave;
+                                            const ok = await handleSaveRecord();
+                                            if (!ok) return;
+                                            setPendingLeave(null);
+                                            runLeave(action);
+                                        }}
+                                        disabled={isSaving}
+                                        className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-[14px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors disabled:opacity-60"
+                                    >
+                                        {isSaving ? (
+                                            <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                                        ) : (
+                                            <FiSave className="text-[14px]" />
+                                        )}
+                                        {pendingLeave.kind === 'back' ? 'Save and go back' : 'Save and start new'}
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Start New Confirmation Modal (Mobile only) */}
             {showStartNewModal && isMobile && (
@@ -3227,7 +3390,7 @@ const QuickSOAP = () => {
                         }}>
                         {/* Sticky header: the case you're in, then the tools for this note */}
                         <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-[#e7ecf3] shadow-[0_10px_30px_-24px_rgba(19,35,63,0.35)]">
-                            <CaseBar caseId={activeCaseId} recordType={recordType} onBack={leaveToCase} refreshKey={caseBarKey} />
+                            <CaseBar caseId={activeCaseId} recordType={recordType} onBack={() => requestLeave({ kind: 'back' })} refreshKey={caseBarKey} />
                             <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
                                 <AnimatePresence mode="wait" initial={false}>
                                     {isRecording ? (

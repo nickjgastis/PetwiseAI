@@ -13,8 +13,7 @@ import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles'
 import {
     normalizeType,
     loadNoteIntoQuickSOAP,
-    clearQuickSOAPStorage,
-    setActiveCaseId
+    requestNewCase
 } from '../utils/cases';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -50,16 +49,6 @@ const dayBucket = (d) => {
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return 'This week';
     return 'Earlier';
-};
-
-// Leaves an in-progress dictation alone; a finished note is already saved to its case.
-const goToNewCase = (navigate, caseId = null) => {
-    if (localStorage.getItem('quickSOAP_report')) {
-        clearQuickSOAPStorage();
-        localStorage.removeItem('quickSOAP_selectedTemplate');
-    }
-    setActiveCaseId(caseId);
-    navigate('/dashboard/quicksoap');
 };
 
 const PillButton = ({ onClick, children, disabled, variant = 'primary', className = '' }) => (
@@ -162,7 +151,7 @@ const CaseList = () => {
                     title="Cases"
                     subtitle="Every patient’s SOAPs, summaries and callbacks, kept together."
                     action={(
-                        <PillButton onClick={() => goToNewCase(navigate)}>
+                        <PillButton onClick={() => requestNewCase(navigate)}>
                             <FiPlus /> New case
                         </PillButton>
                     )}
@@ -194,7 +183,7 @@ const CaseList = () => {
                         <span className="mx-auto w-14 h-14 rounded-2xl bg-[#e9f6fd] text-[#3468bd] flex items-center justify-center text-2xl mb-4"><FiFolder /></span>
                         <p className="text-lg font-semibold text-[#13233f]">No cases yet</p>
                         <p className="text-[14px] text-[#1a2b4a]/60 mt-1 mb-6">Record your first visit and it will show up here.</p>
-                        <PillButton onClick={() => goToNewCase(navigate)}><FiPlus /> Start a new case</PillButton>
+                        <PillButton onClick={() => requestNewCase(navigate)}><FiPlus /> Start a new case</PillButton>
                     </motion.div>
                 ) : groups.length === 0 ? (
                     <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No patients match “{search}”.</p>

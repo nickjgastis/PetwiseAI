@@ -2,6 +2,27 @@ import { supabase } from '../supabaseClient';
 
 export const CASE_KEY = 'quickSOAP_caseId';
 export const NOTE_TYPE_KEY = 'currentQuickSOAPReportType';
+export const SAVED_SNAPSHOT_KEY = 'quickSOAP_savedReport';
+export const NEW_CASE_EVENT = 'petwise:new-case';
+const NEW_CASE_REQUEST_KEY = 'quickSOAP_newCaseRequest';
+
+// Stored rather than passed so QuickSOAP sees it whether it is already mounted or mounts after navigate.
+export const requestNewCase = (navigate, caseId = null) => {
+    localStorage.setItem(NEW_CASE_REQUEST_KEY, JSON.stringify({ caseId }));
+    window.dispatchEvent(new Event(NEW_CASE_EVENT));
+    navigate('/dashboard/quicksoap');
+};
+
+export const takeNewCaseRequest = () => {
+    const raw = localStorage.getItem(NEW_CASE_REQUEST_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(NEW_CASE_REQUEST_KEY);
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return { caseId: null };
+    }
+};
 
 export const NOTE_LABELS = { soap: 'SOAP', summary: 'Summary', callback: 'Callback', dental: 'Dental' };
 
@@ -22,7 +43,8 @@ const QUICKSOAP_KEYS = [
     'currentQuickSOAPReportId',
     'quickSOAP_reportName',
     'quickSOAP_recordType',
-    NOTE_TYPE_KEY
+    NOTE_TYPE_KEY,
+    SAVED_SNAPSHOT_KEY
 ];
 
 export const clearQuickSOAPStorage = () => QUICKSOAP_KEYS.forEach((k) => localStorage.removeItem(k));
