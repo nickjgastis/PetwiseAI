@@ -243,7 +243,6 @@ const parseSOAPReport = (text) => {
     return { sections, rawText: cleanText };
 };
 
-const TYPE_RING = { soap: 'border-blue-500 ring-1 ring-blue-500', summary: 'border-emerald-500 ring-1 ring-emerald-500', callback: 'border-amber-500 ring-1 ring-amber-500' };
 
 const QuickSOAP = () => {
     const { user, isAuthenticated } = useAuth0();
@@ -2424,7 +2423,7 @@ const QuickSOAP = () => {
     const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
 
     const noteTypeControl = (
-        <div className="flex w-full gap-1 p-1 rounded-full bg-[#f3f6fa]">
+        <div className={`flex w-full gap-1 p-1 rounded-full ${isMobile ? 'bg-[#f3f6fa]' : 'bg-[#eef2f8] border border-[#e3e9f2]'}`}>
             {['soap', 'summary', 'callback'].map((t) => {
                 const s = TYPE_STYLES[t];
                 const Icon = s.icon;
@@ -2434,7 +2433,7 @@ const QuickSOAP = () => {
                         key={t}
                         type="button"
                         onClick={() => setRecordType(t)}
-                        className={`relative flex-1 h-9 rounded-full text-[13.5px] font-semibold border-none cursor-pointer bg-transparent transition-colors ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                        className={`relative flex-1 rounded-full font-semibold border-none cursor-pointer bg-transparent transition-colors ${isMobile ? 'h-9 text-[13.5px]' : 'h-10 text-[14.5px] font-display tracking-[-0.01em]'} ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
                     >
                         {on && (
                             <motion.span
@@ -2447,30 +2446,6 @@ const QuickSOAP = () => {
                             <Icon className="text-[13px]" /> {s.label}
                         </span>
                     </button>
-                );
-            })}
-        </div>
-    );
-
-    const typeCards = (
-        <div className="grid grid-cols-3 gap-2.5 w-full">
-            {['soap', 'summary', 'callback'].map((t) => {
-                const s = TYPE_STYLES[t];
-                const Icon = s.icon;
-                const on = recordType === t;
-                return (
-                    <motion.button
-                        key={t}
-                        type="button"
-                        onClick={() => setRecordType(t)}
-                        whileTap={{ scale: 0.97 }}
-                        className={`h-11 inline-flex items-center justify-center gap-2 rounded-[14px] border cursor-pointer font-display text-[14.5px] font-semibold tracking-[-0.01em] transition-[background-color,border-color,color] duration-200 ${on ? `bg-white text-[#13233f] ${TYPE_RING[t]}` : 'bg-white/60 border-[#e7ecf3] text-[#1a2b4a]/60 hover:bg-white hover:text-[#13233f]'}`}
-                    >
-                        <span className={`w-6 h-6 rounded-[8px] flex items-center justify-center text-[12px] transition-colors ${on ? `${s.solid} text-white` : s.soft}`}>
-                            <Icon />
-                        </span>
-                        {s.label}
-                    </motion.button>
                 );
             })}
         </div>
@@ -2857,7 +2832,7 @@ const QuickSOAP = () => {
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-[680px] flex-shrink-0'}`}>
                                 {startCard && (
-                                    <div className="mb-4">{typeCards}</div>
+                                    <div className="mb-4">{noteTypeControl}</div>
                                 )}
                                 {dictCard && (
                                     <motion.div
@@ -2917,7 +2892,7 @@ const QuickSOAP = () => {
                                         ) : (
                                             <div className="mt-6 pt-6 border-t border-[#eef2f7]">
                                                 <p className={SECTION_LABEL}>Record type</p>
-                                                {typeCards}
+                                                {noteTypeControl}
                                             </div>
                                         )}
 
@@ -2947,20 +2922,7 @@ const QuickSOAP = () => {
                                 {/* Mic: front and center before the first dictation, "Add more" after */}
                                 {!dictCard && !isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
                                     <div className={`flex flex-col items-center ${startCard ? '' : isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
-                                        <div className={`relative flex items-center justify-center ${startCard ? 'w-44 h-44' : ''}`}>
-                                            {startCard && (
-                                                <>
-                                                    {[0, 1, 2].map((i) => (
-                                                        <motion.span
-                                                            key={i}
-                                                            className="absolute inset-0 m-auto w-28 h-28 rounded-full border border-[#2d5fb8]/30"
-                                                            initial={{ scale: 1, opacity: 0 }}
-                                                            animate={{ scale: [1, 1.6], opacity: [0.55, 0] }}
-                                                            transition={{ duration: 3.6, repeat: Infinity, delay: i * 1.2, ease: 'easeOut' }}
-                                                        />
-                                                    ))}
-                                                </>
-                                            )}
+                                        <div className={`relative flex items-center justify-center ${startCard ? 'mt-2' : ''}`}>
                                             <motion.button
                                                 type="button"
                                                 onClick={startRecording}
