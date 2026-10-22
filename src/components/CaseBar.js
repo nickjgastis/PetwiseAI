@@ -93,7 +93,7 @@ export const CaseCreatedOverlay = ({ announcement }) => (
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                style={FONT}
+                style={{ ...FONT, left: Math.max(0, document.querySelector('main')?.getBoundingClientRect().left || 0) }}
             >
                 <motion.div
                     className="flex flex-col items-center text-center px-6"

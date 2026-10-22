@@ -16,6 +16,11 @@ body {
 }
 
 /* Android-specific scaling - Android devices often render smaller due to DPI differences */
+/* Keeps the layout from jumping sideways when a page grows tall enough to scroll. */
+html {
+    scrollbar-gutter: stable;
+}
+
 html.android {
     font-size: 18px;
 }
