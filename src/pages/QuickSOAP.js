@@ -3363,7 +3363,7 @@ const QuickSOAP = () => {
                                                 setIsEditingReportName(false);
                                             }
                                         }}
-                                        className="block w-full p-0 pb-1 m-0 text-[22px] leading-[1.3] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none tracking-tight"
+                                        className="block w-full p-0 pb-1 m-0 !text-[22px] leading-[1.3] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none tracking-tight"
                                         style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         autoFocus
                                     />

@@ -305,55 +305,6 @@ const visitInput = (notes) => {
 
 const SWAP = { initial: { opacity: 0, scale: 0.97 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.97 }, transition: { duration: 0.18, ease: EASE } };
 
-const DictationPad = ({ dictation, onStart, onStop }) => {
-    const { status, levels, seconds, pause, resume } = dictation;
-    const live = status === 'recording';
-    return (
-        <div className="rounded-[24px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] px-5 py-6 min-h-[168px] flex items-center justify-center">
-            <AnimatePresence mode="wait" initial={false}>
-                {status === 'idle' && (
-                    <motion.div key="idle" {...SWAP} className="flex flex-col items-center text-center">
-                        <motion.button
-                            type="button"
-                            onClick={onStart}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                            className="relative w-[72px] h-[72px] rounded-full border-none cursor-pointer text-white text-2xl flex items-center justify-center shadow-[0_14px_34px_-12px_rgba(45,95,184,0.8)]"
-                            style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
-                            aria-label="Start dictating"
-                        >
-                            <FiMic className="relative" />
-                        </motion.button>
-                        <p className="mt-3 text-[15px] font-semibold text-[#13233f]">Tap to dictate</p>
-                        <p className="text-[13px] text-[#1a2b4a]/55">or type below</p>
-                    </motion.div>
-                )}
-                {(status === 'recording' || status === 'paused') && (
-                    <motion.div key="rec" {...SWAP} className="w-full flex flex-col items-center">
-                        <RecordingStatus live={live} seconds={seconds} className="mb-3" />
-                        <WaveBars levels={levels} live={live} height={56} />
-                        <div className="flex items-center gap-2 mt-4">
-                            <PillButton variant="secondary" onClick={live ? pause : resume} className="!px-4 !py-2 !text-[13px]">
-                                {live ? <><FiPause /> Pause</> : <><FiPlay /> Resume</>}
-                            </PillButton>
-                            <PillButton onClick={onStop} className="!px-4 !py-2 !text-[13px]">
-                                <FiSquare className="text-[11px]" /> Done
-                            </PillButton>
-                        </div>
-                    </motion.div>
-                )}
-                {status === 'transcribing' && (
-                    <motion.div key="tx" {...SWAP} className="flex flex-col items-center">
-                        <span className="w-8 h-8 rounded-full border-[3px] border-[#2d5fb8]/20 border-t-[#2d5fb8] animate-spin" />
-                        <p className="mt-3 text-[14px] font-medium text-[#13233f]">Transcribing…</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
-
 const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onBusy }) => {
     const { user } = useAuth0();
     const usage = useUsage();
@@ -361,8 +312,8 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onBusy }) 
     const [type, setType] = useState(() => (notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap'));
     const [text, setText] = useState('');
     const baseInput = useMemo(() => visitInput(notes), [notes]);
-    const [includeEarlier, setIncludeEarlier] = useState(() => type !== 'soap');
-    const includeTouched = useRef(false);
+    const [includeEarlier, setIncludeEarlier] = useState(false);
+    const textRef = useRef(null);
     const [generating, setGenerating] = useState(false);
     const [error, setError] = useState('');
     const busy = generating || dictation.status !== 'idle';
@@ -370,8 +321,11 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onBusy }) 
     useEffect(() => { onBusy(busy); }, [busy, onBusy]);
     useEffect(() => () => onBusy(false), [onBusy]);
     useEffect(() => {
-        if (!includeTouched.current) setIncludeEarlier(type !== 'soap');
-    }, [type]);
+        const el = textRef.current;
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${Math.min(el.scrollHeight, 180)}px`;
+    }, [text, dictation.status]);
 
     const startDictation = useCallback(async () => {
         if (dictation.status !== 'idle') return;
@@ -471,71 +425,103 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onBusy }) 
             transition={{ height: { duration: 0.38, ease: EASE }, opacity: { duration: 0.25 } }}
             className="overflow-hidden"
         >
-            <div className="rounded-[28px] border border-[#e7ecf3] bg-white p-5 sm:p-7 mb-8 shadow-[0_24px_48px_-32px_rgba(19,35,63,0.3)]">
-                <div className="flex items-start justify-between gap-3 mb-5">
-                    <p className={`text-[1.35rem] font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT}`}>Add a note</p>
+            <div className="rounded-[24px] border border-[#e7ecf3] bg-white p-3 sm:p-4 mb-6 shadow-[0_18px_40px_-30px_rgba(19,35,63,0.3)]">
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="bg-[#f6f8fb] rounded-full p-0.5 inline-flex gap-0.5 max-w-full overflow-x-auto">
+                        {Object.entries(TYPE_STYLES).map(([key, info]) => {
+                            const Icon = info.icon;
+                            return (
+                                <button
+                                    key={key}
+                                    type="button"
+                                    disabled={generating}
+                                    onClick={() => setType(key)}
+                                    className={`relative px-3 py-1.5 text-[13px] font-medium rounded-full whitespace-nowrap flex items-center gap-1.5 border-none cursor-pointer bg-transparent transition-colors ${type === key ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                                >
+                                    {type === key && (
+                                        <motion.span layoutId="addnote-type" className={`absolute inset-0 rounded-full ${info.solid} shadow-sm`} transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
+                                    )}
+                                    <span className="relative flex items-center gap-1.5"><Icon className="text-[11px]" /> {info.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
                     {!busy && (
-                        <button type="button" onClick={onCancel} className="w-9 h-9 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
+                        <button type="button" onClick={onCancel} title="Close" className="ml-auto w-8 h-8 rounded-full flex items-center justify-center text-[#1a2b4a]/45 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
                             <FiX />
                         </button>
                     )}
                 </div>
 
-                <div className="bg-[#f6f8fb] rounded-full p-1 inline-flex gap-1 mb-5 max-w-full overflow-x-auto">
-                    {Object.entries(TYPE_STYLES).map(([key, info]) => {
-                        const Icon = info.icon;
-                        return (
-                            <button
-                                key={key}
-                                type="button"
-                                disabled={generating}
-                                onClick={() => setType(key)}
-                                className={`relative px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap flex items-center gap-1.5 border-none cursor-pointer bg-transparent transition-colors ${type === key ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
-                            >
-                                {type === key && (
-                                    <motion.span layoutId="addnote-type" className={`absolute inset-0 rounded-full ${info.solid} shadow-sm`} transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
-                                )}
-                                <span className="relative flex items-center gap-1.5"><Icon className="text-xs" /> {info.label}</span>
-                            </button>
-                        );
-                    })}
+                <div className="rounded-[20px] bg-[#f6f8fb] border border-transparent focus-within:bg-white focus-within:border-[#2d5fb8]/30 transition-colors p-1.5 min-h-[52px] flex items-center">
+                    <AnimatePresence mode="wait" initial={false}>
+                        {dictation.status === 'idle' ? (
+                            <motion.div key="idle" {...SWAP} className="flex items-start gap-2 w-full">
+                                <motion.button
+                                    type="button"
+                                    onClick={startDictation}
+                                    disabled={generating}
+                                    whileHover={{ scale: 1.06 }}
+                                    whileTap={{ scale: 0.94 }}
+                                    title="Dictate"
+                                    className="w-10 h-10 shrink-0 rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_8px_20px_-10px_rgba(45,95,184,0.8)] disabled:opacity-50"
+                                    style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
+                                >
+                                    <FiMic />
+                                </motion.button>
+                                <textarea
+                                    ref={textRef}
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                    disabled={generating}
+                                    rows={1}
+                                    placeholder="Tap the mic to dictate, or type here"
+                                    className="flex-1 min-w-0 py-2 pr-2 bg-transparent border-none text-[15px] leading-relaxed text-[#13233f] resize-none focus:outline-none placeholder:text-[#1a2b4a]/40"
+                                    style={{ maxHeight: 180, overflow: 'auto' }}
+                                />
+                            </motion.div>
+                        ) : dictation.status === 'transcribing' ? (
+                            <motion.div key="tx" {...SWAP} className="flex items-center gap-2.5 px-2 h-10 text-[14px] font-medium text-[#2d5fb8]">
+                                <span className="w-4 h-4 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin" /> Transcribing…
+                            </motion.div>
+                        ) : (
+                            <motion.div key="rec" {...SWAP} className="flex items-center gap-3 w-full pl-2">
+                                <RecordingStatus live={dictation.status === 'recording'} seconds={dictation.seconds} className="shrink-0" />
+                                <WaveBars levels={dictation.levels} live={dictation.status === 'recording'} height={32} barWidth={3} gap={2} className="flex-1 min-w-0 overflow-hidden" />
+                                <button type="button" onClick={dictation.status === 'recording' ? dictation.pause : dictation.resume} title={dictation.status === 'recording' ? 'Pause' : 'Resume'} className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-[#2d5fb8] bg-white border border-[#e7ecf3] hover:bg-[#e9f6fd] cursor-pointer transition-colors">
+                                    {dictation.status === 'recording' ? <FiPause className="text-[13px]" /> : <FiPlay className="text-[13px]" />}
+                                </button>
+                                <button type="button" onClick={stopDictation} className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer transition-colors">
+                                    <FiSquare className="text-[10px]" /> Done
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-
-                <DictationPad dictation={dictation} onStart={startDictation} onStop={stopDictation} />
-
-                <textarea
-                    value={text}
-                    onChange={(e) => setText(e.target.value)}
-                    disabled={generating || dictation.status === 'transcribing'}
-                    rows={text ? 5 : 2}
-                    placeholder={type === 'callback' ? 'e.g. Owner says she’s eating well, recheck in 2 weeks' : 'Your dictation shows up here. You can also type.'}
-                    className="mt-4 w-full px-4 py-3 bg-[#f6f8fb] border border-transparent rounded-2xl text-[15px] leading-relaxed focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors resize-y"
-                />
-
-                {baseInput && (
-                    <label className="mt-3 flex items-center gap-2.5 text-[14px] text-[#1a2b4a]/70 cursor-pointer select-none w-fit">
-                        <input
-                            type="checkbox"
-                            checked={includeEarlier}
-                            onChange={(e) => { includeTouched.current = true; setIncludeEarlier(e.target.checked); }}
-                            className="w-4 h-4 accent-[#2d5fb8]"
-                        />
-                        Include the earlier dictation from this case
-                    </label>
-                )}
 
                 <AnimatePresence>
                     {error && (
-                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-[13px] text-red-500 mt-2">
+                        <motion.p initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-[13px] text-red-500 mt-2 mb-0 overflow-hidden">
                             {error}
                         </motion.p>
                     )}
                 </AnimatePresence>
 
-                <div className="flex justify-end mt-5">
-                    <PillButton onClick={generate} disabled={busy}>
+                <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+                    {baseInput ? (
+                        <label className="flex items-center gap-2 text-[13px] text-[#1a2b4a]/65 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={includeEarlier}
+                                onChange={(e) => setIncludeEarlier(e.target.checked)}
+                                className="w-4 h-4 accent-[#2d5fb8]"
+                            />
+                            Include earlier dictation from this case
+                        </label>
+                    ) : <span />}
+                    <PillButton onClick={generate} disabled={busy} className="!px-4 !py-2 !text-[13.5px]">
                         {generating ? (
-                            <><span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Writing {typeStyle(type).label}…</>
+                            <><span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" /> Writing {typeStyle(type).label}…</>
                         ) : (
                             <>Create {typeStyle(type).label}</>
                         )}
@@ -681,7 +667,7 @@ const CaseDetail = ({ caseId }) => {
                                         }}
                                         placeholder="Pet name"
                                         autoFocus
-                                        className="block p-0 pb-1 m-0 text-[1.9rem] sm:text-[2.2rem] leading-[1.15] font-bold tracking-[-0.03em] text-[#2d5fb8] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none w-full max-w-md"
+                                        className="block p-0 pb-1 m-0 !text-[1.9rem] sm:!text-[2.2rem] leading-[1.15] font-bold tracking-[-0.03em] text-[#2d5fb8] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none w-full max-w-md"
                                     />
                                 ) : (
                                     <button
