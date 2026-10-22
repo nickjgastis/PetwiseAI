@@ -144,37 +144,92 @@ const FormattedQueryMessage = ({ content }) => {
     const isRecText = (s) => /^\*{0,2}recommendations?\b/i.test(s);
     const recStrip = (s) => stripBold(s).replace(/^recommendations?:?\s*/i, '');
 
+    const NAME_LABEL = /^(drug(\s+name)?|medication|med|name|product)$/i;
+    const noteRow = (f, i) => (
+        <p key={i} className={NOTE_CLASS}>
+            <span className="font-semibold text-[#13233f]">{renderInline(f.label)}: </span>
+            {renderInline(f.value)}
+        </p>
+    );
+    const plainRows = (rows) => {
+        const fields = rows.filter((r) => !isNotesLabel(r.label));
+        const notes = rows.filter((r) => isNotesLabel(r.label));
+        const stacked = fields.some((r) => stripBold(r.value).length > 70);
+        return (
+            <>
+                {stacked ? (
+                    <div className="space-y-4">
+                        {fields.map((f, i) => (
+                            <div key={i}>
+                                <div className="font-semibold text-[#13233f]">{renderInline(f.label)}</div>
+                                <div className="mt-0.5">{renderInline(f.value, true)}</div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="space-y-1">
+                        {fields.map((f, i) => (
+                            <p key={i}>
+                                <span className="font-semibold text-[#13233f]">{renderInline(f.label)}: </span>
+                                {renderInline(f.value)}
+                            </p>
+                        ))}
+                    </div>
+                )}
+                {notes.map(noteRow)}
+            </>
+        );
+    };
+
     let fieldBuf = [];
     const flushFields = () => {
         if (fieldBuf.length === 0) return;
         const rows = fieldBuf;
         fieldBuf = [];
-        const stacked = rows.some((r) => stripBold(r.value).length > 70);
+
+        const groups = [];
+        let seen = new Set();
+        rows.forEach((r) => {
+            const k = r.label.toLowerCase();
+            const startsGroup = groups.length === 0 || seen.has(k) || (NAME_LABEL.test(r.label) && seen.size > 0);
+            if (startsGroup) {
+                groups.push([]);
+                seen = new Set();
+            }
+            seen.add(k);
+            groups[groups.length - 1].push(r);
+        });
+
+        const named = groups.some((g) => NAME_LABEL.test(g[0].label));
+        if (groups.length === 1 && !named) {
+            out.push(
+                <div key={key++} className="my-3">
+                    {plainRows(rows)}
+                </div>
+            );
+            return;
+        }
+
         out.push(
-            stacked ? (
-                <div key={key++} className="mt-3 mb-2 space-y-4">
-                    {rows.map((f, i) => (
-                        <div key={i}>
-                            <div className="font-semibold text-[#13233f]">{renderInline(f.label)}</div>
-                            <div className="mt-0.5">{renderInline(f.value, true)}</div>
+            <div key={key++} className="my-3">
+                {groups.map((g, i) => {
+                    const hasName = NAME_LABEL.test(g[0].label);
+                    return (
+                        <div key={i} className={i > 0 ? 'mt-5 pt-5 border-t border-[#2d5fb8]/10' : ''}>
+                            {hasName && (
+                                <div className="mb-1.5 text-[15px] md:text-[16px] font-semibold text-[#13233f]">{renderInline(stripBold(g[0].value))}</div>
+                            )}
+                            {plainRows(hasName ? g.slice(1) : g)}
                         </div>
-                    ))}
-                </div>
-            ) : (
-                <div key={key++} className="my-2 space-y-1.5">
-                    {rows.map((f, i) => (
-                        <p key={i}>
-                            <span className="font-semibold text-[#13233f]">{renderInline(f.label)}: </span>
-                            {renderInline(f.value)}
-                        </p>
-                    ))}
-                </div>
-            )
+                    );
+                })}
+            </div>
         );
     };
 
     tokens.forEach((t) => {
-        if (!(t.type === 'field' && !isNotesLabel(t.label) && t.value.trim())) flushFields();
+        const continuesRun = t.type === 'field' && t.value.trim() && (!isNotesLabel(t.label) || fieldBuf.length > 0);
+        if (!continuesRun) flushFields();
         if (recBuf) {
             if (t.type === 'bullet' || (t.type === 'text' && !/^\*{0,2}additional notes/i.test(t.text))) {
                 recommendation(isRecText(t.text) ? recStrip(t.text) : t.text);
@@ -248,7 +303,9 @@ const FormattedQueryMessage = ({ content }) => {
                 break;
 
             case 'field':
-                if (isNotesLabel(t.label)) {
+                if (isNotesLabel(t.label) && fieldBuf.length > 0) {
+                    fieldBuf.push(t);
+                } else if (isNotesLabel(t.label)) {
                     out.push(
                         <p key={key++} className={NOTE_CLASS}>
                             <span className="font-semibold text-[#13233f]">{t.label}: </span>
