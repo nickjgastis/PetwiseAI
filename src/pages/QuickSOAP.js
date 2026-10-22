@@ -7,7 +7,7 @@ import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiEdit3, FiCheck, FiX } from 'react-icons/fi';
+import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiEdit3, FiCheck, FiX, FiArrowRight } from 'react-icons/fi';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
@@ -242,6 +242,10 @@ const parseSOAPReport = (text) => {
 
     return { sections, rawText: cleanText };
 };
+
+const TYPE_HINTS = { soap: 'Exam visit record', summary: 'Discharge or referral', callback: 'Owner phone call' };
+const TYPE_RING = { soap: 'border-blue-500 ring-1 ring-blue-500', summary: 'border-emerald-500 ring-1 ring-emerald-500', callback: 'border-amber-500 ring-1 ring-amber-500' };
+const TODAY_LABEL = () => new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
 const QuickSOAP = () => {
     const { user, isAuthenticated } = useAuth0();
@@ -2418,7 +2422,7 @@ const QuickSOAP = () => {
 
     const startCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
     const dictCard = !hasReport && !isLoadingFromSaved && dictations.length > 0 && !isRecording && !isTranscribing;
-    const CARD = 'w-full max-w-[560px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]';
+    const CARD = `w-full ${isMobile ? 'max-w-[560px]' : 'max-w-[680px]'} mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]`;
     const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
 
     const noteTypeControl = (
@@ -2449,6 +2453,45 @@ const QuickSOAP = () => {
             })}
         </div>
     );
+
+    const typeCards = (
+        <div className="grid grid-cols-3 gap-3 w-full">
+            {['soap', 'summary', 'callback'].map((t) => {
+                const s = TYPE_STYLES[t];
+                const Icon = s.icon;
+                const on = recordType === t;
+                return (
+                    <motion.button
+                        key={t}
+                        type="button"
+                        onClick={() => setRecordType(t)}
+                        whileTap={{ scale: 0.97 }}
+                        className={`relative text-left rounded-[20px] p-4 border cursor-pointer transition-[background-color,border-color,box-shadow] duration-200 ${on ? `bg-white ${TYPE_RING[t]} shadow-[0_16px_34px_-20px_rgba(19,35,63,0.45)]` : 'bg-white/70 border-[#e7ecf3] hover:bg-white hover:border-[#d6e1ef]'}`}
+                    >
+                        <span className={`w-10 h-10 rounded-[13px] flex items-center justify-center text-[17px] transition-colors ${on ? `${s.solid} text-white` : s.soft}`}>
+                            <Icon />
+                        </span>
+                        <span className="block mt-3 font-display text-[16px] font-semibold tracking-[-0.01em] text-[#13233f]">{s.label}</span>
+                        <span className="block mt-0.5 text-[12.5px] leading-snug text-[#1a2b4a]/50">{TYPE_HINTS[t]}</span>
+                        <AnimatePresence>
+                            {on && (
+                                <motion.span
+                                    initial={{ opacity: 0, scale: 0.6 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.6 }}
+                                    className={`absolute top-3.5 right-3.5 w-5 h-5 rounded-full ${s.solid} text-white flex items-center justify-center`}
+                                >
+                                    <FiCheck className="text-[11px]" strokeWidth={3} />
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </motion.button>
+                );
+            })}
+        </div>
+    );
+
+    const SECTION_LABEL = 'm-0 mb-3 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45';
 
     return (
         <>
@@ -2753,7 +2796,7 @@ const QuickSOAP = () => {
                 <GeneratingLoader recordType={recordType} left={isSidebarCollapsed ? '80px' : '224px'} />
             )}
 
-            <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} bg-gradient-to-br from-gray-50 via-white to-gray-50 flex relative w-full ${isGenerating && !isMobile && !hasReport ? 'invisible' : ''}`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>
+            <div className={`${isMobile ? 'h-full overflow-hidden' : 'min-h-screen overflow-hidden'} ${!hasReport && !isMobile ? 'bg-white' : 'bg-gradient-to-br from-gray-50 via-white to-gray-50'} flex relative w-full ${isGenerating && !isMobile && !hasReport ? 'invisible' : ''}`} style={isMobile ? { height: '100%', minHeight: '100%', overflow: 'hidden' } : {}}>
                 {/* Left Side - Input Area (top bar when report exists on desktop) */}
                 <div
                     ref={hasReport && !isMobile ? topBarRef : undefined}
@@ -2781,21 +2824,33 @@ const QuickSOAP = () => {
                         })
                     }}
                 >
+                    {!hasReport && !isLoadingFromSaved && !isMobile && (
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                            <div className="absolute left-1/2 -top-48 -translate-x-1/2 w-[900px] h-[520px] rounded-full bg-[#5cccf0]/[0.13] blur-3xl" />
+                            <div className="absolute -bottom-40 -right-24 w-[520px] h-[420px] rounded-full bg-[#2d5fb8]/[0.07] blur-3xl" />
+                        </div>
+                    )}
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
                         <div className={`h-full flex flex-col items-center ${isMobile
                             ? (dictations.length === 0 || isRecording
                                 ? 'justify-center px-4'
                                 : 'justify-start px-4 pt-6 pb-6 overflow-hidden')
-                            : 'justify-center px-8'
+                            : 'relative justify-start px-8 py-12 overflow-y-auto [&>*:first-child]:mt-auto [&>*:last-child]:mb-auto'
                             }`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
-                                <div className={`${isMobile ? 'mb-6 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
-                                    <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.5rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
+                                <div className={`${isMobile ? 'mb-6 mt-2' : 'mb-9'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
+                                    {!isMobile && (
+                                        <span className="mb-4 inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white/80 border border-[#e3ecf8] text-[12px] font-semibold text-[#2d5fb8] shadow-[0_6px_16px_-12px_rgba(19,35,63,0.4)]">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#5cccf0]" />
+                                            {TODAY_LABEL()}
+                                        </span>
+                                    )}
+                                    <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[3.25rem]'} leading-[1.08] pb-1.5 font-bold tracking-[-0.035em] ${GRADIENT_TEXT}`}>
                                         {activeCaseId ? 'Add a record' : 'Start a new case'}
                                     </h1>
-                                    <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
+                                    <p className={`mt-2 mb-0 ${isMobile ? 'text-[15px]' : 'text-[16.5px]'} text-[#1a2b4a]/55`}>
                                         {dictations.length
                                             ? (isMobile ? 'Add more, or send it to your desktop.' : 'Add more, or generate when you’re ready.')
                                             : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the record.'}
@@ -2815,7 +2870,13 @@ const QuickSOAP = () => {
 
 
                             {/* Main Input Container - ChatGPT style */}
-                            <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
+                            <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-[680px] flex-shrink-0'}`}>
+                                {startCard && (
+                                    <div className="mb-6">
+                                        <p className={`${SECTION_LABEL} text-center`}>Record type</p>
+                                        {typeCards}
+                                    </div>
+                                )}
                                 {dictCard && (
                                     <motion.div
                                         initial={{ opacity: 0, y: 8 }}
@@ -2872,9 +2933,9 @@ const QuickSOAP = () => {
                                                 </span>
                                             </div>
                                         ) : (
-                                            <div className="mt-5 pt-5 border-t border-[#eef2f7]">
-                                                <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record type</p>
-                                                {noteTypeControl}
+                                            <div className="mt-6 pt-6 border-t border-[#eef2f7]">
+                                                <p className={SECTION_LABEL}>Record type</p>
+                                                {typeCards}
                                             </div>
                                         )}
 
@@ -2900,32 +2961,56 @@ const QuickSOAP = () => {
                                     </motion.div>
                                 )}
 
-                                <div className={startCard ? `${CARD} px-10 pt-10 pb-7 flex flex-col items-center` : 'contents'}>
+                                <div className={startCard ? `${CARD} relative overflow-hidden px-10 pt-9 pb-8 flex flex-col items-center bg-[radial-gradient(120%_90%_at_50%_0%,#eef5fe_0%,#ffffff_62%)]` : 'contents'}>
                                 {/* Mic: front and center before the first dictation, "Add more" after */}
                                 {!dictCard && !isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
                                     <div className={`flex flex-col items-center ${startCard ? '' : isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
-                                        <motion.button
-                                            type="button"
-                                            onClick={startRecording}
-                                            disabled={isGenerating}
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                                            className={`relative ${dictations.length ? 'w-20 h-20' : 'w-24 h-24'} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_18px_40px_-14px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed`}
-                                            style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
-                                            title={dictations.length ? 'Add more dictation' : 'Start dictating'}
-                                        >
-                                            <FiMic className={`relative ${dictations.length ? 'text-3xl' : 'text-4xl'}`} />
-                                        </motion.button>
-                                        <p className="mt-4 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
+                                        <div className={`relative flex items-center justify-center ${startCard ? 'w-44 h-44' : ''}`}>
+                                            {startCard && (
+                                                <>
+                                                    <span className="absolute inset-0 m-auto w-36 h-36 rounded-full bg-[#2d5fb8]/[0.06]" />
+                                                    {[0, 1, 2].map((i) => (
+                                                        <motion.span
+                                                            key={i}
+                                                            className="absolute inset-0 m-auto w-28 h-28 rounded-full border border-[#2d5fb8]/30"
+                                                            initial={{ scale: 1, opacity: 0 }}
+                                                            animate={{ scale: [1, 1.6], opacity: [0.55, 0] }}
+                                                            transition={{ duration: 3.6, repeat: Infinity, delay: i * 1.2, ease: 'easeOut' }}
+                                                        />
+                                                    ))}
+                                                </>
+                                            )}
+                                            <motion.button
+                                                type="button"
+                                                onClick={startRecording}
+                                                disabled={isGenerating}
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                                                className={`relative ${startCard ? 'w-28 h-28' : dictations.length ? 'w-20 h-20' : 'w-24 h-24'} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_22px_44px_-14px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.25)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
+                                                title={dictations.length ? 'Add more dictation' : 'Start dictating'}
+                                            >
+                                                <FiMic className={`relative ${startCard ? 'text-[40px]' : dictations.length ? 'text-3xl' : 'text-4xl'}`} />
+                                            </motion.button>
+                                        </div>
+                                        <p className={`${startCard ? 'mt-3 font-display text-[19px] tracking-[-0.01em]' : 'mt-4 text-[15px]'} mb-0 font-semibold text-[#13233f]`}>
+                                            {dictations.length ? 'Add more' : startCard ? 'Click to dictate' : 'Tap to dictate'}
+                                        </p>
                                         {startCard && (
-                                            <p className="mt-1 mb-0 text-[13px] text-[#1a2b4a]/50">Talk through the visit. Pause any time.</p>
+                                            <>
+                                                <p className="mt-1 mb-0 text-[14px] text-[#1a2b4a]/50">Talk through the visit. Pause any time.</p>
+                                                <div className="mt-6 inline-flex items-center gap-2.5 rounded-full bg-[#13233f] text-white pl-1.5 pr-4 py-1.5 text-[13px]">
+                                                    <span className="h-6 px-2.5 rounded-full bg-[#5cccf0]/20 text-[#5cccf0] text-[10.5px] font-bold uppercase tracking-[0.1em] inline-flex items-center">Tip</span>
+                                                    Start with the patient’s name, species and age
+                                                </div>
+                                            </>
                                         )}
                                     </div>
                                 )}
 
-                                {/* Record Type Selector - Show before first dictation */}
-                                {!isRecording && !isTranscribing && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
+                                {/* Record Type Selector - Show before first dictation (mobile; desktop shows the cards above) */}
+                                {!startCard && !isRecording && !isTranscribing && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
                                     <div className={startCard ? 'w-full mt-7 pt-6 border-t border-[#eef2f7]' : 'w-full max-w-[400px] mb-6'}>
                                         <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record type</p>
                                         {noteTypeControl}
@@ -2939,10 +3024,10 @@ const QuickSOAP = () => {
                                         initial={{ opacity: 0, scale: 0.97 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ duration: 0.2 }}
-                                        className={`w-full max-w-md mx-auto rounded-[28px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] px-6 py-6 flex flex-col items-center ${isMobile ? 'mb-5' : 'mb-6'}`}
+                                        className={`w-full mx-auto rounded-[28px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] flex flex-col items-center ${isMobile ? 'max-w-md px-6 py-6 mb-5' : 'max-w-[680px] px-10 py-12 mb-6 shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]'}`}
                                     >
                                         <RecordingStatus live={!isPaused} seconds={recordSeconds} className="mb-3" />
-                                        <WaveBars levels={waveLevels} live={!isPaused} height={64} barWidth={5} gap={4} />
+                                        <WaveBars levels={waveLevels} live={!isPaused} height={isMobile ? 64 : 96} barWidth={isMobile ? 5 : 6} gap={isMobile ? 4 : 5} />
                                         <div className="flex items-center gap-2 mt-5">
                                             <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors">
                                                 {isPaused ? <><FiPlay /> Resume</> : <><FiPause /> Pause</>}
@@ -2987,7 +3072,7 @@ const QuickSOAP = () => {
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
-                                        className={`mb-4 w-full max-w-[560px] mx-auto flex-shrink-0 ${startCard || dictCard ? 'mt-6' : ''}`}
+                                        className={`mb-4 w-full max-w-[680px] mx-auto flex-shrink-0 ${startCard || dictCard ? 'mt-6' : ''}`}
                                     >
                                         <textarea
                                             ref={inputTextareaRef}
@@ -3073,20 +3158,23 @@ const QuickSOAP = () => {
 
                                 {/* Generate Button - Show when dictations or additional notes exist (Desktop only) */}
                                 {!isMobile && !hasReport && (dictations.length > 0 || input.trim()) && !isTranscribing && (
-                                    <div className="flex justify-center mt-4">
+                                    <div className="flex justify-center mt-5">
                                         <button
                                             type="button"
                                             onClick={handleGenerateSOAP}
                                             disabled={isGenerating}
-                                            className="px-8 py-3.5 bg-[#2d5fb8] hover:bg-[#2350a3] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full font-semibold text-[15px] transition-all duration-200 shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] hover:-translate-y-px"
+                                            className="group w-full max-w-[680px] h-14 inline-flex items-center justify-center gap-2.5 rounded-[18px] border-none cursor-pointer text-white font-display font-semibold text-[16.5px] tracking-[-0.01em] bg-gradient-to-r from-[#6aa5ef] via-[#4f8ce2] to-[#3d78d2] shadow-[0_16px_34px_-16px_rgba(61,120,210,0.75),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-[1.05] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                                         >
                                             {isGenerating ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                                                    <span>Generating...</span>
-                                                </div>
+                                                <>
+                                                    <span className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                                                    Generating…
+                                                </>
                                             ) : (
-                                                `Generate ${recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}`
+                                                <>
+                                                    Generate {recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}
+                                                    <FiArrowRight className="text-[18px] transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                </>
                                             )}
                                         </button>
                                     </div>
