@@ -372,10 +372,10 @@ const CaseList = ({ mobile = false }) => {
 // Cached cards are tied to the record text length so an edited record gets a fresh card.
 const cardSource = (note) => (note.report_text || '').length;
 
-// Auto-generated names look like "Bella - QuickSOAP - 10/21/2026, 9:00 PM"; anything else the vet typed.
+// Auto-generated names look like "Bella - QuickSOAP - Oct 21, 9:00 PM" (older: "10/21/2026, 9:00 PM"); anything else the vet typed.
 const customTitle = (note) => {
     const name = (note.report_name || '').trim();
-    if (!name || /\b(QuickSOAP|SOAP|Summary|Callback)( Mobile| Draft)? - \d/.test(name)) return null;
+    if (!name || /\b(QuickSOAP|SOAP|Summary|Callback|Dental)( Mobile| Draft)? - (\d|[A-Z][a-z]{2} \d)/.test(name)) return null;
     return name;
 };
 
