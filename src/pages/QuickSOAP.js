@@ -315,6 +315,21 @@ const QuickSOAP = () => {
         ? Math.max(lastUsage.limit - lastUsage.used, 0)
         : usage.soap.remaining;
     const showNudge = !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
+
+    // Drafts sent from the phone spend a SOAP when the desktop generates them, so they count against
+    // today's allowance now. Kept in state: an await before getUserMedia breaks the mic prompt on iOS.
+    const [queuedSoaps, setQueuedSoaps] = useState(0);
+    const refreshQueuedSoaps = useCallback(async () => {
+        if (usage.isUnlimited || !isAuthenticated) return setQueuedSoaps(0);
+        const { count } = await supabase
+            .from('saved_reports')
+            .select('id', { count: 'exact', head: true })
+            .is('report_text', null)
+            .eq('form_data->>sent_to_desktop', 'true');
+        setQueuedSoaps(count || 0);
+    }, [usage.isUnlimited, isAuthenticated]);
+    useEffect(() => { refreshQueuedSoaps(); }, [refreshQueuedSoaps, usage.soap.used]);
+    const outOfSoaps = !usage.isUnlimited && usage.soap.remaining - queuedSoaps <= 0;
     const dismissNudge = () => {
         setNudgeDismissed(true);
         sessionStorage.setItem(nudgeKey, 'true');
@@ -1114,9 +1129,9 @@ const QuickSOAP = () => {
 
     // NEW: Chunked recording system (replaces old single-blob recording)
     const startRecording = async () => {
-        // Free-tier gate: no recording at all once today's SOAPs are used up —
+        // Free-tier gate: no recording at all once today's SOAPs are used up or already queued —
         // otherwise mobile dictations pile up as drafts that can never generate.
-        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
+        if (outOfSoaps) {
             setShowUpgradeModal(true);
             return;
         }
@@ -2255,7 +2270,7 @@ const QuickSOAP = () => {
     const handleSendToDesktopClick = () => {
         if (!isAuthenticated || !user || !isMobile) return;
         // Free-tier gate: don't queue drafts the desktop can't generate today
-        if (!usage.isUnlimited && usage.soap.remaining <= 0) {
+        if (outOfSoaps) {
             setShowUpgradeModal(true);
             return;
         }
@@ -2327,6 +2342,7 @@ const QuickSOAP = () => {
                 setIsSendingToDesktop(false);
                 setHasBeenSentToDesktop(true);
                 setShowSendSuccessModal(true);
+                refreshQueuedSoaps();
                 // NOTE: Do NOT clear here - user may need to re-send if something fails
                 // Clearing happens when SOAP generation starts (on desktop)
             }
