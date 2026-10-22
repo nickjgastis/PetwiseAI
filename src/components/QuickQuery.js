@@ -1262,7 +1262,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 onClick={handleClear}
                                 className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors"
                             >
-                                New question
+                                New chat
                             </button>
                         </div>
                     </div>
