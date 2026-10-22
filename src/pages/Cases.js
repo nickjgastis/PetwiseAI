@@ -356,7 +356,7 @@ const DictationPad = ({ dictation, onStart, onStop }) => {
     );
 };
 
-const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, recordSignal, onBusy }) => {
+const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, onBusy }) => {
     const { user } = useAuth0();
     const usage = useUsage();
     const dictation = useDictation();
@@ -397,10 +397,6 @@ const AddNotePanel = ({ caseRow, notes, onCreated, onCancel, onLimit, recordSign
             setError(err.message || 'Transcription failed. Please try again.');
         }
     };
-
-    useEffect(() => {
-        if (recordSignal) startDictation();
-    }, [recordSignal]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const useEarlier = includeEarlier && !!baseInput;
 
@@ -563,7 +559,6 @@ const CaseDetail = ({ caseId }) => {
     const [nameDraft, setNameDraft] = useState('');
     const [adding, setAdding] = useState(false);
     const [panelBusy, setPanelBusy] = useState(false);
-    const [recordSignal, setRecordSignal] = useState(0);
     const [newNoteId, setNewNoteId] = useState(null);
     const [showUpgrade, setShowUpgrade] = useState(false);
 
@@ -598,11 +593,6 @@ const CaseDetail = ({ caseId }) => {
     const openInEditor = (note) => {
         loadNoteIntoQuickSOAP(note);
         navigate('/dashboard/quicksoap');
-    };
-
-    const record = () => {
-        setAdding(true);
-        setRecordSignal((n) => n + 1);
     };
 
     const onCreated = (saved, extractedPetName) => {
@@ -695,9 +685,6 @@ const CaseDetail = ({ caseId }) => {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-2 shrink-0">
-                            <PillButton variant="secondary" onClick={record} disabled={panelBusy}>
-                                <FiMic /> Record
-                            </PillButton>
                             <PillButton onClick={() => setAdding((v) => !v)} disabled={panelBusy}>
                                 <motion.span animate={{ rotate: adding ? 45 : 0 }} transition={{ duration: 0.25, ease: EASE }} className="flex"><FiPlus /></motion.span>
                                 {adding ? 'Close' : 'Add a note'}
@@ -715,7 +702,6 @@ const CaseDetail = ({ caseId }) => {
                             onCreated={onCreated}
                             onCancel={() => setAdding(false)}
                             onLimit={() => setShowUpgrade(true)}
-                            recordSignal={recordSignal}
                             onBusy={setPanelBusy}
                         />
                     )}
