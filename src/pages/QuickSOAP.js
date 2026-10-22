@@ -424,6 +424,7 @@ const QuickSOAP = () => {
     const topInputBarRef = useRef(null);
     const [, setShowStickyBar] = useState(false);
     const [showDictations, setShowDictations] = useState(false);
+    const [showStartNotes, setShowStartNotes] = useState(false);
     const openTypedNotes = () => {
         setShowDictations(true);
         setTimeout(() => sidebarInputTextareaRef.current?.focus(), 340);
@@ -2616,7 +2617,7 @@ const QuickSOAP = () => {
                             }`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
-                                <div className={`${isMobile ? 'mb-4 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
+                                <div className={`${isMobile ? 'mb-4 mt-2' : dictations.length ? 'mb-8' : 'mb-12'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
                                     {dictations.length === 0 ? (
                                         <>
                                             <div className="flex items-center justify-center gap-3">
@@ -2751,9 +2752,29 @@ const QuickSOAP = () => {
 
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
-                                {/* Record Type Selector + Template Button - Show before first dictation */}
-                                {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`relative ${isMobile ? 'mb-6' : 'mb-8'}`}>
+                                {/* Mic: front and center before the first dictation, "Add more" after */}
+                                {!isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
+                                    <div className={`flex flex-col items-center ${isMobile ? 'mb-5 flex-shrink-0' : dictations.length ? 'mb-6' : 'mb-12'}`}>
+                                        <motion.button
+                                            type="button"
+                                            onClick={startRecording}
+                                            disabled={isGenerating}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                                            className={`relative ${dictations.length ? (isMobile ? 'w-20 h-20' : 'w-24 h-24') : (isMobile ? 'w-24 h-24' : 'w-28 h-28')} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_18px_40px_-14px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
+                                            title={dictations.length ? 'Add more dictation' : 'Start dictating'}
+                                        >
+                                            <FiMic className={`relative ${dictations.length ? 'text-3xl' : 'text-4xl'}`} />
+                                        </motion.button>
+                                        <p className="mt-3 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
+                                    </div>
+                                )}
+
+                                {/* Record Type Selector - Show before first dictation */}
+                                {!isRecording && !isTranscribing && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
+                                    <div className="relative mb-6">
                                         <p className="text-center mb-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Select note type</p>
                                         <div className="flex justify-center">
                                             <div className="bg-white border border-[#e7ecf3] rounded-full p-1 inline-flex gap-1 shadow-[0_6px_20px_-14px_rgba(19,35,63,0.3)]">
@@ -2789,27 +2810,6 @@ const QuickSOAP = () => {
                                                 </button>
                                             </div>
                                         </div>
-                                        {/* Template Context button - hidden for now */}
-                                    </div>
-                                )}
-
-                                {/* Mic: front and center before the first dictation, "Add more" after */}
-                                {!isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex flex-col items-center ${isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
-                                        <motion.button
-                                            type="button"
-                                            onClick={startRecording}
-                                            disabled={isGenerating}
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                                            className={`relative ${dictations.length ? (isMobile ? 'w-20 h-20' : 'w-24 h-24') : (isMobile ? 'w-24 h-24' : 'w-28 h-28')} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_18px_40px_-14px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed`}
-                                            style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
-                                            title={dictations.length ? 'Add more dictation' : 'Start dictating'}
-                                        >
-                                            <FiMic className={`relative ${dictations.length ? 'text-3xl' : 'text-4xl'}`} />
-                                        </motion.button>
-                                        <p className="mt-3 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
                                     </div>
                                 )}
 
@@ -2848,15 +2848,34 @@ const QuickSOAP = () => {
                                 )}
 
                                 {/* Additional Notes Section - Show in un-generated view */}
-                                {!hasReport && !isMobile && (
-                                    <div className="mb-4 w-full max-w-2xl flex-shrink-0">
+                                {!hasReport && !isMobile && !isRecording && !isTranscribing && !showStartNotes && !input.trim() && (
+                                    <div className="flex justify-center mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowStartNotes(true);
+                                                setTimeout(() => inputTextareaRef.current?.focus(), 50);
+                                            }}
+                                            className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[13px] font-semibold text-[#2d5fb8] bg-transparent border border-[#e7ecf3] hover:bg-[#f6f8fb] hover:border-[#2d5fb8]/25 cursor-pointer transition-colors"
+                                        >
+                                            <FiEdit3 className="text-[13px]" /> Type or paste notes
+                                        </button>
+                                    </div>
+                                )}
+                                {!hasReport && !isMobile && (showStartNotes || input.trim()) && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
+                                        className="mb-4 w-full max-w-2xl flex-shrink-0"
+                                    >
                                         <textarea
                                             ref={inputTextareaRef}
                                             value={input}
                                             onChange={(e) => {
                                                 setInput(e.target.value);
                                             }}
-                                            placeholder="Add notes (optional)"
+                                            placeholder="Weight, vitals, history, anything you want included"
                                             className="w-full px-4 py-3 bg-white border border-[#e7ecf3] rounded-2xl focus:border-[#2d5fb8]/30 focus:outline-none resize-none text-[#13233f] placeholder:text-[#1a2b4a]/40 text-[15px] overflow-y-auto shadow-[0_6px_20px_-16px_rgba(19,35,63,0.3)] transition-colors"
                                             style={{
                                                 whiteSpace: 'pre-wrap',
@@ -2866,7 +2885,7 @@ const QuickSOAP = () => {
                                             }}
                                             disabled={isTranscribing || isGenerating}
                                         />
-                                    </div>
+                                    </motion.div>
                                 )}
 
                                 {/* Mobile: Send to Desktop and Start New buttons - Show when dictations exist and not recording */}
