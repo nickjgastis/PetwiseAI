@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from './UpgradeNudge';
 import UpgradeModal from './UpgradeModal';
+import { GRADIENT_TEXT } from './caseStyles';
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -1251,16 +1252,23 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     />
                 )}
             </AnimatePresence>
-            <div className={`${isMobile ? 'h-full overflow-hidden bg-[#f5f7fb]' : 'h-screen overflow-hidden bg-white'} flex flex-col`}>
-                {!isMobile && (
-                    <div className="flex justify-center items-center p-4 border-b border-gray-200 bg-white relative">
-                        <div className="flex items-center gap-3">
-                            <h2 className="text-3xl font-bold text-primary-600">PetQuery</h2>
+            <div className={`${isMobile ? 'h-full overflow-hidden bg-[#f5f7fb]' : 'h-screen overflow-hidden bg-gradient-to-b from-[#f6f8fb] to-white'} flex flex-col`} style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+                {!isMobile && messages.length > 0 && (
+                    <div className="flex-shrink-0 border-b border-[#eef2f7] bg-white/80 backdrop-blur-md">
+                        <div className="max-w-4xl mx-auto h-[60px] px-4 flex items-center justify-between">
+                            <h2 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>PetQuery</h2>
+                            <button
+                                type="button"
+                                onClick={handleClear}
+                                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors"
+                            >
+                                New question
+                            </button>
                         </div>
                     </div>
                 )}
                 <div className="flex-1 flex flex-col overflow-hidden">
-                    <div ref={scrollContainerRef} className={`flex-1 min-h-0 overflow-y-auto ${isMobile ? 'px-3.5 py-4 mobile-scroll-container' : 'px-4 py-6 pb-40'} space-y-4`}>
+                    <div ref={scrollContainerRef} className={`flex-1 min-h-0 overflow-y-auto ${isMobile ? 'px-3.5 py-4 mobile-scroll-container' : 'px-4 py-8'} space-y-4`}>
                         <UpgradeNudge show={showNudge} feature="query" remaining={queryRemaining} onDismiss={dismissNudge} />
                         {/* Mobile empty state */}
                         {messages.length === 0 && isMobile && (
@@ -1272,7 +1280,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             >
                                 <div className="text-center px-5 mb-6">
                                     <div className="flex items-center justify-center gap-2.5 flex-wrap mb-2">
-                                        <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent">
+                                        <h1 className={`m-0 pb-1 text-[2.25rem] leading-[1.15] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
                                             PetQuery
                                         </h1>
                                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
@@ -1317,26 +1325,61 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         )}
                         {/* Desktop empty state with suggestions */}
                         {messages.length === 0 && !isMobile && (
-                            <>
-                                <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6 max-w-5xl mx-auto">
-                                    <strong className="block mb-1 text-sm font-semibold text-gray-700">Disclaimer:</strong>
-                                    <p className="text-sm text-gray-600 leading-relaxed">PetQuery provides AI-generated responses for educational purposes only.
-                                        These responses may contain inaccuracies and are not a substitute for professional veterinary advice.
-                                        Always consult a licensed veterinarian to verify information before making any medical decisions.</p>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
-                                    {randomSuggestions.map((suggestion, index) => (
-                                        <div
-                                            key={index}
-                                            className="bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98]"
-                                            onClick={() => handleSuggestionClick(suggestion.question)}
+                            <div className="max-w-5xl mx-auto pt-[6vh]">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
+                                    className="text-center mb-10"
+                                >
+                                    <div className="flex items-center justify-center gap-2">
+                                        <h1 className={`m-0 pb-1 text-[2.5rem] leading-[1.15] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>PetQuery</h1>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setShowTutorial(true);
+                                                setTutorialStep(0);
+                                            }}
+                                            title="How PetQuery works"
+                                            className="w-7 h-7 rounded-full flex items-center justify-center text-[#1a2b4a]/35 hover:text-[#2d5fb8] hover:bg-white bg-transparent border-none cursor-pointer transition-colors"
                                         >
-                                            <h4 className="text-primary-600 font-semibold mb-2 text-base">{suggestion.category}</h4>
-                                            <p className="text-gray-700 text-sm leading-relaxed">{suggestion.question}</p>
-                                        </div>
+                                            <FaQuestionCircle className="text-[15px]" />
+                                        </button>
+                                    </div>
+                                    <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
+                                        Ask about differentials, dosages, treatment protocols or diagnostics.
+                                    </p>
+                                </motion.div>
+                                <p className="mb-3 ml-1 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Try asking</p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {randomSuggestions.map((suggestion, index) => (
+                                        <motion.div
+                                            key={suggestion.question}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ duration: 0.35, ease: [0.2, 0.7, 0.2, 1], delay: 0.05 + index * 0.04 }}
+                                        >
+                                            <motion.button
+                                                type="button"
+                                                whileHover={{ y: -4 }}
+                                                whileTap={{ scale: 0.985 }}
+                                                transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+                                                onClick={() => handleSuggestionClick(suggestion.question)}
+                                                className="group w-full h-full text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] flex flex-col"
+                                            >
+                                                <span className="text-[11.5px] font-semibold tracking-[0.06em] uppercase text-[#2d5fb8]">{suggestion.category}</span>
+                                                <span className="mt-2 text-[14.5px] leading-relaxed text-[#13233f]/85 flex-1">{suggestion.question}</span>
+                                                <span className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    Ask this <FaArrowRight className="text-[10px]" />
+                                                </span>
+                                            </motion.button>
+                                        </motion.div>
                                     ))}
                                 </div>
-                            </>
+                                <p className="mt-8 mb-0 text-center text-[12px] leading-relaxed text-[#1a2b4a]/40 max-w-2xl mx-auto">
+                                    PetQuery gives AI-generated answers for educational use. They can contain mistakes and are not a substitute for professional judgment, so verify before making treatment decisions.
+                                </p>
+                            </div>
                         )}
                         {messages.map((msg, index) => {
                             // Find the user message that prompted this assistant response
@@ -1358,11 +1401,11 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     initial={isMobile ? { opacity: 0, y: 8, scale: 0.99 } : false}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ duration: 0.25, ease: 'easeOut' }}
-                                    className={`flex ${isMobile ? 'mb-3' : 'mb-6'} ${msg.role === 'user' ? 'justify-end' : 'justify-start'} max-w-none`}
+                                    className={`flex ${isMobile ? 'mb-3 max-w-none' : 'mb-5 max-w-4xl mx-auto w-full'} ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
-                                    <div className={`${isMobile ? (msg.role === 'user' ? 'max-w-[86%]' : 'max-w-[94%]') : 'max-w-4xl'} ${isMobile ? '' : 'w-full'} ${msg.role === 'user'
-                                        ? `bg-[#3468bd] text-white ${isMobile ? 'rounded-[20px] rounded-br-md px-4 py-2.5 text-sm shadow-sm' : 'rounded-2xl rounded-br-md px-5 py-4'} ml-auto`
-                                        : `${isMobile ? 'bg-white text-gray-800 rounded-[20px] rounded-bl-md px-4 py-3 text-sm border border-gray-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.05)]' : 'bg-primary-50 text-gray-800 rounded-2xl rounded-bl-md px-5 py-5 border-l-4 border-primary-400'} message-content`
+                                    <div className={`${isMobile ? (msg.role === 'user' ? 'max-w-[86%]' : 'max-w-[94%]') : msg.role === 'user' ? 'max-w-[70%]' : 'max-w-4xl w-full'} ${msg.role === 'user'
+                                        ? `bg-[#2d5fb8] text-white ${isMobile ? 'rounded-[20px] rounded-br-md px-4 py-2.5 text-sm shadow-sm' : 'rounded-[22px] rounded-br-md px-5 py-3.5 text-[15px] shadow-[0_10px_30px_-16px_rgba(45,95,184,0.7)]'} ml-auto`
+                                        : `${isMobile ? 'bg-white text-gray-800 rounded-[20px] rounded-bl-md px-4 py-3 text-sm border border-gray-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.05)]' : 'bg-white text-[#13233f] rounded-[24px] rounded-bl-md px-7 py-6 border border-[#e7ecf3] shadow-[0_20px_50px_-36px_rgba(19,35,63,0.35)]'} message-content`
                                         }`}>
                                         {msg.role === 'assistant' ? (
                                             <FormattedMessage content={getContentWithoutSources(msg.content, userMessage)} />
@@ -1372,9 +1415,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         {msg.role === 'assistant' && (
                                             <div className={`flex items-center gap-1.5 ${isMobile ? 'mt-2' : 'mt-3'}`}>
                                                 <button
-                                                    className={`inline-flex items-center gap-1 ${isMobile ? 'p-1.5 active:scale-95 touch-manipulation' : 'px-2 py-1'} text-xs border rounded transition-all duration-200 ${copiedIndex === index
-                                                        ? 'bg-primary-500 text-white border-primary-500'
-                                                        : 'bg-transparent text-gray-500 border-gray-200 active:bg-gray-100'
+                                                    className={`inline-flex items-center justify-center ${isMobile ? 'p-1.5 rounded active:scale-95 touch-manipulation' : 'w-8 h-8 rounded-full cursor-pointer'} text-xs border transition-colors duration-200 ${copiedIndex === index
+                                                        ? 'bg-[#2d5fb8] text-white border-[#2d5fb8]'
+                                                        : 'bg-transparent text-[#1a2b4a]/50 border-[#e7ecf3] hover:text-[#2d5fb8] hover:bg-[#f6f8fb] active:bg-gray-100'
                                                         }`}
                                                     onClick={() => handleCopy(getContentWithoutSources(msg.content, userMessage), index)}
                                                     aria-label="Copy message"
@@ -1392,7 +1435,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 </button>
                                                 {!isMobile && (
                                                     <button
-                                                        className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-transparent text-gray-600 border border-gray-300 rounded hover:bg-gray-50 hover:text-primary-600 transition-all duration-200 hover:-translate-y-0.5"
+                                                        className="inline-flex items-center justify-center w-8 h-8 rounded-full cursor-pointer bg-transparent text-[#1a2b4a]/50 border border-[#e7ecf3] hover:text-[#2d5fb8] hover:bg-[#f6f8fb] transition-colors duration-200"
                                                         onClick={() => handlePrint(getContentWithoutSources(msg.content, userMessage))}
                                                         aria-label="Print message"
                                                     >
@@ -1403,9 +1446,9 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 )}
                                                 {extractSources(msg.content, userMessage) && (
                                                     <button
-                                                        className={`inline-flex items-center gap-1 ${isMobile ? 'p-1.5' : 'px-2 py-1'} text-xs border rounded transition-all duration-200 ${showSources[index]
-                                                            ? 'bg-primary-100 text-primary-700 border-primary-300'
-                                                            : 'bg-transparent text-gray-500 border-gray-200 active:bg-gray-100'
+                                                        className={`inline-flex items-center justify-center ${isMobile ? 'p-1.5 rounded' : 'w-8 h-8 rounded-full cursor-pointer'} text-xs border transition-colors duration-200 ${showSources[index]
+                                                            ? 'bg-[#e9f1fc] text-[#2d5fb8] border-[#2d5fb8]/30'
+                                                            : 'bg-transparent text-[#1a2b4a]/50 border-[#e7ecf3] hover:text-[#2d5fb8] hover:bg-[#f6f8fb] active:bg-gray-100'
                                                             }`}
                                                         onClick={() => toggleSources(index)}
                                                         aria-label="Show sources"
@@ -1415,11 +1458,11 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                         </svg>
                                                     </button>
                                                 )}
-                                                {!isMobile && <span className="text-xs text-gray-500 ml-auto">{formatTimestamp()}</span>}
+                                                {!isMobile && <span className="text-[12px] text-[#1a2b4a]/40 ml-auto">{formatTimestamp()}</span>}
                                             </div>
                                         )}
                                         {msg.role === 'assistant' && showSources[index] && extractSources(msg.content, userMessage) && (
-                                            <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600 animate-fade-in-up">
+                                            <div className="mt-4 pt-4 border-t border-[#eef2f7] text-sm text-[#1a2b4a]/70 animate-fade-in-up">
                                                 <FormattedMessage content={extractSources(msg.content, userMessage)} />
                                             </div>
                                         )}
@@ -1434,7 +1477,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             <motion.div
                                 initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`flex justify-start mb-6 max-w-none ${fadeOutLoader ? 'animate-fade-out' : ''}`}
+                                className={`flex justify-start mb-6 ${isMobile ? 'max-w-none' : 'max-w-4xl mx-auto w-full'} ${fadeOutLoader ? 'animate-fade-out' : ''}`}
                             >
                                 <div className={isMobile
                                     ? 'h-10 px-4 rounded-[20px] rounded-bl-md bg-white border border-gray-200/80 shadow-sm flex items-center gap-1.5'
@@ -1459,47 +1502,32 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         )}
                         <div ref={messagesEndRef} />
                     </div>
-                    <div className={`${isMobile ? 'relative flex-shrink-0' : 'fixed bottom-0'} bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)] transition-all duration-300`} style={isMobile ? {} : { left: '224px', width: 'calc(100% - 224px)' }}>
-                        <div className={`mx-auto ${isMobile ? 'px-3.5 pt-2.5 pb-3' : 'p-4 max-w-4xl'}`} style={{ marginLeft: 'auto', marginRight: 'auto' }}>
-                            {/* Mode toggle and tutorial - smaller on mobile */}
+                    <div className={`relative flex-shrink-0 ${isMobile ? 'bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)]' : 'bg-white/85 backdrop-blur-md border-t border-[#eef2f7]'}`}>
+                        <div className={`mx-auto ${isMobile ? 'px-3.5 pt-2.5 pb-3' : 'px-4 pt-3 pb-5 max-w-4xl'}`}>
+                            {/* Mode toggle - smaller on mobile */}
                             <div className={`flex justify-center items-center gap-2 ${isMobile ? 'mb-2.5' : 'mb-3'}`}>
-                                <div className={`inline-flex bg-gray-100 rounded-full ${isMobile ? 'p-0.5 border border-gray-200/70' : 'p-1'}`}>
-                                    <button
-                                        onClick={() => setIsLongAnswerMode(false)}
-                                        className={`${isMobile ? 'px-3 py-1 text-[11px] active:scale-95 touch-manipulation' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${!isLongAnswerMode
-                                            ? 'bg-white text-[#3468bd] shadow-sm'
-                                            : 'text-gray-500'
-                                            }`}
-                                    >
-                                        Short
-                                    </button>
-                                    <button
-                                        onClick={() => setIsLongAnswerMode(true)}
-                                        className={`${isMobile ? 'px-3 py-1 text-[11px] active:scale-95 touch-manipulation' : 'px-4 py-2 text-sm'} font-medium rounded-full transition-all duration-200 ${isLongAnswerMode
-                                            ? 'bg-white text-[#3468bd] shadow-sm'
-                                            : 'text-gray-500'
-                                            }`}
-                                    >
-                                        Long
-                                    </button>
+                                <div className={`inline-flex rounded-full ${isMobile ? 'bg-gray-100 p-0.5 border border-gray-200/70' : 'bg-[#f3f6fa] p-1 gap-1'}`}>
+                                    {[['Short', false], ['Long', true]].map(([label, long]) => {
+                                        const on = isLongAnswerMode === long;
+                                        return (
+                                            <button
+                                                key={label}
+                                                type="button"
+                                                onClick={() => setIsLongAnswerMode(long)}
+                                                className={`relative ${isMobile ? 'px-3 py-1 text-[11px] active:scale-95 touch-manipulation' : 'px-4 h-8 text-[13px]'} font-semibold rounded-full border-none bg-transparent cursor-pointer transition-colors duration-200 ${on ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]/50 hover:text-[#13233f]'}`}
+                                            >
+                                                {on && (
+                                                    <motion.span
+                                                        layoutId="query-length"
+                                                        className="absolute inset-0 rounded-full bg-white shadow-sm"
+                                                        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                                                    />
+                                                )}
+                                                <span className="relative">{isMobile ? label : `${label} answer`}</span>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                {messages.length === 0 && !isMobile && (
-                                    <div className="relative group">
-                                        <button
-                                            onClick={() => {
-                                                setShowTutorial(true);
-                                                setTutorialStep(0);
-                                            }}
-                                            className="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-all cursor-pointer"
-                                            title="PetQuery tutorial"
-                                        >
-                                            <FaQuestionCircle className="text-gray-600 text-sm" />
-                                        </button>
-                                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-                                            PetQuery tutorial
-                                        </span>
-                                    </div>
-                                )}
                                 {/* Mobile clear button - compact */}
                                 {messages.length > 0 && isMobile && (
                                     <button
@@ -1612,21 +1640,21 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 }
                                             }}
                                             placeholder="Ask me anything about veterinary medicine..."
-                                            className="w-full min-h-[52px] max-h-[120px] px-4 py-3 pr-12 text-base border-2 border-gray-300 rounded-2xl bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none shadow-sm resize-none transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed hide-scrollbar overflow-y-auto"
+                                            className="block w-full min-h-[52px] max-h-[120px] pl-5 pr-20 py-[14px] text-[15px] text-[#13233f] placeholder:text-[#1a2b4a]/40 border border-[#e7ecf3] rounded-[26px] bg-white focus:border-[#2d5fb8]/35 focus:outline-none shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)] resize-none transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed hide-scrollbar overflow-y-auto"
                                             disabled={isLoading || isRecording}
                                             rows="1"
                                         />
                                         {/* Desktop mic and collapse buttons */}
-                                        <div className="absolute top-3 right-3 flex items-center gap-2">
+                                        <div className="absolute top-[10px] right-3 flex items-center gap-1">
                                             {!isRecording && !isTranscribing && (
                                                 <button
                                                     type="button"
                                                     onClick={startRecording}
-                                                    className="p-1.5 text-primary-500 hover:text-primary-600 transition-colors duration-200 rounded-full hover:bg-primary-50"
+                                                    className="w-8 h-8 flex items-center justify-center text-[#2d5fb8] bg-transparent border-none cursor-pointer transition-colors duration-200 rounded-full hover:bg-[#f6f8fb]"
                                                     aria-label="Start dictation"
                                                     title="Start dictation"
                                                 >
-                                                    <FaMicrophone className="text-lg" />
+                                                    <FaMicrophone className="text-[15px]" />
                                                 </button>
                                             )}
                                             {isRecording && (
@@ -1670,7 +1698,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 {/* Send button - smaller on mobile */}
                                 <button
                                     type="submit"
-                                    className={`${isMobile ? 'w-[46px] h-[46px] active:scale-95 shadow-md shadow-blue-200/70' : 'w-[52px] h-[52px]'} bg-[#3468bd] text-white rounded-full hover:bg-primary-700 disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center flex-shrink-0 touch-manipulation`}
+                                    className={`${isMobile ? 'w-[46px] h-[46px] active:scale-95 shadow-md shadow-blue-200/70 bg-[#3468bd]' : 'w-[52px] h-[52px] bg-[#2d5fb8] hover:bg-[#2350a3] shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] cursor-pointer border-none'} text-white rounded-full disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center flex-shrink-0 touch-manipulation`}
                                     disabled={isLoading || !inputMessage.trim() || isRecording}
                                     aria-label="Send message"
                                 >
@@ -1684,21 +1712,6 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                         <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
                                     </svg>
                                 </button>
-                                {/* Desktop clear button */}
-                                {messages.length > 0 && !isMobile && (
-                                    <button
-                                        onClick={handleClear}
-                                        type="button"
-                                        className="px-4 py-2 h-[52px] bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 hover:text-gray-800 transition-colors duration-200 font-medium flex-shrink-0 flex items-center gap-2"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M3 6h18" />
-                                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                        </svg>
-                                        Clear
-                                    </button>
-                                )}
                             </form>
                         </div>
                     </div>
