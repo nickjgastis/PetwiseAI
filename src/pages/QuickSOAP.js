@@ -7,7 +7,7 @@ import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
+import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiEdit3, FiCheck, FiX } from 'react-icons/fi';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
@@ -424,6 +424,10 @@ const QuickSOAP = () => {
     const topInputBarRef = useRef(null);
     const [, setShowStickyBar] = useState(false);
     const [showDictations, setShowDictations] = useState(false);
+    const openTypedNotes = () => {
+        setShowDictations(true);
+        setTimeout(() => sidebarInputTextareaRef.current?.focus(), 340);
+    };
     const [recordSeconds, setRecordSeconds] = useState(0);
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
@@ -3239,21 +3243,17 @@ const QuickSOAP = () => {
                                         <FiRefreshCw className={`text-[13px] ${isGenerating ? 'animate-spin' : ''}`} /> {isGenerating ? 'Generating…' : 'Regenerate'}
                                     </button>
                                 )}
-                                <textarea
-                                    ref={sidebarInputTextareaRef}
-                                    value={input}
-                                    rows={1}
-                                    onChange={(e) => {
-                                        setInput(e.target.value);
-                                        const el = e.target;
-                                        el.style.height = 'auto';
-                                        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-                                    }}
-                                    placeholder="Add notes, then regenerate"
-                                    className="flex-1 min-w-[180px] h-10 px-4 py-2 rounded-[20px] bg-[#f6f8fb] border border-transparent text-[13.5px] text-[#13233f] resize-none focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors placeholder:text-[#1a2b4a]/40"
-                                    style={{ maxHeight: '120px', overflow: 'auto', fontFamily: "'Inter', sans-serif" }}
-                                    disabled={isTranscribing || isGenerating}
-                                />
+                                {!isRecording && !isTranscribing && (
+                                    <button
+                                        type="button"
+                                        onClick={openTypedNotes}
+                                        disabled={isGenerating}
+                                        className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[13.5px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 hover:bg-[#f6f8fb] cursor-pointer transition-colors disabled:opacity-50 shrink-0"
+                                    >
+                                        <FiEdit3 className="text-[14px] text-[#2d5fb8]" /> Type
+                                    </button>
+                                )}
+                                <span className="flex-1" />
                                 <span className="w-px h-6 bg-[#e7ecf3] mx-1 shrink-0" />
                                 {isAuthenticated && (
                                     <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 disabled:opacity-40 ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]'}`}>
@@ -3274,16 +3274,15 @@ const QuickSOAP = () => {
                                     <motion.p key="err" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-6 pb-2 m-0 text-[13px] text-red-500 overflow-hidden">{error}</motion.p>
                                 )}
                             </AnimatePresence>
-                            {dictations.length > 0 && (
-                                <div className="border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <div className="border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
                                     <button
                                         type="button"
                                         onClick={() => setShowDictations((v) => !v)}
                                         className="w-full flex items-center gap-2 px-5 sm:px-6 h-10 text-[13px] font-medium text-[#13233f] bg-transparent hover:bg-[#f6f8fb] border-none cursor-pointer transition-colors"
                                     >
                                         <FiMic className="text-[13px] text-[#2d5fb8]" />
-                                        Dictations
-                                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[11px] font-semibold flex items-center justify-center">{dictations.length}</span>
+                                        Dictations & notes
+                                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[11px] font-semibold flex items-center justify-center">{dictations.length + (input.trim() ? 1 : 0)}</span>
                                         <span className="ml-auto text-[12.5px] text-[#1a2b4a]/50">{showDictations ? 'Hide' : 'Show'}</span>
                                         <FiChevronDown className={`text-[14px] text-[#1a2b4a]/50 transition-transform duration-300 ${showDictations ? 'rotate-180' : ''}`} />
                                     </button>
@@ -3314,12 +3313,33 @@ const QuickSOAP = () => {
                                                             <p className="m-0 text-[13.5px] text-[#1a2b4a]/75 leading-relaxed whitespace-pre-wrap">{dictation.expanded ? dictation.fullText : dictation.summary}</p>
                                                         </div>
                                                     ))}
+                                                    <div className="md:col-span-2 rounded-[20px] bg-white border border-[#e7ecf3] px-4 py-3 shadow-[0_6px_20px_-16px_rgba(19,35,63,0.3)]">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <FiEdit3 className="text-[13px] text-[#2d5fb8]" />
+                                                            <span className="text-[13px] font-semibold text-[#13233f]">Typed notes</span>
+                                                            <span className="ml-auto text-[12px] text-[#1a2b4a]/45">Included when you regenerate</span>
+                                                        </div>
+                                                        <textarea
+                                                            ref={sidebarInputTextareaRef}
+                                                            value={input}
+                                                            rows={2}
+                                                            onChange={(e) => {
+                                                                setInput(e.target.value);
+                                                                const el = e.target;
+                                                                el.style.height = 'auto';
+                                                                el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+                                                            }}
+                                                            placeholder="Anything to add or correct, e.g. weight was 12.4 kg, add recheck in 2 weeks"
+                                                            className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f6f8fb] border border-transparent text-[14px] text-[#13233f] leading-relaxed resize-none focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors placeholder:text-[#1a2b4a]/40"
+                                                            style={{ maxHeight: '200px', overflow: 'auto', fontFamily: "'Inter', sans-serif" }}
+                                                            disabled={isTranscribing || isGenerating}
+                                                        />
+                                                    </div>
                                                 </div>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
-                                </div>
-                            )}
+                            </div>
                         </div>
 
                         <div className="mx-auto w-full max-w-[1120px] px-6 pt-6">
