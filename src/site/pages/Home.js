@@ -6,6 +6,7 @@ import { PRESS } from '../siteConfig';
 import { SoapNote } from '../demos';
 import DictationDemo from '../DictationDemo';
 import { PRICES } from '../../constants/pricing';
+import { BRAND_WASH } from '../../brand';
 import {
     ButtonLink,
     Container,
@@ -199,7 +200,7 @@ const Home = () => (
             </div>
         </Section>
 
-        <Section tone="tint">
+        <Section tone="wash">
             <SectionHeading
                 eyebrow="One workspace"
                 title="The SOAP is only the beginning."
@@ -262,7 +263,7 @@ const Home = () => (
                     </p>
                 </Reveal>
                 <Reveal className="lg:col-span-5 lg:col-start-8" delay={100}>
-                    <div className="rounded-[28px] border border-[#e7ecf3] p-8">
+                    <div className={`rounded-[28px] border border-[#e3ecf8] ${BRAND_WASH} p-8`}>
                         <div className="flex items-baseline gap-2">
                             <span className="text-5xl font-semibold tracking-[-0.03em] text-[#13233f]">${PRICES.usd.yearly}</span>
                             <span className="text-[15px] text-[#1a2b4a]/55">USD / month, billed yearly</span>

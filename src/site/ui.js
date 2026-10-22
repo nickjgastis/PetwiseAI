@@ -2,13 +2,14 @@ import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { FiArrowRight, FiCheck, FiPlus } from 'react-icons/fi';
 import { TESTIMONIALS } from './siteConfig';
+import { BRAND_WASH } from '../brand';
 
 export const Container = ({ className = '', children }) => (
     <div className={`max-w-6xl mx-auto px-5 sm:px-8 ${className}`}>{children}</div>
 );
 
 export const Section = ({ id, tone = 'white', className = '', children }) => {
-    const bg = { white: 'bg-white', tint: 'bg-[#f6f8fb]', navy: 'bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white' }[tone];
+    const bg = { white: 'bg-white', tint: 'bg-[#f6f8fb]', wash: BRAND_WASH, navy: 'bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white' }[tone];
     return (
         <section id={id} className={`${bg} py-20 sm:py-28 ${className}`}>
             <Container>{children}</Container>
