@@ -2802,7 +2802,11 @@ const QuickSOAP = () => {
                 >
                     {!hasReport && !isLoadingFromSaved ? (
                         // Centered floating input before report generation
-                        <div className={`h-full flex flex-col items-center ${isMobile
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
+                            className={`h-full flex flex-col items-center ${isMobile
                             ? (dictations.length === 0 || isRecording
                                 ? 'justify-center px-4'
                                 : 'justify-start px-4 pt-6 pb-6 overflow-hidden')
@@ -3140,7 +3144,7 @@ const QuickSOAP = () => {
                                 <UpgradeNudge show={showNudge} feature="soap" remaining={soapRemaining} onDismiss={dismissNudge} />
 
                             </div>
-                        </div>
+                        </motion.div>
                     ) : isMobile ? (
                         // Mobile sidebar layout when report is generated (unchanged)
                         <div className="h-full flex flex-col overflow-hidden px-6 py-8 bg-white">
