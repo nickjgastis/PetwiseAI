@@ -16,7 +16,8 @@ import Templates from '../components/Templates';
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
 import { FaSearch, FaUser, FaSignOutAlt, FaMicrophone, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen } from 'react-icons/fa';
-import { FiArchive, FiClipboard, FiFileText, FiFolder, FiHelpCircle, FiMessageCircle, FiPlus } from 'react-icons/fi';
+import { FiPlus } from 'react-icons/fi';
+import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill } from 'react-icons/pi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
@@ -208,14 +209,16 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
     );
 };
 
-const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour, tooltip, badge, secondary }) => (
+const SideLink = ({ to, active, icon: BaseIcon, activeIcon, label, collapsed, onClick, dot, tour, tooltip, badge, secondary }) => {
+    const Icon = active && activeIcon ? activeIcon : BaseIcon;
+    return (
     <li className="mx-3 my-[3px] relative">
         <Link
             to={to}
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`group relative flex items-center no-underline rounded-[12px] outline-none focus-visible:ring-2 focus-visible:ring-[#2d5fb8]/30 transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
+            className={`group relative flex items-center no-underline rounded-[12px] font-display tracking-[-0.01em] outline-none focus-visible:ring-2 focus-visible:ring-[#2d5fb8]/30 transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
         >
             {active && (
                 <motion.span
@@ -234,7 +237,8 @@ const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour
             )}
         </Link>
     </li>
-);
+    );
+};
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -1536,9 +1540,9 @@ const Dashboard = () => {
                             </Link>
                         </li>
 
-                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={FiFolder} label="Cases" tour="cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
-                        <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={FiMessageCircle} label="PetQuery" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={FiClipboard} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={PiPawPrint} activeIcon={PiPawPrintFill} label="Cases" tour="cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
+                        <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={PiSparkle} activeIcon={PiSparkleFill} label="PetQuery" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={PiLayout} activeIcon={PiLayoutFill} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
 
                         {subscriptionStatus === 'past_due' && (
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
@@ -1560,9 +1564,9 @@ const Dashboard = () => {
                                 <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
                         </li>
-                        <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={FiArchive} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={FiFileText} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={FiHelpCircle} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={PiArchive} activeIcon={PiArchiveFill} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={PiFileText} activeIcon={PiFileTextFill} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={PiQuestion} activeIcon={PiQuestionFill} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                     </ul>
 
                     {/* User Footer — name, plan, usage ring */}
