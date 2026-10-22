@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth0 } from '@auth0/auth0-react';
-import { FaMicrophone, FaSearch, FaPaw, FaMobileAlt } from 'react-icons/fa';
+import { FaMicrophone, FaSearch, FaPaw, FaMobileAlt, FaFolderOpen } from 'react-icons/fa';
 import { supabase } from '../../supabaseClient';
 
 // First-run tutorial shown once, right after a new signup lands in the app.
@@ -25,8 +25,17 @@ const STEPS = [
         target: 'quicksoap',
         icon: FaMicrophone,
         iconBg: 'from-blue-400 to-blue-600',
-        title: () => 'QuickSOAP',
-        body: () => "This is where you'll create all your dictations and SOAP records. Just talk or type and PetWise does the rest."
+        title: () => 'New case',
+        body: () => "Start every patient visit here. Pick SOAP, Summary or Callback, say the patient's name, then talk through the visit. PetWise writes the record."
+    },
+    {
+        id: 'cases',
+        placement: 'anchor',
+        target: 'cases',
+        icon: FaFolderOpen,
+        iconBg: 'from-sky-400 to-blue-600',
+        title: () => 'Cases',
+        body: () => 'Every patient you see, with all their records together. Open one to add a callback or summary later.'
     },
     {
         id: 'petquery',
@@ -44,7 +53,7 @@ const STEPS = [
         icon: FaMobileAlt,
         iconBg: 'from-[#3468bd] to-[#2a5298]',
         title: () => 'Get PetWise on your phone',
-        body: () => 'Scan this code, log in, and follow the instructions to make dictations from anywhere on your phone. They sync straight back here to your desktop.'
+        body: () => 'Scan this code, log in, and add PetWise to your home screen. Dictate in the exam room and the record lands in the right case here on your desktop.'
     }
 ];
 
