@@ -2404,6 +2404,38 @@ const QuickSOAP = () => {
     };
 
     const startCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
+    const dictCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length > 0 && !isRecording && !isTranscribing;
+    const CARD = 'w-full max-w-[560px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]';
+    const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
+
+    const noteTypeControl = (
+        <div className="flex w-full gap-1 p-1 rounded-full bg-[#f3f6fa]">
+            {['soap', 'summary', 'callback'].map((t) => {
+                const s = TYPE_STYLES[t];
+                const Icon = s.icon;
+                const on = recordType === t;
+                return (
+                    <button
+                        key={t}
+                        type="button"
+                        onClick={() => setRecordType(t)}
+                        className={`relative flex-1 h-9 rounded-full text-[13.5px] font-semibold border-none cursor-pointer bg-transparent transition-colors ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                    >
+                        {on && (
+                            <motion.span
+                                layoutId="start-note-type"
+                                className={`absolute inset-0 rounded-full ${s.solid} shadow-sm`}
+                                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                            />
+                        )}
+                        <span className="relative inline-flex items-center justify-center gap-1.5">
+                            <Icon className="text-[13px]" /> {s.label}
+                        </span>
+                    </button>
+                );
+            })}
+        </div>
+    );
 
     return (
         <>
@@ -2783,28 +2815,17 @@ const QuickSOAP = () => {
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
                                 <div className={`${isMobile ? 'mb-6 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
-                                    {dictations.length === 0 ? (
-                                        <>
-                                            <h1 className={`m-0 ${isMobile ? 'text-[2rem]' : 'text-[2.5rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
-                                                {activeCaseId ? 'Add a note' : 'Start a new case'}
-                                            </h1>
-                                            <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
-                                                {activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the note.'}
-                                            </p>
-                                            <div className={isMobile ? 'mt-4' : 'mt-5'}>
-                                                <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
-                                            </div>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <h2 className={`text-2xl font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT} text-center`}>
-                                                Your dictations
-                                            </h2>
-                                            <div className="mt-3">
-                                                <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
-                                            </div>
-                                        </>
-                                    )}
+                                    <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.5rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
+                                        {activeCaseId ? 'Add a note' : 'Start a new case'}
+                                    </h1>
+                                    <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
+                                        {dictations.length
+                                            ? 'Add more, or generate when you’re ready.'
+                                            : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the note.'}
+                                    </p>
+                                    <div className={isMobile ? 'mt-4' : 'mt-5'}>
+                                        <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
+                                    </div>
                                 </div>
                             )}
 
@@ -2817,8 +2838,8 @@ const QuickSOAP = () => {
 
 
                             {/* Record Type Indicator - Show after dictation starts */}
-                            {dictations.length > 0 && (!isRecording || !isMobile) && !hasReport && (
-                                <div className={`flex justify-center ${isMobile ? 'mb-2' : 'mb-3'}`}>
+                            {isMobile && dictations.length > 0 && !isRecording && !hasReport && (
+                                <div className="flex justify-center mb-2">
                                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${recordType === 'soap'
                                         ? 'bg-blue-100 text-blue-700'
                                         : recordType === 'summary'
@@ -2836,7 +2857,7 @@ const QuickSOAP = () => {
                             )}
 
                             {/* Dictation Bubbles - Above center */}
-                            {dictations.length > 0 && (!isRecording || !isMobile) && (
+                            {isMobile && dictations.length > 0 && !isRecording && (
                                 <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'} overflow-y-auto ${isMobile ? 'max-h-[30vh] space-y-2' : 'max-h-64 space-y-3'}`} style={isMobile ? {
                                     WebkitOverflowScrolling: 'touch'
                                 } : {}}>
@@ -2887,13 +2908,83 @@ const QuickSOAP = () => {
 
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
-                                <div
-                                    className={startCard
-                                        ? 'w-full max-w-[560px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)] px-10 pt-10 pb-7 flex flex-col items-center'
-                                        : 'contents'}
-                                >
+                                {dictCard && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
+                                        className={`${CARD} px-7 pt-7 pb-6`}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="m-0 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">
+                                                {dictations.length === 1 ? '1 dictation' : `${dictations.length} dictations`}
+                                            </p>
+                                        </div>
+                                        <div className="max-h-[38vh] overflow-y-auto -mx-1 px-1 space-y-2">
+                                            {dictations.map((dictation, i) => (
+                                                <motion.div
+                                                    key={dictation.id}
+                                                    layout
+                                                    initial={{ opacity: 0, y: 6 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="group rounded-2xl bg-[#f6f8fb] px-4 py-3"
+                                                >
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className="text-[12px] font-semibold text-[#1a2b4a]/50">Dictation {i + 1}</span>
+                                                        <span className="text-[#1a2b4a]/25">·</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => toggleDictationExpand(dictation.id)}
+                                                            className="p-0 text-[12px] font-medium text-[#2d5fb8] hover:text-[#2350a3] bg-transparent border-none cursor-pointer"
+                                                        >
+                                                            {dictation.expanded ? 'Show summary' : 'Show full transcript'}
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteDictationClick(dictation.id)}
+                                                            title="Remove dictation"
+                                                            className="ml-auto w-7 h-7 -mr-1.5 rounded-full flex items-center justify-center text-[#1a2b4a]/35 hover:text-red-500 hover:bg-white bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-[opacity,color,background-color]"
+                                                        >
+                                                            <FiX className="text-[14px]" />
+                                                        </button>
+                                                    </div>
+                                                    <p className="m-0 text-[14.5px] leading-relaxed text-[#13233f]/85 whitespace-pre-wrap">
+                                                        {dictation.expanded ? dictation.fullText : dictation.summary}
+                                                    </p>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+
+                                        <div className="mt-5 pt-5 border-t border-[#eef2f7]">
+                                            <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Note type</p>
+                                            {noteTypeControl}
+                                        </div>
+
+                                        <div className="mt-5 pt-5 border-t border-[#eef2f7] flex items-center justify-center gap-3">
+                                            <motion.button
+                                                type="button"
+                                                onClick={startRecording}
+                                                disabled={isGenerating}
+                                                whileHover={{ scale: 1.06 }}
+                                                whileTap={{ scale: 0.94 }}
+                                                transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                                                className="w-12 h-12 rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_12px_28px_-12px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed"
+                                                style={MIC_BG}
+                                                title="Add more dictation"
+                                            >
+                                                <FiMic className="text-[20px]" />
+                                            </motion.button>
+                                            <div className="text-left">
+                                                <p className="m-0 text-[14.5px] font-semibold text-[#13233f]">Add more</p>
+                                                <p className="m-0 text-[12.5px] text-[#1a2b4a]/50">It all goes into the same note.</p>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                <div className={startCard ? `${CARD} px-10 pt-10 pb-7 flex flex-col items-center` : 'contents'}>
                                 {/* Mic: front and center before the first dictation, "Add more" after */}
-                                {!isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
+                                {!dictCard && !isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
                                     <div className={`flex flex-col items-center ${startCard ? '' : isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
                                         <motion.button
                                             type="button"
@@ -2919,32 +3010,7 @@ const QuickSOAP = () => {
                                 {!isRecording && !isTranscribing && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
                                     <div className={startCard ? 'w-full mt-7 pt-6 border-t border-[#eef2f7]' : 'w-full max-w-[400px] mb-6'}>
                                         <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Note type</p>
-                                        <div className="flex w-full gap-1 p-1 rounded-full bg-[#f3f6fa]">
-                                            {['soap', 'summary', 'callback'].map((t) => {
-                                                const s = TYPE_STYLES[t];
-                                                const Icon = s.icon;
-                                                const on = recordType === t;
-                                                return (
-                                                    <button
-                                                        key={t}
-                                                        type="button"
-                                                        onClick={() => setRecordType(t)}
-                                                        className={`relative flex-1 h-9 rounded-full text-[13.5px] font-semibold border-none cursor-pointer bg-transparent transition-colors ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
-                                                    >
-                                                        {on && (
-                                                            <motion.span
-                                                                layoutId="start-note-type"
-                                                                className={`absolute inset-0 rounded-full ${s.solid} shadow-sm`}
-                                                                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                                                            />
-                                                        )}
-                                                        <span className="relative inline-flex items-center justify-center gap-1.5">
-                                                            <Icon className="text-[13px]" /> {s.label}
-                                                        </span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
+                                        {noteTypeControl}
                                     </div>
                                 )}
                                 </div>
@@ -2985,7 +3051,7 @@ const QuickSOAP = () => {
 
                                 {/* Additional Notes Section - Show in un-generated view */}
                                 {!hasReport && !isMobile && !isRecording && !isTranscribing && !showStartNotes && !input.trim() && (
-                                    <div className={`flex justify-center mb-4 ${startCard ? 'mt-5' : ''}`}>
+                                    <div className={`flex justify-center mb-4 ${startCard || dictCard ? 'mt-5' : ''}`}>
                                         <button
                                             type="button"
                                             onClick={() => {
@@ -3003,7 +3069,7 @@ const QuickSOAP = () => {
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
-                                        className={`mb-4 w-full max-w-2xl flex-shrink-0 ${startCard ? 'mt-6' : ''}`}
+                                        className={`mb-4 w-full max-w-[560px] mx-auto flex-shrink-0 ${startCard || dictCard ? 'mt-6' : ''}`}
                                     >
                                         <textarea
                                             ref={inputTextareaRef}
