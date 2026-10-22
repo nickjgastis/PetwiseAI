@@ -11,7 +11,9 @@ import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
 import { useNavigate } from 'react-router-dom';
-import { CASE_KEY, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType } from '../utils/cases';
+import { CASE_KEY, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType, setActiveCaseId } from '../utils/cases';
+import CaseTarget from '../components/CaseTarget';
+import { GRADIENT_TEXT } from '../components/caseStyles';
 
 // PDF Document component for print/export
 const QuickSOAPPDFDocument = ({ reportText, title }) => {
@@ -229,6 +231,10 @@ const QuickSOAP = () => {
     const { user, isAuthenticated } = useAuth0();
     const navigate = useNavigate();
     const [activeCaseId, setActiveCaseIdState] = useState(() => (typeof window !== 'undefined' ? getActiveCaseId() : null));
+    const selectCase = useCallback((id) => {
+        setActiveCaseId(id);
+        setActiveCaseIdState(id);
+    }, []);
     const [input, setInput] = useState(() => {
         // Initialize input synchronously from localStorage
         if (typeof window !== 'undefined') {
@@ -2185,7 +2191,8 @@ const QuickSOAP = () => {
                     report_name: draftName,
                     report_text: null,
                     form_data: formData,
-                    record_type: recordType
+                    record_type: recordType,
+                    case_id: activeCaseId || undefined
                 }])
                 .select()
                 .single();
@@ -2598,8 +2605,8 @@ const QuickSOAP = () => {
                                     {dictations.length === 0 ? (
                                         <>
                                             <div className="flex items-center justify-center gap-3">
-                                                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-2 flex items-center gap-2">
-                                                    QuickSOAP
+                                                <h1 className={`${isMobile ? 'text-[2rem]' : 'text-[2.75rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT} mb-1`}>
+                                                    {activeCaseId ? 'Add a note' : 'Start a new case'}
                                                 </h1>
                                                 <div className="relative group mb-2">
                                                     <button
@@ -2633,22 +2640,22 @@ const QuickSOAP = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <p className={isMobile ? "text-gray-500 text-sm" : "text-gray-500 text-lg"}>
-                                                {isMobile
-                                                    ? 'For best dictation accuracy say section name then list findings.'
-                                                    : (
-                                                        <>
-                                                            For best dictation accuracy say section name then list findings.<br />
-                                                            <span className="block mt-1">Example: “Physical Exam” before giving exam findings.</span>
-                                                        </>
-                                                    )
-                                                }
+                                            <p className={`${isMobile ? 'text-sm' : 'text-[17px]'} text-[#1a2b4a]/60 max-w-md leading-relaxed`}>
+                                                Say the section name, then list findings. For example, “Physical exam” before the exam findings.
                                             </p>
+                                            <div className={isMobile ? 'mt-4' : 'mt-6'}>
+                                                <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
+                                            </div>
                                         </>
                                     ) : (
-                                        <h2 className="text-xl font-semibold text-primary-700 text-center w-full">
-                                            Your Dictations
-                                        </h2>
+                                        <>
+                                            <h2 className={`text-2xl font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT} text-center`}>
+                                                Your dictations
+                                            </h2>
+                                            <div className="mt-3">
+                                                <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
+                                            </div>
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -2755,12 +2762,12 @@ const QuickSOAP = () => {
                                 {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
                                     <div className={`relative ${isMobile ? 'mb-4' : 'mb-5'}`}>
                                         <div className="flex justify-center">
-                                            <div className="bg-gray-100 rounded-xl p-1 inline-flex gap-1">
+                                            <div className="bg-white border border-[#e7ecf3] rounded-full p-1 inline-flex gap-1 shadow-[0_6px_20px_-14px_rgba(19,35,63,0.3)]">
                                                 <button
                                                     onClick={() => setRecordType('soap')}
-                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'soap'
+                                                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'soap'
                                                         ? 'bg-blue-500 text-white shadow-sm'
-                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                        : 'text-[#1a2b4a]/60 hover:text-[#13233f] hover:bg-[#f6f8fb]'
                                                         }`}
                                                 >
                                                     <FaClipboardList className="text-xs" />
@@ -2768,9 +2775,9 @@ const QuickSOAP = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => setRecordType('summary')}
-                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'summary'
+                                                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'summary'
                                                         ? 'bg-emerald-500 text-white shadow-sm'
-                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                        : 'text-[#1a2b4a]/60 hover:text-[#13233f] hover:bg-[#f6f8fb]'
                                                         }`}
                                                 >
                                                     <FaFileAlt className="text-xs" />
@@ -2778,9 +2785,9 @@ const QuickSOAP = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => setRecordType('callback')}
-                                                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'callback'
+                                                    className={`px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 whitespace-nowrap flex items-center gap-1.5 ${recordType === 'callback'
                                                         ? 'bg-amber-500 text-white shadow-sm'
-                                                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                                                        : 'text-[#1a2b4a]/60 hover:text-[#13233f] hover:bg-[#f6f8fb]'
                                                         }`}
                                                 >
                                                     <FaPhoneAlt className="text-xs" />
