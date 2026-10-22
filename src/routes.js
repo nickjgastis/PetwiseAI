@@ -22,6 +22,7 @@ const VetsDemoWalkthrough = lazy(() => import('./pages/landing/VetsDemoWalkthrou
 const VetsSoapDemo = lazy(() => import('./pages/landing/VetsDemoWalkthrough').then((m) => ({ default: m.VetsSoapDemo })));
 const VetsPetQueryDemo = lazy(() => import('./pages/landing/VetsDemoWalkthrough').then((m) => ({ default: m.VetsPetQueryDemo })));
 const IntroductionLanding = lazy(() => import('./pages/landing/IntroductionLanding'));
+const DentalPreview = lazy(() => import('./pages/DentalPreview'));
 
 // Check if running as installed PWA
 const isStandalone = () => {
@@ -92,6 +93,9 @@ const AppRoutes = () => {
             <Route path="/vets/petquery" element={<Navigate to="/vets/demo/petquery" replace />} />
             <Route path="/vets/quicksoap" element={<Navigate to="/vets/demo/soap" replace />} />
             <Route path="/introduction" element={<Suspense fallback={<div className="min-h-screen bg-[#f7f8fb]" />}><IntroductionLanding /></Suspense>} />
+            {process.env.NODE_ENV === 'development' && (
+                <Route path="/dev/dental" element={<Suspense fallback={null}><DentalPreview /></Suspense>} />
+            )}
             <Route
                 path="/dashboard/*"
                 element={
