@@ -32,6 +32,7 @@ import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES, RECORD_TYPES } from '../compone
 import GeneratingLoader from '../components/GeneratingLoader';
 import Guide from '../components/Guide';
 import DentalWorkspace from '../components/DentalWorkspace';
+import DentalPDFDocument from '../components/DentalPDF';
 import CountBadge from '../components/CountBadge';
 
 const TEXT_RECORDS = {
@@ -2422,7 +2423,9 @@ const QuickSOAP = () => {
     const handlePrint = async () => {
         try {
             const title = reportName || 'SOAP Report';
-            const doc = <QuickSOAPPDFDocument reportText={report} title={title} />;
+            const doc = recordType === 'dental'
+                ? <DentalPDFDocument title={reportName || 'Dental record'} report={report} dental={dental} />
+                : <QuickSOAPPDFDocument reportText={report} title={title} />;
             const blob = await pdf(doc).toBlob();
             const url = URL.createObjectURL(blob);
 

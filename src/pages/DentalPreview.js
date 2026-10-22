@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import DentalChart from '../components/DentalChart';
+import { pdf } from '@react-pdf/renderer';
 import DentalWorkspace from '../components/DentalWorkspace';
+import DentalPDFDocument from '../components/DentalPDF';
 import { STATUS_ORDER, toothLabel } from '../dental/teeth';
 
 // Dev-only sandbox for the dental chart (mounted at /dev/dental in development).
@@ -40,6 +42,11 @@ Soft food was recommended for 10 days. Recheck advised in 2 weeks.`;
 
 const DentalPreview = () => {
     const [report, setReport] = useState(REPORT);
+    const [pdfUrl, setPdfUrl] = useState(null);
+    const printPreview = async () => {
+        const blob = await pdf(<DentalPDFDocument title="Max - Dental" report={report} dental={record} />).toBlob();
+        setPdfUrl(URL.createObjectURL(blob));
+    };
     const [state, setState] = useState(SAMPLE);
     const [record, setRecord] = useState(RECORD);
     const [selected, setSelected] = useState(null);
@@ -81,7 +88,8 @@ const DentalPreview = () => {
                     ))}
                 </div>
                 <p className="mt-12 mb-4 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record workspace</p>
-                <DentalWorkspace report={report} onReportChange={setReport} dental={record} onDentalChange={setRecord} onCopy={() => {}} onPrint={() => {}} />
+                <DentalWorkspace report={report} onReportChange={setReport} dental={record} onDentalChange={setRecord} onCopy={() => {}} onPrint={printPreview} />
+                {pdfUrl && <iframe title="Print preview" src={pdfUrl} className="mt-8 w-full h-[1100px] rounded-[20px] border border-[#e7ecf3] bg-white" />}
             </div>
         </div>
     );

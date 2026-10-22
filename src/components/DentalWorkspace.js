@@ -4,23 +4,96 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PiTooth } from 'react-icons/pi';
 import { FiCopy, FiPrinter, FiX } from 'react-icons/fi';
 import DentalChartCanvas from './DentalChartCanvas';
+import { parseSections, joinSections } from '../dental/sections';
 
 const FONT = { fontFamily: 'var(--font-sans)' };
 const HEAD_BTN = 'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] font-semibold border-none cursor-pointer transition-colors';
 
-// One-card dental record: text on the left, zoomable chart on the right (stacked, chart first, below xl).
-const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCopy, onPrint, copied }) => {
-    const [expanded, setExpanded] = useState(false);
-    const textRef = useRef(null);
-    const value = dental || { species: 'canine', teeth: {} };
+const TEXT_STYLE = { ...FONT, fontSize: '14px', lineHeight: '1.75', whiteSpace: 'pre-wrap', wordWrap: 'break-word' };
 
-    // Text grows with its content so the page scrolls, not the box, while the chart stays pinned.
+// Textarea that grows with its content so the page scrolls, not the box.
+const GrowingText = ({ value, onChange, placeholder, className = '', minHeight }) => {
+    const ref = useRef(null);
     useLayoutEffect(() => {
-        const el = textRef.current;
+        const el = ref.current;
         if (!el) return;
         el.style.height = 'auto';
         el.style.height = `${el.scrollHeight}px`;
+    }, [value]);
+    return (
+        <textarea
+            ref={ref}
+            rows={1}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className={`block w-full border-none focus:outline-none resize-none overflow-hidden bg-transparent text-[#24324a] ${className}`}
+            style={{ ...TEXT_STYLE, minHeight }}
+        />
+    );
+};
+
+// Record text shown as headed sections. Sections live in local state while editing (so trailing newlines
+// survive) and are re-parsed only when the report changes from outside, e.g. a regenerate.
+const DentalRecordText = ({ report, onReportChange }) => {
+    const [sections, setSections] = useState(() => parseSections(report));
+    const emitted = useRef(report);
+
+    useEffect(() => {
+        if (report === emitted.current) return;
+        emitted.current = report;
+        setSections(parseSections(report));
     }, [report]);
+
+    const emit = (text) => {
+        emitted.current = text;
+        onReportChange(text);
+    };
+
+    if (!sections.some((s) => s.heading)) {
+        return (
+            <GrowingText
+                value={report}
+                onChange={emit}
+                placeholder="Your dental record will appear here..."
+                className="px-6 py-5"
+                minHeight="360px"
+            />
+        );
+    }
+
+    const editBody = (i, body) => {
+        const next = sections.map((s, j) => (j === i ? { ...s, body } : s));
+        setSections(next);
+        emit(joinSections(next));
+    };
+
+    return (
+        <div className="px-6 py-5 space-y-5">
+            {sections.map((s, i) => (
+                <section key={`${i}-${s.heading || 'intro'}`}>
+                    {s.heading && (
+                        <h4 className="m-0 mb-1 flex items-center gap-2 text-[14.5px] font-semibold text-[#13233f] tracking-[-0.01em]" style={FONT}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                            {s.heading}
+                        </h4>
+                    )}
+                    <GrowingText
+                        value={s.body}
+                        onChange={(body) => editBody(i, body)}
+                        placeholder="Add details"
+                        className="-mx-2 px-2 py-1 rounded-lg hover:bg-[#f8f9fc] focus:bg-[#f6f8fb] transition-colors"
+                    />
+                </section>
+            ))}
+        </div>
+    );
+};
+
+// One-card dental record: text on the left, zoomable chart on the right (stacked, chart first, below xl).
+const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCopy, onPrint, copied }) => {
+    const [expanded, setExpanded] = useState(false);
+    const value = dental || { species: 'canine', teeth: {} };
 
     useEffect(() => {
         if (!expanded) return undefined;
@@ -57,14 +130,7 @@ const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCop
 
             <div className="grid xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
                 <div className="order-last xl:order-none min-w-0 xl:border-r border-[#eef2f7]">
-                    <textarea
-                        ref={textRef}
-                        value={report}
-                        onChange={(e) => onReportChange(e.target.value)}
-                        placeholder="Your dental record will appear here..."
-                        className="block w-full px-6 py-5 border-none focus:outline-none resize-none overflow-hidden text-gray-800 bg-transparent rounded-b-2xl xl:rounded-br-none"
-                        style={{ ...FONT, fontSize: '14px', lineHeight: '1.8', minHeight: '360px', whiteSpace: 'pre-wrap', wordWrap: 'break-word' }}
-                    />
+                    <DentalRecordText report={report} onReportChange={onReportChange} />
                 </div>
                 <div className="min-w-0 self-start xl:sticky xl:top-4 border-b xl:border-b-0 border-[#eef2f7]">
                     <DentalChartCanvas
