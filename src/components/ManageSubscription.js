@@ -8,11 +8,20 @@ import PlanCards, { CurrencyToggle } from './PlanCards';
 import { openPastDuePayment } from './PaymentIssueBanner';
 import { STUDENT_PROGRAM } from '../constants/features';
 
-const stripePromise = loadStripe(
-    process.env.NODE_ENV === 'production'
-        ? process.env.REACT_APP_STRIPE_PUBLIC_KEY_LIVE
-        : process.env.REACT_APP_STRIPE_PUBLIC_KEY
-);
+// Loaded on first checkout, not on import: a blocked or offline Stripe.js must not crash the page.
+let stripePromise = null;
+const getStripe = () => {
+    if (!stripePromise) stripePromise = loadStripe(
+        process.env.NODE_ENV === 'production'
+            ? process.env.REACT_APP_STRIPE_PUBLIC_KEY_LIVE
+            : process.env.REACT_APP_STRIPE_PUBLIC_KEY
+    ).catch((err) => {
+        console.error('[Stripe] Failed to load Stripe.js:', err);
+        stripePromise = null;
+        return null;
+    });
+    return stripePromise;
+};
 
 const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
@@ -45,7 +54,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
     const handleCheckout = async (planType) => {
         setIsLoading(planType);
         try {
-            const stripe = await stripePromise;
+            const stripe = await getStripe();
             if (!stripe) throw new Error('Stripe failed to initialize');
 
             const response = await fetch(`${API_URL}/create-checkout-session`, {
