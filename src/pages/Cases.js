@@ -79,7 +79,7 @@ const PillButton = ({ onClick, children, disabled, variant = 'primary', classNam
 const TypeChip = ({ type, count }) => {
     const info = typeStyle(type);
     return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold ${info.soft}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-semibold whitespace-nowrap shrink-0 ${info.soft}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${info.dot}`} />
             {info.label}
             {count > 1 && <span className="opacity-60">×{count}</span>}
@@ -294,7 +294,7 @@ const CaseList = ({ mobile = false }) => {
                                             type="button"
                                             {...LIFT}
                                             onClick={() => (mobile ? requestNewCase(navigate, c.id) : navigate(`/dashboard/cases/${c.id}`))}
-                                            className={`group w-full text-left border bg-white cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${mobile ? 'rounded-[20px] p-4' : 'rounded-[24px] p-5'} ${isNew ? 'border-[#2d5fb8]/35 shadow-[0_14px_34px_-22px_rgba(45,95,184,0.55)]' : 'border-[#e7ecf3] hover:border-[#d6e3f7]'}`}
+                                            className={`group w-full text-left border bg-white cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] flex flex-col ${mobile ? 'h-[112px] rounded-[20px] p-4' : 'h-[132px] rounded-[24px] p-5'} ${isNew ? 'border-[#2d5fb8]/35 shadow-[0_14px_34px_-22px_rgba(45,95,184,0.55)]' : 'border-[#e7ecf3] hover:border-[#d6e3f7]'}`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="min-w-0 flex-1">
@@ -302,7 +302,7 @@ const CaseList = ({ mobile = false }) => {
                                                         {isNew && <span title="New from your phone" className="shrink-0 w-2.5 h-2.5 rounded-full bg-[#2d5fb8] ring-4 ring-[#2d5fb8]/15" />}
                                                         <span className="truncate">{c.pet_name || c.title || 'Unnamed patient'}</span>
                                                     </p>
-                                                    <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5">
+                                                    <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5 truncate">
                                                         {formatDateTime(c.updated_at)}
                                                         {total > 0 && ` · ${total} ${total === 1 ? 'record' : 'records'}`}
                                                         {isNew && <span className="font-medium text-[#2d5fb8]"> · New from phone</span>}
@@ -310,11 +310,13 @@ const CaseList = ({ mobile = false }) => {
                                                 </div>
                                                 <FiChevronRight className="text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] group-hover:translate-x-0.5 transition-all" />
                                             </div>
-                                            {total > 0 && (
-                                                <div className={`flex flex-wrap gap-1.5 ${mobile ? 'mt-3' : 'mt-4'}`}>
-                                                    {['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)}
-                                                </div>
-                                            )}
+                                            <div className="mt-auto flex items-center gap-1.5 overflow-hidden h-[26px] shrink-0">
+                                                {total > 0 ? (
+                                                    ['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)
+                                                ) : (
+                                                    <span className="text-[12.5px] text-[#1a2b4a]/40">No records yet</span>
+                                                )}
+                                            </div>
                                         </motion.button>
                                         </FadeIn>
                                     );
