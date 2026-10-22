@@ -1608,6 +1608,10 @@ const QuickSOAP = () => {
             setError('Tap Done on your dictation first.');
             return;
         }
+        if (action.kind === 'new' && action.caseId && !hasReport) {
+            selectCase(action.caseId);
+            return;
+        }
         if (hasUnsavedWork()) setPendingLeave(action);
         else runLeave(action);
     };
@@ -2404,7 +2408,7 @@ const QuickSOAP = () => {
     };
 
     const startCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
-    const dictCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length > 0 && !isRecording && !isTranscribing;
+    const dictCard = !hasReport && !isLoadingFromSaved && dictations.length > 0 && !isRecording && !isTranscribing;
     const CARD = 'w-full max-w-[560px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]';
     const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
 
@@ -2492,35 +2496,50 @@ const QuickSOAP = () => {
             {/* Save Prompt Modal (Desktop - when loading new dictation with report open) */}
 
             {/* Success Modal (Send to Desktop) */}
-            {showSendSuccessModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50" style={{ left: isMobile ? '0' : (isSidebarCollapsed ? '80px' : '224px') }}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-fadeIn">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <FaCheckCircle className="text-2xl text-green-600" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Dictations Sent!</h3>
-                            <p className="text-gray-600 mb-4">
-                                Check <span className="font-semibold text-primary-600">Saved Records</span> on your desktop
-                            </p>
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                                <p className="text-xs text-blue-600 mb-1">
-                                    ⏱️ It may take 1-2 minutes for the report to appear
-                                </p>
-                                <p className="text-xs text-blue-600 font-medium">
-                                    ✓ Dictations saved to cloud
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => setShowSendSuccessModal(false)}
-                                className="w-full px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-all"
+            <AnimatePresence>
+                {showSendSuccessModal && (
+                    <motion.div
+                        key="sent"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-[#13233f]/30 backdrop-blur-sm"
+                        style={{ left: isMobile ? '0' : (isSidebarCollapsed ? '80px' : '224px') }}
+                        onClick={() => setShowSendSuccessModal(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 14, scale: 0.97 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                            transition={{ duration: 0.28, ease: [0.2, 0.7, 0.2, 1] }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-[400px] bg-white rounded-[28px] px-6 pt-8 pb-6 text-center shadow-[0_30px_80px_-30px_rgba(19,35,63,0.45)]"
+                        >
+                            <motion.span
+                                className="mx-auto w-14 h-14 rounded-full flex items-center justify-center text-white text-[22px] shadow-[0_14px_34px_-12px_rgba(45,95,184,0.8)]"
+                                style={MIC_BG}
+                                initial={{ scale: 0.4, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: 'spring', stiffness: 380, damping: 18, delay: 0.06 }}
                             >
-                                OK
+                                <FiCheck />
+                            </motion.span>
+                            <h3 className={`mt-4 mb-0 pb-0.5 text-[24px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>Sent to your desktop</h3>
+                            <p className="mt-2 mb-0 text-[14.5px] leading-relaxed text-[#1a2b4a]/60">
+                                Your note will be waiting in <span className="font-semibold text-[#13233f]">Cases</span> in a minute or two.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => setShowSendSuccessModal(false)}
+                                className="mt-6 w-full h-12 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors"
+                            >
+                                Done
                             </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Delete Dictation Confirmation Modal */}
             {showDeleteDictationModal && (
@@ -2652,46 +2671,58 @@ const QuickSOAP = () => {
             </AnimatePresence>
 
             {/* Start New Confirmation Modal (Mobile only) */}
-            {showStartNewModal && isMobile && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-50" style={{ left: '0' }}>
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-fadeIn">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-xl font-bold text-gray-900">Start New</h3>
-                            <button
-                                onClick={() => setShowStartNewModal(false)}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                            >
-                                <FaTimes className="text-lg" />
-                            </button>
-                        </div>
-                        <div className="mb-6">
-                            <p className="text-gray-700 mb-3">
-                                If you start new and haven't sent this dictation to desktop it will be deleted.
+            <AnimatePresence>
+                {showStartNewModal && isMobile && (
+                    <motion.div
+                        key="start-new"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="fixed inset-0 z-[100] flex items-end justify-center px-3 pb-3 bg-[#13233f]/30 backdrop-blur-sm"
+                        onClick={() => setShowStartNewModal(false)}
+                    >
+                        <motion.div
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full max-w-md bg-white rounded-[28px] p-6 shadow-[0_30px_80px_-30px_rgba(19,35,63,0.45)]"
+                        >
+                            <h3 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>
+                                {hasBeenSentToDesktop ? 'Start a new case?' : 'Discard this dictation?'}
+                            </h3>
+                            <p className="mt-2 mb-6 text-[14.5px] leading-relaxed text-[#1a2b4a]/60">
+                                {hasBeenSentToDesktop
+                                    ? 'This one is already on your desktop. Clear the screen and start the next visit.'
+                                    : 'It hasn’t been sent to your desktop yet, so starting new will delete it.'}
                             </p>
-                            <p className="text-gray-600 font-medium">
-                                Are you sure you want to start a new dictation?
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowStartNewModal(false)}
-                                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-all"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => {
-                                    clearAllQuickSOAPData();
-                                    setShowStartNewModal(false);
-                                }}
-                                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition-all"
-                            >
-                                Start New
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            <div className="flex flex-col gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        clearAllQuickSOAPData();
+                                        setShowStartNewModal(false);
+                                    }}
+                                    className={`w-full h-12 rounded-full text-[15px] font-semibold border-none cursor-pointer transition-colors ${hasBeenSentToDesktop
+                                        ? 'text-white bg-[#2d5fb8] hover:bg-[#2350a3] shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)]'
+                                        : 'text-white bg-red-500 hover:bg-red-600'}`}
+                                >
+                                    {hasBeenSentToDesktop ? 'Start new case' : 'Discard and start new'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowStartNewModal(false)}
+                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-[#13233f] bg-[#f6f8fb] hover:bg-[#eef2f7] border-none cursor-pointer transition-colors"
+                                >
+                                    Keep it
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Fullscreen Animated Loader - Desktop Only */}
             {isGenerating && !isMobile && !hasReport && (
@@ -2820,7 +2851,7 @@ const QuickSOAP = () => {
                                     </h1>
                                     <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
                                         {dictations.length
-                                            ? 'Add more, or generate when you’re ready.'
+                                            ? (isMobile ? 'Add more, or send it to your desktop.' : 'Add more, or generate when you’re ready.')
                                             : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the note.'}
                                     </p>
                                     <div className={isMobile ? 'mt-4' : 'mt-5'}>
@@ -2837,75 +2868,6 @@ const QuickSOAP = () => {
                             )}
 
 
-                            {/* Record Type Indicator - Show after dictation starts */}
-                            {isMobile && dictations.length > 0 && !isRecording && !hasReport && (
-                                <div className="flex justify-center mb-2">
-                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${recordType === 'soap'
-                                        ? 'bg-blue-100 text-blue-700'
-                                        : recordType === 'summary'
-                                            ? 'bg-emerald-100 text-emerald-700'
-                                            : 'bg-amber-100 text-amber-700'
-                                        }`}>
-                                        {recordType === 'soap' && <FaClipboardList className="text-xs" />}
-                                        {recordType === 'summary' && <FaFileAlt className="text-xs" />}
-                                        {recordType === 'callback' && <FaPhoneAlt className="text-xs" />}
-                                        <span className="text-xs font-semibold">
-                                            {recordType === 'soap' ? 'SOAP Record' : recordType === 'summary' ? 'Summary' : 'Callback'}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Dictation Bubbles - Above center */}
-                            {isMobile && dictations.length > 0 && !isRecording && (
-                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} w-full ${isMobile ? 'max-w-full' : 'max-w-2xl'} overflow-y-auto ${isMobile ? 'max-h-[30vh] space-y-2' : 'max-h-64 space-y-3'}`} style={isMobile ? {
-                                    WebkitOverflowScrolling: 'touch'
-                                } : {}}>
-                                    {(isMobile ? [...dictations].reverse() : dictations).map((dictation) => (
-                                        <div
-                                            key={dictation.id}
-                                            className={`bg-white border border-gray-200 rounded-xl ${isMobile ? 'p-2' : 'p-4'} shadow-md hover:shadow-lg transition-shadow`}
-                                        >
-                                            <div className={`flex items-start justify-between ${isMobile ? 'gap-2' : 'gap-3'}`}>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className={`flex items-center ${isMobile ? 'gap-1 mb-1' : 'gap-2 mb-2'}`}>
-                                                        <span className={`${isMobile ? 'text-[10px] px-1.5 py-0.5' : 'text-xs px-2 py-1'} font-semibold text-primary-600 bg-primary-50 rounded`}>
-                                                            {dictation.expanded ? 'Full Transcript' : 'Dictation Summary'}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => toggleDictationExpand(dictation.id)}
-                                                            className={`text-gray-500 hover:text-gray-700 ${isMobile ? 'text-[10px]' : 'text-xs'} flex items-center gap-1 transition-colors`}
-                                                        >
-                                                            {dictation.expanded ? (
-                                                                <>
-                                                                    <FaChevronUp className={isMobile ? 'text-[10px]' : 'text-xs'} />
-                                                                    <span>Collapse</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <FaChevronDown className={isMobile ? 'text-[10px]' : 'text-xs'} />
-                                                                    <span>Expand</span>
-                                                                </>
-                                                            )}
-                                                        </button>
-                                                    </div>
-                                                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-gray-700 ${isMobile ? 'leading-tight' : 'leading-relaxed'}`}>
-                                                        {dictation.expanded ? dictation.fullText : dictation.summary}
-                                                    </p>
-                                                </div>
-                                                <button
-                                                    onClick={() => handleDeleteDictationClick(dictation.id)}
-                                                    className="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
-                                                    title="Remove dictation"
-                                                >
-                                                    <FaTimes className={isMobile ? 'text-xs' : 'text-sm'} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
                                 {dictCard && (
@@ -2913,14 +2875,14 @@ const QuickSOAP = () => {
                                         initial={{ opacity: 0, y: 8 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-                                        className={`${CARD} px-7 pt-7 pb-6`}
+                                        className={`${CARD} ${isMobile ? 'px-5 pt-5 pb-5' : 'px-7 pt-7 pb-6'}`}
                                     >
                                         <div className="flex items-center justify-between mb-3">
                                             <p className="m-0 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">
                                                 {dictations.length === 1 ? '1 dictation' : `${dictations.length} dictations`}
                                             </p>
                                         </div>
-                                        <div className="max-h-[38vh] overflow-y-auto -mx-1 px-1 space-y-2">
+                                        <div className={`${isMobile ? 'max-h-[28vh]' : 'max-h-[38vh]'} overflow-y-auto -mx-1 px-1 space-y-2`}>
                                             {dictations.map((dictation, i) => (
                                                 <motion.div
                                                     key={dictation.id}
@@ -2943,7 +2905,7 @@ const QuickSOAP = () => {
                                                             type="button"
                                                             onClick={() => handleDeleteDictationClick(dictation.id)}
                                                             title="Remove dictation"
-                                                            className="ml-auto w-7 h-7 -mr-1.5 rounded-full flex items-center justify-center text-[#1a2b4a]/35 hover:text-red-500 hover:bg-white bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-[opacity,color,background-color]"
+                                                            className={`ml-auto w-7 h-7 -mr-1.5 rounded-full flex items-center justify-center text-[#1a2b4a]/35 hover:text-red-500 hover:bg-white bg-transparent border-none cursor-pointer transition-[opacity,color,background-color] ${isMobile ? '' : 'opacity-0 group-hover:opacity-100'}`}
                                                         >
                                                             <FiX className="text-[14px]" />
                                                         </button>
@@ -3092,31 +3054,57 @@ const QuickSOAP = () => {
 
                                 {/* Mobile: Send to Desktop and Start New buttons - Show when dictations exist and not recording */}
                                 {isMobile && dictations.length > 0 && !isRecording && !isTranscribing && !hasReport && (
-                                    <div className="w-full max-w-full mt-3 space-y-2 flex-shrink-0 px-2">
-                                        <button
-                                            onClick={handleSendToDesktopClick}
-                                            disabled={isGenerating || isSendingToDesktop}
-                                            className="w-full px-4 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg font-bold text-base hover:from-primary-700 hover:to-primary-800 transition-all shadow-md disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                        >
-                                            {isSendingToDesktop ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                                    <span>Sending...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FaDesktop className="text-base" />
-                                                    {hasBeenSentToDesktop ? 'Send Again' : 'Send to Desktop'}
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={() => setShowStartNewModal(true)}
-                                            disabled={isGenerating || isSendingToDesktop}
-                                            className="w-full px-3 py-3 bg-green-500 text-white rounded-lg font-semibold text-sm hover:bg-green-600 transition-all shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                                        >
-                                            Start New
-                                        </button>
+                                    <div className="w-full max-w-[560px] mx-auto mt-5 flex flex-col gap-2 flex-shrink-0">
+                                        {hasBeenSentToDesktop ? (
+                                            <>
+                                                <p className="m-0 mb-1 flex items-center justify-center gap-1.5 text-[13.5px] font-medium text-[#2d5fb8]">
+                                                    <FiCheck /> On its way to your desktop
+                                                </p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => clearAllQuickSOAPData()}
+                                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] active:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] flex items-center justify-center gap-2"
+                                                >
+                                                    <FiMic /> Start the next case
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSendToDesktopClick}
+                                                    disabled={isSendingToDesktop}
+                                                    className="w-full h-11 rounded-full text-[14px] font-semibold text-[#1a2b4a]/60 bg-transparent border-none cursor-pointer disabled:opacity-50"
+                                                >
+                                                    {isSendingToDesktop ? 'Sending…' : 'Send again'}
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSendToDesktopClick}
+                                                    disabled={isGenerating || isSendingToDesktop}
+                                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] active:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] disabled:opacity-60 flex items-center justify-center gap-2"
+                                                >
+                                                    {isSendingToDesktop ? (
+                                                        <>
+                                                            <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                                                            Sending…
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <FaDesktop className="text-[15px]" /> Send to desktop
+                                                        </>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowStartNewModal(true)}
+                                                    disabled={isGenerating || isSendingToDesktop}
+                                                    className="w-full h-11 rounded-full text-[14px] font-semibold text-[#1a2b4a]/60 bg-transparent border-none cursor-pointer disabled:opacity-50"
+                                                >
+                                                    Start over
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 
