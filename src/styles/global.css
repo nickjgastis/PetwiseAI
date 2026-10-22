@@ -1,12 +1,3 @@
-/* Self-hosted full Inter: the Google Fonts build strips the cv05/cv08 alternates. */
-@font-face {
-    font-family: 'Inter';
-    src: url('/fonts/InterVariable-latin.woff2') format('woff2');
-    font-weight: 300 900;
-    font-style: normal;
-    font-display: swap;
-}
-
 /* CSS Reset */
 * {
     margin: 0;

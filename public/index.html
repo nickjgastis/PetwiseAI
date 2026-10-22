@@ -10,6 +10,16 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="preload" href="%PUBLIC_URL%/fonts/InterVariable-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <!-- Self-hosted full Inter: the Google Fonts build strips the cv05/cv08 alternates. Lives here, not in CSS, so webpack doesn't try to bundle it. -->
+  <style>
+    @font-face {
+      font-family: 'Inter';
+      src: url('%PUBLIC_URL%/fonts/InterVariable-latin.woff2') format('woff2');
+      font-weight: 300 900;
+      font-style: normal;
+      font-display: swap;
+    }
+  </style>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <meta name="description" content="PetWise is the veterinary AI scribe built by a veterinarian. Get finished SOAP notes in seconds." />
   
