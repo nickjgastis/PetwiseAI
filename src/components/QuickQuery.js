@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 import FormattedMessage from './FormattedQueryMessage';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt, FaMicrophone, FaStop } from 'react-icons/fa';
-import { FiArrowUp } from 'react-icons/fi';
+import { FiArrowUp, FiPlus } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from './UpgradeNudge';
@@ -1270,13 +1270,6 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     <div className="flex-shrink-0 border-b border-[#eef2f7] bg-white/80 backdrop-blur-md">
                         <div className="max-w-6xl mx-auto h-[60px] px-4 flex items-center justify-between">
                             <h2 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>PetQuery</h2>
-                            <button
-                                type="button"
-                                onClick={handleClear}
-                                className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors"
-                            >
-                                New chat
-                            </button>
                         </div>
                     </div>
                 )}
@@ -1516,7 +1509,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         <div ref={messagesEndRef} />
                     </div>
                     <div className={`relative flex-shrink-0 ${isMobile ? 'bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)]' : 'bg-white/85 backdrop-blur-md border-t border-[#eef2f7]'}`}>
-                        <div className={`mx-auto ${isMobile ? 'px-3.5 pt-2.5 pb-3' : 'px-4 pt-3 pb-5 max-w-6xl'}`}>
+                        <div className={`mx-auto ${isMobile ? 'px-3.5 pt-2.5 pb-3' : 'px-4 pt-3 pb-5 max-w-3xl'}`}>
                             {/* Mode toggle - smaller on mobile */}
                             <div className={`flex justify-center items-center gap-2 ${isMobile ? 'mb-2.5' : 'mb-3'}`}>
                                 <div className={`inline-flex rounded-full ${isMobile ? 'bg-gray-100 p-0.5 border border-gray-200/70' : 'bg-[#f3f6fa] p-1 gap-1'}`}>
@@ -1553,7 +1546,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 )}
                             </div>
                             {/* Input form - ChatGPT style on mobile */}
-                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-start'}`}>
+                            <form onSubmit={handleSubmit} className={`flex ${isMobile ? 'gap-2 items-end' : 'gap-3 items-end'}`}>
                                 {isMobile ? (
                                     <div className={`relative flex-1 min-h-[46px] max-h-[112px] rounded-[23px] border transition-all duration-200 flex items-end ${
                                         isRecording
@@ -1693,6 +1686,16 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                             {sendButton}
                                         </div>
                                     </div>
+                                )}
+                                {!isMobile && messages.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClear}
+                                        className="inline-flex items-center gap-1.5 h-[52px] px-5 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 hover:text-[#2d5fb8] cursor-pointer transition-colors flex-shrink-0 shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)]"
+                                    >
+                                        <FiPlus className="text-[15px]" />
+                                        New chat
+                                    </button>
                                 )}
                             </form>
                         </div>
