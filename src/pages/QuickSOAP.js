@@ -2889,7 +2889,7 @@ const QuickSOAP = () => {
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
                                 <div
                                     className={startCard
-                                        ? 'w-full max-w-[400px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)] px-7 pt-9 pb-6 flex flex-col items-center'
+                                        ? 'w-full max-w-[560px] mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)] px-10 pt-10 pb-7 flex flex-col items-center'
                                         : 'contents'}
                                 >
                                 {/* Mic: front and center before the first dictation, "Add more" after */}
