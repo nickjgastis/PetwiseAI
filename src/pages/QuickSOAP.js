@@ -32,6 +32,7 @@ import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES, RECORD_TYPES } from '../compone
 import GeneratingLoader from '../components/GeneratingLoader';
 import Guide from '../components/Guide';
 import DentalRecordPanel from '../components/DentalRecordPanel';
+import CountBadge from '../components/CountBadge';
 import { PiTooth } from 'react-icons/pi';
 
 const TEXT_RECORDS = {
@@ -3558,7 +3559,7 @@ const QuickSOAP = () => {
                                     >
                                         <FiMic className="text-[13px] text-[#2d5fb8]" />
                                         Dictations & notes
-                                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[11px] font-semibold flex items-center justify-center">{dictations.length + (input.trim() ? 1 : 0)}</span>
+                                        <CountBadge count={dictations.length + (input.trim() ? 1 : 0)} />
                                         <span className="ml-auto text-[12.5px] text-[#1a2b4a]/50">{showDictations ? 'Hide' : 'Show'}</span>
                                         <FiChevronDown className={`text-[14px] text-[#1a2b4a]/50 transition-transform duration-300 ${showDictations ? 'rotate-180' : ''}`} />
                                     </button>
