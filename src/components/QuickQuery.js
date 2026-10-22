@@ -408,7 +408,7 @@ const QuickQuery = ({ isMobile = false }) => {
     const queryRemaining = lastUsage
         ? Math.max(lastUsage.limit - lastUsage.used, 0)
         : usage.query.remaining;
-    const showNudge = !usage.isUnlimited && !nudgeDismissed && queryRemaining > 0 && queryRemaining <= 3;
+    const showNudge = usage.loaded && !usage.isUnlimited && !nudgeDismissed && queryRemaining > 0 && queryRemaining <= 3;
     const dismissNudge = () => {
         setNudgeDismissed(true);
         sessionStorage.setItem(nudgeKey, 'true');

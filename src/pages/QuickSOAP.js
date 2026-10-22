@@ -314,7 +314,7 @@ const QuickSOAP = () => {
     const soapRemaining = lastUsage
         ? Math.max(lastUsage.limit - lastUsage.used, 0)
         : usage.soap.remaining;
-    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
+    const showNudge = usage.loaded && !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
 
     // Drafts sent from the phone spend a SOAP when the desktop generates them, so they count against
     // today's allowance now. Kept in state: an await before getUserMedia breaks the mic prompt on iOS.

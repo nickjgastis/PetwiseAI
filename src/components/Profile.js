@@ -549,7 +549,7 @@ const Profile = ({ isMobileSignup = false }) => {
                                         <SectionCard>
                                             <UsageMeter usage={usage} onUpgrade={() => setActiveSection('billing')} />
                                         </SectionCard>
-                                        {!usage.isUnlimited && (
+                                        {usage.loaded && !usage.isUnlimited && (
                                             <div className="rounded-[24px] bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] bg-[radial-gradient(60%_140%_at_100%_0%,rgba(92,204,240,0.28)_0%,rgba(19,35,63,0)_70%)] p-6 text-white flex flex-wrap items-center justify-between gap-4">
                                                 <div>
                                                     <h3 className="text-lg font-semibold tracking-tight">Go unlimited</h3>

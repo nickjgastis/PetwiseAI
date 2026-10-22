@@ -104,9 +104,13 @@ export function notifyUsageUpdated() {
 // the local calendar date). Returns:
 // { tier, isUnlimited, soap: {used, limit, remaining, pct}, query: {...},
 //   resetsAt (next local midnight), hoursUntilReset, refresh }
+// Last fetched row, so pages mounted after the first load start with real data instead of
+// briefly rendering as free tier.
+let cachedUsage = null;
+
 export function useUsage() {
-    const [usageData, setUsageData] = useState(null);
     const { user } = useAuth0();
+    const [usageData, setUsageData] = useState(() => (cachedUsage && cachedUsage.sub === user?.sub ? cachedUsage.data : null));
 
     const fetchUsage = useCallback(async () => {
         if (!user?.sub) return;
@@ -121,6 +125,7 @@ export function useUsage() {
             console.error('Usage check error:', error);
             return;
         }
+        cachedUsage = { sub: user.sub, data };
         setUsageData(data);
     }, [user?.sub]);
 

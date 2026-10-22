@@ -621,7 +621,7 @@ const ReportForm = () => {
     const soapRemaining = lastUsage
         ? Math.max(lastUsage.limit - lastUsage.used, 0)
         : usage.soap.remaining;
-    const showNudge = !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
+    const showNudge = usage.loaded && !usage.isUnlimited && !nudgeDismissed && soapRemaining === 1;
     const dismissNudge = () => {
         setNudgeDismissed(true);
         sessionStorage.setItem(nudgeKey, 'true');
