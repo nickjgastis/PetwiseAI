@@ -1505,8 +1505,8 @@ const Dashboard = () => {
                                 )}
                             </div>
                             <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
-                                <span className="font-semibold text-[#1e4a94] tracking-[-0.02em]">Petwise</span>
-                                <span className="font-normal text-[#1e4a94] tracking-[-0.02em]">.vet</span>
+                                <span className="font-semibold text-[#13233f] tracking-[-0.02em]">Petwise</span>
+                                <span className="font-normal text-[#13233f]/35 tracking-[-0.02em]">.vet</span>
                             </span>
                         </Link>
                     </div>
