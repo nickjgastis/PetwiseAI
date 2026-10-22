@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BRAND_WASH } from '../../brand';
 import { Link } from 'react-router-dom';
 import { FiCheck } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
@@ -142,7 +143,7 @@ const Pricing = () => {
                     </div>
 
                     <div className={`mt-10 grid gap-4 mx-auto ${STUDENT_PROGRAM ? 'sm:grid-cols-2 max-w-6xl' : 'max-w-3xl'}`}>
-                        <div className="rounded-[24px] bg-[#f6f8fb] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className={`rounded-[24px] ${BRAND_WASH} border border-[#e3ecf8] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
                             <div>
                                 <h2 className="font-semibold text-[#13233f]">Clinics and groups</h2>
                                 <p className="mt-1 text-[15px] text-[#1a2b4a]/60">Team pricing for multi vet practices.</p>
@@ -151,7 +152,7 @@ const Pricing = () => {
                                 Contact us
                             </a>
                         </div>
-                        {STUDENT_PROGRAM && <div className="rounded-[24px] bg-[#f6f8fb] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        {STUDENT_PROGRAM && <div className={`rounded-[24px] ${BRAND_WASH} border border-[#e3ecf8] p-7 flex flex-col sm:flex-row sm:items-center justify-between gap-4`}>
                             <div>
                                 <h2 className="font-semibold text-[#13233f]">Vet students</h2>
                                 <p className="mt-1 text-[15px] text-[#1a2b4a]/60">PetWise is free while you study.</p>

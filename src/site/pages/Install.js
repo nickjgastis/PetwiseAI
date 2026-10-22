@@ -1,4 +1,5 @@
 import React from 'react';
+import { BRAND_WASH } from '../../brand';
 import SiteLayout from '../SiteLayout';
 import { Seo } from '../seo';
 import { Container, CtaBand, Highlight, Reveal, SplitHero } from '../ui';
@@ -49,7 +50,7 @@ const Install = () => (
                 <div className="grid gap-5 md:grid-cols-2">
                     {PLATFORMS.map((p, i) => (
                         <Reveal key={p.name} delay={i * 90}>
-                            <div className="h-full rounded-[28px] bg-[#f6f8fb] p-8 sm:p-10">
+                            <div className={`h-full rounded-[28px] ${BRAND_WASH} border border-[#e3ecf8] p-8 sm:p-10`}>
                                 <h2 className="text-2xl font-semibold tracking-tight text-[#13233f]">{p.name}</h2>
                                 <p className="mt-1 text-[14px] text-[#3468bd]">{p.browser}</p>
                                 <ol className="mt-8 space-y-5">

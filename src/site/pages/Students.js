@@ -59,7 +59,7 @@ const Students = () => (
             </ButtonLink>
         </SplitHero>
 
-        <Section tone="tint">
+        <Section tone="wash">
             <SectionHeading eyebrow="Why PetWise" title="Your study partner through clinics and rotations." />
             <FeatureGrid items={BENEFITS} columns={2} />
         </Section>

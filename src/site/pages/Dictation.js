@@ -97,7 +97,7 @@ const Dictation = () => (
             </ButtonLink>
         </SplitHero>
 
-        <Section tone="tint">
+        <Section tone="wash">
             <SectionHeading eyebrow="How it works" title="Start on your phone. Finish on your desktop." />
             <Steps items={STEPS} />
             <Reveal className="mt-16 sm:mt-20">

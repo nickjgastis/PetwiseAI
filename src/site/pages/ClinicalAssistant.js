@@ -69,7 +69,7 @@ const ClinicalAssistant = () => (
             </Container>
         </section>
 
-        <Section tone="tint">
+        <Section tone="wash">
             <SectionHeading eyebrow="Ask it anything clinical" title="Questions vets ask PetQuery every day." />
             <div className="flex flex-wrap gap-3">
                 {QUESTIONS.map((q, i) => (

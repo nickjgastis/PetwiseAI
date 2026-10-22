@@ -62,7 +62,7 @@ const About = () => (
             </div>
         </Section>
 
-        <Section tone="tint">
+        <Section tone="wash">
             <SectionHeading eyebrow="What we believe" title="Technology should fit the clinic, not the other way around." />
             <div className="grid gap-10 md:grid-cols-3">
                 {VALUES.map((v, i) => (

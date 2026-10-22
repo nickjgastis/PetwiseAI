@@ -76,7 +76,7 @@ const Features = () => (
             />
         </Section>
 
-        <Section tone="tint">
+        <Section tone="wash">
             <SectionHeading eyebrow="Workflow" title="Built around a real clinic day." />
             <FeatureGrid items={WORKFLOW} />
         </Section>
