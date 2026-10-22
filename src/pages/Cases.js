@@ -372,8 +372,11 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
                     {card || customTitle(note) || !previewPending ? (
                         <motion.div key="card" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex-1 flex flex-col">
                             <p className="mt-3 mb-0 text-[16.5px] font-semibold leading-snug tracking-[-0.01em] text-[#13233f] line-clamp-2">{title}</p>
+                            {card?.summary && (
+                                <p className="mt-1.5 mb-0 text-[14px] leading-relaxed text-[#1a2b4a]/65">{card.summary}</p>
+                            )}
                             {card?.points?.length ? (
-                                <ul className="list-none m-0 mt-3 p-0 space-y-1.5">
+                                <ul className="list-none m-0 mt-3.5 pt-3.5 border-t border-[#eef2f7] pl-0 space-y-1.5">
                                     {card.points.map((p) => (
                                         <li key={p.label} className="flex gap-2 text-[13.5px] leading-snug text-[#1a2b4a]/75">
                                             <span className={`mt-[7px] w-1.5 h-1.5 shrink-0 rounded-full ${info.dot}`} />
@@ -692,7 +695,9 @@ const CaseDetail = ({ caseId }) => {
     const [pendingPreviews, setPendingPreviews] = useState(() => new Set());
     const requestedPreviews = useRef(new Set());
     useEffect(() => {
-        const missing = notes.filter((n) => n.form_data?.card?.src !== cardSource(n) && !requestedPreviews.current.has(n.id)).slice(0, 12);
+        const missing = notes
+            .filter((n) => (n.form_data?.card?.src !== cardSource(n) || !n.form_data?.card?.summary) && !requestedPreviews.current.has(n.id))
+            .slice(0, 12);
         if (!missing.length) return;
         missing.forEach((n) => requestedPreviews.current.add(n.id));
         const ids = missing.map((n) => n.id);

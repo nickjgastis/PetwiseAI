@@ -1161,8 +1161,9 @@ app.post('/api/note-previews', async (req, res) => {
                         role: 'user',
                         content: [
                             `Summarize this veterinary ${kinds[n.type] || 'record'} for a small preview card.`,
-                            'Return JSON: {"title": string, "points": [{"label": string, "text": string}]}.',
+                            'Return JSON: {"title": string, "summary": string, "points": [{"label": string, "text": string}]}.',
                             'title: the main problem or reason for the visit in 2 to 6 words, e.g. "Acute vomiting and diarrhea". No patient name, no date, no record type.',
+                            'summary: one complete, easy to read sentence (12 to 25 words) saying what happened and what was done, written for a colleague skimming. Use the patient name if given. No abbreviations like SC or BID.',
                             `points: 2 or 3 items, labels only from ${allowed.map((l) => `"${l}"`).join(', ')}, in that order. Each text at most 10 words. Keep exact diagnoses, drug names and doses. Skip a label if the record has nothing for it.`,
                             'Plain words, no markdown, no em dashes.',
                             '',
@@ -1184,7 +1185,8 @@ app.post('/api/note-previews', async (req, res) => {
                 .filter((p) => p && allowed.includes(p.label) && p.text)
                 .slice(0, 3)
                 .map((p) => ({ label: p.label, text: clean(p.text, 110) }));
-            if (title || points.length) previews[n.id] = { title, points };
+            const summary = clean(parsed.summary, 220);
+            if (title || summary || points.length) previews[n.id] = { title, summary, points };
         } catch (err) {
             console.error('[NotePreviews] failed for', n.id, err.message);
         }
