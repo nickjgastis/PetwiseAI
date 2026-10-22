@@ -15,7 +15,8 @@ import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
-import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen } from 'react-icons/fa';
+import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen, FaPlus } from 'react-icons/fa';
+import { motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
@@ -139,6 +140,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
 
     const isQuickSOAP = location.pathname === '/dashboard/quicksoap';
     const isPetQuery = location.pathname === '/dashboard/quick-query';
+    const isCases = location.pathname.startsWith('/dashboard/cases');
     const isProfile = location.pathname === '/dashboard/profile';
 
     return (
@@ -166,6 +168,15 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                                 <span className={`text-[10px] mt-0.5 ${isQuickSOAP ? 'font-bold' : 'font-medium'}`}>New case</span>
                             </Link>
                             <Link
+                                to="/dashboard/cases"
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isCases ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                            >
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isCases ? 'bg-blue-50' : ''}`}>
+                                    <FaFolderOpen className="text-lg" />
+                                </span>
+                                <span className={`text-[10px] mt-0.5 ${isCases ? 'font-bold' : 'font-medium'}`}>Cases</span>
+                            </Link>
+                            <Link
                                 to="/dashboard/quick-query"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isPetQuery ? 'text-[#3468bd]' : 'text-gray-400'}`}
                             >
@@ -189,6 +200,34 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
         </>
     );
 };
+
+const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour, tooltip, badge, secondary }) => (
+    <li className="mx-3 my-0.5 relative">
+        <Link
+            to={to}
+            onClick={onClick}
+            data-tooltip={tooltip || label}
+            data-tour={tour}
+            className={`relative flex items-center no-underline font-medium rounded-xl transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[12.5px] py-1.5 px-2.5' : 'text-[13.5px] py-2 px-2.5'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-white' : secondary ? 'text-white/55 hover:text-white hover:bg-white/[0.06]' : 'text-white/80 hover:text-white hover:bg-white/[0.07]'}`}
+        >
+            {active && (
+                <motion.span
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 rounded-xl bg-white/[0.14] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                    transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+                />
+            )}
+            <span className={`relative flex items-center justify-center shrink-0 ${secondary ? 'w-7 h-7' : 'w-8 h-8 rounded-lg'}`} style={secondary ? undefined : { background: active ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
+                <Icon className="text-xs" />
+                {dot && <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] animate-pulse" style={{ fontSize: '8px' }} />}
+            </span>
+            <span className={`relative transition-all duration-300 ${collapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>{label}</span>
+            {badge && !collapsed && (
+                <span className="absolute top-1/2 -translate-y-1/2 right-2.5 text-[8px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(92,204,240,0.2)', color: '#5cccf0', letterSpacing: '0.05em' }}>{badge}</span>
+            )}
+        </Link>
+    </li>
+);
 
 // ================ DASHBOARD COMPONENT ================
 const Dashboard = () => {
@@ -439,6 +478,12 @@ const Dashboard = () => {
                 }
 
                 const caseId = finalDraftCheck.case_id || await createCase(extractedPetName || formData.petName);
+                if (finalDraftCheck.case_id) {
+                    const { data: existingCase } = await supabase.from('cases').select('pet_name').eq('id', caseId).maybeSingle();
+                    if (existingCase) {
+                        await supabase.from('cases').update({ pet_name: existingCase.pet_name || extractedPetName || formData.petName || null }).eq('id', caseId);
+                    }
+                }
 
                 // Update the draft to a report instead of inserting new (prevents duplicates)
                 const { data: savedReport, error: saveError } = await supabase
@@ -472,10 +517,11 @@ const Dashboard = () => {
                     return false;
                 }
 
-                // Set notification flag for Saved Records tab
+                // Set notification flag for the Cases tab
                 setHasNewMobileSOAP(true);
                 localStorage.setItem('hasNewMobileSOAP', 'true');
                 localStorage.setItem('newMobileSOAPId', savedReport.id);
+                if (caseId) localStorage.setItem('newMobileSOAPCaseId', caseId);
 
                 // Dispatch custom event to notify Saved Reports component and update count
                 window.dispatchEvent(new CustomEvent('newMobileSOAPGenerated', {
@@ -1199,6 +1245,15 @@ const Dashboard = () => {
             );
         }
 
+        const casesMatch = window.location.pathname.match(/\/dashboard\/cases(?:\/([^/]+))?/);
+        if (casesMatch) {
+            return (
+                <MobileAppShell visible={mobileAppVisible} location={location}>
+                    <Cases caseId={casesMatch[1]} />
+                </MobileAppShell>
+            );
+        }
+
         // Default mobile route — everyone lands on QuickSOAP
         if (!window.location.pathname.includes('/profile') && !window.location.pathname.includes('/quicksoap') && !window.location.pathname.includes('/quick-query')) {
             navigate('/dashboard/quicksoap', { replace: true });
@@ -1442,107 +1497,26 @@ const Dashboard = () => {
                     </div>
                     {/* Navigation Menu (user info now lives in the footer below) */}
                     <ul className="list-none p-0 m-0 flex-1 mt-1">
-                        {/* QuickSOAP */}
-                        <li className="mx-3 my-0.5 relative">
-                                    <Link
-                                        to="/dashboard/quicksoap"
-                                        onClick={closeMobileMenu}
-                                        data-tooltip="New case"
-                                        data-tour="quicksoap"
-                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quicksoap' ? 'text-white' : 'hover:text-white'}`}
-                                        style={location.pathname === '/dashboard/quicksoap' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/quicksoap') e.currentTarget.style.background = 'transparent'; }}
-                                    >
-                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative`} style={{ background: location.pathname === '/dashboard/quicksoap' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                            <FaMicrophone className="text-xs" />
-                                            {/* Notification dot for pending dictations */}
-                                            {hasPendingDictation && !isMobile && (
-                                                <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
-                                            )}
-                                        </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'} relative`}>
-                                            New case
-                                            {/* Notification dot next to text when expanded */}
-                                            {hasPendingDictation && !isMobile && !isSidebarCollapsed && (
-                                                <FaCircle className="inline-block ml-2 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
-                                            )}
-                                        </span>
-                                    </Link>
-                                </li>
-                                <li className="mx-3 my-0.5 relative">
-                                    <Link
-                                        to="/dashboard/cases"
-                                        onClick={closeMobileMenu}
-                                        data-tooltip="Cases"
-                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${isCasesPath ? 'text-white' : 'hover:text-white'}`}
-                                        style={isCasesPath ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                        onMouseEnter={(e) => { if (!isCasesPath) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                        onMouseLeave={(e) => { if (!isCasesPath) e.currentTarget.style.background = 'transparent'; }}
-                                    >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: isCasesPath ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                            <FaFolderOpen className="text-xs" />
-                                        </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Cases</span>
-                                    </Link>
-                                </li>
-                                <li className="mx-3 my-0.5 relative">
-                                    <Link
-                                        to="/dashboard/quick-query"
-                                        onClick={closeMobileMenu}
-                                        data-tooltip="QuickMed Query"
-                                        data-tour="petquery"
-                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/quick-query' ? 'text-white' : 'hover:text-white'}`}
-                                        style={location.pathname === '/dashboard/quick-query' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/quick-query') e.currentTarget.style.background = 'transparent'; }}
-                                    >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/quick-query' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                            <FaSearch className="text-xs" />
-                                        </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetQUERY</span>
-                                    </Link>
-                                </li>
-                                <li className="mx-3 my-0.5 relative">
-                                    <Link
-                                        to="/dashboard/saved-reports"
-                                        data-tooltip="Saved Reports"
-                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/saved-reports' ? 'text-white' : 'hover:text-white'}`}
-                                        style={location.pathname === '/dashboard/saved-reports' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/saved-reports') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/saved-reports') e.currentTarget.style.background = 'transparent'; }}
-                                    >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 relative" style={{ background: location.pathname === '/dashboard/saved-reports' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                            <FaSave className="text-xs" />
-                                            {/* Notification dot for new mobile SOAP */}
-                                            {hasNewMobileSOAP && !isMobile && (
-                                                <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
-                                            )}
-                                        </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'} relative`}>
-                                            Saved Records
-                                            {/* Notification dot next to text when expanded */}
-                                            {hasNewMobileSOAP && !isMobile && !isSidebarCollapsed && (
-                                                <FaCircle className="inline-block ml-2 text-[#5cccf0] text-xs animate-pulse" style={{ fontSize: '8px' }} />
-                                            )}
-                                        </span>
-                                    </Link>
-                                </li>
-                                <li className="mx-3 my-0.5 relative">
-                                    <Link
-                                        to="/dashboard/templates"
-                                        data-tooltip="My Templates"
-                                        className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/templates' ? 'text-white' : 'hover:text-white'}`}
-                                        style={location.pathname === '/dashboard/templates' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                        onMouseEnter={(e) => { if (location.pathname !== '/dashboard/templates') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                        onMouseLeave={(e) => { if (location.pathname !== '/dashboard/templates') e.currentTarget.style.background = 'transparent'; }}
-                                    >
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/templates' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                            <FaClipboard className="text-xs" />
-                                        </div>
-                                        <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>My Templates</span>
-                                    </Link>
-                                </li>
+                        {/* Primary action */}
+                        <li className={`mx-3 mt-3 mb-3 relative ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
+                            <Link
+                                to="/dashboard/quicksoap"
+                                onClick={closeMobileMenu}
+                                data-tooltip="Start new case"
+                                data-tour="quicksoap"
+                                className={`relative flex items-center justify-center gap-2 no-underline font-semibold text-[13.5px] text-[#2d5fb8] bg-white rounded-full shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_14px_34px_-12px_rgba(0,0,0,0.5)] ${isSidebarCollapsed ? 'w-11 h-11' : 'w-full py-2.5 px-4'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/60 ring-offset-2 ring-offset-[#2a59ad]' : ''}`}
+                            >
+                                <FaPlus className="text-[11px]" />
+                                {!isSidebarCollapsed && <span>New case</span>}
+                                {hasPendingDictation && !isMobile && (
+                                    <FaCircle className="absolute -top-0.5 -right-0.5 text-[#5cccf0] animate-pulse" style={{ fontSize: '9px' }} />
+                                )}
+                            </Link>
+                        </li>
+
+                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={FaFolderOpen} label="Cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
+                        <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={FaSearch} label="PetQUERY" tooltip="PetQUERY" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+
                         {subscriptionStatus === 'past_due' && (
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
                                 <Link
@@ -1557,41 +1531,16 @@ const Dashboard = () => {
                                 </Link>
                             </li>
                         )}
-                        <li className="mx-3 my-0.5 relative" style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                            <Link
-                                to="/dashboard/report-form"
-                                onClick={closeMobileMenu}
-                                data-tooltip="Report Generator"
-                                className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'text-white' : 'hover:text-white'}`}
-                                style={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                onMouseEnter={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                onMouseLeave={(e) => { if (location.pathname !== '/dashboard/report-form' && location.pathname !== '/dashboard') e.currentTarget.style.background = 'transparent'; }}
-                            >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                    <FaFileAlt className="text-xs" />
-                                </div>
-                                <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>PetSOAP</span>
-                            </Link>
+
+                        <li className="mx-3 mt-5 mb-1" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                            {!isSidebarCollapsed && (
+                                <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-white/35">More</p>
+                            )}
                         </li>
-                        <li className="mx-3 my-0.5 relative">
-                            <Link
-                                to="/dashboard/help"
-                                onClick={closeMobileMenu}
-                                data-tooltip="Help"
-                                className={`flex items-center text-white/80 no-underline text-[13px] font-medium py-2 px-2.5 rounded-xl transition-all duration-200 w-full whitespace-nowrap group ${isSidebarCollapsed ? 'justify-center' : 'text-left'} ${location.pathname === '/dashboard/help' ? 'text-white' : 'hover:text-white'} relative`}
-                                style={location.pathname === '/dashboard/help' ? { background: 'rgba(255,255,255,0.12)' } : {}}
-                                onMouseEnter={(e) => { if (location.pathname !== '/dashboard/help') e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
-                                onMouseLeave={(e) => { if (location.pathname !== '/dashboard/help') e.currentTarget.style.background = 'transparent'; }}
-                            >
-                                <div className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200" style={{ background: location.pathname === '/dashboard/help' ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
-                                    <FaQuestionCircle className="text-xs" />
-                                </div>
-                                <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto ml-3'}`}>Help</span>
-                                {!isSidebarCollapsed && (
-                                    <span className="absolute top-1/2 -translate-y-1/2 right-2.5 text-[8px] font-bold px-1.5 py-0.5 rounded-md" style={{ background: 'rgba(92,204,240,0.2)', color: '#5cccf0', letterSpacing: '0.05em' }}>NEW</span>
-                                )}
-                            </Link>
-                        </li>
+                        <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={FaSave} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={FaClipboard} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={FaFileAlt} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={FaQuestionCircle} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                     </ul>
 
                     {/* User Footer — name, plan, usage ring */}
@@ -1704,7 +1653,7 @@ const Dashboard = () => {
                                             return `${parts.join(', ')} generating from mobile`;
                                         })()}
                                     </p>
-                                    <p className="text-[13px] text-[#1a2b4a]/65">Will appear in Saved Records when complete</p>
+                                    <p className="text-[13px] text-[#1a2b4a]/65">Will appear in Cases when complete</p>
                                 </div>
                             </div>
                         </div>
@@ -1766,13 +1715,14 @@ const Dashboard = () => {
                                             : `${mobileSOAPCount} new records saved from mobile`
                                         }
                                     </p>
-                                    <p className="text-sm opacity-90">Click to view in Saved Records</p>
+                                    <p className="text-sm opacity-90">Click to view in Cases</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3" style={{ position: 'relative', zIndex: 10000 }}>
                                 <button
                                     onClick={() => {
-                                        navigate('/dashboard/saved-reports');
+                                        const caseId = mobileSOAPCount === 1 ? localStorage.getItem('newMobileSOAPCaseId') : null;
+                                        navigate(caseId ? `/dashboard/cases/${caseId}` : '/dashboard/cases');
                                     }}
                                     className="px-5 py-2 bg-white text-[#2d5fb8] hover:bg-[#e9f6fd] rounded-full font-medium text-sm transition-all relative"
                                     style={{ zIndex: 10001 }}
