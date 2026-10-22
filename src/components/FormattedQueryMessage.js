@@ -13,13 +13,13 @@ const renderInline = (text) => {
         .map((part, i) => {
             if (!part) return null;
             if (/^\*\*[^*]+\*\*$/.test(part)) {
-                return <strong key={i} className="font-semibold text-gray-900">{part.slice(2, -2)}</strong>;
+                return <strong key={i} className="font-semibold text-[#13233f]">{part.slice(2, -2)}</strong>;
             }
             if (/^\\\([\s\S]*\\\)$/.test(part)) {
-                return <span key={i} className="font-serif italic text-primary-700">{part.slice(2, -2).trim()}</span>;
+                return <span key={i} className="font-serif italic text-[#2d5fb8]">{part.slice(2, -2).trim()}</span>;
             }
             if (/^\$[^$]+\$$/.test(part)) {
-                return <span key={i} className="font-serif italic text-primary-700">{part.slice(1, -1)}</span>;
+                return <span key={i} className="font-serif italic text-[#2d5fb8]">{part.slice(1, -1)}</span>;
             }
             return part;
         });
@@ -28,6 +28,13 @@ const renderInline = (text) => {
 const stripBold = (t) => String(t ?? '').replace(/\*\*(.*?)\*\*/g, '$1').replace(/\{([^}]+)\}/g, '$1');
 
 const FIELD_LINE = /^(?:-\s+)?\*\*([^*]{1,40}?):\*\*\s*(.*)$/;
+
+const Callout = ({ text }) => (
+    <div className="mt-6 rounded-[18px] bg-white border border-[#2d5fb8]/15 px-5 py-4 shadow-[0_10px_30px_-24px_rgba(19,35,63,0.4)]">
+        <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#2d5fb8] mb-1.5">Recommendation</div>
+        <div className="text-[#13233f]">{renderInline(text)}</div>
+    </div>
+);
 
 const FormattedQueryMessage = ({ content }) => {
     const rawLines = String(content ?? '')
@@ -95,31 +102,33 @@ const FormattedQueryMessage = ({ content }) => {
     let key = 0;
 
     const isNotesLabel = (label) => /^(additional\s+)?notes?$/i.test(label);
+    const indent = () => (insideSection ? 'sm:ml-[38px]' : '');
 
     const flushFields = () => {
         if (fieldBuf.length === 0) return;
         const rows = fieldBuf;
         fieldBuf = [];
         out.push(
-            <div key={key++} className={`${insideSection ? 'ml-[26px]' : ''} my-3 space-y-1`}>
+            <div
+                key={key++}
+                className={`${indent()} my-3 rounded-[18px] bg-white/80 border border-[#2d5fb8]/10 px-5 py-3.5 grid grid-cols-1 sm:grid-cols-[minmax(96px,max-content)_1fr] gap-x-6 gap-y-1.5`}
+            >
                 {rows.map((f, i) =>
                     isNotesLabel(f.label) ? (
-                        <div key={i} className="text-[13px] leading-relaxed text-gray-500">
-                            <span className="font-semibold text-gray-600">{f.label}: </span>
+                        <div key={i} className="sm:col-span-2 mt-1 pt-2 border-t border-[#2d5fb8]/10 text-[13px] leading-relaxed text-[#1a2b4a]/60">
+                            <span className="font-semibold text-[#1a2b4a]/70">{f.label}: </span>
                             {renderInline(f.value)}
                         </div>
                     ) : (
-                        <div key={i} className="leading-relaxed">
-                            <span className="font-semibold text-gray-900">{f.label}: </span>
-                            {renderInline(f.value)}
-                        </div>
+                        <React.Fragment key={i}>
+                            <div className="text-[13px] font-semibold text-[#1a2b4a]/55 sm:pt-px">{f.label}</div>
+                            <div className="text-[#13233f] mb-1 sm:mb-0">{renderInline(f.value)}</div>
+                        </React.Fragment>
                     )
                 )}
             </div>
         );
     };
-
-    const indent = () => (insideSection ? 'ml-[26px]' : '');
 
     tokens.forEach((t) => {
         if (t.type !== 'field') flushFields();
@@ -127,7 +136,7 @@ const FormattedQueryMessage = ({ content }) => {
         switch (t.type) {
             case 'title':
                 out.push(
-                    <h3 key={key++} className="text-[15px] md:text-base font-bold text-gray-900 pb-2.5 mb-3 border-b border-gray-200/80">
+                    <h3 key={key++} className="text-[17px] md:text-[19px] font-bold tracking-[-0.01em] text-[#13233f] pb-3.5 mb-5 border-b border-[#2d5fb8]/10">
                         {renderInline(t.text)}
                     </h3>
                 );
@@ -135,26 +144,22 @@ const FormattedQueryMessage = ({ content }) => {
 
             case 'section': {
                 insideSection = true;
-                const isRec = /^recommendation/i.test(t.header);
-                if (isRec) {
+                if (/^recommendation/i.test(t.header)) {
                     insideSection = false;
-                    out.push(
-                        <div key={key++} className="mt-4 rounded-lg bg-primary-50 border-l-[3px] border-primary-500 px-3.5 py-3">
-                            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary-700 mb-1">Recommendation</div>
-                            <div>{renderInline(t.lead || t.header)}</div>
-                        </div>
-                    );
+                    out.push(<Callout key={key++} text={t.lead || t.header} />);
                     break;
                 }
                 out.push(
-                    <div key={key++} className="flex items-baseline gap-2 mt-5 mb-1.5 first:mt-0">
-                        <span className="w-[18px] shrink-0 text-right font-bold text-primary-600">{t.num}.</span>
+                    <div key={key++} className="flex items-start gap-3.5 mt-7 mb-2 first:mt-0">
+                        <span className="mt-[1px] w-6 h-6 shrink-0 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[12px] font-bold flex items-center justify-center">
+                            {t.num}
+                        </span>
                         {t.plain ? (
-                            <span>{renderInline(t.header)}</span>
+                            <span className="flex-1 min-w-0">{renderInline(t.header)}</span>
                         ) : (
-                            <span className="font-semibold text-gray-900">
+                            <span className="flex-1 min-w-0 text-[15px] md:text-[16px] font-semibold text-[#13233f]">
                                 {renderInline(t.header)}
-                                {t.lead ? <span className="font-normal text-gray-800">: {renderInline(t.lead)}</span> : null}
+                                {t.lead ? <span className="block mt-1 text-[14px] md:text-[15px] font-normal text-[#1a2b4a]">{renderInline(t.lead)}</span> : null}
                             </span>
                         )}
                     </div>
@@ -163,27 +168,21 @@ const FormattedQueryMessage = ({ content }) => {
             }
 
             case 'subitem': {
-                const isRec = /^\*{0,2}recommendation/i.test(t.text);
-                if (isRec) {
-                    out.push(
-                        <div key={key++} className="mt-4 rounded-lg bg-primary-50 border-l-[3px] border-primary-500 px-3.5 py-3">
-                            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary-700 mb-1">Recommendation</div>
-                            <div>{renderInline(stripBold(t.text).replace(/^recommendation:?\s*/i, ''))}</div>
-                        </div>
-                    );
+                if (/^\*{0,2}recommendation/i.test(t.text)) {
+                    out.push(<Callout key={key++} text={stripBold(t.text).replace(/^recommendation:?\s*/i, '')} />);
                     break;
                 }
                 const sub = t.text.match(/^\*\*(.*?):?\*\*:?\s*$/);
                 if (sub) {
                     out.push(
-                        <div key={key++} className={`${indent()} mt-3 mb-1 font-semibold text-gray-800`}>
+                        <div key={key++} className={`${indent()} mt-4 mb-1.5 font-semibold text-[#13233f]`}>
                             {t.num}. {renderInline(sub[1])}
                         </div>
                     );
                 } else {
                     out.push(
-                        <div key={key++} className={`${indent()} flex gap-2 items-baseline my-1`}>
-                            <span className="w-[18px] shrink-0 text-right font-semibold text-gray-400">{t.num}.</span>
+                        <div key={key++} className={`${indent()} flex gap-2.5 items-baseline my-1.5`}>
+                            <span className="w-[18px] shrink-0 text-right font-semibold text-[#2d5fb8]/60">{t.num}.</span>
                             <span className="flex-1 min-w-0">{renderInline(t.text)}</span>
                         </div>
                     );
@@ -194,7 +193,7 @@ const FormattedQueryMessage = ({ content }) => {
             case 'header':
                 insideSection = false;
                 out.push(
-                    <div key={key++} className="mt-4 mb-1.5 font-semibold text-gray-900">
+                    <div key={key++} className="mt-6 mb-2 text-[15px] md:text-[16px] font-semibold text-[#13233f]">
                         {renderInline(t.text)}
                     </div>
                 );
@@ -206,8 +205,8 @@ const FormattedQueryMessage = ({ content }) => {
 
             case 'bullet':
                 out.push(
-                    <div key={key++} className={`${indent()} flex gap-2.5 my-1`}>
-                        <span className="mt-[9px] h-1 w-1 rounded-full bg-gray-300 shrink-0" />
+                    <div key={key++} className={`${indent()} flex gap-3 my-1.5`}>
+                        <span className="mt-[0.7em] h-1.5 w-1.5 rounded-full bg-[#2d5fb8]/45 shrink-0" />
                         <span className="flex-1 min-w-0">{renderInline(t.text)}</span>
                     </div>
                 );
@@ -215,21 +214,16 @@ const FormattedQueryMessage = ({ content }) => {
 
             default:
                 if (/^\*{0,2}recommendation/i.test(t.text)) {
-                    out.push(
-                        <div key={key++} className="mt-4 rounded-lg bg-primary-50 border-l-[3px] border-primary-500 px-3.5 py-3">
-                            <div className="text-[11px] font-semibold uppercase tracking-wide text-primary-700 mb-1">Recommendation</div>
-                            <div>{renderInline(stripBold(t.text).replace(/^recommendation:?\s*/i, ''))}</div>
-                        </div>
-                    );
+                    out.push(<Callout key={key++} text={stripBold(t.text).replace(/^recommendation:?\s*/i, '')} />);
                 } else if (/^\*{0,2}additional notes/i.test(t.text)) {
                     out.push(
-                        <div key={key++} className={`${indent()} mt-3 mb-1 text-[13px] text-gray-500`}>
+                        <div key={key++} className={`${indent()} mt-3 mb-1 text-[13px] text-[#1a2b4a]/60`}>
                             {renderInline(stripBold(t.text))}
                         </div>
                     );
                 } else {
                     out.push(
-                        <div key={key++} className={`${indent()} my-1.5`}>
+                        <div key={key++} className={`${indent()} my-2`}>
                             {renderInline(t.text)}
                         </div>
                     );
@@ -238,7 +232,7 @@ const FormattedQueryMessage = ({ content }) => {
     });
     flushFields();
 
-    return <div className="text-sm md:text-[15px] leading-relaxed text-gray-800">{out}</div>;
+    return <div className="text-sm md:text-[15px] leading-[1.7] text-[#1a2b4a]">{out}</div>;
 };
 
 export default FormattedQueryMessage;
