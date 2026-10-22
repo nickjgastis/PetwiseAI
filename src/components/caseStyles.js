@@ -1,6 +1,9 @@
 import { FiClipboard, FiFileText, FiPhone } from 'react-icons/fi';
 import { normalizeType } from '../utils/cases';
 
+// The sidebar's background. Keep it to a few feature panels so it stays a brand accent, not wallpaper.
+export const BRAND_WASH = 'bg-gradient-to-br from-[#eaf2fd] via-[#f3f7fd] to-[#e3edfb]';
+
 export const GRADIENT_TEXT = 'font-display bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] bg-clip-text text-transparent';
 
 // Note-type colors, shared by the New case picker, the Cases pages and the case picker.

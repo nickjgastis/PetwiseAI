@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowRight, FiFolder, FiMic, FiPlus, FiSend, FiSmartphone, FiX } from 'react-icons/fi';
 import Guide, { StepBody, NAME_SCRIPT } from './Guide';
-import { TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
+import { BRAND_WASH, TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
 import { requestNewCase } from '../utils/cases';
 
 const EASE = [0.2, 0.7, 0.2, 1];
@@ -272,7 +272,7 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
                 }
             >
                 {!isMobile && (
-                    <div className="w-[44%] shrink-0 relative bg-gradient-to-br from-[#eaf2fd] via-[#f3f7fd] to-[#e3edfb] flex items-center justify-center p-10 overflow-hidden">
+                    <div className={`w-[44%] shrink-0 relative ${BRAND_WASH} flex items-center justify-center p-10 overflow-hidden`}>
                         <div className="absolute -top-20 -left-16 w-72 h-72 rounded-full bg-[#5cccf0]/25 blur-3xl" />
                         <div className="absolute -bottom-24 -right-10 w-80 h-80 rounded-full bg-[#2d5fb8]/20 blur-3xl" />
                         <motion.div className="relative w-full max-w-[340px]" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: EASE, delay: 0.15 }}>

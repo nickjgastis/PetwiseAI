@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowRight, FiChevronDown, FiFolder, FiMail, FiMessageCircle, FiMic, FiPlay, FiSmartphone } from 'react-icons/fi';
 import Footer from './Footer';
 import Guide, { StepBody, NAME_SCRIPT, SPEAK_TIPS } from './Guide';
-import { GRADIENT_TEXT } from './caseStyles';
+import { BRAND_WASH, GRADIENT_TEXT } from './caseStyles';
 
 const EASE = [0.2, 0.7, 0.2, 1];
 
@@ -211,7 +211,7 @@ const Help = () => {
                     </Section>
 
                     <Section eyebrow="Phone" title="Get PetWise on your phone">
-                        <div className="rounded-[28px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] p-6 sm:p-8">
+                        <div className={`rounded-[28px] ${BRAND_WASH} border border-[#e3ecf8] p-6 sm:p-8`}>
                             <StepBody step={{ install: true }} />
                             <button
                                 type="button"

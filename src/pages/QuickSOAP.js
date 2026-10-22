@@ -27,7 +27,7 @@ import {
 import CaseTarget from '../components/CaseTarget';
 import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
-import { GRADIENT_TEXT, TYPE_STYLES } from '../components/caseStyles';
+import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES } from '../components/caseStyles';
 import GeneratingLoader from '../components/GeneratingLoader';
 import Guide from '../components/Guide';
 
@@ -2958,7 +2958,7 @@ const QuickSOAP = () => {
                                         initial={{ opacity: 0, scale: 0.97 }}
                                         animate={{ opacity: 1, scale: 1 }}
                                         transition={{ duration: 0.2 }}
-                                        className={`w-full mx-auto rounded-[28px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] flex flex-col items-center ${isMobile ? 'max-w-md px-6 py-6 mb-5' : 'max-w-[680px] px-10 py-12 mb-6 shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]'}`}
+                                        className={`w-full mx-auto rounded-[28px] ${BRAND_WASH} border border-[#e3ecf8] flex flex-col items-center ${isMobile ? 'max-w-md px-6 py-6 mb-5' : 'max-w-[680px] px-10 py-12 mb-6 shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]'}`}
                                     >
                                         <RecordingStatus live={!isPaused} seconds={recordSeconds} className="mb-3" />
                                         <WaveBars levels={waveLevels} live={!isPaused} height={isMobile ? 64 : 96} barWidth={isMobile ? 5 : 6} gap={isMobile ? 4 : 5} />

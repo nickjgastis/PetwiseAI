@@ -9,7 +9,7 @@ import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUs
 import UpgradeModal from '../components/UpgradeModal';
 import { useDictation } from '../hooks/useDictation';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
-import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
+import { BRAND_WASH, TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
 import {
     normalizeType,
     loadNoteIntoQuickSOAP,
@@ -270,7 +270,7 @@ const CaseList = ({ mobile = false }) => {
                 ) : cases.length === 0 ? (
                     <motion.div
                         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}
-                        className="rounded-[28px] border border-[#e7ecf3] bg-white py-16 px-6 text-center"
+                        className={`rounded-[28px] border border-[#e3ecf8] ${BRAND_WASH} py-16 px-6 text-center`}
                     >
                         <span className="mx-auto w-14 h-14 rounded-2xl bg-[#e9f6fd] text-[#3468bd] flex items-center justify-center text-2xl mb-4"><FiFolder /></span>
                         <p className="text-lg font-semibold text-[#13233f]">No cases yet</p>

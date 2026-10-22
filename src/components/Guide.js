@@ -18,7 +18,7 @@ import {
     FiX,
     FiZap
 } from 'react-icons/fi';
-import { TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
+import { BRAND_WASH, TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
 
 const EASE = [0.2, 0.7, 0.2, 1];
 
@@ -414,7 +414,7 @@ const Guide = ({ id, onClose }) => {
                 style={{ fontFamily: "var(--font-sans)" }}
             >
                 {!mobile && (
-                    <aside className="w-[300px] shrink-0 bg-gradient-to-b from-[#f3f7fd] to-[#e9f1fc] border-r border-[#2d5fb8]/10 p-7 flex flex-col">
+                    <aside className={`w-[300px] shrink-0 ${BRAND_WASH} border-r border-[#2d5fb8]/10 p-7 flex flex-col`}>
                         <p className={`m-0 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>{guide.title}</p>
                         <p className="m-0 mt-1 mb-7 text-[13.5px] text-[#1a2b4a]/55">{guide.steps.length} quick steps</p>
                         <div className="space-y-1">
