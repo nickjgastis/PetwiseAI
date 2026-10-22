@@ -38,8 +38,8 @@ const FONT = { fontFamily: "var(--font-sans)" };
 const EASE = [0.2, 0.7, 0.2, 1];
 
 // Entrance lives on a wrapper and the hover lift on the card, so the two never fight over transform.
-const FadeIn = ({ delay = 0, children, className = '' }) => (
-    <motion.div className={className} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE, delay }}>
+const FadeIn = ({ delay = 0, children, className = '', play = true }) => (
+    <motion.div className={className} initial={play ? { opacity: 0, y: 10 } : false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE, delay }}>
         {children}
     </motion.div>
 );
@@ -168,17 +168,21 @@ const NewCaseDialog = ({ onClose, onCreated }) => {
     );
 };
 
+const EMPTY_LIST = { cases: [], typesByCase: {}, unviewed: new Set(), pending: new Set() };
+// Last loaded list: revisiting Cases paints instantly and refreshes underneath.
+let listCache = null;
+
 const CaseList = ({ mobile = false }) => {
     const navigate = useNavigate();
     const [naming, setNaming] = useState(false);
-    const [cases, setCases] = useState([]);
-    const [typesByCase, setTypesByCase] = useState({});
-    const [unviewed, setUnviewed] = useState(() => new Set());
-    const [pending, setPending] = useState(() => new Set());
-    const [loading, setLoading] = useState(true);
+    const [list, setList] = useState(listCache);
+    const { cases, typesByCase, unviewed, pending } = list || EMPTY_LIST;
+    const loading = !list;
+    const [animateIn] = useState(!listCache);
     const [error, setError] = useState('');
     const [search, setSearch] = useState('');
 
+    // Cases and their record counts land in one update, so cards never re-render with chips popping in.
     const load = useCallback(async () => {
         const { data, error: caseErr } = await supabase
             .from('cases')
@@ -186,29 +190,28 @@ const CaseList = ({ mobile = false }) => {
             .order('updated_at', { ascending: false });
         if (caseErr) {
             setError('Could not load cases.');
-            setLoading(false);
+            setList(EMPTY_LIST);
             return;
         }
-        setCases(data || []);
         const ids = (data || []).map((c) => c.id);
-        if (ids.length) {
-            const { data: notes } = await supabase
+        const { data: notes } = ids.length
+            ? await supabase
                 .from('saved_reports')
                 .select('id, case_id, record_type, report_text, form_data, created_at')
-                .in('case_id', ids);
-            const map = {};
-            const fresh = new Set();
-            (notes || []).filter((n) => n.report_text).forEach((n) => {
-                const t = normalizeType(n.record_type);
-                map[n.case_id] = map[n.case_id] || {};
-                map[n.case_id][t] = (map[n.case_id][t] || 0) + 1;
-                if (isUnviewedMobileNote(n)) fresh.add(n.case_id);
-            });
-            setTypesByCase(map);
-            setUnviewed(fresh);
-            setPending(pendingCaseIds(notes));
-        }
-        setLoading(false);
+                .in('case_id', ids)
+            : { data: [] };
+        const map = {};
+        const fresh = new Set();
+        (notes || []).filter((n) => n.report_text).forEach((n) => {
+            const t = normalizeType(n.record_type);
+            map[n.case_id] = map[n.case_id] || {};
+            map[n.case_id][t] = (map[n.case_id][t] || 0) + 1;
+            if (isUnviewedMobileNote(n)) fresh.add(n.case_id);
+        });
+        const next = { cases: data || [], typesByCase: map, unviewed: fresh, pending: pendingCaseIds(notes) };
+        listCache = next;
+        setError('');
+        setList(next);
     }, []);
 
     useEffect(() => {
@@ -259,7 +262,7 @@ const CaseList = ({ mobile = false }) => {
                     />
                 )}
 
-                {cases.length > 0 && (
+                {(loading || cases.length > 0) && (
                     <div className={`relative max-w-md ${mobile ? 'mb-6' : 'mb-8'}`}>
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1a2b4a]/40" />
                         <input
@@ -272,9 +275,18 @@ const CaseList = ({ mobile = false }) => {
                 )}
 
                 {loading ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {[0, 1, 2].map((i) => <div key={i} className="h-[132px] rounded-[24px] bg-white border border-[#e7ecf3] animate-pulse" />)}
-                    </div>
+                    <section aria-hidden className={`animate-pulse ${mobile ? 'mb-7' : 'mb-10'}`}>
+                        <div className="h-5 mb-3 ml-1 flex items-center"><span className="h-3 w-14 rounded-full bg-[#1a2b4a]/[0.07]" /></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[0, 1, 2].map((i) => (
+                                <div key={i} className={`flex flex-col bg-white border border-[#e7ecf3] ${mobile ? 'h-[112px] rounded-[20px] p-4' : 'h-[132px] rounded-[24px] p-5'}`}>
+                                    <span className="mt-1 h-3.5 w-28 rounded-full bg-[#1a2b4a]/[0.08]" />
+                                    <span className="mt-2.5 h-2.5 w-36 rounded-full bg-[#1a2b4a]/[0.05]" />
+                                    <span className="mt-auto h-[22px] w-16 rounded-full bg-[#1a2b4a]/[0.05]" />
+                                </div>
+                            ))}
+                        </div>
+                    </section>
                 ) : error ? (
                     <p className="text-sm text-red-500 py-12 text-center">{error}</p>
                 ) : cases.length === 0 ? (
@@ -300,7 +312,7 @@ const CaseList = ({ mobile = false }) => {
                                     const isNew = !mobile && unviewed.has(c.id);
                                     const isPending = !c.pet_name && !c.title && pending.has(c.id);
                                     return (
-                                        <FadeIn key={c.id} delay={Math.min(gi * 3 + i, 10) * 0.03}>
+                                        <FadeIn key={c.id} play={animateIn} delay={Math.min(gi * 3 + i, 10) * 0.03}>
                                         <motion.button
                                             type="button"
                                             {...LIFT}
