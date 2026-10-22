@@ -215,7 +215,7 @@ const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`group relative flex items-center no-underline rounded-[12px] transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[14px] h-10 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
+            className={`group relative flex items-center no-underline rounded-[12px] transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[13px] h-9 px-3' : 'text-[15px] h-11 px-3'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#2d5fb8] font-semibold' : `font-medium ${secondary ? 'text-[#1a2b4a]/60' : 'text-[#1a2b4a]/80'} hover:text-[#13233f]`}`}
         >
             {active && (
                 <motion.span
@@ -224,7 +224,7 @@ const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
             )}
-            <span className={`relative flex items-center justify-center shrink-0 w-5 ${secondary ? 'text-[15px]' : 'text-[17px]'} ${active ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]/45 group-hover:text-[#2d5fb8]'} transition-colors`}>
+            <span className={`relative flex items-center justify-center shrink-0 ${secondary ? 'w-5 text-[15px]' : 'w-6 text-[20px]'} ${active ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]/45 group-hover:text-[#2d5fb8]'} transition-colors`}>
                 <Icon />
                 {dot && <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#5cccf0] ring-2 ring-[#eef4fc] animate-pulse" />}
             </span>
@@ -1538,6 +1538,7 @@ const Dashboard = () => {
 
                         <SideLink to="/dashboard/cases" active={isCasesPath} icon={FiFolder} label="Cases" tour="cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
                         <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={FiMessageCircle} label="PetQuery" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
+                        <SideLink to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={FiClipboard} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
 
                         {subscriptionStatus === 'past_due' && (
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
@@ -1560,7 +1561,6 @@ const Dashboard = () => {
                             )}
                         </li>
                         <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={FiArchive} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
-                        <SideLink secondary to="/dashboard/templates" active={location.pathname === '/dashboard/templates'} icon={FiClipboard} label="My Templates" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                         <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={FiFileText} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                         <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={FiHelpCircle} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                     </ul>
