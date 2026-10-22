@@ -6,7 +6,8 @@ import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPa
 import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiPlus, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
@@ -14,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { CASE_KEY, NOTE_LABELS, NOTE_TYPE_KEY, ensureCase, getActiveCaseId, normalizeType, setActiveCaseId } from '../utils/cases';
 import CaseTarget from '../components/CaseTarget';
 import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
+import WaveBars, { RecordingStatus } from '../components/WaveBars';
 import { GRADIENT_TEXT } from '../components/caseStyles';
 
 // PDF Document component for print/export
@@ -330,6 +332,7 @@ const QuickSOAP = () => {
         return false;
     });
     const [audioLevels, setAudioLevels] = useState([]);
+    const waveLevels = (audioLevels.length ? audioLevels : new Array(20).fill(10)).map((l) => Math.max(0, (l - 10) / 90));
     const [isTransitioning, setIsTransitioning] = useState(false);
     const [isReportTransitioning, setIsReportTransitioning] = useState(false);
     const [isLoadingFromSaved, setIsLoadingFromSaved] = useState(() => {
@@ -419,7 +422,9 @@ const QuickSOAP = () => {
     const topBarRef = useRef(null);
     const [topBarHeight, setTopBarHeight] = useState(0);
     const topInputBarRef = useRef(null);
-    const [showStickyBar, setShowStickyBar] = useState(false);
+    const [, setShowStickyBar] = useState(false);
+    const [showDictations, setShowDictations] = useState(false);
+    const [recordSeconds, setRecordSeconds] = useState(0);
     const audioContextRef = useRef(null);
     const analyserRef = useRef(null);
     const animationFrameRef = useRef(null);
@@ -562,6 +567,16 @@ const QuickSOAP = () => {
         ro.observe(el);
         return () => ro.disconnect();
     }, [hasReport, isMobile]);
+
+    useEffect(() => {
+        if (!isRecording) {
+            setRecordSeconds(0);
+            return undefined;
+        }
+        if (isPaused) return undefined;
+        const t = setInterval(() => setRecordSeconds((n) => n + 1), 1000);
+        return () => clearInterval(t);
+    }, [isRecording, isPaused]);
 
     // Show sticky bar when top input bar scrolls out of view
     useEffect(() => {
@@ -2753,25 +2768,6 @@ const QuickSOAP = () => {
                                 </div>
                             )}
 
-                            {/* Waveform Visualization */}
-                            {isRecording && !isPaused && audioLevels.length > 0 && (
-                                <div className={`${isMobile ? 'mb-4' : 'mb-6'} flex items-end justify-center gap-1 h-20 px-2 flex-shrink-0`}>
-                                    {audioLevels.map((level, index) => (
-                                        <div
-                                            key={index}
-                                            className="bg-primary-600 rounded-t transition-all duration-75 ease-out"
-                                            style={{
-                                                width: '5px',
-                                                height: `${level}%`,
-                                                minHeight: '12px',
-                                                maxHeight: '80px',
-                                                opacity: 0.8 + (level / 100) * 0.2
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-                            )}
-
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
                                 {/* Record Type Selector + Template Button - Show before first dictation */}
@@ -2815,85 +2811,58 @@ const QuickSOAP = () => {
                                     </div>
                                 )}
 
-                                {/* Large Microphone Button - Front and Center */}
-                                {/* Desktop: Only show when no dictations exist (one dictation before generating) */}
-                                {/* Mobile: Only show when no dictations exist (one dictation at a time) */}
-                                {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex justify-center ${isMobile ? 'mb-6' : 'mb-6'}`}>
-                                        <button
+                                {/* Mic: front and center before the first dictation, "Add more" after */}
+                                {!isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
+                                    <div className={`flex flex-col items-center ${isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
+                                        <motion.button
+                                            type="button"
                                             onClick={startRecording}
-                                            disabled={isTranscribing || isGenerating}
-                                            className={`${isMobile ? 'w-24 h-24' : 'w-28 h-28'} rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none`}
-                                            title="Start Recording"
+                                            disabled={isGenerating}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+                                            className={`relative ${dictations.length ? (isMobile ? 'w-20 h-20' : 'w-24 h-24') : (isMobile ? 'w-24 h-24' : 'w-28 h-28')} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_18px_40px_-14px_rgba(45,95,184,0.8)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                                            style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
+                                            title={dictations.length ? 'Add more dictation' : 'Start dictating'}
                                         >
-                                            <FaMicrophone className={isMobile ? 'text-3xl' : 'text-4xl'} />
-                                        </button>
+                                            <span className="absolute inset-0 rounded-full animate-ping bg-[#5cccf0]/20" style={{ animationDuration: '2.4s' }} />
+                                            <FiMic className={`relative ${dictations.length ? 'text-3xl' : 'text-4xl'}`} />
+                                        </motion.button>
+                                        <p className="mt-3 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
                                     </div>
                                 )}
 
-                                {/* Recording Controls */}
+                                {/* Recording */}
                                 {isRecording && (
-                                    <div className={`flex flex-col items-center gap-4 ${isMobile ? 'mb-6' : 'mb-6'}`}>
-                                        <div className="flex items-center gap-4">
-                                            {!isPaused ? (
-                                                <button
-                                                    onClick={pauseRecording}
-                                                    className={`${isMobile ? 'w-20 h-20' : 'w-20 h-20'} rounded-full bg-gradient-to-br from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center`}
-                                                    title="Pause Recording"
-                                                >
-                                                    <FaPause className={isMobile ? 'text-2xl' : 'text-xl'} />
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={resumeRecording}
-                                                    className={`${isMobile ? 'w-20 h-20' : 'w-20 h-20'} rounded-full bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center`}
-                                                    title="Resume Recording"
-                                                >
-                                                    <FaPlay className={isMobile ? 'text-2xl' : 'text-xl'} />
-                                                </button>
-                                            )}
-                                            <button
-                                                onClick={stopRecording}
-                                                className={`${isMobile ? 'w-24 h-24' : 'w-24 h-24'} rounded-full bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center animate-pulse`}
-                                                title="Stop Recording"
-                                            >
-                                                <FaStop className={isMobile ? 'text-3xl' : 'text-2xl'} />
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.97 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ duration: 0.2 }}
+                                        className={`w-full max-w-md mx-auto rounded-[28px] bg-gradient-to-b from-[#f3f7fd] to-[#edf3fb] border border-[#e3ecf8] px-6 py-6 flex flex-col items-center ${isMobile ? 'mb-5' : 'mb-6'}`}
+                                    >
+                                        <RecordingStatus live={!isPaused} seconds={recordSeconds} className="mb-3" />
+                                        <WaveBars levels={waveLevels} live={!isPaused} height={64} barWidth={5} gap={4} />
+                                        <div className="flex items-center gap-2 mt-5">
+                                            <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors">
+                                                {isPaused ? <><FiPlay /> Resume</> : <><FiPause /> Pause</>}
+                                            </button>
+                                            <button type="button" onClick={stopRecording} className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors">
+                                                <FiSquare className="text-[12px]" /> Done
                                             </button>
                                         </div>
-                                        <p className="text-sm font-medium text-gray-600">
-                                            {isPaused ? 'Paused' : 'Listening...'}
-                                        </p>
-
-                                    </div>
+                                    </motion.div>
                                 )}
 
-                                {/* Transcribing Indicator */}
+                                {/* Transcribing */}
                                 {isTranscribing && (
                                     <div className={`flex flex-col items-center gap-2 ${isMobile ? 'mb-4 flex-shrink-0' : 'mb-6'}`}>
-                                        <div className="flex items-center gap-3 text-gray-600">
-                                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
-                                            <span className="text-sm font-medium">Transcribing...</span>
-                                        </div>
+                                        <span className="w-8 h-8 rounded-full border-[3px] border-[#2d5fb8]/20 border-t-[#2d5fb8] animate-spin" />
+                                        <span className="text-[14px] font-medium text-[#13233f]">Transcribing…</span>
                                         {needsSegmentation && (
-                                            <span className="text-xs text-gray-500 text-center px-4">
+                                            <span className="text-xs text-[#1a2b4a]/55 text-center px-4">
                                                 Hang tight! Longer recordings can take up to 3 minutes to transcribe.
                                             </span>
                                         )}
-                                    </div>
-                                )}
-
-                                {/* Add More Dictation Button - Show after transcription completes */}
-                                {!isRecording && dictations.length > 0 && !isTranscribing && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`flex flex-col items-center ${dictations.length > 0 && isMobile ? 'mt-4 mb-2 flex-shrink-0' : (isMobile ? 'mb-4 flex-shrink-0' : 'mb-6')}`}>
-                                        <button
-                                            onClick={startRecording}
-                                            disabled={isGenerating}
-                                            className={`${isMobile ? 'w-24 h-24' : 'w-28 h-28'} rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl transition-all duration-200 flex items-center justify-center disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative`}
-                                            title="Add More Dictation"
-                                        >
-                                            <FaMicrophone className={isMobile ? 'text-3xl' : 'text-4xl'} />
-                                            <span className={`absolute ${isMobile ? 'text-[10px]' : 'text-xs'} bottom-0 right-0 bg-white text-primary-600 rounded-full px-1.5 py-0.5 font-semibold shadow-sm`}>Add more +</span>
-                                        </button>
                                     </div>
                                 )}
 
@@ -2906,8 +2875,8 @@ const QuickSOAP = () => {
                                             onChange={(e) => {
                                                 setInput(e.target.value);
                                             }}
-                                            placeholder="Add additional notes here (optional)..."
-                                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-primary-400 focus:ring-4 focus:ring-primary-100 focus:outline-none resize-none text-gray-900 placeholder-gray-400 text-sm overflow-y-auto"
+                                            placeholder="Add notes (optional)"
+                                            className="w-full px-4 py-3 bg-white border border-[#e7ecf3] rounded-2xl focus:border-[#2d5fb8]/30 focus:outline-none resize-none text-[#13233f] placeholder:text-[#1a2b4a]/40 text-[15px] overflow-y-auto shadow-[0_6px_20px_-16px_rgba(19,35,63,0.3)] transition-colors"
                                             style={{
                                                 whiteSpace: 'pre-wrap',
                                                 wordWrap: 'break-word',
@@ -2956,7 +2925,7 @@ const QuickSOAP = () => {
                                             type="button"
                                             onClick={handleGenerateSOAP}
                                             disabled={isGenerating}
-                                            className="px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-semibold text-base transition-all duration-200 shadow-md hover:shadow-lg disabled:shadow-none"
+                                            className="px-8 py-3.5 bg-[#2d5fb8] hover:bg-[#2350a3] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full font-semibold text-[15px] transition-all duration-200 shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] hover:-translate-y-px"
                                         >
                                             {isGenerating ? (
                                                 <div className="flex items-center gap-2">
@@ -3256,221 +3225,119 @@ const QuickSOAP = () => {
                             transform: isTransitioning ? 'translateY(20px)' : 'translateY(0)',
                             transition: 'opacity 0.4s ease-in-out, transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), left 0.3s ease-in-out, top 0.2s ease-in-out'
                         }}>
-                        {/* Top input bar - scrolls with content */}
-                        <div
-                            ref={topInputBarRef}
-                            className="flex flex-col gap-3"
-                            style={{
-                                fontFamily: "'Inter', sans-serif",
-                                background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
-                                padding: '16px 24px',
-                                borderBottom: '1px solid #e8ecf2',
-                            }}
-                        >
-                            <div className="flex items-center gap-3">
-                                {!isRecording && !isTranscribing && (
+                        {/* Sticky header: the case you're in, then the tools for this note */}
+                        <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-[#e7ecf3] shadow-[0_10px_30px_-24px_rgba(19,35,63,0.35)]">
+                            <CaseBar caseId={activeCaseId} recordType={recordType} onBack={leaveToCase} refreshKey={caseBarKey} />
+                            <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <AnimatePresence mode="wait" initial={false}>
+                                    {isRecording ? (
+                                        <motion.div key="rec" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.18 }} className="flex items-center gap-2 shrink-0 rounded-full bg-[#f3f7fd] border border-[#e3ecf8] pl-3.5 pr-1 py-1">
+                                            <RecordingStatus live={!isPaused} seconds={recordSeconds} />
+                                            <WaveBars levels={waveLevels} live={!isPaused} height={24} barWidth={3} gap={2} className="w-[110px]" />
+                                            <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} title={isPaused ? 'Resume' : 'Pause'} className="w-8 h-8 rounded-full flex items-center justify-center text-[#2d5fb8] bg-white border border-[#e7ecf3] hover:bg-[#e9f6fd] cursor-pointer transition-colors">
+                                                {isPaused ? <FiPlay className="text-[12px]" /> : <FiPause className="text-[12px]" />}
+                                            </button>
+                                            <button type="button" onClick={stopRecording} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer transition-colors">
+                                                <FiSquare className="text-[10px]" /> Done
+                                            </button>
+                                        </motion.div>
+                                    ) : isTranscribing ? (
+                                        <motion.div key="tx" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 shrink-0 rounded-full bg-[#f3f7fd] border border-[#e3ecf8] px-4 h-10 text-[13px] font-medium text-[#2d5fb8]">
+                                            <span className="w-3.5 h-3.5 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin" /> Transcribing…
+                                        </motion.div>
+                                    ) : (
+                                        <motion.button key="mic" type="button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={startRecording} disabled={isGenerating} className="inline-flex items-center gap-2 h-10 pl-1.5 pr-4 rounded-full text-[13.5px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 hover:bg-[#f6f8fb] cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
+                                            <span className="w-7 h-7 rounded-full flex items-center justify-center text-white" style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}><FiMic className="text-[13px]" /></span>
+                                            {dictations.length > 0 ? 'Dictate more' : 'Dictate'}
+                                        </motion.button>
+                                    )}
+                                </AnimatePresence>
+                                {(dictations.length > 0 || input.trim()) && (
                                     <button
-                                        onClick={startRecording}
-                                        disabled={isGenerating}
-                                        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-xl hover:shadow-2xl flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
-                                        title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
+                                        type="button"
+                                        onClick={handleGenerateSOAP}
+                                        disabled={isGenerating || isRecording || isTranscribing}
+                                        className="inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_8px_20px_-10px_rgba(45,95,184,0.7)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                                     >
-                                        <FaMicrophone className="text-xl" />
-                                        {dictations.length > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.15)', width: '20px', height: '20px' }}>
-                                                <span className="text-primary-600 text-xs font-bold leading-none">+</span>
-                                            </span>
-                                        )}
+                                        <FiRefreshCw className={`text-[13px] ${isGenerating ? 'animate-spin' : ''}`} /> {isGenerating ? 'Generating…' : 'Regenerate'}
                                     </button>
-                                )}
-                                {isRecording && (
-                                    <div className="flex items-center gap-2 flex-shrink-0">
-                                        {!isPaused ? (
-                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Pause">
-                                                <FaPause className="text-sm" />
-                                            </button>
-                                        ) : (
-                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-12 h-12 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-lg transition-all duration-200" title="Resume">
-                                                <FaPlay className="text-sm" />
-                                            </button>
-                                        )}
-                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-14 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-lg animate-pulse transition-all duration-200" title="Stop Recording">
-                                            <FaStop className="text-base" />
-                                        </button>
-                                        <span className="text-xs text-gray-500 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
-                                    </div>
-                                )}
-                                {isTranscribing && (
-                                    <div className="flex items-center gap-2.5 flex-shrink-0 bg-blue-50 rounded-xl px-4 py-2.5">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent" />
-                                        <span className="text-xs text-primary-600 font-medium">Transcribing...</span>
-                                    </div>
-                                )}
-                                {(dictations.length > 0 || input.trim()) && !isTranscribing && (
-                                    <div className="flex items-center gap-2.5 flex-shrink-0">
-                                        <button
-                                            type="button"
-                                            onClick={handleGenerateSOAP}
-                                            disabled={isGenerating}
-                                            className="px-6 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                            style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 2px 8px rgba(51,105,189,0.2)' }}
-                                        >
-                                            {isGenerating ? 'Generating...' : 'Regenerate'}
-                                        </button>
-                                        <button
-                                            onClick={handleClearReport}
-                                            disabled={isGenerating}
-                                            className="px-5 py-3 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                            style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', boxShadow: '0 2px 8px rgba(16,185,129,0.2)' }}
-                                        >
-                                            Start New
-                                        </button>
-                                    </div>
-                                )}
-                                {error && (
-                                    <div className="flex-shrink-0 bg-red-50 border border-red-100 rounded-xl px-3 py-2">
-                                        <p className="text-red-500 text-xs font-medium">{error}</p>
-                                    </div>
                                 )}
                                 <textarea
                                     ref={sidebarInputTextareaRef}
                                     value={input}
+                                    rows={1}
                                     onChange={(e) => {
                                         setInput(e.target.value);
                                         const el = e.target;
                                         el.style.height = 'auto';
                                         el.style.height = Math.min(el.scrollHeight, 120) + 'px';
                                     }}
-                                    placeholder="Add extra notes or context..."
-                                    className="flex-1 min-w-[200px] px-4 py-2.5 bg-white text-sm resize-none focus:outline-none text-gray-700 rounded-xl transition-shadow placeholder:text-xs placeholder:italic placeholder:text-gray-300 placeholder:font-light"
-                                    style={{ maxHeight: '120px', minHeight: '42px', fontFamily: "'Inter', sans-serif", overflow: 'auto', border: '1px solid #e8ecf2', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}
-                                    onFocus={(e) => { e.target.style.borderColor = '#93b4e8'; e.target.style.boxShadow = '0 0 0 3px rgba(51,105,189,0.08)'; }}
-                                    onBlur={(e) => { e.target.style.borderColor = '#e8ecf2'; e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)'; }}
+                                    placeholder="Add notes, then regenerate"
+                                    className="flex-1 min-w-[180px] h-10 px-4 py-2 rounded-[20px] bg-[#f6f8fb] border border-transparent text-[13.5px] text-[#13233f] resize-none focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors placeholder:text-[#1a2b4a]/40"
+                                    style={{ maxHeight: '120px', overflow: 'auto', fontFamily: "'Inter', sans-serif" }}
                                     disabled={isTranscribing || isGenerating}
                                 />
-                            </div>
-                            {dictations.length > 0 && (
-                                <div className="flex flex-wrap gap-2 overflow-y-auto rounded-xl" style={{ maxHeight: '160px' }}>
-                                    {dictations.map((dictation, idx) => (
-                                        <div
-                                            key={dictation.id}
-                                            className={`bg-white rounded-xl transition-all ${dictation.expanded ? 'w-full' : 'flex-1 min-w-[220px]'}`}
-                                            style={{ border: '1px solid #e0e8f5', padding: '8px 12px', boxShadow: '0 1px 3px rgba(51,105,189,0.04)' }}
-                                        >
-                                            <div className="flex items-start justify-between gap-1.5">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-1.5 mb-0.5">
-                                                        <span className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: '#eef3fb' }}>
-                                                            <FaMicrophone className="text-[7px] text-primary-400" />
-                                                        </span>
-                                                        <span className="text-[10px] font-semibold text-primary-500 tracking-wide uppercase">
-                                                            {dictation.expanded ? 'Transcript' : `Dictation ${idx + 1}`}
-                                                        </span>
-                                                        <button
-                                                            onClick={() => toggleDictationExpand(dictation.id)}
-                                                            className="ml-auto px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
-                                                            style={{ background: dictation.expanded ? 'rgba(51,105,189,0.12)' : 'rgba(51,105,189,0.07)', color: '#3369bd' }}
-                                                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(51,105,189,0.18)'}
-                                                            onMouseLeave={(e) => e.currentTarget.style.background = dictation.expanded ? 'rgba(51,105,189,0.12)' : 'rgba(51,105,189,0.07)'}
-                                                        >
-                                                            {dictation.expanded ? (<><FaChevronUp className="text-[10px]" /><span>Less</span></>) : (<><FaChevronDown className="text-[10px]" /><span>Expand</span></>)}
-                                                        </button>
-                                                    </div>
-                                                    <p className="text-[11px] text-gray-500 leading-snug">
-                                                        {dictation.expanded ? dictation.fullText : dictation.summary}
-                                                    </p>
-                                                </div>
-                                                <button onClick={() => handleDeleteDictationClick(dictation.id)} className="text-gray-200 hover:text-red-400 transition-colors flex-shrink-0 mt-0.5" title="Remove dictation">
-                                                    <FaTimes className="text-[8px]" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Sticky action bar - appears when top input bar scrolls out */}
-                        {(dictations.length > 0 || input.trim()) && !isTranscribing && (
-                            <div
-                                className="sticky top-0 z-20 flex items-center gap-3 px-6 py-2.5"
-                                style={{
-                                    fontFamily: "'Inter', sans-serif",
-                                    background: 'rgba(248,249,251,0.92)',
-                                    backdropFilter: 'blur(12px)',
-                                    WebkitBackdropFilter: 'blur(12px)',
-                                    borderBottom: showStickyBar ? '1px solid rgba(232,236,242,0.7)' : '1px solid transparent',
-                                    opacity: showStickyBar ? 1 : 0,
-                                    pointerEvents: showStickyBar ? 'auto' : 'none',
-                                    transform: showStickyBar ? 'translateY(0)' : 'translateY(-100%)',
-                                    transition: 'opacity 0.2s ease, transform 0.2s ease, border-bottom 0.2s ease',
-                                }}
-                            >
-                                {!isRecording && !isTranscribing && (
-                                    <button
-                                        onClick={startRecording}
-                                        disabled={isGenerating}
-                                        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-md hover:shadow-lg flex items-center justify-center flex-shrink-0 transition-all duration-200 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none relative"
-                                        title={dictations.length > 0 ? 'Add More Dictation' : 'Start Dictation'}
-                                    >
-                                        <FaMicrophone className="text-sm" />
-                                        {dictations.length > 0 && (
-                                            <span className="absolute -top-0.5 -right-0.5 bg-white rounded-full flex items-center justify-center" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.12)', width: '15px', height: '15px' }}>
-                                                <span className="text-primary-600 text-[9px] font-bold leading-none">+</span>
-                                            </span>
-                                        )}
+                                {dictations.length > 0 && (
+                                    <button type="button" onClick={() => setShowDictations((v) => !v)} className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full text-[13px] font-medium border cursor-pointer transition-colors shrink-0 ${showDictations ? 'bg-[#e9f6fd] text-[#2d5fb8] border-transparent' : 'bg-white text-[#1a2b4a]/70 border-[#e7ecf3] hover:bg-[#f6f8fb]'}`}>
+                                        Dictations <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[11px] font-semibold flex items-center justify-center">{dictations.length}</span>
+                                        <FiChevronDown className={`text-[13px] transition-transform duration-200 ${showDictations ? 'rotate-180' : ''}`} />
                                     </button>
                                 )}
-                                {isRecording && (
-                                    <div className="flex items-center gap-1.5 flex-shrink-0">
-                                        {!isPaused ? (
-                                            <button onClick={pauseRecording} disabled={isTranscribing || isGenerating} className="w-9 h-9 rounded-full bg-yellow-500 hover:bg-yellow-600 text-white flex items-center justify-center shadow-md transition-all" title="Pause"><FaPause className="text-[10px]" /></button>
-                                        ) : (
-                                            <button onClick={resumeRecording} disabled={isTranscribing || isGenerating} className="w-9 h-9 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center shadow-md transition-all" title="Resume"><FaPlay className="text-[10px]" /></button>
-                                        )}
-                                        <button onClick={stopRecording} disabled={isTranscribing || isGenerating} className="w-10 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center shadow-md animate-pulse transition-all" title="Stop Recording"><FaStop className="text-xs" /></button>
-                                        <span className="text-[10px] text-gray-400 font-medium">{isPaused ? 'Paused' : 'Listening...'}</span>
-                                    </div>
+                                <span className="w-px h-6 bg-[#e7ecf3] mx-1 shrink-0" />
+                                {isAuthenticated && (
+                                    <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 disabled:opacity-40 ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]'}`}>
+                                        {saveMessageVisible ? <FiCheck className="text-[14px]" /> : <FiSave className="text-[14px]" />}
+                                        <span className="hidden xl:inline">{isSaving ? 'Saving…' : saveMessageVisible ? 'Saved' : 'Save'}</span>
+                                    </button>
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={handleGenerateSOAP}
-                                    disabled={isGenerating}
-                                    className="px-5 py-2 text-white rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                    style={{ background: 'linear-gradient(135deg, #4f7fd9 0%, #3369bd 100%)', boxShadow: '0 1px 4px rgba(51,105,189,0.18)' }}
-                                >
-                                    {isGenerating ? 'Generating...' : 'Regenerate'}
+                                <button type="button" onClick={copyAll} title="Copy all" className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 ${copiedSection === 'all' ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]'}`}>
+                                    {copiedSection === 'all' ? <FiCheck className="text-[14px]" /> : <FiCopy className="text-[14px]" />}
+                                    <span className="hidden xl:inline">{copiedSection === 'all' ? 'Copied' : 'Copy all'}</span>
                                 </button>
-                                <button
-                                    onClick={handleClearReport}
-                                    disabled={isGenerating}
-                                    className="px-4 py-2 text-white rounded-lg text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-all whitespace-nowrap"
-                                    style={{ background: 'linear-gradient(135deg, #34d399 0%, #10b981 100%)', boxShadow: '0 1px 4px rgba(16,185,129,0.15)' }}
-                                >
-                                    Start New
+                                <button type="button" onClick={handlePrint} title="Print" className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]">
+                                    <FiPrinter className="text-[14px]" /> <span className="hidden xl:inline">Print</span>
+                                </button>
+                                <button type="button" onClick={isAuthenticated ? handleSaveAndClear : handleClearReport} disabled={isGenerating || isSaving || isRecording} title="Save and start a new case" className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full text-[13px] font-semibold border border-[#e7ecf3] cursor-pointer transition-colors shrink-0 bg-white text-[#2d5fb8] hover:bg-[#e9f6fd] disabled:opacity-40">
+                                    <FiPlus className="text-[14px]" /> New case
                                 </button>
                             </div>
-                        )}
+                            <AnimatePresence initial={false}>
+                                {error && (
+                                    <motion.p key="err" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-6 pb-2 m-0 text-[13px] text-red-500 overflow-hidden">{error}</motion.p>
+                                )}
+                                {showDictations && dictations.length > 0 && (
+                                    <motion.div key="dict" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }} className="overflow-hidden">
+                                        <div className="px-5 sm:px-6 pb-3 pt-1 grid gap-2 sm:grid-cols-2 xl:grid-cols-3 max-h-[220px] overflow-y-auto">
+                                            {dictations.map((dictation, idx) => (
+                                                <div key={dictation.id} className="rounded-2xl bg-[#f6f8fb] border border-[#eef2f7] px-3.5 py-2.5" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <FiMic className="text-[11px] text-[#2d5fb8]" />
+                                                        <span className="text-[12px] font-semibold text-[#13233f]">Dictation {idx + 1}</span>
+                                                        <button type="button" onClick={() => toggleDictationExpand(dictation.id)} className="ml-auto text-[12px] font-medium text-[#2d5fb8] bg-transparent border-none cursor-pointer p-0">
+                                                            {dictation.expanded ? 'Less' : 'More'}
+                                                        </button>
+                                                        <button type="button" onClick={() => handleDeleteDictationClick(dictation.id)} title="Remove dictation" className="text-[#1a2b4a]/30 hover:text-red-500 bg-transparent border-none cursor-pointer p-0">
+                                                            <FiX className="text-[12px]" />
+                                                        </button>
+                                                    </div>
+                                                    <p className="m-0 text-[12.5px] text-[#1a2b4a]/70 leading-snug">{dictation.expanded ? dictation.fullText : dictation.summary}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
 
-                        <div className="mx-auto px-6 py-4" style={{ maxWidth: 'calc(100% - 40px)' }}>
-                            {/* Generation Banner - Desktop Only */}
-                            {isGenerating && !isMobile && (
-                                <div
-                                    className="bg-gradient-to-r from-primary-500 to-primary-600 text-white px-5 py-3 rounded-xl mb-5 flex items-center gap-3"
-                                    style={{ boxShadow: '0 2px 12px rgba(51,105,189,0.15)', fontFamily: "'Inter', sans-serif" }}
-                                >
-                                    <FaSave className="text-lg flex-shrink-0 opacity-80" />
-                                    <div className="flex-1">
-                                        <p className="font-semibold text-sm">Generating your {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...</p>
-                                        <p className="text-xs opacity-75 mt-0.5">This will be automatically saved. Feel free to name and edit it once generated.</p>
-                                    </div>
+                        <div className="mx-auto w-full max-w-[920px] px-6 pt-6">
+                            {isGenerating && (
+                                <div className="mb-5 rounded-[20px] bg-[#eef4fc] border border-[#d6e3f7] px-5 py-3.5 flex items-center gap-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                    <span className="w-4 h-4 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin shrink-0" />
+                                    <p className="m-0 text-[14px] font-medium text-[#13233f]">Writing your {recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'summary' : 'callback'}. It saves to this case automatically.</p>
                                 </div>
                             )}
-                            {activeCaseId && hasReport && (
-                                <CaseBar caseId={activeCaseId} recordType={recordType} onBack={leaveToCase} refreshKey={caseBarKey} />
-                            )}
                             {/* Report Title - Editable */}
-                            <div className="mb-2">
+                            <div className="mb-4">
                                 {isEditingReportName ? (
                                     <input
                                         type="text"
@@ -3482,83 +3349,20 @@ const QuickSOAP = () => {
                                                 setIsEditingReportName(false);
                                             }
                                         }}
-                                        className="w-full text-xl font-bold text-gray-900 bg-transparent border-b-2 border-gray-300 focus:border-primary-500 focus:outline-none pb-1 tracking-tight"
+                                        className="w-full text-[22px] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none pb-1 tracking-tight"
                                         style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         autoFocus
                                     />
                                 ) : (
                                     <h2
-                                        className="text-xl font-bold text-gray-900 cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-primary-400 tracking-tight"
+                                        className="m-0 text-[22px] font-semibold text-[#13233f] cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-[#2d5fb8]/30 tracking-tight"
                                         style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                                         onClick={() => setIsEditingReportName(true)}
-                                        title="Click to edit report name"
+                                        title="Click to rename"
                                     >
                                         {reportName || `QuickSOAP - ${new Date().toLocaleString()}`}
                                     </h2>
                                 )}
-                            </div>
-
-                            {/* Report Header */}
-                            <div className="mb-5 flex items-center justify-between">
-                                <p className="text-xs text-gray-400 font-medium tracking-wide uppercase" style={{ fontFamily: "'Inter', sans-serif", fontSize: '11px', letterSpacing: '0.05em' }}>
-                                    Generated from your clinical notes
-                                </p>
-                                <div className="flex items-center gap-1.5">
-                                    {isAuthenticated && (
-                                        <button
-                                            onClick={handleSaveRecord}
-                                            disabled={isSaving || !hasReport}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer ${saveMessageVisible
-                                                ? 'bg-primary-100 text-primary-700'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
-                                                } disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5`}
-                                            style={{ fontFamily: "'Inter', sans-serif" }}
-                                            title="Save record"
-                                        >
-                                            <FaSave className="text-[10px]" />
-                                            {isSaving ? 'Saving...' : saveMessageVisible ? 'Saved!' : 'Save'}
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={copyAll}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer ${copiedSection === 'all'
-                                            ? 'bg-primary-100 text-primary-700'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
-                                            }`}
-                                        style={{ fontFamily: "'Inter', sans-serif" }}
-                                    >
-                                        {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
-                                    </button>
-                                    <button
-                                        onClick={handlePrint}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 flex items-center gap-1.5"
-                                        style={{ fontFamily: "'Inter', sans-serif" }}
-                                        title="Print report"
-                                    >
-                                        <FaPrint className="text-[10px]" />
-                                        Print
-                                    </button>
-                                    {isAuthenticated && hasReport && (
-                                        <button
-                                            onClick={handleSaveAndClear}
-                                            disabled={isSaving || !hasReport}
-                                            className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-emerald-50 text-emerald-700 hover:bg-emerald-100 disabled:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed flex items-center gap-1.5"
-                                            style={{ fontFamily: "'Inter', sans-serif" }}
-                                            title="Save record and clear"
-                                        >
-                                            <FaSave className="text-[10px]" />
-                                            Save & Clear
-                                        </button>
-                                    )}
-                                    <button
-                                        onClick={handleClearReport}
-                                        className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-red-50 text-red-600 hover:bg-red-100"
-                                        style={{ fontFamily: "'Inter', sans-serif" }}
-                                        title="Clear report and return to input"
-                                    >
-                                        Clear
-                                    </button>
-                                </div>
                             </div>
 
                             {/* Loader or Report Content */}
