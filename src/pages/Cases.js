@@ -9,10 +9,11 @@ import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUs
 import UpgradeModal from '../components/UpgradeModal';
 import { useDictation } from '../hooks/useDictation';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
-import { BRAND_WASH, TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
+import { BRAND_WASH, TYPE_STYLES, RECORD_TYPES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
 import {
     normalizeType,
     loadNoteIntoQuickSOAP,
+    NAME_LABELS,
     createCase,
     requestNewCase,
     isUnviewedMobileNote,
@@ -28,11 +29,11 @@ const API_URL = process.env.NODE_ENV === 'production'
     ? 'https://api.petwise.vet'
     : 'http://localhost:3001';
 
-const NAME_LABELS = { soap: 'QuickSOAP', summary: 'Summary', callback: 'Callback' };
 const TYPE_BLURBS = {
     soap: 'The full medical record for the visit.',
     summary: 'A clear write-up for the client.',
-    callback: 'Notes for a follow-up call.'
+    callback: 'Notes for a follow-up call.',
+    dental: 'A charted dental procedure.'
 };
 const FONT = { fontFamily: "var(--font-sans)" };
 const EASE = [0.2, 0.7, 0.2, 1];
@@ -335,7 +336,7 @@ const CaseList = ({ mobile = false }) => {
                                             </div>
                                             <div className="mt-auto flex items-center gap-1.5 overflow-hidden h-[26px] shrink-0">
                                                 {total > 0 ? (
-                                                    ['soap', 'summary', 'callback'].filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)
+                                                    RECORD_TYPES.filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)
                                                 ) : pending.has(c.id) ? (
                                                     <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#2d5fb8]/80">
                                                         <span className="w-1.5 h-1.5 rounded-full bg-[#2d5fb8] animate-pulse" />
@@ -550,6 +551,7 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                         lastInput: input,
                         report,
                         petName,
+                        ...(res.data.dental ? { dental: res.data.dental } : {}),
                         auto_generated: true,
                         generated_at: new Date().toISOString()
                     }
@@ -868,7 +870,7 @@ const CaseDetail = ({ caseId }) => {
                                 </p>
                                 {notes.length > 0 && (
                                     <div className="flex flex-wrap gap-1.5 mt-2.5">
-                                        {['soap', 'summary', 'callback'].filter((t) => counts[t]).map((t) => <TypeChip key={t} type={t} count={counts[t]} />)}
+                                        {RECORD_TYPES.filter((t) => counts[t]).map((t) => <TypeChip key={t} type={t} count={counts[t]} />)}
                                     </div>
                                 )}
                             </div>
@@ -907,8 +909,8 @@ const CaseDetail = ({ caseId }) => {
                     !adding && (
                         <FadeIn delay={0.05}>
                             <p className="text-[14px] font-semibold text-[#1a2b4a]/50 mb-3 ml-1">Start this case with</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                {['soap', 'summary', 'callback'].map((t) => {
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {RECORD_TYPES.map((t) => {
                                     const s = TYPE_STYLES[t];
                                     const Icon = s.icon;
                                     return (

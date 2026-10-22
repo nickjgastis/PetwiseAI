@@ -50,6 +50,8 @@ export const takeNewCaseRequest = () => {
 };
 
 export const NOTE_LABELS = { soap: 'SOAP', summary: 'Summary', callback: 'Callback', dental: 'Dental' };
+// Used in saved report names.
+export const NAME_LABELS = { soap: 'QuickSOAP', summary: 'Summary', callback: 'Callback', dental: 'Dental' };
 
 export const normalizeType = (t) => (!t || t === 'quicksoap' ? 'soap' : t);
 
@@ -85,6 +87,7 @@ const QUICKSOAP_KEYS = [
     'currentQuickSOAPReportId',
     'quickSOAP_reportName',
     'quickSOAP_recordType',
+    'quickSOAP_dental',
     NOTE_TYPE_KEY,
     SAVED_SNAPSHOT_KEY
 ];
@@ -158,6 +161,7 @@ export function loadNoteIntoQuickSOAP(report) {
         if (formData.lastInput !== undefined) localStorage.setItem('quickSOAP_lastInput', formData.lastInput);
     }
     if (report.report_name) localStorage.setItem('quickSOAP_reportName', report.report_name);
+    if (formData.dental) localStorage.setItem('quickSOAP_dental', JSON.stringify(formData.dental));
 
     localStorage.setItem('currentQuickSOAPReportId', report.id);
     if (report.report_text) localStorage.setItem(NOTE_TYPE_KEY, normalizeType(report.record_type || formData.record_type));

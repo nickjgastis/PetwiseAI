@@ -205,7 +205,8 @@ const TypeCards = () => {
     const blurbs = {
         soap: 'The full exam: subjective, objective, assessment and plan.',
         summary: 'Discharge notes, referrals and case histories.',
-        callback: 'A phone call with the owner: what they said and what you advised.'
+        callback: 'A phone call with the owner: what they said and what you advised.',
+        dental: 'A dental procedure, charted tooth by tooth for dogs and cats.'
     };
     return (
         <div className="grid gap-3">

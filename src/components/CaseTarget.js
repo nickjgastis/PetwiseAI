@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FiFolder, FiSearch, FiX, FiChevronRight, FiPlus } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
 import { normalizeType, pendingCaseIds, caseName } from '../utils/cases';
-import { TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
+import { TYPE_STYLES, RECORD_TYPES, GRADIENT_TEXT } from './caseStyles';
 
 const dayLabel = (d) => {
     const date = new Date(d);
@@ -108,7 +108,7 @@ const CasePicker = ({ onPick, onClose }) => {
                                     <span className="block text-[12px] text-[#1a2b4a]/50">{dayLabel(c.updated_at)}</span>
                                 </span>
                                 <span className="flex gap-1">
-                                    {['soap', 'summary', 'callback'].filter((t) => types[c.id]?.has(t)).map((t) => (
+                                    {RECORD_TYPES.filter((t) => types[c.id]?.has(t)).map((t) => (
                                         <span key={t} className={`w-2 h-2 rounded-full ${TYPE_STYLES[t].dot}`} />
                                     ))}
                                 </span>

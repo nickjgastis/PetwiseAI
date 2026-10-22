@@ -30,7 +30,7 @@ import PaymentIssueBanner from '../components/PaymentIssueBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import LoadingScreen from '../components/LoadingScreen';
 import Cases from './Cases';
-import { createCase, requestNewCase } from '../utils/cases';
+import { createCase, requestNewCase, NAME_LABELS, normalizeType } from '../utils/cases';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -461,11 +461,7 @@ const Dashboard = () => {
 
                 const dateStr = new Date().toLocaleString();
                 // Get type label for report name
-                const typeLabel = draftRecordType === 'soap' || draftRecordType === 'quicksoap' 
-                    ? 'QuickSOAP' 
-                    : draftRecordType === 'summary' 
-                        ? 'Summary' 
-                        : 'Callback';
+                const typeLabel = NAME_LABELS[normalizeType(draftRecordType)] || 'Record';
                 // Handle empty strings, null, undefined - only use pet name if it's a valid non-empty string
                 const reportName = (extractedPetName && extractedPetName.trim && extractedPetName.trim())
                     ? `${extractedPetName.trim()} - ${typeLabel} - ${dateStr}`
@@ -509,6 +505,7 @@ const Dashboard = () => {
                             ...formData,
                             reportName: reportName, // Ensure reportName in form_data matches report_name
                             petName: extractedPetName || formData.petName || null, // Store pet name in form_data
+                            ...(response.data.dental ? { dental: response.data.dental } : {}),
                             from_mobile: true,
                             auto_generated: true,
                             generated_at: new Date().toISOString()
@@ -578,7 +575,7 @@ const Dashboard = () => {
                     .from('saved_reports')
                     .select('id, form_data, report_text, created_at, record_type')
                     .eq('user_id', userId)
-                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
+                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback', 'dental'])
                     .is('report_text', null)
                     .order('created_at', { ascending: true })
                     .limit(20);
@@ -628,7 +625,7 @@ const Dashboard = () => {
                     .from('saved_reports')
                     .select('id, form_data, report_text, created_at, record_type')
                     .eq('user_id', userId)
-                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
+                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback', 'dental'])
                     .is('report_text', null)
                     .order('created_at', { ascending: true }) // Process oldest first
                     .limit(20);
@@ -702,7 +699,7 @@ const Dashboard = () => {
                     .from('saved_reports')
                     .select('id, form_data, report_text, record_type')
                     .eq('user_id', userId)
-                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
+                    .in('record_type', ['quicksoap', 'soap', 'summary', 'callback', 'dental'])
                     .is('report_text', null);
 
                 const remainingSentDrafts = remainingDrafts?.filter(d =>

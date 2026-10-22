@@ -16,6 +16,7 @@ import {
     CASE_KEY,
     NEW_CASE_EVENT,
     NOTE_LABELS,
+    NAME_LABELS,
     NOTE_TYPE_KEY,
     SAVED_SNAPSHOT_KEY,
     ensureCase,
@@ -27,9 +28,25 @@ import {
 import CaseTarget from '../components/CaseTarget';
 import { CaseBar, CaseCreatedOverlay } from '../components/CaseBar';
 import WaveBars, { RecordingStatus } from '../components/WaveBars';
-import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES } from '../components/caseStyles';
+import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES, RECORD_TYPES } from '../components/caseStyles';
 import GeneratingLoader from '../components/GeneratingLoader';
 import Guide from '../components/Guide';
+import DentalRecordPanel from '../components/DentalRecordPanel';
+import { PiTooth } from 'react-icons/pi';
+
+const TEXT_RECORDS = {
+    summary: { bar: 'from-emerald-500 to-emerald-600', icon: FaFileAlt, title: 'Clinical Summary', placeholder: 'Your clinical summary will appear here...' },
+    callback: { bar: 'from-amber-500 to-amber-600', icon: FaPhoneAlt, title: 'Callback Notes', placeholder: 'Your callback notes will appear here...' },
+    dental: { bar: 'from-violet-500 to-violet-600', icon: PiTooth, title: 'Dental Record', placeholder: 'Your dental record will appear here...' }
+};
+
+const readStoredDental = () => {
+    try {
+        return JSON.parse(localStorage.getItem('quickSOAP_dental')) || null;
+    } catch {
+        return null;
+    }
+};
 
 // PDF Document component for print/export
 const QuickSOAPPDFDocument = ({ reportText, title }) => {
@@ -419,6 +436,7 @@ const QuickSOAP = () => {
         }
         return 'soap';
     });
+    const [dental, setDental] = useState(() => (typeof window !== 'undefined' ? readStoredDental() : null));
     const pollingIntervalRef = useRef(null);
 
     // New chunked recording state
@@ -715,6 +733,7 @@ const QuickSOAP = () => {
             if (savedRecordType && savedRecordType !== recordType) {
                 setRecordType(savedRecordType);
             }
+            setDental(readStoredDental());
 
             // Only update if values are different (avoid unnecessary re-renders)
             if (loadedDictations) {
@@ -784,6 +803,7 @@ const QuickSOAP = () => {
         draftRecordIdRef.current = null;
         setLastDictationCount(0);
         setSelectedTemplate(null);
+        setDental(null);
 
         // Clear localStorage
         localStorage.removeItem('quickSOAP_dictations');
@@ -793,6 +813,7 @@ const QuickSOAP = () => {
         localStorage.removeItem('currentQuickSOAPReportId');
         localStorage.removeItem('quickSOAP_reportName');
         localStorage.removeItem('quickSOAP_selectedTemplate');
+        localStorage.removeItem('quickSOAP_dental');
         localStorage.removeItem(CASE_KEY);
         localStorage.removeItem(NOTE_TYPE_KEY);
         localStorage.removeItem(SAVED_SNAPSHOT_KEY);
@@ -957,7 +978,7 @@ const QuickSOAP = () => {
                 .from('saved_reports')
                 .select('id, report_name, form_data, created_at, record_type')
                 .eq('user_id', userId)
-                .in('record_type', ['quicksoap', 'soap', 'summary', 'callback'])
+                .in('record_type', ['quicksoap', 'soap', 'summary', 'callback', 'dental'])
                 .is('report_text', null)
                 .order('created_at', { ascending: false })
                 .limit(5);
@@ -1041,6 +1062,11 @@ const QuickSOAP = () => {
     useEffect(() => {
         localStorage.setItem('quickSOAP_recordType', recordType);
     }, [recordType]);
+
+    useEffect(() => {
+        if (dental) localStorage.setItem('quickSOAP_dental', JSON.stringify(dental));
+        else localStorage.removeItem('quickSOAP_dental');
+    }, [dental]);
 
     // Parse report when it changes (but skip if manually editing)
     useEffect(() => {
@@ -1584,6 +1610,24 @@ const QuickSOAP = () => {
         if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
     }, [hasReport, report]);
 
+    // Chart edits save straight to the open note, debounced so a run of taps is one write.
+    const dentalSaveRef = useRef(null);
+    const handleDentalChange = (next) => {
+        setDental(next);
+        clearTimeout(dentalSaveRef.current);
+        dentalSaveRef.current = setTimeout(async () => {
+            const id = localStorage.getItem('currentQuickSOAPReportId');
+            if (!id || !isAuthenticated) return;
+            const { data } = await supabase.from('saved_reports').select('form_data').eq('id', id).maybeSingle();
+            if (!data) return;
+            const { error: saveError } = await supabase
+                .from('saved_reports')
+                .update({ form_data: { ...(data.form_data || {}), dental: next } })
+                .eq('id', id);
+            if (saveError) console.error('[QuickSOAP] Dental chart save failed:', saveError);
+        }, 700);
+    };
+
     const hasUnsavedWork = () => {
         if (hasReport) {
             const snap = readSavedSnapshot();
@@ -1652,7 +1696,7 @@ const QuickSOAP = () => {
     }, []);
 
     // Auto-save helper function (extracted from handleSaveRecord)
-    const autoSaveRecord = async (generatedReport, extractedPetName = null, saveRecordType = null) => {
+    const autoSaveRecord = async (generatedReport, extractedPetName = null, saveRecordType = null, dentalData = null) => {
         if (!isAuthenticated || !user) return;
 
         // Use provided recordType or fall back to current state
@@ -1686,6 +1730,7 @@ const QuickSOAP = () => {
                 report: generatedReport,
                 lastInput: lastInput,
                 petName: petNameToUse || null,
+                ...(typeToSave === 'dental' && dentalData ? { dental: dentalData } : {}),
                 auto_generated: true,
                 generated_at: new Date().toISOString()
             };
@@ -1694,13 +1739,13 @@ const QuickSOAP = () => {
             const dateStr = new Date().toLocaleString();
             let finalReportName;
             const trimmedReportName = reportName.trim();
-            const typeLabel = typeToSave === 'soap' ? 'QuickSOAP' : typeToSave === 'summary' ? 'Summary' : 'Callback';
+            const typeLabel = NAME_LABELS[typeToSave] || 'Record';
 
             // Always prioritize pet name when available (from parameter, not state)
             // This ensures we use the pet name even if reportName state hasn't updated yet
             if (petNameToUse) {
                 finalReportName = `${petNameToUse} - ${typeLabel} - ${dateStr}`;
-            } else if (trimmedReportName && !trimmedReportName.match(/^(QuickSOAP|Summary|Callback)/i)) {
+            } else if (trimmedReportName && !trimmedReportName.match(/^(QuickSOAP|Summary|Callback|Dental)/i)) {
                 // If reportName is set and doesn't start with generic labels, use it
                 finalReportName = trimmedReportName;
             } else if (trimmedReportName) {
@@ -1848,12 +1893,13 @@ const QuickSOAP = () => {
                         setLastUsage(response.data.usage || null);
                         notifyUsageUpdated();
                         setReport(generatedReport);
+                        setDental(response.data.dental || null);
                         // Store pet name if extracted
                         if (extractedPetName) {
                             setPetName(extractedPetName);
                         }
                         // Set report name with pet name if available, otherwise use default
-                        const typeLabel = recordType === 'soap' ? 'QuickSOAP' : recordType === 'summary' ? 'Summary' : 'Callback';
+                        const typeLabel = NAME_LABELS[recordType] || 'Record';
                         if (!reportName) {
                             const dateStr = new Date().toLocaleString();
                             if (extractedPetName) {
@@ -1868,7 +1914,7 @@ const QuickSOAP = () => {
                             setPetName(extractedPetName);
                         }
                         // Auto-save after generation with pet name and record type
-                        await autoSaveRecord(generatedReport, extractedPetName, recordType);
+                        await autoSaveRecord(generatedReport, extractedPetName, recordType, response.data.dental);
 
                         // NOTE: Do NOT clear dictations here - user may want to regenerate
                         // with additional dictations or edited notes. Clearing only happens
@@ -1920,12 +1966,13 @@ const QuickSOAP = () => {
                     // Delay before showing report to allow loader fade (longer when announcing the case)
                     setTimeout(() => {
                         setReport(generatedReport);
+                        setDental(response.data.dental || null);
                         // Store pet name if extracted
                         if (extractedPetName) {
                             setPetName(extractedPetName);
                         }
                         // Set report name with pet name if available, otherwise use default
-                        const typeLabel = recordType === 'soap' ? 'QuickSOAP' : recordType === 'summary' ? 'Summary' : 'Callback';
+                        const typeLabel = NAME_LABELS[recordType] || 'Record';
                         if (!reportName) {
                             const dateStr = new Date().toLocaleString();
                             if (extractedPetName) {
@@ -1940,7 +1987,7 @@ const QuickSOAP = () => {
                             setPetName(extractedPetName);
                         }
                         // Auto-save after generation with pet name and record type
-                        autoSaveRecord(generatedReport, extractedPetName, recordType);
+                        autoSaveRecord(generatedReport, extractedPetName, recordType, response.data.dental);
 
                         // NOTE: Do NOT clear dictations here - user may want to regenerate
                         // with additional dictations or edited notes. Clearing only happens
@@ -2056,7 +2103,7 @@ const QuickSOAP = () => {
 
             // Get the current record type (soap, summary, or callback)
             const typeToSave = recordType || 'soap';
-            const typeLabel = typeToSave === 'soap' ? 'QuickSOAP' : typeToSave === 'summary' ? 'Summary' : 'Callback';
+            const typeLabel = NAME_LABELS[typeToSave] || 'Record';
 
             // Prepare form_data with record structure
             // Desktop saves don't include sent_to_desktop flag (desktop origin)
@@ -2067,6 +2114,7 @@ const QuickSOAP = () => {
                 report: report,
                 lastInput: lastInput,
                 petName: petName || null,
+                ...(typeToSave === 'dental' && dental ? { dental } : {}),
                 // Desktop saves don't have sent_to_desktop flag - this is desktop-originated
                 sent_to_desktop: undefined
             };
@@ -2297,7 +2345,7 @@ const QuickSOAP = () => {
             }
 
             const userId = userData.id;
-            const typeLabel = recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback';
+            const typeLabel = NOTE_LABELS[recordType] || 'Record';
             const draftName = `${typeLabel} Draft - ${new Date().toLocaleDateString()}`;
 
             // Prepare form_data with sent_to_desktop flag
@@ -2440,7 +2488,7 @@ const QuickSOAP = () => {
 
     const noteTypeControl = (
         <div className={`flex w-full gap-1 p-1 rounded-full ${isMobile ? 'bg-[#f3f6fa]' : 'bg-[#eef2f8] border border-[#e3e9f2]'}`}>
-            {['soap', 'summary', 'callback'].map((t) => {
+            {RECORD_TYPES.map((t) => {
                 const s = TYPE_STYLES[t];
                 const Icon = s.icon;
                 const on = recordType === t;
@@ -2449,7 +2497,7 @@ const QuickSOAP = () => {
                         key={t}
                         type="button"
                         onClick={() => setRecordType(t)}
-                        className={`relative flex-1 rounded-full font-semibold border-none cursor-pointer bg-transparent transition-colors ${isMobile ? 'h-9 text-[13.5px]' : 'h-10 text-[14.5px] font-display tracking-[-0.01em]'} ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                        className={`relative flex-1 rounded-full font-semibold border-none cursor-pointer bg-transparent transition-colors ${isMobile ? 'h-9 text-[12.5px]' : 'h-10 text-[14.5px] font-display tracking-[-0.01em]'} ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
                     >
                         {on && (
                             <motion.span
@@ -3132,7 +3180,7 @@ const QuickSOAP = () => {
                                                 </>
                                             ) : (
                                                 <>
-                                                    Generate {recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'Summary' : 'Callback'}
+                                                    Generate {NOTE_LABELS[recordType] || 'Record'}
                                                     <FiArrowRight className="text-[18px] transition-transform duration-200 group-hover:translate-x-0.5" />
                                                 </>
                                             )}
@@ -3567,7 +3615,7 @@ const QuickSOAP = () => {
                             {isGenerating && (
                                 <div className="mb-5 rounded-[20px] bg-[#eef4fc] border border-[#d6e3f7] px-5 py-3.5 flex items-center gap-3" style={{ fontFamily: "var(--font-sans)" }}>
                                     <span className="w-4 h-4 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin shrink-0" />
-                                    <p className="m-0 text-[14px] font-medium text-[#13233f]">Writing your {recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'summary' : 'callback'}. It saves to this case automatically.</p>
+                                    <p className="m-0 text-[14px] font-medium text-[#13233f]">Writing your {recordType === 'soap' ? 'SOAP' : recordType === 'dental' ? 'dental record' : recordType}. It saves to this case automatically.</p>
                                 </div>
                             )}
                             {/* Report Title - Editable */}
@@ -3619,7 +3667,7 @@ const QuickSOAP = () => {
                                     </div>
                                     {/* Center text */}
                                     <div className="relative z-10 text-center">
-                                        <p className="text-primary-700 text-lg font-semibold mb-1">Generating {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : 'callback notes'}...</p>
+                                        <p className="text-primary-700 text-lg font-semibold mb-1">Generating {recordType === 'soap' ? 'SOAP report' : recordType === 'summary' ? 'summary' : recordType === 'dental' ? 'dental record' : 'callback notes'}...</p>
                                         <p className="text-primary-500/70 text-sm">This will be saved automatically</p>
                                     </div>
                                     <style>{`
@@ -3659,6 +3707,7 @@ const QuickSOAP = () => {
                                     }}
                                 >
                                     {/* Record Card - SOAP has sections, Summary/Callback have single textarea */}
+                                    <div className={recordType === 'dental' ? 'grid gap-5 lg:grid-cols-2 items-start' : ''}>
                                     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)' }}>
                                         {recordType === 'soap' ? (
                                             // SOAP Record - Section-based display
@@ -3767,18 +3816,18 @@ const QuickSOAP = () => {
                                         ) : (
                                             // Summary/Callback Record - Single textarea display
                                             <div className="flex flex-col h-full">
-                                                <div className={`px-5 py-2 flex-shrink-0 flex items-center gap-2.5 ${recordType === 'summary' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600' : 'bg-gradient-to-r from-amber-500 to-amber-600'}`}>
+                                                <div className={`px-5 py-2 flex-shrink-0 flex items-center gap-2.5 bg-gradient-to-r ${(TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).bar}`}>
                                                     <span
                                                         className="w-6 h-6 rounded-md flex items-center justify-center text-white font-bold"
                                                         style={{ fontSize: '12px', backgroundColor: 'rgba(255,255,255,0.2)' }}
                                                     >
-                                                        {recordType === 'summary' ? <FaFileAlt className="text-[10px]" /> : <FaPhoneAlt className="text-[10px]" />}
+                                                        {React.createElement((TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).icon, { className: 'text-[11px]' })}
                                                     </span>
                                                     <h3
                                                         className="text-white font-semibold tracking-wider uppercase"
                                                         style={{ fontFamily: "var(--font-sans)", fontSize: '12px', letterSpacing: '0.08em' }}
                                                     >
-                                                        {recordType === 'summary' ? 'Clinical Summary' : 'Callback Notes'}
+                                                        {(TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).title}
                                                     </h3>
                                                 </div>
                                                 <textarea
@@ -3795,7 +3844,7 @@ const QuickSOAP = () => {
                                                         whiteSpace: 'pre-wrap',
                                                         wordWrap: 'break-word'
                                                     }}
-                                                    placeholder={recordType === 'summary' ? 'Your clinical summary will appear here...' : 'Your callback notes will appear here...'}
+                                                    placeholder={(TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).placeholder}
                                                 />
                                             </div>
                                         )}
@@ -3822,6 +3871,10 @@ const QuickSOAP = () => {
                                                 Print
                                             </button>
                                         </div>
+                                    </div>
+                                    {recordType === 'dental' && (
+                                        <DentalRecordPanel dental={dental || { species: 'canine', teeth: {} }} onChange={handleDentalChange} />
+                                    )}
                                     </div>
                                 </div>
                             )}

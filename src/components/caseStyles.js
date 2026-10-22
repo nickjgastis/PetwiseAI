@@ -1,4 +1,5 @@
 import { FiClipboard, FiFileText, FiPhone } from 'react-icons/fi';
+import { PiTooth } from 'react-icons/pi';
 import { normalizeType } from '../utils/cases';
 
 export { BRAND_WASH } from '../brand';
@@ -33,7 +34,18 @@ export const TYPE_STYLES = {
         dot: 'bg-amber-500',
         bar: 'from-amber-500 to-amber-400',
         hover: 'hover:border-amber-200'
+    },
+    dental: {
+        label: 'Dental',
+        icon: PiTooth,
+        solid: 'bg-violet-500',
+        soft: 'bg-violet-50 text-violet-700',
+        dot: 'bg-violet-500',
+        bar: 'from-violet-500 to-violet-400',
+        hover: 'hover:border-violet-200'
     }
 };
+
+export const RECORD_TYPES = Object.keys(TYPE_STYLES);
 
 export const typeStyle = (t) => TYPE_STYLES[normalizeType(t)] || TYPE_STYLES.soap;

@@ -19,6 +19,7 @@ const cronRouter = require('./routes/cronRoutes');
 const meDbRouter = require('./routes/meDb');
 const demoQueryRouter = require('./routes/demoQuery');
 const { generateSoapFromInput } = require('./soapGenerate');
+const { generateDental } = require('./dental');
 const { sendSubscriptionConfirmedEmail } = require('./utils/emailService');
 // REMOVED: quicksoapTranscribe - using client-side chunking with /api/whisper-proxy instead
 const { correctTranscript } = require('./utils/vetCorrector');
@@ -1134,12 +1135,13 @@ app.post('/api/note-previews', async (req, res) => {
     const notes = Array.isArray(req.body?.notes) ? req.body.notes.slice(0, 12) : [];
     if (!notes.length) return res.json({ previews: {} });
 
-    const kinds = { soap: 'SOAP record', quicksoap: 'SOAP record', summary: 'visit summary', callback: 'callback record' };
+    const kinds = { soap: 'SOAP record', quicksoap: 'SOAP record', summary: 'visit summary', callback: 'callback record', dental: 'dental record' };
     const labels = {
         soap: ['Findings', 'Assessment', 'Plan'],
         quicksoap: ['Findings', 'Assessment', 'Plan'],
         summary: ['Reason', 'Findings', 'Next steps'],
-        callback: ['Update', 'Advice', 'Follow-up']
+        callback: ['Update', 'Advice', 'Follow-up'],
+        dental: ['Findings', 'Treatment', 'Home care']
     };
     const clean = (s, max) => String(s || '').replace(/\s*[\u2014\u2013]\s*/g, ', ').replace(/\s+/g, ' ').trim().slice(0, max);
     const previews = {};
@@ -1548,6 +1550,23 @@ app.post('/api/generate-soap', async (req, res) => {
         // Dynamic import for ESM module
         const { Agent, Runner } = await import('@openai/agents');
         const runner = new Runner();
+
+        if (recordType === 'dental') {
+            const { report, petName, dental } = await generateDental(input.trim());
+            if (!report) throw new Error('dental generation failed - no output');
+            if (user?.sub) {
+                try {
+                    const { data: userData } = await supabase.from('users').select('quicksoap_count').eq('auth0_user_id', user.sub).single();
+                    if (userData) {
+                        await supabase.from('users').update({ quicksoap_count: (userData.quicksoap_count || 0) + 1 }).eq('auth0_user_id', user.sub);
+                    }
+                } catch (updateError) {
+                    console.error('[DENTAL] Failed to increment count:', updateError);
+                }
+            }
+            await logUsageEvent(user?.sub, 'quicksoap');
+            return res.status(200).json({ report, petName, recordType, dental, usage: res.locals.usageInfo || null });
+        }
 
         // Handle Summary and Callback record types with simpler single-agent approach
         if (recordType === 'summary' || recordType === 'callback') {

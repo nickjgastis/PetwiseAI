@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import DentalChart from '../components/DentalChart';
+import DentalRecordPanel from '../components/DentalRecordPanel';
 import { STATUS_ORDER, toothLabel } from '../dental/teeth';
 
 // Dev-only sandbox for the dental chart (mounted at /dev/dental in development).
@@ -8,8 +9,21 @@ const SAMPLE = {
     feline: { 307: { status: 'resorption' }, 407: { status: 'extracted' }, 109: { status: 'missing' }, 208: { status: 'periodontal' }, 104: { status: 'fractured' } }
 };
 
+const RECORD = {
+    species: 'canine',
+    teeth: {
+        104: { status: 'watch', note: 'enamel chip' },
+        108: { status: 'extracted', note: 'slab fracture with pulp exposure' },
+        201: { status: 'missing' },
+        202: { status: 'missing' },
+        309: { status: 'periodontal', note: 'furcation exposure stage 2' },
+        409: { status: 'extracted', note: 'PD 6 mm, mobility 2' }
+    }
+};
+
 const DentalPreview = () => {
     const [state, setState] = useState(SAMPLE);
+    const [record, setRecord] = useState(RECORD);
     const [selected, setSelected] = useState(null);
 
     const cycle = (species) => (id) => {
@@ -47,6 +61,10 @@ const DentalPreview = () => {
                             />
                         </div>
                     ))}
+                </div>
+                <p className="mt-12 mb-4 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record panel</p>
+                <div className="max-w-[560px]">
+                    <DentalRecordPanel dental={record} onChange={setRecord} />
                 </div>
             </div>
         </div>
