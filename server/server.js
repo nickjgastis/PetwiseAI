@@ -1129,6 +1129,44 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
     }
 });
 
+// Short previews for note cards on the case page. The client caches them in form_data.preview.
+app.post('/api/note-previews', async (req, res) => {
+    const notes = Array.isArray(req.body?.notes) ? req.body.notes.slice(0, 12) : [];
+    if (!notes.length) return res.json({ previews: {} });
+
+    const kinds = { soap: 'SOAP note', quicksoap: 'SOAP note', summary: 'visit summary', callback: 'callback note' };
+    const previews = {};
+    await Promise.all(notes.map(async (n) => {
+        const text = String(n?.text || '').slice(0, 4000).trim();
+        if (!n?.id || !text) return;
+        try {
+            const r = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-5.4-nano',
+                    messages: [{
+                        role: 'user',
+                        content: `Write a preview of this veterinary ${kinds[n.type] || 'note'} in at most 2 short sentences. Lead with the main problem, finding or outcome, then the plan. Keep exact drug names and diagnoses. Plain text only, no labels, no headings, no em dashes.\n\n"""${text}"""`
+                    }],
+                    max_tokens: 120,
+                    temperature: 0.3
+                })
+            });
+            if (!r.ok) return;
+            const data = await r.json();
+            const out = (data.choices?.[0]?.message?.content || '').trim().replace(/\s*\u2014\s*/g, ', ');
+            if (out) previews[n.id] = out;
+        } catch (err) {
+            console.error('[NotePreviews] failed for', n.id, err.message);
+        }
+    }));
+    res.json({ previews });
+});
+
 // Cleanup-only endpoint (no SOAP generation)
 // Accepts transcript text, runs cleanup + VetCorrector only
 app.post('/api/cleanup-transcript', async (req, res) => {
