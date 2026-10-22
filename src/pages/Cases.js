@@ -622,10 +622,10 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                             <motion.div key="rec" {...SWAP} className="flex items-center gap-3 w-full pl-2">
                                 <RecordingStatus live={dictation.status === 'recording'} seconds={dictation.seconds} className="shrink-0" />
                                 <WaveBars levels={dictation.levels} live={dictation.status === 'recording'} height={32} barWidth={3} gap={2} className="flex-1 min-w-0 overflow-hidden" />
-                                <button type="button" onClick={dictation.status === 'recording' ? dictation.pause : dictation.resume} title={dictation.status === 'recording' ? 'Pause' : 'Resume'} className="w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-[#2d5fb8] bg-white border border-[#e7ecf3] hover:bg-[#e9f6fd] cursor-pointer transition-colors">
+                                <button type="button" onClick={dictation.status === 'recording' ? dictation.pause : dictation.resume} title={dictation.status === 'recording' ? 'Pause' : 'Resume'} className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-white border-none ${dictation.status === 'recording' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-emerald-500 hover:bg-emerald-600'} cursor-pointer transition-colors`}>
                                     {dictation.status === 'recording' ? <FiPause className="text-[13px]" /> : <FiPlay className="text-[13px]" />}
                                 </button>
-                                <button type="button" onClick={stopDictation} className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer transition-colors">
+                                <button type="button" onClick={stopDictation} className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-white bg-red-500 hover:bg-red-600 border-none cursor-pointer transition-colors">
                                     <FiSquare className="text-[10px]" /> Done
                                 </button>
                             </motion.div>

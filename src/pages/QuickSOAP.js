@@ -2963,10 +2963,10 @@ const QuickSOAP = () => {
                                         <RecordingStatus live={!isPaused} seconds={recordSeconds} className="mb-3" />
                                         <WaveBars levels={waveLevels} live={!isPaused} height={isMobile ? 64 : 96} barWidth={isMobile ? 5 : 6} gap={isMobile ? 4 : 5} />
                                         <div className="flex items-center gap-2 mt-5">
-                                            <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors">
+                                            <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} className={`inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-white border-none ${isPaused ? 'bg-emerald-500 hover:bg-emerald-600 shadow-[0_10px_24px_-12px_rgba(16,185,129,0.8)]' : 'bg-amber-500 hover:bg-amber-600 shadow-[0_10px_24px_-12px_rgba(245,158,11,0.8)]'} cursor-pointer transition-colors`}>
                                                 {isPaused ? <><FiPlay /> Resume</> : <><FiPause /> Pause</>}
                                             </button>
-                                            <button type="button" onClick={stopRecording} className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors">
+                                            <button type="button" onClick={stopRecording} className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-white bg-red-500 hover:bg-red-600 border-none cursor-pointer shadow-[0_10px_24px_-12px_rgba(239,68,68,0.8)] transition-colors">
                                                 <FiSquare className="text-[12px]" /> Done
                                             </button>
                                         </div>
@@ -3435,10 +3435,10 @@ const QuickSOAP = () => {
                                         <motion.div key="rec" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.18 }} className="flex items-center gap-2 shrink-0 rounded-full bg-[#f3f7fd] border border-[#e3ecf8] pl-3.5 pr-1 py-1">
                                             <RecordingStatus live={!isPaused} seconds={recordSeconds} />
                                             <WaveBars levels={waveLevels} live={!isPaused} height={24} barWidth={3} gap={2} className="w-[110px]" />
-                                            <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} title={isPaused ? 'Resume' : 'Pause'} className="w-8 h-8 rounded-full flex items-center justify-center text-[#2d5fb8] bg-white border border-[#e7ecf3] hover:bg-[#e9f6fd] cursor-pointer transition-colors">
+                                            <button type="button" onClick={isPaused ? resumeRecording : pauseRecording} title={isPaused ? 'Resume' : 'Pause'} className={`w-8 h-8 rounded-full flex items-center justify-center text-white border-none ${isPaused ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-amber-500 hover:bg-amber-600'} cursor-pointer transition-colors`}>
                                                 {isPaused ? <FiPlay className="text-[12px]" /> : <FiPause className="text-[12px]" />}
                                             </button>
-                                            <button type="button" onClick={stopRecording} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer transition-colors">
+                                            <button type="button" onClick={stopRecording} className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13px] font-semibold text-white bg-red-500 hover:bg-red-600 border-none cursor-pointer transition-colors">
                                                 <FiSquare className="text-[10px]" /> Done
                                             </button>
                                         </motion.div>
