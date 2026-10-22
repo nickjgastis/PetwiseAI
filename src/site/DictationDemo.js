@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FaCheck, FaFolderOpen, FaMicrophone, FaSearch, FaStop, FaUser } from 'react-icons/fa';
-import { FiFolder, FiMic, FiPlus } from 'react-icons/fi';
+import { FiMic, FiPlus } from 'react-icons/fi';
 import { PiArchive, PiFileText, PiLayout, PiPawPrintFill, PiQuestion, PiSparkle } from 'react-icons/pi';
 import { BRAND_WASH } from '../brand';
 
@@ -224,13 +224,8 @@ const Phone = ({ stage, seconds }) => {
                 <div className="flex flex-1 flex-col items-center px-2.5 pt-[34px] text-center">
                     <p className={`m-0 text-[15px] font-bold leading-[1.1] tracking-[-0.03em] ${GRADIENT_TEXT}`}>Start a new case</p>
                     <p className="mt-1 text-[6.5px] leading-tight text-[#1a2b4a]/55">Dictate the visit and we’ll write the record.</p>
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-[#e7ecf3] bg-white px-2 py-[3px] text-[6px] font-medium text-[#13233f] shadow-[0_4px_10px_-6px_rgba(19,35,63,0.25)]">
-                        <FiFolder className="text-[7px] opacity-70" />
-                        or add to an existing case
-                        <FiPlus className="text-[6.5px] opacity-50" />
-                    </span>
 
-                    <div className="relative mt-4 flex h-[64px] w-[64px] items-center justify-center">
+                    <div className="relative mt-6 flex h-[64px] w-[64px] items-center justify-center">
                         {sent ? (
                             <motion.span
                                 key="sent"
