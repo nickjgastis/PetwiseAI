@@ -1,6 +1,9 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FaCheck, FaClipboardList, FaFileAlt, FaMicrophone, FaQuestionCircle, FaSave, FaSearch, FaStop, FaUser } from 'react-icons/fa';
+import { FaCheck, FaMicrophone, FaQuestionCircle, FaStop, FaUser } from 'react-icons/fa';
+import { FiPlus } from 'react-icons/fi';
+import { PiArchive, PiFileText, PiLayout, PiPawPrintFill, PiQuestion, PiSparkle } from 'react-icons/pi';
+import { BRAND_WASH } from '../brand';
 
 // Fixed design size; the whole stage is scaled to fit its container.
 const W = 640;
@@ -42,12 +45,15 @@ const SECTIONS = [
 ];
 
 const NAV = [
-    { icon: FaMicrophone, label: 'QuickSOAP', active: true },
-    { icon: FaSearch, label: 'PetQUERY' },
-    { icon: FaSave, label: 'Saved Records' },
-    { icon: FaClipboardList, label: 'My Templates' },
-    { icon: FaFileAlt, label: 'PetSOAP' },
-    { icon: FaQuestionCircle, label: 'Help' }
+    { icon: PiPawPrintFill, label: 'Cases', active: true },
+    { icon: PiSparkle, label: 'PetQuery' },
+    { icon: PiLayout, label: 'My Templates' }
+];
+
+const MORE = [
+    { icon: PiArchive, label: 'Saved Records' },
+    { icon: PiFileText, label: 'PetSOAP' },
+    { icon: PiQuestion, label: 'Help' }
 ];
 
 const BARS = [0.35, 0.7, 0.5, 0.9, 0.6, 1, 0.55, 0.8, 0.4, 0.7, 0.5, 0.3];
@@ -60,27 +66,42 @@ const Laptop = ({ stage }) => {
             <div className="relative rounded-t-[18px] bg-[#15171c] p-[10px] pb-[14px] shadow-[0_40px_80px_-30px_rgba(5,12,30,0.8)] ring-1 ring-white/10">
                 <span className="absolute left-1/2 top-[4px] -translate-x-1/2 w-[5px] h-[5px] rounded-full bg-[#2a2e36]" />
                 <div className="flex h-[325px] overflow-hidden rounded-[6px] bg-[#f5f7fb]">
-                    <aside className="flex w-[118px] shrink-0 flex-col bg-gradient-to-b from-[#3a72cf] to-[#1f4790] px-2 py-3 text-white">
+                    <aside className={`flex w-[118px] shrink-0 flex-col border-r border-[#e3eaf5] ${BRAND_WASH} px-2 py-3 font-display tracking-[-0.01em] text-[#1a2b4a]`}>
                         <div className="flex items-center gap-1.5 px-1">
                             <img src="/PW.png" alt="" className="h-[18px] w-[18px] rounded-[4px] object-contain" />
-                            <span className="text-[11px] font-bold tracking-tight">Petwise.vet</span>
+                            <span className="text-[11.5px] font-semibold tracking-tight text-[#13233f]">
+                                Petwise<span className="text-[#13233f]/35">.vet</span>
+                            </span>
                         </div>
-                        <nav className="mt-4 space-y-[3px]">
+                        <div className="mt-3 flex items-center gap-1.5 rounded-[7px] bg-gradient-to-r from-[#6aa5ef] via-[#4f8ce2] to-[#3d78d2] px-1.5 py-[5px] text-[8px] font-semibold text-white shadow-[0_4px_10px_-4px_rgba(61,120,210,0.6)]">
+                            <span className="flex h-[12px] w-[12px] items-center justify-center rounded-[3px] bg-white/[0.18]">
+                                <FiPlus className="text-[8px]" />
+                            </span>
+                            New case
+                        </div>
+                        <nav className="mt-2.5 space-y-[2px]">
                             {NAV.map(({ icon: Icon, label, active }) => (
                                 <div
                                     key={label}
-                                    className={`flex items-center gap-1.5 rounded-[6px] px-1.5 py-[5px] text-[8px] ${active ? 'bg-white/20 font-semibold' : 'text-white/80'}`}
+                                    className={`flex items-center gap-1.5 rounded-[6px] px-1.5 py-[5px] text-[8.5px] ${active ? 'bg-[#2d5fb8]/[0.09] font-semibold text-[#2d5fb8]' : 'font-medium'}`}
                                 >
-                                    <span className="flex h-[14px] w-[14px] items-center justify-center rounded-[4px] bg-white/15">
-                                        <Icon className="text-[6.5px]" />
-                                    </span>
+                                    <Icon className="text-[11px]" />
                                     {label}
                                 </div>
                             ))}
                         </nav>
-                        <div className="mt-auto rounded-[6px] bg-white/10 px-2 py-1.5">
-                            <p className="text-[7.5px] font-semibold">Dr. Stacey Gastis</p>
-                            <p className="text-[6.5px] text-white/60">Monthly plan</p>
+                        <div className="mt-auto">
+                            <p className="mb-0.5 px-1.5 text-[5.5px] font-semibold uppercase tracking-[0.14em] text-[#1a2b4a]/40">More</p>
+                            {MORE.map(({ icon: Icon, label }) => (
+                                <div key={label} className="flex items-center gap-1.5 px-1.5 py-[3px] text-[7px] text-[#1a2b4a]/70">
+                                    <Icon className="text-[8.5px]" />
+                                    {label}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-2 rounded-[7px] border border-[#2d5fb8]/[0.08] bg-white/[0.35] px-2 py-1.5">
+                            <p className="text-[7.5px] font-semibold text-[#13233f]">Dr. Stacey Gastis</p>
+                            <p className="text-[6.5px] text-[#1a2b4a]/50">Monthly plan</p>
                         </div>
                     </aside>
 
