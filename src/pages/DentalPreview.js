@@ -42,6 +42,7 @@ Soft food was recommended for 10 days. Recheck advised in 2 weeks.`;
 
 const DentalPreview = () => {
     const [report, setReport] = useState(REPORT);
+    const [name, setName] = useState('Max - Dental - 10/22/2026, 3:19:13 PM');
     const [pdfUrl, setPdfUrl] = useState(null);
     const printPreview = async () => {
         const blob = await pdf(<DentalPDFDocument title="Max - Dental" report={report} dental={record} />).toBlob();
@@ -88,7 +89,7 @@ const DentalPreview = () => {
                     ))}
                 </div>
                 <p className="mt-12 mb-4 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record workspace</p>
-                <DentalWorkspace report={report} onReportChange={setReport} dental={record} onDentalChange={setRecord} onCopy={() => {}} onPrint={printPreview} />
+                <DentalWorkspace name={name} onNameChange={setName} report={report} onReportChange={setReport} dental={record} onDentalChange={setRecord} onCopy={() => {}} onPrint={printPreview} />
                 {pdfUrl && <iframe title="Print preview" src={pdfUrl} className="mt-8 w-full h-[1100px] rounded-[20px] border border-[#e7ecf3] bg-white" />}
             </div>
         </div>

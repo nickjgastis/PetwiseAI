@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { PiTooth } from 'react-icons/pi';
 import { FiCopy, FiPrinter, FiX } from 'react-icons/fi';
 import DentalChartCanvas from './DentalChartCanvas';
+import RecordName from './RecordName';
 import { parseSections, joinSections } from '../dental/sections';
 
 const FONT = { fontFamily: 'var(--font-sans)' };
@@ -91,7 +92,7 @@ const DentalRecordText = ({ report, onReportChange }) => {
 };
 
 // One-card dental record: text on the left, zoomable chart on the right (stacked, chart first, below xl).
-const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCopy, onPrint, copied }) => {
+const DentalWorkspace = ({ name, onNameChange, report, onReportChange, dental, onDentalChange, onCopy, onPrint, copied }) => {
     const [expanded, setExpanded] = useState(false);
     const value = dental || { species: 'canine', teeth: {} };
 
@@ -112,13 +113,19 @@ const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCop
     return (
         <div className="bg-white rounded-2xl border border-gray-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)', ...FONT }}>
             <div className="px-5 py-2 flex items-center gap-2.5 bg-gradient-to-r from-violet-500 to-violet-600 rounded-t-2xl">
-                <span className="w-6 h-6 rounded-md flex items-center justify-center text-white" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                <span className="w-6 h-6 shrink-0 rounded-md flex items-center justify-center text-white" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
                     <PiTooth className="text-[13px]" />
                 </span>
-                <h3 className="m-0 text-white font-semibold uppercase" style={{ fontSize: '12px', letterSpacing: '0.08em' }}>
+                <h3 className="m-0 shrink-0 whitespace-nowrap text-white font-semibold uppercase" style={{ fontSize: '12px', letterSpacing: '0.08em' }}>
                     Dental Record
                 </h3>
-                <div className="ml-auto flex items-center gap-1">
+                {onNameChange && (
+                    <>
+                        <span className="text-white/40">·</span>
+                        <RecordName name={name} onChange={onNameChange} tone="onColor" />
+                    </>
+                )}
+                <div className="ml-auto shrink-0 flex items-center gap-1">
                     <button type="button" onClick={onCopy} className={`${HEAD_BTN} ${copied ? 'bg-white text-violet-700' : 'bg-white/15 text-white hover:bg-white/25'}`}>
                         <FiCopy className="text-[12px]" /> {copied ? 'Copied' : 'Copy text'}
                     </button>

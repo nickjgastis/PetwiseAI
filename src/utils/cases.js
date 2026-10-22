@@ -50,6 +50,29 @@ export const takeNewCaseRequest = () => {
 };
 
 export const NOTE_LABELS = { soap: 'SOAP', summary: 'Summary', callback: 'Callback', dental: 'Dental' };
+// "Oct 22, 3:19 PM", matching the Cases cards.
+export const formatRecordWhen = (d = new Date()) =>
+    new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+const LOCALE_STAMP = /(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s+(\d{1,2}):(\d{2})(?::\d{2})?\s*([AP]M)/i;
+const TYPE_PART = /^(quicksoap|soap|summary|callback|dental)( mobile)?$/i;
+
+// Display form of a saved report name: drops the record-type part (the card header shows the type) and
+// rewrites older "10/22/2026, 3:19:13 PM" stamps as "Oct 22, 3:19 PM". "Bella - Summary - ..." -> "Bella · Oct 22, 3:19 PM".
+export function displayRecordName(name) {
+    if (!name) return '';
+    return name
+        .split(' - ')
+        .map((part) => {
+            const m = part.match(LOCALE_STAMP);
+            if (!m) return part.trim();
+            const hour = (Number(m[4]) % 12) + (/pm/i.test(m[6]) ? 12 : 0);
+            return part.replace(LOCALE_STAMP, formatRecordWhen(new Date(+m[3], +m[1] - 1, +m[2], hour, +m[5]))).trim();
+        })
+        .filter((part) => part && !TYPE_PART.test(part))
+        .join(' · ');
+}
+
 // Used in saved report names.
 export const NAME_LABELS = { soap: 'QuickSOAP', summary: 'Summary', callback: 'Callback', dental: 'Dental' };
 

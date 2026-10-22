@@ -17,6 +17,7 @@ import {
     NEW_CASE_EVENT,
     NOTE_LABELS,
     NAME_LABELS,
+    formatRecordWhen,
     NOTE_TYPE_KEY,
     SAVED_SNAPSHOT_KEY,
     ensureCase,
@@ -32,6 +33,7 @@ import { BRAND_WASH, GRADIENT_TEXT, TYPE_STYLES, RECORD_TYPES } from '../compone
 import GeneratingLoader from '../components/GeneratingLoader';
 import Guide from '../components/Guide';
 import DentalWorkspace from '../components/DentalWorkspace';
+import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
 import CountBadge from '../components/CountBadge';
 
@@ -396,7 +398,6 @@ const QuickSOAP = () => {
         }
         return '';
     });
-    const [isEditingReportName, setIsEditingReportName] = useState(false);
     const [showTutorial, setShowTutorial] = useState(false);
     const [showQRModal, setShowQRModal] = useState(false);
     const [isMobile, setIsMobile] = useState(() => {
@@ -1648,7 +1649,6 @@ const QuickSOAP = () => {
 
     const startFreshCase = (caseId = null) => {
         clearAllQuickSOAPData();
-        setIsEditingReportName(false);
         setShowStartNotes(false);
         setShowDictations(false);
         setError('');
@@ -1736,7 +1736,7 @@ const QuickSOAP = () => {
             };
 
             // Calculate report name with pet name if available
-            const dateStr = new Date().toLocaleString();
+            const dateStr = formatRecordWhen();
             let finalReportName;
             const trimmedReportName = reportName.trim();
             const typeLabel = NAME_LABELS[typeToSave] || 'Record';
@@ -1901,7 +1901,7 @@ const QuickSOAP = () => {
                         // Set report name with pet name if available, otherwise use default
                         const typeLabel = NAME_LABELS[recordType] || 'Record';
                         if (!reportName) {
-                            const dateStr = new Date().toLocaleString();
+                            const dateStr = formatRecordWhen();
                             if (extractedPetName) {
                                 setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             } else {
@@ -1909,7 +1909,7 @@ const QuickSOAP = () => {
                             }
                         } else if (extractedPetName && !reportName.includes(extractedPetName)) {
                             // Update existing report name if pet name was extracted and not already included
-                            const dateStr = new Date().toLocaleString();
+                            const dateStr = formatRecordWhen();
                             setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             setPetName(extractedPetName);
                         }
@@ -1974,7 +1974,7 @@ const QuickSOAP = () => {
                         // Set report name with pet name if available, otherwise use default
                         const typeLabel = NAME_LABELS[recordType] || 'Record';
                         if (!reportName) {
-                            const dateStr = new Date().toLocaleString();
+                            const dateStr = formatRecordWhen();
                             if (extractedPetName) {
                                 setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             } else {
@@ -1982,7 +1982,7 @@ const QuickSOAP = () => {
                             }
                         } else if (extractedPetName && !reportName.includes(extractedPetName)) {
                             // Update existing report name if pet name was extracted and not already included
-                            const dateStr = new Date().toLocaleString();
+                            const dateStr = formatRecordWhen();
                             setReportName(`${extractedPetName} - ${typeLabel} - ${dateStr}`);
                             setPetName(extractedPetName);
                         }
@@ -2031,7 +2031,6 @@ const QuickSOAP = () => {
             setInput('');
             setLastInput('');
             setReportName('');
-            setIsEditingReportName(false);
             setHasBeenSentToDesktop(false);
             setPetName(null);
             setSelectedTemplate(null);
@@ -2120,7 +2119,7 @@ const QuickSOAP = () => {
             };
 
             // Use reportName if set, otherwise prioritize pet name
-            const dateStr = new Date().toLocaleString();
+            const dateStr = formatRecordWhen();
             let finalReportName;
             const trimmedReportName = reportName.trim();
 
@@ -3620,35 +3619,6 @@ const QuickSOAP = () => {
                                     <p className="m-0 text-[14px] font-medium text-[#13233f]">Writing your {recordType === 'soap' ? 'SOAP' : recordType === 'dental' ? 'dental record' : recordType}. It saves to this case automatically.</p>
                                 </div>
                             )}
-                            {/* Report Title - Editable */}
-                            <div className="mb-4">
-                                {isEditingReportName ? (
-                                    <input
-                                        type="text"
-                                        value={reportName}
-                                        onChange={(e) => setReportName(e.target.value)}
-                                        onBlur={() => setIsEditingReportName(false)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                setIsEditingReportName(false);
-                                            }
-                                        }}
-                                        className="block w-full p-0 pb-1 m-0 !text-[22px] leading-[1.3] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none tracking-tight"
-                                        style={{ fontFamily: "var(--font-sans)" }}
-                                        autoFocus
-                                    />
-                                ) : (
-                                    <h2
-                                        className="m-0 text-[22px] leading-[1.3] font-semibold text-[#13233f] cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-[#2d5fb8]/30 tracking-tight"
-                                        style={{ fontFamily: "var(--font-sans)" }}
-                                        onClick={() => setIsEditingReportName(true)}
-                                        title="Click to rename"
-                                    >
-                                        {reportName || `QuickSOAP - ${new Date().toLocaleString()}`}
-                                    </h2>
-                                )}
-                            </div>
-
                             {/* Loader or Report Content */}
                             {isGenerating && isReportTransitioning ? (
                                 <div className="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col items-center justify-center min-h-[400px] relative overflow-hidden">
@@ -3711,6 +3681,8 @@ const QuickSOAP = () => {
                                     {/* Record Card - SOAP has sections, Summary/Callback have single textarea */}
                                     {recordType === 'dental' ? (
                                         <DentalWorkspace
+                                            name={reportName}
+                                            onNameChange={setReportName}
                                             report={report}
                                             onReportChange={setReport}
                                             dental={dental}
@@ -3724,6 +3696,12 @@ const QuickSOAP = () => {
                                         {recordType === 'soap' ? (
                                             // SOAP Record - Section-based display
                                             <>
+                                                <div className="px-4 py-2 flex items-center gap-2 border-b border-gray-100 bg-[#fafbfd]">
+                                                    <span className={`inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full text-[11.5px] font-semibold ${TYPE_STYLES.soap.soft}`}>
+                                                        {React.createElement(TYPE_STYLES.soap.icon, { className: 'text-[11px]' })} SOAP
+                                                    </span>
+                                                    <RecordName name={reportName} onChange={setReportName} />
+                                                </div>
                                                 {parsedReport.sections.map((section, index) => {
                                                     const colors = getSectionColor(section.name);
 
@@ -3836,11 +3814,13 @@ const QuickSOAP = () => {
                                                         {React.createElement((TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).icon, { className: 'text-[11px]' })}
                                                     </span>
                                                     <h3
-                                                        className="text-white font-semibold tracking-wider uppercase"
+                                                        className="m-0 shrink-0 whitespace-nowrap text-white font-semibold tracking-wider uppercase"
                                                         style={{ fontFamily: "var(--font-sans)", fontSize: '12px', letterSpacing: '0.08em' }}
                                                     >
                                                         {(TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).title}
                                                     </h3>
+                                                    <span className="text-white/40">·</span>
+                                                    <RecordName name={reportName} onChange={setReportName} tone="onColor" />
                                                 </div>
                                                 <textarea
                                                     value={report}

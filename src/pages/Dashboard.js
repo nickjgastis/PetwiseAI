@@ -30,7 +30,7 @@ import PaymentIssueBanner from '../components/PaymentIssueBanner';
 import UpgradeModal from '../components/UpgradeModal';
 import LoadingScreen from '../components/LoadingScreen';
 import Cases from './Cases';
-import { createCase, requestNewCase, NAME_LABELS, normalizeType } from '../utils/cases';
+import { createCase, requestNewCase, NAME_LABELS, normalizeType, formatRecordWhen } from '../utils/cases';
 // import BookingBanner from '../components/BookingBanner'; // Disabled for now — see usage block below
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -459,7 +459,7 @@ const Dashboard = () => {
                 const generatedReport = response.data.report;
                 const extractedPetName = response.data.petName;
 
-                const dateStr = new Date().toLocaleString();
+                const dateStr = formatRecordWhen();
                 // Get type label for report name
                 const typeLabel = NAME_LABELS[normalizeType(draftRecordType)] || 'Record';
                 // Handle empty strings, null, undefined - only use pet name if it's a valid non-empty string

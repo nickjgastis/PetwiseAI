@@ -14,6 +14,7 @@ import {
     normalizeType,
     loadNoteIntoQuickSOAP,
     NAME_LABELS,
+    formatRecordWhen,
     createCase,
     requestNewCase,
     isUnviewedMobileNote,
@@ -531,7 +532,7 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
             if (!report) throw new Error('No report generated');
 
             const petName = caseRow.pet_name || res.data.petName || null;
-            const reportName = `${petName ? `${petName} - ` : ''}${NAME_LABELS[type]} - ${new Date().toLocaleString()}`;
+            const reportName = `${petName ? `${petName} - ` : ''}${NAME_LABELS[type]} - ${formatRecordWhen()}`;
             const source = notes[notes.length - 1]?.form_data || {};
             const dictations = [
                 ...(useEarlier ? source.dictations || [] : []),
