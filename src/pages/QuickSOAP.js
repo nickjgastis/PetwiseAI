@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from
 import axios from 'axios';
 import { useAuth0 } from "@auth0/auth0-react";
 import { supabase } from '../supabaseClient';
-import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaQuestionCircle, FaDesktop, FaCheckCircle, FaMobile, FaPrint, FaClipboardList, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
+import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaDesktop, FaCheckCircle, FaPrint, FaClipboardList, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
 import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
@@ -2417,7 +2417,7 @@ const QuickSOAP = () => {
         };
     };
 
-    const startCard = !isMobile && !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
+    const startCard = !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
     const dictCard = !hasReport && !isLoadingFromSaved && dictations.length > 0 && !isRecording && !isTranscribing;
     const CARD = `w-full ${isMobile ? 'max-w-[560px]' : 'max-w-[680px]'} mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]`;
     const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
@@ -2777,7 +2777,7 @@ const QuickSOAP = () => {
                             width: isMobile ? '100%' : (isSidebarCollapsed ? 'calc(100% - 80px)' : 'calc(100% - 224px)'),
                             top: '0',
                             bottom: '0',
-                            backgroundColor: isMobile ? 'white' : 'transparent',
+                            backgroundColor: 'transparent',
                             opacity: isTransitioning ? 0 : 1,
                             transform: isTransitioning ? 'scale(0.95)' : 'scale(1)',
                             transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out, left 0.3s ease-in-out, width 0.3s ease-in-out'
@@ -2794,12 +2794,16 @@ const QuickSOAP = () => {
                             }`}>
                             {/* Header */}
                             {(!isRecording || !isMobile) && (
-                                <div className={`${isMobile ? 'mb-6 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
+                                <div className={`${isMobile ? 'mb-5' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
                                     <div className="relative">
                                         <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.75rem]'} leading-[1.1] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
                                             {activeCaseId ? 'Add a record' : 'Start a new case'}
                                         </h1>
-                                        {!isMobile && (
+                                        {isMobile ? (
+                                            <button type="button" onClick={() => setShowTutorial(true)} title="How it works" className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 active:text-[#2d5fb8] bg-transparent border-none cursor-pointer">
+                                                <FiHelpCircle />
+                                            </button>
+                                        ) : (
                                             <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 flex items-center gap-1">
                                                 <button type="button" onClick={() => setShowTutorial(true)} title="How it works" className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 hover:text-[#2d5fb8] hover:bg-[#2d5fb8]/[0.07] bg-transparent border-none cursor-pointer transition-colors">
                                                     <FiHelpCircle />
@@ -2810,12 +2814,14 @@ const QuickSOAP = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
-                                        {dictations.length
-                                            ? (isMobile ? 'Add more, or send it to your desktop.' : 'Add more, or generate when you’re ready.')
-                                            : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the record.'}
-                                    </p>
-                                    <div className={isMobile ? 'mt-4' : 'mt-5'}>
+                                    {!isMobile && (
+                                        <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
+                                            {dictations.length
+                                                ? 'Add more, or generate when you’re ready.'
+                                                : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the record.'}
+                                        </p>
+                                    )}
+                                    <div className={isMobile ? 'mt-3' : 'mt-5'}>
                                         <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
                                     </div>
                                 </div>
@@ -2832,7 +2838,7 @@ const QuickSOAP = () => {
                             {/* Main Input Container - ChatGPT style */}
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-[680px] flex-shrink-0'}`}>
                                 {startCard && (
-                                    <div className="mb-4">{noteTypeControl}</div>
+                                    <div className={isMobile ? 'mb-3 w-full max-w-[560px]' : 'mb-4'}>{noteTypeControl}</div>
                                 )}
                                 {dictCard && (
                                     <motion.div
@@ -2918,7 +2924,7 @@ const QuickSOAP = () => {
                                     </motion.div>
                                 )}
 
-                                <div className={startCard ? `${CARD} px-10 pt-8 pb-9 flex flex-col items-center` : 'contents'}>
+                                <div className={startCard ? `${CARD} ${isMobile ? 'px-6 pt-8 pb-8' : 'px-10 pt-8 pb-9'} flex flex-col items-center` : 'contents'}>
                                 {/* Mic: front and center before the first dictation, "Add more" after */}
                                 {!dictCard && !isRecording && !isTranscribing && !hasReport && !isLoadingFromSaved && (
                                     <div className={`flex flex-col items-center ${startCard ? '' : isMobile ? 'mb-5 flex-shrink-0' : 'mb-6'}`}>
@@ -2930,15 +2936,15 @@ const QuickSOAP = () => {
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
                                                 transition={{ type: 'spring', stiffness: 420, damping: 24 }}
-                                                className={`relative ${startCard ? 'w-28 h-28' : dictations.length ? 'w-20 h-20' : 'w-24 h-24'} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_22px_44px_-14px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.25)] disabled:opacity-50 disabled:cursor-not-allowed`}
+                                                className={`relative ${startCard ? (isMobile ? 'w-24 h-24' : 'w-28 h-28') : dictations.length ? 'w-20 h-20' : 'w-24 h-24'} rounded-full border-none cursor-pointer text-white flex items-center justify-center shadow-[0_22px_44px_-14px_rgba(45,95,184,0.75),inset_0_1px_0_rgba(255,255,255,0.25)] disabled:opacity-50 disabled:cursor-not-allowed`}
                                                 style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
                                                 title={dictations.length ? 'Add more dictation' : 'Start dictating'}
                                             >
-                                                <FiMic className={`relative ${startCard ? 'text-[40px]' : dictations.length ? 'text-3xl' : 'text-4xl'}`} />
+                                                <FiMic className={`relative ${startCard ? (isMobile ? 'text-[36px]' : 'text-[40px]') : dictations.length ? 'text-3xl' : 'text-4xl'}`} />
                                             </motion.button>
                                         </div>
                                         <p className={`${startCard ? 'mt-3 font-display text-[19px] tracking-[-0.01em]' : 'mt-4 text-[15px]'} mb-0 font-semibold text-[#13233f]`}>
-                                            {dictations.length ? 'Add more' : startCard ? 'Click to dictate' : 'Tap to dictate'}
+                                            {dictations.length ? 'Add more' : startCard && !isMobile ? 'Click to dictate' : 'Tap to dictate'}
                                         </p>
                                     </div>
                                 )}
@@ -3116,32 +3122,6 @@ const QuickSOAP = () => {
 
                                 {/* Free-tier daily usage: banner only when 1 SOAP left */}
                                 <UpgradeNudge show={showNudge} feature="soap" remaining={soapRemaining} onDismiss={dismissNudge} />
-
-                                {isMobile && dictations.length === 0 && !isRecording && !isTranscribing && (
-                                    <div className="flex justify-center items-center gap-1 mt-6 text-[12.5px] text-[#1a2b4a]/40">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowTutorial(true);
-                                            }}
-                                            className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-transparent border-none cursor-pointer text-inherit hover:text-[#2d5fb8] transition-colors"
-                                        >
-                                            <FaQuestionCircle className="text-[12px]" /> How it works
-                                        </button>
-                                        {!isMobile && (
-                                            <>
-                                                <span aria-hidden>·</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowQRModal(true)}
-                                                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-transparent border-none cursor-pointer text-inherit hover:text-[#2d5fb8] transition-colors"
-                                                >
-                                                    <FaMobile className="text-[12px]" /> Dictate from your phone
-                                                </button>
-                                            </>
-                                        )}
-                                    </div>
-                                )}
 
                             </div>
                         </div>
