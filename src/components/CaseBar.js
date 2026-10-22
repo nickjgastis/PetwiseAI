@@ -57,7 +57,7 @@ export const CaseBar = ({ caseId, recordType, onBack, refreshKey }) => {
                                 {info.pet_name || 'Unnamed patient'}
                             </span>
                             <span className="block text-[12.5px] text-[#1a2b4a]/55">
-                                Case from {shortDate(info.created_at)} · {info.count} {info.count === 1 ? 'note' : 'notes'}
+                                Case from {shortDate(info.created_at)} · {info.count} {info.count === 1 ? 'record' : 'records'}
                             </span>
                         </span>
                     </motion.button>
@@ -71,7 +71,7 @@ export const CaseBar = ({ caseId, recordType, onBack, refreshKey }) => {
                                 </span>
                             </>
                         ) : (
-                            <span className={`text-[18px] font-bold tracking-tight ${GRADIENT_TEXT}`}>Note</span>
+                            <span className={`text-[18px] font-bold tracking-tight ${GRADIENT_TEXT}`}>Record</span>
                         )}
                     </motion.div>
                 )}

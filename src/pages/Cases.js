@@ -302,7 +302,7 @@ const CaseList = ({ mobile = false }) => {
                                                     </p>
                                                     <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5">
                                                         {formatDateTime(c.updated_at)}
-                                                        {total > 0 && ` · ${total} ${total === 1 ? 'note' : 'notes'}`}
+                                                        {total > 0 && ` · ${total} ${total === 1 ? 'record' : 'records'}`}
                                                         {isNew && <span className="font-medium text-[#2d5fb8]"> · New from phone</span>}
                                                     </p>
                                                 </div>
@@ -495,7 +495,7 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                 }])
                 .select()
                 .single();
-            if (saveError || !saved) throw new Error('Could not save the note');
+            if (saveError || !saved) throw new Error('Could not save the record');
             await supabase.from('cases').update({ pet_name: petName }).eq('id', caseRow.id);
             onCreated(saved, res.data.petName);
         } catch (err) {
@@ -703,7 +703,7 @@ const CaseDetail = ({ caseId }) => {
 
     const onCreated = (saved, extractedPetName) => {
         const type = normalizeType(saved.record_type);
-        const label = TYPE_STYLES[type]?.label || 'Note';
+        const label = TYPE_STYLES[type]?.label || 'Record';
         setAnnouncement({
             kind: 'added',
             title: `${caseRow.pet_name || extractedPetName || label} · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
@@ -789,7 +789,7 @@ const CaseDetail = ({ caseId }) => {
                                     </button>
                                 )}
                                 <p className="text-[14px] text-[#1a2b4a]/55">
-                                    Started {formatDate(caseRow.created_at)} · {notes.length} {notes.length === 1 ? 'note' : 'notes'}
+                                    Started {formatDate(caseRow.created_at)} · {notes.length} {notes.length === 1 ? 'record' : 'records'}
                                 </p>
                                 {notes.length > 0 && (
                                     <div className="flex flex-wrap gap-1.5 mt-2.5">
@@ -807,7 +807,7 @@ const CaseDetail = ({ caseId }) => {
                                 disabled={panelBusy}
                             >
                                 <motion.span animate={{ rotate: adding ? 45 : 0 }} transition={{ duration: 0.25, ease: EASE }} className="flex"><FiPlus /></motion.span>
-                                {adding ? 'Close' : 'Add a note'}
+                                {adding ? 'Close' : 'Add a record'}
                             </PillButton>
                         </div>
                     </div>

@@ -1598,6 +1598,13 @@ const QuickSOAP = () => {
         }
     };
 
+    // After a phone send: clear the screen but keep the case, so the next dictation joins it.
+    const stayOnCase = () => {
+        const caseId = activeCaseId;
+        clearAllQuickSOAPData();
+        if (caseId) selectCase(caseId);
+    };
+
     const runLeave = (action) => {
         if (action.kind === 'back') leaveToCase();
         else startFreshCase(action.caseId);
@@ -1884,7 +1891,7 @@ const QuickSOAP = () => {
                     const extractedPetName = response.data.petName;
                     setLastUsage(response.data.usage || null);
                     notifyUsageUpdated();
-                    const noteLabel = NOTE_LABELS[normalizeType(recordType)] || 'Note';
+                    const noteLabel = NOTE_LABELS[normalizeType(recordType)] || 'Record';
                     const announcement = isAuthenticated ? {
                         kind: activeCaseId ? 'added' : 'created',
                         title: `${extractedPetName || noteLabel} · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
@@ -2288,6 +2295,9 @@ const QuickSOAP = () => {
                 sent_to_desktop_at: new Date().toISOString() // Timestamp
             };
 
+            const caseId = activeCaseId || await ensureCase(null);
+            if (caseId) setActiveCaseIdState(caseId);
+
             // Always create a new record when sending to desktop
             // This allows users to send the same dictation multiple times
             // Each send creates a new record, so if something goes wrong, they can send again
@@ -2299,7 +2309,7 @@ const QuickSOAP = () => {
                     report_text: null,
                     form_data: formData,
                     record_type: recordType,
-                    case_id: activeCaseId || undefined
+                    case_id: caseId || undefined
                 }])
                 .select()
                 .single();
@@ -2316,7 +2326,6 @@ const QuickSOAP = () => {
                 setIsSendingToDesktop(false);
                 setHasBeenSentToDesktop(true);
                 setShowSendSuccessModal(true);
-                setTimeout(() => setShowSendSuccessModal(false), 3000);
                 // NOTE: Do NOT clear here - user may need to re-send if something fails
                 // Clearing happens when SOAP generation starts (on desktop)
             }
@@ -2527,15 +2536,30 @@ const QuickSOAP = () => {
                             </motion.span>
                             <h3 className={`mt-4 mb-0 pb-0.5 text-[24px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>Sent to your desktop</h3>
                             <p className="mt-2 mb-0 text-[14.5px] leading-relaxed text-[#1a2b4a]/60">
-                                Your note will be waiting in <span className="font-semibold text-[#13233f]">Cases</span> in a minute or two.
+                                Your record will be waiting in <span className="font-semibold text-[#13233f]">Cases</span> in a minute or two.
                             </p>
-                            <button
-                                type="button"
-                                onClick={() => setShowSendSuccessModal(false)}
-                                className="mt-6 w-full h-12 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors"
-                            >
-                                Done
-                            </button>
+                            <div className="mt-6 flex flex-col gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowSendSuccessModal(false);
+                                        clearAllQuickSOAPData();
+                                    }}
+                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <FiMic /> Start a new case
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowSendSuccessModal(false);
+                                        stayOnCase();
+                                    }}
+                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-[#13233f] bg-[#f6f8fb] hover:bg-[#eef2f7] border-none cursor-pointer transition-colors"
+                                >
+                                    Add another record to this case
+                                </button>
+                            </div>
                         </motion.div>
                     </motion.div>
                 )}
@@ -2619,8 +2643,8 @@ const QuickSOAP = () => {
                             </h3>
                             <p className="mt-2 mb-6 text-[14.5px] leading-relaxed text-[#1a2b4a]/65">
                                 {hasReport
-                                    ? "You've edited this note since it was last saved. If you leave now those edits will be lost."
-                                    : "Your dictation hasn't been turned into a note yet. Leaving will clear it."}
+                                    ? "You've edited this record since it was last saved. If you leave now those edits will be lost."
+                                    : "Your dictation hasn't been turned into a record yet. Leaving will clear it."}
                             </p>
                             <div className="flex flex-wrap justify-end gap-2">
                                 <button
@@ -2847,12 +2871,12 @@ const QuickSOAP = () => {
                             {(!isRecording || !isMobile) && (
                                 <div className={`${isMobile ? 'mb-6 mt-2' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
                                     <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.5rem]'} leading-[1.15] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
-                                        {activeCaseId ? 'Add a note' : 'Start a new case'}
+                                        {activeCaseId ? 'Add a record' : 'Start a new case'}
                                     </h1>
                                     <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
                                         {dictations.length
                                             ? (isMobile ? 'Add more, or send it to your desktop.' : 'Add more, or generate when you’re ready.')
-                                            : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the note.'}
+                                            : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the record.'}
                                     </p>
                                     <div className={isMobile ? 'mt-4' : 'mt-5'}>
                                         <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
@@ -2917,10 +2941,20 @@ const QuickSOAP = () => {
                                             ))}
                                         </div>
 
-                                        <div className="mt-5 pt-5 border-t border-[#eef2f7]">
-                                            <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Note type</p>
-                                            {noteTypeControl}
-                                        </div>
+                                        {isMobile ? (
+                                            <div className="mt-4 flex items-center justify-center gap-2 text-[12.5px] text-[#1a2b4a]/50">
+                                                Record type
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold ${TYPE_STYLES[normalizeType(recordType)].soft}`}>
+                                                    {React.createElement(TYPE_STYLES[normalizeType(recordType)].icon, { className: 'text-[12px]' })}
+                                                    {TYPE_STYLES[normalizeType(recordType)].label}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="mt-5 pt-5 border-t border-[#eef2f7]">
+                                                <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record type</p>
+                                                {noteTypeControl}
+                                            </div>
+                                        )}
 
                                         <div className="mt-5 pt-5 border-t border-[#eef2f7] flex items-center justify-center gap-3">
                                             <motion.button
@@ -2938,7 +2972,7 @@ const QuickSOAP = () => {
                                             </motion.button>
                                             <div className="text-left">
                                                 <p className="m-0 text-[14.5px] font-semibold text-[#13233f]">Add more</p>
-                                                <p className="m-0 text-[12.5px] text-[#1a2b4a]/50">It all goes into the same note.</p>
+                                                <p className="m-0 text-[12.5px] text-[#1a2b4a]/50">It all goes into the same record.</p>
                                             </div>
                                         </div>
                                     </motion.div>
@@ -2971,7 +3005,7 @@ const QuickSOAP = () => {
                                 {/* Record Type Selector - Show before first dictation */}
                                 {!isRecording && !isTranscribing && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
                                     <div className={startCard ? 'w-full mt-7 pt-6 border-t border-[#eef2f7]' : 'w-full max-w-[400px] mb-6'}>
-                                        <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Note type</p>
+                                        <p className="text-center mb-2.5 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Record type</p>
                                         {noteTypeControl}
                                     </div>
                                 )}
@@ -3066,6 +3100,13 @@ const QuickSOAP = () => {
                                                     className="w-full h-12 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] active:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] flex items-center justify-center gap-2"
                                                 >
                                                     <FiMic /> Start the next case
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={stayOnCase}
+                                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-[#13233f] bg-[#f6f8fb] active:bg-[#eef2f7] border-none cursor-pointer"
+                                                >
+                                                    Add another record to this case
                                                 </button>
                                                 <button
                                                     type="button"
