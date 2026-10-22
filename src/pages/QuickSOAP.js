@@ -7,7 +7,7 @@ import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiPlus, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
+import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiCheck, FiX } from 'react-icons/fi';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
@@ -1893,26 +1893,6 @@ const QuickSOAP = () => {
         }, 400);
     };
 
-    const handleSaveAndClear = async () => {
-        if (!isAuthenticated || !hasReport || !report) {
-            setError('Please generate a SOAP report before saving.');
-            return;
-        }
-
-        try {
-            // Save first
-            await handleSaveRecord();
-
-            // Wait a moment for save to complete, then clear
-            setTimeout(() => {
-                handleClearReport();
-            }, 500);
-        } catch (err) {
-            console.error('Error in save and clear:', err);
-            // Don't clear if save failed
-        }
-    };
-
     // Save draft dictations to localStorage only (not to Supabase - records only save when user clicks Save)
     const saveDraftDictations = async (dictationsToSave, inputToSave, lastInputToSave) => {
         // Only save to localStorage - do NOT save to Supabase until user explicitly clicks Save
@@ -2671,10 +2651,7 @@ const QuickSOAP = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                            <p className={`${isMobile ? 'text-sm' : 'text-[17px]'} text-[#1a2b4a]/60 max-w-md leading-relaxed`}>
-                                                Say the section name, then list findings. For example, “Physical exam” before the exam findings.
-                                            </p>
-                                            <div className={isMobile ? 'mt-4' : 'mt-6'}>
+                                            <div className={isMobile ? 'mt-3' : 'mt-4'}>
                                                 <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
                                             </div>
                                         </>
@@ -2772,7 +2749,8 @@ const QuickSOAP = () => {
                             <div className={`w-full ${isMobile ? 'max-w-full flex flex-col items-center' : 'max-w-2xl'}`}>
                                 {/* Record Type Selector + Template Button - Show before first dictation */}
                                 {!isRecording && dictations.length === 0 && !hasReport && !isLoadingFromSaved && (
-                                    <div className={`relative ${isMobile ? 'mb-4' : 'mb-5'}`}>
+                                    <div className={`relative ${isMobile ? 'mb-6' : 'mb-8'}`}>
+                                        <p className="text-center mb-2 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Select note type</p>
                                         <div className="flex justify-center">
                                             <div className="bg-white border border-[#e7ecf3] rounded-full p-1 inline-flex gap-1 shadow-[0_6px_20px_-14px_rgba(19,35,63,0.3)]">
                                                 <button
@@ -2825,7 +2803,6 @@ const QuickSOAP = () => {
                                             style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
                                             title={dictations.length ? 'Add more dictation' : 'Start dictating'}
                                         >
-                                            <span className="absolute inset-0 rounded-full animate-ping bg-[#5cccf0]/20" style={{ animationDuration: '2.4s' }} />
                                             <FiMic className={`relative ${dictations.length ? 'text-3xl' : 'text-4xl'}`} />
                                         </motion.button>
                                         <p className="mt-3 mb-0 text-[15px] font-semibold text-[#13233f]">{dictations.length ? 'Add more' : 'Tap to dictate'}</p>
@@ -3277,12 +3254,6 @@ const QuickSOAP = () => {
                                     style={{ maxHeight: '120px', overflow: 'auto', fontFamily: "'Inter', sans-serif" }}
                                     disabled={isTranscribing || isGenerating}
                                 />
-                                {dictations.length > 0 && (
-                                    <button type="button" onClick={() => setShowDictations((v) => !v)} className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full text-[13px] font-medium border cursor-pointer transition-colors shrink-0 ${showDictations ? 'bg-[#e9f6fd] text-[#2d5fb8] border-transparent' : 'bg-white text-[#1a2b4a]/70 border-[#e7ecf3] hover:bg-[#f6f8fb]'}`}>
-                                        Dictations <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[11px] font-semibold flex items-center justify-center">{dictations.length}</span>
-                                        <FiChevronDown className={`text-[13px] transition-transform duration-200 ${showDictations ? 'rotate-180' : ''}`} />
-                                    </button>
-                                )}
                                 <span className="w-px h-6 bg-[#e7ecf3] mx-1 shrink-0" />
                                 {isAuthenticated && (
                                     <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 disabled:opacity-40 ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]'}`}>
@@ -3297,39 +3268,61 @@ const QuickSOAP = () => {
                                 <button type="button" onClick={handlePrint} title="Print" className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]">
                                     <FiPrinter className="text-[14px]" /> <span className="hidden xl:inline">Print</span>
                                 </button>
-                                <button type="button" onClick={isAuthenticated ? handleSaveAndClear : handleClearReport} disabled={isGenerating || isSaving || isRecording} title="Save and start a new case" className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-full text-[13px] font-semibold border border-[#e7ecf3] cursor-pointer transition-colors shrink-0 bg-white text-[#2d5fb8] hover:bg-[#e9f6fd] disabled:opacity-40">
-                                    <FiPlus className="text-[14px]" /> New case
-                                </button>
                             </div>
                             <AnimatePresence initial={false}>
                                 {error && (
                                     <motion.p key="err" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-6 pb-2 m-0 text-[13px] text-red-500 overflow-hidden">{error}</motion.p>
                                 )}
-                                {showDictations && dictations.length > 0 && (
-                                    <motion.div key="dict" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }} className="overflow-hidden">
-                                        <div className="px-5 sm:px-6 pb-3 pt-1 grid gap-2 sm:grid-cols-2 xl:grid-cols-3 max-h-[220px] overflow-y-auto">
-                                            {dictations.map((dictation, idx) => (
-                                                <div key={dictation.id} className="rounded-2xl bg-[#f6f8fb] border border-[#eef2f7] px-3.5 py-2.5" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <FiMic className="text-[11px] text-[#2d5fb8]" />
-                                                        <span className="text-[12px] font-semibold text-[#13233f]">Dictation {idx + 1}</span>
-                                                        <button type="button" onClick={() => toggleDictationExpand(dictation.id)} className="ml-auto text-[12px] font-medium text-[#2d5fb8] bg-transparent border-none cursor-pointer p-0">
-                                                            {dictation.expanded ? 'Less' : 'More'}
-                                                        </button>
-                                                        <button type="button" onClick={() => handleDeleteDictationClick(dictation.id)} title="Remove dictation" className="text-[#1a2b4a]/30 hover:text-red-500 bg-transparent border-none cursor-pointer p-0">
-                                                            <FiX className="text-[12px]" />
-                                                        </button>
-                                                    </div>
-                                                    <p className="m-0 text-[12.5px] text-[#1a2b4a]/70 leading-snug">{dictation.expanded ? dictation.fullText : dictation.summary}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </motion.div>
-                                )}
                             </AnimatePresence>
+                            {dictations.length > 0 && (
+                                <div className="border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowDictations((v) => !v)}
+                                        className="w-full flex items-center gap-2 px-5 sm:px-6 h-10 text-[13px] font-medium text-[#13233f] bg-transparent hover:bg-[#f6f8fb] border-none cursor-pointer transition-colors"
+                                    >
+                                        <FiMic className="text-[13px] text-[#2d5fb8]" />
+                                        Dictations
+                                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#2d5fb8]/10 text-[#2d5fb8] text-[11px] font-semibold flex items-center justify-center">{dictations.length}</span>
+                                        <span className="ml-auto text-[12.5px] text-[#1a2b4a]/50">{showDictations ? 'Hide' : 'Show'}</span>
+                                        <FiChevronDown className={`text-[14px] text-[#1a2b4a]/50 transition-transform duration-300 ${showDictations ? 'rotate-180' : ''}`} />
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {showDictations && (
+                                            <motion.div key="dict" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.32, ease: [0.2, 0.7, 0.2, 1] }} className="overflow-hidden">
+                                                <div className="px-5 sm:px-6 pb-4 pt-1 grid gap-3 md:grid-cols-2 max-h-[40vh] overflow-y-auto">
+                                                    {dictations.map((dictation, idx) => (
+                                                        <div key={dictation.id} className="rounded-[20px] bg-white border border-[#e7ecf3] px-4 py-3 shadow-[0_6px_20px_-16px_rgba(19,35,63,0.3)]">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="text-[13px] font-semibold text-[#13233f]">Dictation {idx + 1}</span>
+                                                                <div className="ml-auto bg-[#f6f8fb] rounded-full p-0.5 inline-flex">
+                                                                    {[['Summary', false], ['Full transcript', true]].map(([label, full]) => (
+                                                                        <button
+                                                                            key={label}
+                                                                            type="button"
+                                                                            onClick={() => { if (!!dictation.expanded !== full) toggleDictationExpand(dictation.id); }}
+                                                                            className={`px-2.5 py-1 rounded-full text-[11.5px] font-medium border-none cursor-pointer transition-colors ${!!dictation.expanded === full ? 'bg-white text-[#2d5fb8] shadow-sm' : 'bg-transparent text-[#1a2b4a]/55 hover:text-[#13233f]'}`}
+                                                                        >
+                                                                            {label}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                <button type="button" onClick={() => handleDeleteDictationClick(dictation.id)} title="Remove dictation" className="w-7 h-7 rounded-full flex items-center justify-center text-[#1a2b4a]/30 hover:text-red-500 hover:bg-red-50 bg-transparent border-none cursor-pointer transition-colors">
+                                                                    <FiX className="text-[13px]" />
+                                                                </button>
+                                                            </div>
+                                                            <p className="m-0 text-[13.5px] text-[#1a2b4a]/75 leading-relaxed whitespace-pre-wrap">{dictation.expanded ? dictation.fullText : dictation.summary}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )}
                         </div>
 
-                        <div className="mx-auto w-full max-w-[920px] px-6 pt-6">
+                        <div className="mx-auto w-full max-w-[1120px] px-6 pt-6">
                             {isGenerating && (
                                 <div className="mb-5 rounded-[20px] bg-[#eef4fc] border border-[#d6e3f7] px-5 py-3.5 flex items-center gap-3" style={{ fontFamily: "'Inter', sans-serif" }}>
                                     <span className="w-4 h-4 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin shrink-0" />

@@ -330,7 +330,6 @@ const DictationPad = ({ dictation, onStart, onStop }) => {
                             style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
                             aria-label="Start dictating"
                         >
-                            <span className="absolute inset-0 rounded-full animate-ping bg-[#5cccf0]/20" style={{ animationDuration: '2.4s' }} />
                             <FiMic className="relative" />
                         </motion.button>
                         <p className="mt-3 text-[15px] font-semibold text-[#13233f]">Tap to dictate</p>
