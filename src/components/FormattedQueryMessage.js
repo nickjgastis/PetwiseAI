@@ -151,10 +151,11 @@ const FormattedQueryMessage = ({ content }) => {
             {renderInline(f.value)}
         </p>
     );
-    const plainRows = (rows) => {
+    const DOSING_LABEL = /^(dose|dosage|dosing|route|frequency|duration|interval|max(imum)?\s+dose|concentration|formulation)$/i;
+    const plainRows = (rows, inline = false) => {
         const fields = rows.filter((r) => !isNotesLabel(r.label));
         const notes = rows.filter((r) => isNotesLabel(r.label));
-        const stacked = fields.some((r) => stripBold(r.value).length > 70);
+        const stacked = !inline && !fields.some((r) => DOSING_LABEL.test(r.label)) && fields.some((r) => stripBold(r.value).length > 70);
         return (
             <>
                 {stacked ? (
@@ -219,7 +220,7 @@ const FormattedQueryMessage = ({ content }) => {
                             {hasName && (
                                 <div className="mb-1.5 text-[15px] md:text-[16px] font-semibold text-[#13233f]">{renderInline(stripBold(g[0].value))}</div>
                             )}
-                            {plainRows(hasName ? g.slice(1) : g)}
+                            {plainRows(hasName ? g.slice(1) : g, hasName)}
                         </div>
                     );
                 })}
