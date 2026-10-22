@@ -1939,7 +1939,7 @@ const QuickSOAP = () => {
                             setIsTransitioning(false);
                             setCaseAnnouncement(null);
                         }, 100);
-                    }, announcement ? 1700 : 300);
+                    }, announcement ? 2400 : 300);
                 } else {
                     throw new Error('No report generated');
                 }

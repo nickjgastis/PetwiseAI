@@ -754,7 +754,7 @@ const CaseDetail = ({ caseId }) => {
             title: `${caseRow.pet_name || extractedPetName || label} · ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`,
             typeLabel: label === 'SOAP' ? 'SOAP' : label.toLowerCase()
         });
-        setTimeout(() => openInEditor(saved), 1400);
+        setTimeout(() => openInEditor(saved), 2400);
     };
 
     const startNote = (type) => {
