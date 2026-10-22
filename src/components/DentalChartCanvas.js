@@ -12,6 +12,8 @@ const POP_W = 252;
 const GAP = 10;
 // Labels grow with zoom^0.6 instead of zoom, so a 4x zoom gives about 2.3x numbers, not 4x.
 const LABEL_GROWTH = 0.6;
+// Share of the area the full chart fills at zoom 1.
+const FIT = 0.92;
 
 const REGIONS = [
     { id: 'full', label: 'Full mouth' },
@@ -28,7 +30,7 @@ const ICON_BTN = 'w-8 h-8 flex items-center justify-center border-none cursor-po
 const FLOAT_BTN = 'w-8 h-8 flex items-center justify-center border border-[#e7ecf3] cursor-pointer bg-white text-[#1a2b4a]/65 hover:text-[#13233f] shadow-[0_6px_16px_-10px_rgba(19,35,63,0.35)] transition-colors';
 
 // Zoomable, pannable chart with a per-tooth popover. `dental` is { species, teeth: { [id]: { status, note } } }.
-const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
+const DentalChartCanvas = ({ dental, onChange, height, onExpand }) => {
     const species = dental?.species === 'feline' ? 'feline' : 'canine';
     const teeth = useMemo(() => dental?.teeth || {}, [dental]);
     const chart = useMemo(() => buildChart(species), [species]);
@@ -48,7 +50,15 @@ const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
     const target = useRef({ z: 1, cx: full.x + full.w / 2, cy: full.y + full.h / 2 });
     const drag = useRef(null);
     const suppressClick = useRef(false);
+    const sizeRef = useRef({ w: 1, h: 1 });
     selectedRef.current = selected;
+
+    // The svg fills the whole area; the camera works in chart units on top of a "fit" scale (px per unit).
+    const viewSize = useCallback((zz) => {
+        const { w, h } = sizeRef.current;
+        const scale = Math.min(w / full.w, h / full.h) * FIT * zz;
+        return { vw: w / scale, vh: h / scale, scale };
+    }, [full]);
 
     const z = useSpring(1, SPRING);
     const cx = useSpring(full.x + full.w / 2, SPRING);
@@ -89,12 +99,25 @@ const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
         const svg = svgRef.current;
         if (!svg) return;
         const zz = z.get();
-        const vw = full.w / zz;
-        const vh = full.h / zz;
+        const { vw, vh } = viewSize(zz);
         svg.setAttribute('viewBox', `${cx.get() - vw / 2} ${cy.get() - vh / 2} ${vw} ${vh}`);
         svg.style.setProperty('--tf', `${full.font * Math.pow(zz, LABEL_GROWTH - 1)}px`);
         placePop();
-    }, [z, cx, cy, full, placePop]);
+    }, [z, cx, cy, full, viewSize, placePop]);
+
+    useLayoutEffect(() => {
+        const el = areaRef.current;
+        if (!el) return undefined;
+        const measure = () => {
+            const r = el.getBoundingClientRect();
+            sizeRef.current = { w: Math.max(1, r.width), h: Math.max(1, r.height) };
+            apply();
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [apply]);
 
     useEffect(() => {
         const subs = [z, cx, cy].map((v) => v.on('change', apply));
@@ -104,35 +127,38 @@ const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
 
     const go = useCallback((next, instant = false) => {
         const zz = Math.min(MAX_ZOOM, Math.max(1, next.z));
-        const vw = full.w / zz;
-        const vh = full.h / zz;
+        const { vw, vh } = viewSize(zz);
+        // The chart's edge can come in a little past the area's edge, never further.
+        const slack = zz > 1.01 ? 0.12 : 0;
+        const rx = Math.max(0, (full.w - vw) / 2) + vw * slack;
+        const ry = Math.max(0, (full.h - vh) / 2) + vh * slack;
+        const mx = full.x + full.w / 2;
+        const my = full.y + full.h / 2;
         const v = {
             z: zz,
-            cx: Math.min(full.x + full.w - vw / 2, Math.max(full.x + vw / 2, next.cx)),
-            cy: Math.min(full.y + full.h - vh / 2, Math.max(full.y + vh / 2, next.cy))
+            cx: Math.min(mx + rx, Math.max(mx - rx, next.cx)),
+            cy: Math.min(my + ry, Math.max(my - ry, next.cy))
         };
         target.current = v;
         [[z, v.z], [cx, v.cx], [cy, v.cy]].forEach(([mv, val]) => (instant ? mv.jump(val) : mv.set(val)));
         if (instant) apply();
         setZoom(v.z);
-    }, [full, z, cx, cy, apply]);
+    }, [full, z, cx, cy, apply, viewSize]);
 
     // Keeps the chart point under the cursor fixed while zooming.
     const zoomAt = useCallback((clientX, clientY, factor) => {
-        const rect = svgRef.current.getBoundingClientRect();
+        const rect = areaRef.current.getBoundingClientRect();
         const t = target.current;
-        const vw = full.w / t.z;
-        const vh = full.h / t.z;
+        const { vw, vh } = viewSize(t.z);
         const fx = (clientX - rect.left) / rect.width;
         const fy = (clientY - rect.top) / rect.height;
         const px = t.cx - vw / 2 + fx * vw;
         const py = t.cy - vh / 2 + fy * vh;
         const nz = Math.min(MAX_ZOOM, Math.max(1, t.z * factor));
-        const nvw = full.w / nz;
-        const nvh = full.h / nz;
-        go({ z: nz, cx: px - fx * nvw + nvw / 2, cy: py - fy * nvh + nvh / 2 });
+        const n = viewSize(nz);
+        go({ z: nz, cx: px - fx * n.vw + n.vw / 2, cy: py - fy * n.vh + n.vh / 2 });
         setRegion(nz <= 1.01 ? 'full' : null);
-    }, [full, go]);
+    }, [go, viewSize]);
 
     const zoomBy = (factor) => {
         const t = target.current;
@@ -152,8 +178,10 @@ const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
         const y0 = Math.min(...boxes.map((b) => b.y));
         const x1 = Math.max(...boxes.map((b) => b.x + b.width));
         const y1 = Math.max(...boxes.map((b) => b.y + b.height));
-        const pad = Math.max(x1 - x0, y1 - y0) * 0.14;
-        const zz = Math.min(full.w / (x1 - x0 + pad * 2), full.h / (y1 - y0 + pad * 2));
+        const pad = Math.max(x1 - x0, y1 - y0) * 0.08;
+        const { w, h } = sizeRef.current;
+        const fit = Math.min(w / full.w, h / full.h) * FIT;
+        const zz = Math.min(w / (x1 - x0 + pad * 2), h / (y1 - y0 + pad * 2)) / fit;
         go({ z: zz, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 });
     };
 
@@ -195,7 +223,7 @@ const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
             setPanning(true);
             setRegion(null);
         }
-        const k = full.w / d.start.z / svgRef.current.getBoundingClientRect().width;
+        const k = 1 / viewSize(d.start.z).scale;
         go({ z: d.start.z, cx: d.start.cx - dx * k, cy: d.start.cy - dy * k }, true);
     };
     const onPointerUp = () => {
@@ -297,10 +325,10 @@ const DentalChartCanvas = ({ dental, onChange, maxHeight, onExpand }) => {
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerUp}
                 onDoubleClick={onDoubleClick}
-                className="relative mx-4 sm:mx-5 mt-3 rounded-[20px] bg-[#fbfcfe] border border-[#eef2f7] overflow-hidden px-3 py-4"
-                style={{ cursor: panning ? 'grabbing' : zoom > 1.01 ? 'grab' : 'default', touchAction: zoom > 1.01 ? 'none' : 'auto' }}
+                className="relative mx-4 sm:mx-5 mt-3 rounded-[20px] bg-[#fbfcfe] border border-[#eef2f7] overflow-hidden"
+                style={{ height, cursor: panning ? 'grabbing' : zoom > 1.01 ? 'grab' : 'default', touchAction: zoom > 1.01 ? 'none' : 'auto' }}
             >
-                <DentalChart species={species} teeth={teeth} selected={selected} onToothClick={onToothClick} showLegend={false} maxHeight={maxHeight} svgRef={svgRef} />
+                <DentalChart species={species} teeth={teeth} selected={selected} onToothClick={onToothClick} showLegend={false} fill svgRef={svgRef} className="absolute inset-0" />
 
                 <div data-chart-toolbar className="absolute top-3 right-3 z-10 flex flex-col gap-1.5" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                     {onExpand && (

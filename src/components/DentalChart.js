@@ -25,8 +25,9 @@ export const ChartLegend = ({ teeth = {}, className = '' }) => {
 
 // Top-down canine/feline chart. `teeth` maps Triadan id -> { status }; unlisted teeth are normal.
 // Label size reads `--tf` so a zooming parent can keep labels from growing with the zoom.
-// `maxHeight` caps the width by aspect ratio instead of letterboxing, so the svg box always matches its viewBox.
-const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '', maxHeight, svgRef }) => {
+// `maxHeight` caps the width by aspect ratio instead of letterboxing. `fill` stretches the svg over its parent
+// for a parent that drives the viewBox itself.
+const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '', maxHeight, fill = false, svgRef }) => {
     const chart = useMemo(() => buildChart(species), [species]);
     const [hover, setHover] = useState(null);
     if (!chart) return null;
@@ -43,7 +44,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
             <svg
                 ref={svgRef}
                 viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`}
-                className="block w-full h-auto mx-auto select-none"
+                className={`block select-none ${fill ? 'w-full h-full' : 'w-full h-auto mx-auto'}`}
                 style={{ '--tf': `${font}px`, ...(maxHeight ? { maxWidth: `calc(${maxHeight} * ${(w / h).toFixed(4)})` } : {}) }}
                 role="img"
                 aria-label={`${species === 'feline' ? 'Feline' : 'Canine'} dental chart`}

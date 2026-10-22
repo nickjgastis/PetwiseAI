@@ -55,7 +55,7 @@ const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCop
                 </div>
             </div>
 
-            <div className="grid xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+            <div className="grid xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
                 <div className="order-last xl:order-none min-w-0 xl:border-r border-[#eef2f7]">
                     <textarea
                         ref={textRef}
@@ -70,7 +70,7 @@ const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCop
                     <DentalChartCanvas
                         dental={value}
                         onChange={onDentalChange}
-                        maxHeight="max(420px, min(calc(100vh - 250px), 680px))"
+                        height="clamp(440px, calc(100vh - 270px), 760px)"
                         onExpand={() => setExpanded(true)}
                     />
                 </div>
@@ -93,7 +93,7 @@ const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCop
                                 animate={{ opacity: 1, y: 0, scale: 1 }}
                                 exit={{ opacity: 0, y: 10, scale: 0.98 }}
                                 transition={{ duration: 0.26, ease: [0.2, 0.7, 0.2, 1] }}
-                                className="w-full max-w-[1080px] max-h-full overflow-y-auto rounded-[28px] bg-white shadow-[0_40px_90px_-30px_rgba(11,21,38,0.55)]"
+                                className="w-full max-w-[1500px] max-h-full overflow-y-auto rounded-[28px] bg-white shadow-[0_40px_90px_-30px_rgba(11,21,38,0.55)]"
                                 style={FONT}
                             >
                                 <div className="flex items-center gap-2.5 px-5 pt-4">
@@ -105,7 +105,7 @@ const DentalWorkspace = ({ report, onReportChange, dental, onDentalChange, onCop
                                         <FiX className="text-[15px]" />
                                     </button>
                                 </div>
-                                <DentalChartCanvas dental={value} onChange={onDentalChange} maxHeight="max(360px, calc(100vh - 290px))" />
+                                <DentalChartCanvas dental={value} onChange={onDentalChange} height="max(380px, calc(100vh - 290px))" />
                             </motion.div>
                         </motion.div>
                     )}

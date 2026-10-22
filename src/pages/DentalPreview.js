@@ -60,7 +60,7 @@ const DentalPreview = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 px-6 py-10" style={{ fontFamily: 'var(--font-sans)' }}>
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-[1680px] mx-auto">
                 <h1 className="m-0 text-[2rem] font-bold tracking-[-0.03em] text-[#13233f] font-display">Dental chart preview</h1>
                 <p className="mt-1 text-[14px] text-[#1a2b4a]/55">
                     Click a tooth to cycle its status.
