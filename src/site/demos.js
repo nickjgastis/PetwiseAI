@@ -43,7 +43,7 @@ export const SoapNote = ({ compact = false }) => (
             </div>
             <div className="px-4 sm:px-5 pt-4 pb-3 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                    <p className="text-[15px] font-semibold text-[#13233f] truncate">Bella · QuickSOAP</p>
+                    <p className="text-[15px] font-semibold text-[#13233f] truncate">Bella · SOAP</p>
                     <p className="text-[11px] tracking-[0.08em] uppercase text-gray-400">Generated from your dictation</p>
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0" aria-hidden>

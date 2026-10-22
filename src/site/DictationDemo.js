@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FaCheck, FaMicrophone, FaQuestionCircle, FaStop, FaUser } from 'react-icons/fa';
-import { FiPlus } from 'react-icons/fi';
+import { FaCheck, FaFolderOpen, FaMicrophone, FaSearch, FaStop, FaUser } from 'react-icons/fa';
+import { FiFolder, FiMic, FiPlus } from 'react-icons/fi';
 import { PiArchive, PiFileText, PiLayout, PiPawPrintFill, PiQuestion, PiSparkle } from 'react-icons/pi';
 import { BRAND_WASH } from '../brand';
 
@@ -55,6 +55,15 @@ const MORE = [
     { icon: PiFileText, label: 'PetSOAP' },
     { icon: PiQuestion, label: 'Help' }
 ];
+
+const TABS = [
+    { icon: FaMicrophone, label: 'New case', active: true },
+    { icon: FaFolderOpen, label: 'Cases' },
+    { icon: FaSearch, label: 'PetQuery' },
+    { icon: FaUser, label: 'Profile' }
+];
+
+const GRADIENT_TEXT = 'font-display bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] bg-clip-text text-transparent';
 
 const BARS = [0.35, 0.7, 0.5, 0.9, 0.6, 1, 0.55, 0.8, 0.4, 0.7, 0.5, 0.3];
 
@@ -147,7 +156,7 @@ const Laptop = ({ stage }) => {
                                     }}
                                 >
                                     <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }} className="mb-1.5">
-                                        <p className="text-[11px] font-bold text-gray-900">Bella - QuickSOAP</p>
+                                        <p className="text-[11px] font-bold text-gray-900">Bella · SOAP</p>
                                         <p className="text-[6px] font-semibold uppercase tracking-wider text-gray-400">Generated from your clinical notes</p>
                                     </motion.div>
                                     {SECTIONS.map((s) => (
@@ -212,23 +221,16 @@ const Phone = ({ stage, seconds }) => {
         <div className="absolute right-[6px] bottom-[4px] w-[152px] rounded-[30px] bg-[#111317] p-[6px] shadow-[0_40px_70px_-25px_rgba(5,12,30,0.9)] ring-1 ring-white/15">
             <div className="relative flex h-[300px] flex-col overflow-hidden rounded-[24px] bg-white">
                 <span className="absolute left-1/2 top-[6px] z-10 h-[13px] w-[46px] -translate-x-1/2 rounded-full bg-[#111317]" />
-                <div className="flex items-center gap-1.5 bg-[#3468bd] px-3 pb-2 pt-[26px]">
-                    <img src="/PW.png" alt="" className="h-[14px] w-[14px] rounded-[3px] object-contain" />
-                    <span className="text-[10px] font-bold text-white">Petwise.vet</span>
-                </div>
+                <div className="flex flex-1 flex-col items-center px-2.5 pt-[34px] text-center">
+                    <p className={`m-0 text-[15px] font-bold leading-[1.1] tracking-[-0.03em] ${GRADIENT_TEXT}`}>Start a new case</p>
+                    <p className="mt-1 text-[6.5px] leading-tight text-[#1a2b4a]/55">Dictate the visit and we’ll write the record.</p>
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-[#e7ecf3] bg-white px-2 py-[3px] text-[6px] font-medium text-[#13233f] shadow-[0_4px_10px_-6px_rgba(19,35,63,0.25)]">
+                        <FiFolder className="text-[7px] opacity-70" />
+                        or add to an existing case
+                        <FiPlus className="text-[6.5px] opacity-50" />
+                    </span>
 
-                <div className="flex flex-1 flex-col items-center px-2.5 pt-5 text-center">
-                    <p className="flex items-center gap-1 text-[16px] font-bold text-[#3468bd]">
-                        QuickSOAP <FaQuestionCircle className="text-[8px] text-gray-400" />
-                    </p>
-                    <p className="mt-0.5 text-[6px] leading-tight text-gray-500">For best dictation accuracy say section name then list findings.</p>
-                    <div className="mt-2 flex rounded-[6px] bg-gray-100 p-[2px] text-[6.5px]">
-                        <span className="rounded-[4px] bg-[#3468bd] px-1.5 py-[3px] font-semibold text-white">SOAP</span>
-                        <span className="px-1.5 py-[3px] text-gray-500">Summary</span>
-                        <span className="px-1.5 py-[3px] text-gray-500">Callback</span>
-                    </div>
-
-                    <div className="relative mt-6 flex h-[64px] w-[64px] items-center justify-center">
+                    <div className="relative mt-4 flex h-[64px] w-[64px] items-center justify-center">
                         {sent ? (
                             <motion.span
                                 key="sent"
@@ -251,9 +253,10 @@ const Phone = ({ stage, seconds }) => {
                                 key="mic"
                                 initial={{ scale: 0.8 }}
                                 animate={{ scale: 1 }}
-                                className="flex h-[56px] w-[56px] items-center justify-center rounded-full bg-gradient-to-b from-[#4f8ff0] to-[#2d6fd6] text-white shadow-[0_12px_26px_-8px_rgba(45,111,214,0.85)]"
+                                className="flex h-[56px] w-[56px] items-center justify-center rounded-full text-white shadow-[0_12px_26px_-8px_rgba(45,95,184,0.75)]"
+                                style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}
                             >
-                                <FaMicrophone className="text-[18px]" />
+                                <FiMic className="text-[20px]" />
                             </motion.span>
                         )}
                     </div>
@@ -280,20 +283,27 @@ const Phone = ({ stage, seconds }) => {
                                 <p className="mt-1 text-[7.5px] font-semibold tabular-nums text-red-500">Recording 0:{String(seconds).padStart(2, '0')}</p>
                             </>
                         )}
-                        {stage === 'idle' && <p className="pt-2 text-[7.5px] text-gray-400">Tap to dictate</p>}
-                        {sent && <p className="pt-2 text-[7.5px] font-semibold text-emerald-600">Sent to desktop</p>}
+                        {stage === 'idle' && <p className="pt-1.5 font-display text-[9px] font-semibold tracking-[-0.01em] text-[#13233f]">Tap to dictate</p>}
+                        {sent && <p className="pt-1.5 text-[7.5px] font-semibold text-emerald-600">Sent to desktop</p>}
+                    </div>
+
+                    <p className="mt-2 text-[5.5px] font-semibold uppercase tracking-[0.12em] text-[#1a2b4a]/45">Record type</p>
+                    <div className="mt-1 flex w-full gap-[2px] rounded-full bg-[#f3f6fa] p-[2px] text-[6.5px] font-semibold">
+                        <span className="flex-1 rounded-full bg-blue-500 py-[4px] text-white shadow-sm">SOAP</span>
+                        <span className="flex-1 py-[4px] text-[#1a2b4a]/60">Summary</span>
+                        <span className="flex-1 py-[4px] text-[#1a2b4a]/60">Callback</span>
                     </div>
                 </div>
 
-                <div className="flex border-t border-gray-100 py-1.5">
-                    <div className="flex flex-1 flex-col items-center text-[#3468bd]">
-                        <FaMicrophone className="text-[9px]" />
-                        <span className="mt-0.5 text-[6px] font-medium">QuickSOAP</span>
-                    </div>
-                    <div className="flex flex-1 flex-col items-center text-gray-400">
-                        <FaUser className="text-[9px]" />
-                        <span className="mt-0.5 text-[6px]">Profile</span>
-                    </div>
+                <div className="flex border-t border-gray-200/80 py-1.5">
+                    {TABS.map(({ icon: Icon, label, active }) => (
+                        <div key={label} className={`flex flex-1 flex-col items-center ${active ? 'text-[#3468bd]' : 'text-gray-400'}`}>
+                            <span className={`flex h-[12px] w-[20px] items-center justify-center rounded-[5px] ${active ? 'bg-blue-50' : ''}`}>
+                                <Icon className="text-[8px]" />
+                            </span>
+                            <span className={`mt-0.5 text-[5.5px] ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
+                        </div>
+                    ))}
                 </div>
                 <span className="mx-auto mb-1.5 h-[3px] w-[44px] rounded-full bg-gray-900" />
             </div>
