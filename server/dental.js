@@ -42,6 +42,7 @@ Tooth Findings (one line per tooth, "108: ..." in numeric order)
 Radiographs
 Treatment (extractions with technique, nerve blocks, closure, other procedures)
 Home Care and Follow-up
+Section headings go on their own line with no symbols. No asterisks, pound signs or other markdown anywhere.
 Only use information that was stated. Rephrase professionally, never invent findings, doses or teeth.`;
 
 async function generateDental(input) {
@@ -79,8 +80,13 @@ async function generateDental(input) {
     });
 
     const name = typeof parsed.pet_name === 'string' ? parsed.pet_name.trim() : '';
+    const report = String(parsed.report || '')
+        .replace(/\*\*|__/g, '')
+        .replace(/^#{1,6}\s*/gm, '')
+        .replace(/\s*[\u2014\u2013]\s*/g, ', ')
+        .trim();
     return {
-        report: String(parsed.report || '').trim(),
+        report,
         petName: name && name.toLowerCase() !== 'none' ? name : null,
         dental: { species, teeth, unmatched, version: 1 }
     };

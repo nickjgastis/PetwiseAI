@@ -3,7 +3,7 @@ import { buildChart } from '../dental/geometry';
 import { STATUSES, STATUS_ORDER } from '../dental/teeth';
 
 // Top-down canine/feline chart. `teeth` maps Triadan id -> { status }; unlisted teeth are normal.
-const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '' }) => {
+const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '', maxHeight }) => {
     const chart = useMemo(() => buildChart(species), [species]);
     const [hover, setHover] = useState(null);
     if (!chart) return null;
@@ -17,7 +17,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
 
     return (
         <div className={className}>
-            <svg viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`} className="block w-full h-auto select-none" role="img" aria-label={`${species === 'feline' ? 'Feline' : 'Canine'} dental chart`}>
+            <svg viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`} className="block w-full h-auto select-none" style={maxHeight ? { maxHeight } : undefined} role="img" aria-label={`${species === 'feline' ? 'Feline' : 'Canine'} dental chart`}>
                 <text x={bounds.minX + unit * 1.5} y={midY} fontSize={font * 1.05} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" letterSpacing="0.08em">RIGHT</text>
                 <text x={bounds.maxX - unit * 1.5} y={midY} fontSize={font * 1.05} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" textAnchor="end" letterSpacing="0.08em">LEFT</text>
                 <line x1={0} x2={0} y1={bounds.minY + unit * 4} y2={bounds.maxY - unit * 4} stroke="#1a2b4a" strokeOpacity="0.06" strokeDasharray={`${unit} ${unit}`} vectorEffect="non-scaling-stroke" />
@@ -31,7 +31,8 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                     return (
                         <g
                             key={t.id}
-                            onClick={onToothClick ? () => onToothClick(t.id) : undefined}
+                            data-tooth={t.id}
+                            onClick={onToothClick ? (e) => onToothClick(t.id, e) : undefined}
                             onMouseEnter={() => setHover(t.id)}
                             onMouseLeave={() => setHover((h0) => (h0 === t.id ? null : h0))}
                             style={{ cursor: onToothClick ? 'pointer' : 'default' }}

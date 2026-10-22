@@ -1610,6 +1610,13 @@ const QuickSOAP = () => {
         if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
     }, [hasReport, report]);
 
+    // Dental text grows with its content so the page scrolls, not the box, while the chart stays put.
+    const growTextarea = (el) => {
+        if (!el) return;
+        el.style.height = 'auto';
+        el.style.height = `${el.scrollHeight}px`;
+    };
+
     // Chart edits save straight to the open note, debounced so a run of taps is one write.
     const dentalSaveRef = useRef(null);
     const handleDentalChange = (next) => {
@@ -3707,7 +3714,7 @@ const QuickSOAP = () => {
                                     }}
                                 >
                                     {/* Record Card - SOAP has sections, Summary/Callback have single textarea */}
-                                    <div className={recordType === 'dental' ? 'grid gap-5 lg:grid-cols-2 items-start' : ''}>
+                                    <div className={recordType === 'dental' ? 'grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.08fr)] items-start' : ''}>
                                     <div className="bg-white rounded-2xl overflow-hidden border border-gray-100" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)' }}>
                                         {recordType === 'soap' ? (
                                             // SOAP Record - Section-based display
@@ -3831,16 +3838,18 @@ const QuickSOAP = () => {
                                                     </h3>
                                                 </div>
                                                 <textarea
+                                                    ref={recordType === 'dental' ? growTextarea : undefined}
                                                     value={report}
                                                     onChange={(e) => {
                                                         setReport(e.target.value);
+                                                        if (recordType === 'dental') growTextarea(e.target);
                                                     }}
-                                                    className="w-full px-5 py-4 border-none focus:outline-none resize-none text-gray-800 bg-white flex-1 rounded-b-2xl"
+                                                    className={`w-full border-none focus:outline-none resize-none text-gray-800 bg-white flex-1 rounded-b-2xl ${recordType === 'dental' ? 'px-6 py-5 overflow-hidden' : 'px-5 py-4'}`}
                                                     style={{
                                                         fontFamily: "var(--font-sans)",
                                                         fontSize: '14px',
                                                         lineHeight: '1.8',
-                                                        minHeight: 'calc(100vh - 350px)',
+                                                        minHeight: recordType === 'dental' ? '360px' : 'calc(100vh - 350px)',
                                                         whiteSpace: 'pre-wrap',
                                                         wordWrap: 'break-word'
                                                     }}
@@ -3873,7 +3882,13 @@ const QuickSOAP = () => {
                                         </div>
                                     </div>
                                     {recordType === 'dental' && (
-                                        <DentalRecordPanel dental={dental || { species: 'canine', teeth: {} }} onChange={handleDentalChange} />
+                                        <div className="order-first xl:order-none xl:sticky xl:top-6">
+                                            <DentalRecordPanel
+                                                dental={dental || { species: 'canine', teeth: {} }}
+                                                onChange={handleDentalChange}
+                                                chartMaxHeight="max(360px, min(calc(100vh - 320px), 640px))"
+                                            />
+                                        </div>
                                     )}
                                     </div>
                                 </div>
