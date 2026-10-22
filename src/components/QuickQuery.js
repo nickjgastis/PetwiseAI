@@ -1418,7 +1418,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                 >
                                     <div className={`${isMobile ? (msg.role === 'user' ? 'max-w-[86%]' : 'max-w-[94%]') : msg.role === 'user' ? 'max-w-[70%]' : 'w-full'} ${msg.role === 'user'
                                         ? `bg-[#2d5fb8] text-white ${isMobile ? 'rounded-[20px] rounded-br-md px-4 py-2.5 text-sm shadow-sm' : 'rounded-[22px] rounded-br-md px-5 py-3.5 text-[15px] shadow-[0_10px_30px_-16px_rgba(45,95,184,0.7)]'} ml-auto`
-                                        : `${isMobile ? 'bg-white text-gray-800 rounded-[20px] rounded-bl-md px-4 py-3 text-sm border border-gray-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.05)] message-content' : 'bg-[#f3f7fd] text-[#13233f] rounded-[28px] rounded-bl-md px-9 py-8 border border-[#2d5fb8]/[0.09]'}`
+                                        : `${isMobile ? 'bg-white text-gray-800 rounded-[20px] rounded-bl-md px-4 py-3 text-sm border border-gray-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.05)] message-content' : 'bg-[#e9f1fc] text-[#13233f] rounded-[28px] rounded-bl-md px-9 py-8 border border-[#2d5fb8]/[0.12]'}`
                                         }`}>
                                         {msg.role === 'assistant' ? (
                                             <FormattedMessage content={getContentWithoutSources(msg.content, userMessage)} />

@@ -30,6 +30,7 @@ const stripBold = (t) => String(t ?? '').replace(/\*\*(.*?)\*\*/g, '$1').replace
 const FIELD_LINE = /^(?:-\s+)?\*\*([^*]{1,40}?):\*\*\s*(.*)$/;
 
 const SECTION_BREAK = 'mt-7 pt-6 border-t border-[#2d5fb8]/10';
+const NOTE_CLASS = 'mt-3 pl-3.5 border-l-2 border-[#2d5fb8]/25 text-[14px] leading-[1.65] text-[#1a2b4a]/85';
 
 const FormattedQueryMessage = ({ content }) => {
     const rawLines = String(content ?? '')
@@ -107,9 +108,55 @@ const FormattedQueryMessage = ({ content }) => {
         sectionCount++;
     };
 
-    const recommendation = (text) => sectionHeading('Recommendation', text);
+    let recBuf = null;
+    const recommendation = (text) => {
+        if (!recBuf) recBuf = [];
+        if (text && !/^recommendations?:?$/i.test(text.trim())) recBuf.push(text);
+    };
+    const flushRec = () => {
+        if (!recBuf) return;
+        const items = recBuf;
+        recBuf = null;
+        if (items.length === 0) return;
+        out.push(
+            <div key={key++} className="mt-7 rounded-[18px] bg-white border border-[#2d5fb8]/15 px-5 py-4 shadow-[0_12px_30px_-22px_rgba(45,95,184,0.45)]">
+                <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#2d5fb8] mb-2">
+                    {items.length > 1 ? 'Recommendations' : 'Recommendation'}
+                </div>
+                {items.length === 1 ? (
+                    <p className="text-[#13233f]">{renderInline(items[0])}</p>
+                ) : (
+                    items.map((item, i) => (
+                        <div key={i} className="flex gap-2.5 my-1 text-[#13233f]">
+                            <span className="mt-[0.7em] h-1.5 w-1.5 rounded-full bg-[#2d5fb8] shrink-0" />
+                            <span className="flex-1 min-w-0">{renderInline(item)}</span>
+                        </div>
+                    ))
+                )}
+            </div>
+        );
+        sectionCount++;
+    };
+    const isRecText = (s) => /^\*{0,2}recommendations?\b/i.test(s);
+    const recStrip = (s) => stripBold(s).replace(/^recommendations?:?\s*/i, '');
 
     tokens.forEach((t) => {
+        if (recBuf) {
+            if (t.type === 'bullet' || (t.type === 'text' && !/^\*{0,2}additional notes/i.test(t.text))) {
+                recommendation(isRecText(t.text) ? recStrip(t.text) : t.text);
+                return;
+            }
+            if (t.type === 'subitem') {
+                recommendation(isRecText(t.text) ? recStrip(t.text) : t.text);
+                return;
+            }
+            if (t.type === 'field' && !isNotesLabel(t.label)) {
+                recommendation(`**${t.label}:** ${t.value}`);
+                return;
+            }
+            if (!(t.type === 'section' && /^recommendation/i.test(t.header))) flushRec();
+        }
+
         switch (t.type) {
             case 'title':
                 out.push(
@@ -134,8 +181,8 @@ const FormattedQueryMessage = ({ content }) => {
                 break;
 
             case 'subitem': {
-                if (/^\*{0,2}recommendation/i.test(t.text)) {
-                    recommendation(stripBold(t.text).replace(/^recommendation:?\s*/i, ''));
+                if (isRecText(t.text)) {
+                    recommendation(recStrip(t.text));
                     break;
                 }
                 const sub = t.text.match(/^\*\*(.*?):?\*\*:?\s*$/);
@@ -155,6 +202,10 @@ const FormattedQueryMessage = ({ content }) => {
             }
 
             case 'header':
+                if (isRecText(t.text)) {
+                    recommendation(recStrip(t.text));
+                    break;
+                }
                 out.push(
                     <h5 key={key++} className="mt-5 mb-1.5 font-semibold text-[#13233f]">
                         {renderInline(t.text)}
@@ -165,8 +216,8 @@ const FormattedQueryMessage = ({ content }) => {
             case 'field':
                 out.push(
                     isNotesLabel(t.label) ? (
-                        <p key={key++} className="mt-2 text-[13px] text-[#1a2b4a]/60">
-                            <span className="font-semibold">{t.label}: </span>
+                        <p key={key++} className={NOTE_CLASS}>
+                            <span className="font-semibold text-[#13233f]">{t.label}: </span>
                             {renderInline(t.value)}
                         </p>
                     ) : (
@@ -188,12 +239,14 @@ const FormattedQueryMessage = ({ content }) => {
                 break;
 
             default:
-                if (/^\*{0,2}recommendation/i.test(t.text)) {
-                    recommendation(stripBold(t.text).replace(/^recommendation:?\s*/i, ''));
+                if (isRecText(t.text)) {
+                    recommendation(recStrip(t.text));
                 } else if (/^\*{0,2}additional notes/i.test(t.text)) {
+                    const body = stripBold(t.text).replace(/^additional notes:?\s*/i, '');
                     out.push(
-                        <p key={key++} className="mt-2 text-[13px] text-[#1a2b4a]/60">
-                            {renderInline(stripBold(t.text))}
+                        <p key={key++} className={NOTE_CLASS}>
+                            <span className="font-semibold text-[#13233f]">Additional notes{body ? ': ' : ''}</span>
+                            {renderInline(body)}
                         </p>
                     );
                 } else {
@@ -205,6 +258,7 @@ const FormattedQueryMessage = ({ content }) => {
                 }
         }
     });
+    flushRec();
 
     return <div className="text-sm md:text-[15px] leading-[1.7] text-[#1a2b4a]">{out}</div>;
 };
