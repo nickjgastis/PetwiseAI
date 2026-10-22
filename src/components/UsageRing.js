@@ -52,7 +52,7 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                         cy={size / 2}
                         r={radius}
                         fill="none"
-                        stroke="rgba(255,255,255,0.15)"
+                        stroke="rgba(45,95,184,0.14)"
                         strokeWidth={stroke}
                     />
                     <motion.circle
@@ -70,7 +70,7 @@ const UsageRing = ({ usage, size = 40, onNavigate }) => {
                     />
                 </svg>
                 <span
-                    className="absolute inset-0 flex items-center justify-center font-bold text-white"
+                    className="absolute inset-0 flex items-center justify-center font-bold text-[#13233f]"
                     style={{ fontSize: size * 0.28 }}
                 >
                     {pct}%

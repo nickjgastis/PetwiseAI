@@ -214,16 +214,16 @@ const SideLink = ({ to, active, icon: Icon, label, collapsed, onClick, dot, tour
             onClick={onClick}
             data-tooltip={tooltip || label}
             data-tour={tour}
-            className={`relative flex items-center no-underline font-medium rounded-xl transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[12.5px] py-1.5 px-2.5' : 'text-[13.5px] py-2 px-2.5'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-white' : secondary ? 'text-white/55 hover:text-white hover:bg-white/[0.06]' : 'text-white/80 hover:text-white hover:bg-white/[0.07]'}`}
+            className={`relative flex items-center no-underline font-medium rounded-xl transition-colors duration-200 w-full whitespace-nowrap ${secondary ? 'text-[12.5px] py-1.5 px-2.5' : 'text-[13.5px] py-2 px-2.5'} ${collapsed ? 'justify-center' : 'text-left'} ${active ? 'text-[#13233f]' : secondary ? 'text-[#1a2b4a]/55 hover:text-[#13233f] hover:bg-white/50' : 'text-[#1a2b4a]/75 hover:text-[#13233f] hover:bg-white/60'}`}
         >
             {active && (
                 <motion.span
                     layoutId="sidebar-active"
-                    className="absolute inset-0 rounded-xl bg-white/[0.14] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
+                    className="absolute inset-0 rounded-xl bg-white shadow-[0_8px_20px_-12px_rgba(19,35,63,0.35)]"
                     transition={{ type: 'spring', stiffness: 500, damping: 40 }}
                 />
             )}
-            <span className={`relative flex items-center justify-center shrink-0 ${secondary ? 'w-7 h-7' : 'w-8 h-8 rounded-lg'}`} style={secondary ? undefined : { background: active ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.08)' }}>
+            <span className={`relative flex items-center justify-center shrink-0 ${secondary ? 'w-7 h-7' : 'w-8 h-8 rounded-lg'} ${active || !secondary ? 'text-[#2d5fb8]' : ''}`} style={secondary ? undefined : { background: active ? 'rgba(45,95,184,0.12)' : 'rgba(45,95,184,0.07)' }}>
                 <Icon className="text-xs" />
                 {dot && <FaCircle className="absolute -top-1 -right-1 text-[#5cccf0] animate-pulse" style={{ fontSize: '8px' }} />}
             </span>
@@ -1487,16 +1487,17 @@ const Dashboard = () => {
 
                 {/* Sidebar Navigation */}
                 <aside
-                    className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 ${isMobileMenuOpen ? 'left-0' : 'left-[-250px]'} ${isSidebarCollapsed ? 'w-20 sidebar-collapsed' : 'w-56'} md:left-0`}
-                    style={{
-                        background: 'radial-gradient(120% 40% at 0% 0%, rgba(92,204,240,0.18) 0%, rgba(45,95,184,0) 60%), linear-gradient(180deg, #2d5fb8 0%, #1e4a94 50%, #183d7a 100%)',
-                        boxShadow: '2px 0 20px rgba(30,74,148,0.15)',
-                        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                    }}
+                    className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 bg-gradient-to-br from-[#eaf2fd] via-[#f3f7fd] to-[#e3edfb] border-r border-[#e3eaf5] ${isMobileMenuOpen ? 'left-0' : 'left-[-250px]'} ${isSidebarCollapsed ? 'w-20 sidebar-collapsed' : 'w-56'} md:left-0`}
+                    style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
                 >
+                    {/* Own clipping layer: the account menu pops out past the sidebar edge */}
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute -top-20 -left-16 w-64 h-64 rounded-full bg-[#5cccf0]/25 blur-3xl" />
+                        <div className="absolute -bottom-24 -right-16 w-72 h-72 rounded-full bg-[#2d5fb8]/20 blur-3xl" />
+                    </div>
                     {/* Logo Section */}
-                    <div className="px-4 py-5 flex flex-col items-center justify-center relative" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                        <Link to="/dashboard" className={`text-white no-underline transition-colors duration-300 flex items-center text-xl gap-3 tracking-wide group ${isSidebarCollapsed ? 'justify-center' : 'justify-center'}`}>
+                    <div className="px-4 py-5 flex flex-col items-center justify-center relative" style={{ borderBottom: '1px solid rgba(45,95,184,0.10)' }}>
+                        <Link to="/dashboard" className={`text-[#13233f] no-underline transition-colors duration-300 flex items-center text-xl gap-3 tracking-wide group ${isSidebarCollapsed ? 'justify-center' : 'justify-center'}`}>
                             <div className="relative">
                                 <img src="/PW.png" alt="PW" className={`w-10 h-10 object-contain transition-transform duration-300 group-hover:scale-110 ${isSidebarCollapsed ? 'ml-1' : ''}`} />
                                 {!isSidebarCollapsed && (
@@ -1504,13 +1505,13 @@ const Dashboard = () => {
                                 )}
                             </div>
                             <span className={`transition-all duration-300 ${isSidebarCollapsed ? 'opacity-0 w-0' : 'opacity-100 w-auto'}`}>
-                                <span className="font-semibold text-white tracking-[-0.02em]">PetWise</span>
-                                <span className="font-normal text-white/60 tracking-[-0.02em]">.vet</span>
+                                <span className="font-semibold text-[#13233f] tracking-[-0.02em]">PetWise</span>
+                                <span className="font-normal text-[#1a2b4a]/45 tracking-[-0.02em]">.vet</span>
                             </span>
                         </Link>
                     </div>
                     {/* Navigation Menu (user info now lives in the footer below) */}
-                    <ul className="list-none p-0 m-0 flex-1 mt-1">
+                    <ul className="relative list-none p-0 m-0 flex-1 mt-1">
                         {/* Primary action */}
                         <li className={`mx-3 mt-3 mb-3 relative ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
                             <Link
@@ -1522,7 +1523,7 @@ const Dashboard = () => {
                                 }}
                                 data-tooltip="Start new case"
                                 data-tour="quicksoap"
-                                className={`relative flex items-center justify-center gap-2 no-underline font-semibold text-[13.5px] text-[#2d5fb8] bg-white rounded-full shadow-[0_10px_30px_-12px_rgba(0,0,0,0.45)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_14px_34px_-12px_rgba(0,0,0,0.5)] ${isSidebarCollapsed ? 'w-11 h-11' : 'w-full py-2.5 px-4'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/60 ring-offset-2 ring-offset-[#2a59ad]' : ''}`}
+                                className={`relative flex items-center justify-center gap-2 no-underline font-semibold text-[13.5px] text-white bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] rounded-full shadow-[0_12px_28px_-12px_rgba(45,95,184,0.7)] transition-all duration-200 hover:-translate-y-px hover:shadow-[0_16px_32px_-12px_rgba(45,95,184,0.8)] ${isSidebarCollapsed ? 'w-11 h-11' : 'w-full py-2.5 px-4'} ${location.pathname === '/dashboard/quicksoap' ? 'ring-2 ring-[#5cccf0]/70 ring-offset-2 ring-offset-[#eef4fc]' : ''}`}
                             >
                                 <FaPlus className="text-[11px]" />
                                 {!isSidebarCollapsed && <span>New case</span>}
@@ -1539,10 +1540,10 @@ const Dashboard = () => {
                             <li className={`mx-3 my-1 ${isSidebarCollapsed ? 'hidden' : 'block'}`}>
                                 <Link
                                     to="/dashboard/profile"
-                                    className="flex items-center text-[#ffd9d9] no-underline font-medium rounded-xl p-2.5 transition-all duration-200 text-xs"
-                                    style={{ background: 'rgba(214,69,69,0.2)', border: '1px solid rgba(255,180,180,0.25)' }}
+                                    className="flex items-center text-[#b42318] no-underline font-medium rounded-xl p-2.5 transition-all duration-200 text-xs"
+                                    style={{ background: 'rgba(214,69,69,0.08)', border: '1px solid rgba(214,69,69,0.2)' }}
                                 >
-                                    <div className="w-6 h-6 rounded-md flex items-center justify-center mr-2" style={{ background: 'rgba(214,69,69,0.3)' }}>
+                                    <div className="w-6 h-6 rounded-md flex items-center justify-center mr-2" style={{ background: 'rgba(214,69,69,0.12)' }}>
                                         <span className="text-[10px]">💳</span>
                                     </div>
                                     <span className="text-[11px]">Payment past due</span>
@@ -1550,9 +1551,9 @@ const Dashboard = () => {
                             </li>
                         )}
 
-                        <li className="mx-3 mt-5 mb-1" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                        <li className="mx-3 mt-5 mb-1" style={{ borderTop: '1px solid rgba(45,95,184,0.10)' }}>
                             {!isSidebarCollapsed && (
-                                <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-white/35">More</p>
+                                <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
                         </li>
                         <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={FaSave} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
@@ -1562,14 +1563,14 @@ const Dashboard = () => {
                     </ul>
 
                     {/* User Footer — name, plan, usage ring */}
-                    <div className="mt-auto" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div className="relative mt-auto" style={{ borderTop: '1px solid rgba(45,95,184,0.10)' }}>
                         {isSidebarCollapsed ? (
                             <div className="flex flex-col items-center gap-2 py-3 relative" ref={accountMenuRef}>
                                 <UsageRing usage={usage} size={36} onNavigate={closeMobileMenu} />
                                 <button
                                     onClick={() => setShowAccountMenu((v) => !v)}
-                                    className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all cursor-pointer border-none"
-                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.08)' }}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center text-[#1a2b4a]/55 hover:text-[#13233f] transition-all cursor-pointer border-none"
+                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)' }}
                                     data-tooltip="Account"
                                     aria-label="Account menu"
                                 >
@@ -1584,9 +1585,9 @@ const Dashboard = () => {
                             <div className="mx-3 my-3 relative" ref={accountMenuRef}>
                                 <div
                                     className="p-3 rounded-xl flex items-center gap-3 transition-colors duration-200"
-                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.06)' }}
-                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.12)'; }}
-                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.07)'; }}
+                                    style={{ background: showAccountMenu ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.6)', border: '1px solid rgba(45,95,184,0.10)' }}
+                                    onMouseEnter={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.95)'; }}
+                                    onMouseLeave={(e) => { if (!showAccountMenu) e.currentTarget.style.background = 'rgba(255,255,255,0.6)'; }}
                                 >
                                     <button
                                         onClick={() => setShowAccountMenu((v) => !v)}
@@ -1594,12 +1595,12 @@ const Dashboard = () => {
                                         aria-label="Account menu"
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <div className="text-white text-sm font-semibold truncate">
+                                            <div className="text-[#13233f] text-sm font-semibold truncate">
                                                 {isStudentMode()
                                                     ? (userData?.nickname || 'Student')
                                                     : (userData?.dvm_name ? `Dr. ${userData.dvm_name}` : (user?.email || ''))}
                                             </div>
-                                            <div className="text-white/50 text-[11px] mt-0.5 truncate">
+                                            <div className="text-[#1a2b4a]/50 text-[11px] mt-0.5 truncate">
                                                 {isStudentMode()
                                                     ? `🎓 Student · until ${new Date(userData.subscription_end_date).toLocaleDateString()}`
                                                     : hasPaidPlan()
@@ -1607,7 +1608,7 @@ const Dashboard = () => {
                                                         : (trialPlanLabel(usage) || 'Free plan')}
                                             </div>
                                         </div>
-                                        <span className={`flex flex-col items-center justify-center leading-none flex-shrink-0 transition-colors ${showAccountMenu ? 'text-white' : 'text-white/40'}`}>
+                                        <span className={`flex flex-col items-center justify-center leading-none flex-shrink-0 transition-colors ${showAccountMenu ? 'text-[#13233f]' : 'text-[#1a2b4a]/40'}`}>
                                             <FaChevronUp className="text-[8px]" />
                                             <FaChevronDown className="text-[8px] mt-[1px]" />
                                         </span>
@@ -1619,12 +1620,12 @@ const Dashboard = () => {
                         )}
 
                         {/* Toggle Button */}
-                        <div className="flex justify-center py-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                        <div className="flex justify-center py-3" style={{ borderTop: '1px solid rgba(45,95,184,0.08)' }}>
                             <button
-                                className="w-7 h-7 rounded-lg text-white/40 hover:text-white/70 text-[10px] flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95"
-                                style={{ background: 'rgba(255,255,255,0.06)' }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
+                                className="w-7 h-7 rounded-lg text-[#1a2b4a]/45 hover:text-[#13233f] text-[10px] flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 border-none"
+                                style={{ background: 'rgba(255,255,255,0.6)' }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.95)'}
+                                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.6)'}
                                 onClick={toggleSidebar}
                                 aria-label="Toggle Sidebar"
                             >
