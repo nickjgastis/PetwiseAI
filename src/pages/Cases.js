@@ -38,7 +38,6 @@ const LIFT = {
 };
 
 const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const formatTime = (d) => new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 const formatDateTime = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const plain = (text) => (text || '').replace(/[*#_`>]/g, '');
 
@@ -219,7 +218,7 @@ const CaseList = () => {
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-[16px] font-semibold text-[#13233f] truncate">{c.pet_name || c.title || 'Unnamed patient'}</p>
                                                     <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5">
-                                                        {g.label === 'Today' || g.label === 'Yesterday' ? formatTime(c.updated_at) : formatDate(c.updated_at)}
+                                                        {formatDateTime(c.updated_at)}
                                                         {total > 0 && ` · ${total} ${total === 1 ? 'note' : 'notes'}`}
                                                     </p>
                                                 </div>
