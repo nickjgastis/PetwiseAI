@@ -1268,7 +1268,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
             <div className={`${isMobile ? 'h-full overflow-hidden bg-[#f5f7fb]' : 'h-screen overflow-hidden bg-gradient-to-b from-[#f6f8fb] to-white'} flex flex-col`} style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
                 {!isMobile && messages.length > 0 && (
                     <div className="flex-shrink-0 border-b border-[#eef2f7] bg-white/80 backdrop-blur-md">
-                        <div className="max-w-5xl mx-auto h-[60px] px-4 flex items-center justify-between">
+                        <div className="max-w-6xl mx-auto h-[60px] px-4 flex items-center justify-between">
                             <h2 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>PetQuery</h2>
                             <button
                                 type="button"
@@ -1414,11 +1414,11 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                     initial={isMobile ? { opacity: 0, y: 8, scale: 0.99 } : false}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     transition={{ duration: 0.25, ease: 'easeOut' }}
-                                    className={`flex ${isMobile ? 'mb-3 max-w-none' : 'mb-6 max-w-5xl mx-auto w-full'} ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                    className={`flex ${isMobile ? 'mb-3 max-w-none' : 'mb-6 max-w-6xl mx-auto w-full'} ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div className={`${isMobile ? (msg.role === 'user' ? 'max-w-[86%]' : 'max-w-[94%]') : msg.role === 'user' ? 'max-w-[70%]' : 'w-full'} ${msg.role === 'user'
                                         ? `bg-[#2d5fb8] text-white ${isMobile ? 'rounded-[20px] rounded-br-md px-4 py-2.5 text-sm shadow-sm' : 'rounded-[22px] rounded-br-md px-5 py-3.5 text-[15px] shadow-[0_10px_30px_-16px_rgba(45,95,184,0.7)]'} ml-auto`
-                                        : `${isMobile ? 'bg-white text-gray-800 rounded-[20px] rounded-bl-md px-4 py-3 text-sm border border-gray-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.05)] message-content' : 'bg-[#e9f1fc] text-[#13233f] rounded-[28px] rounded-bl-md px-9 py-8 border border-[#2d5fb8]/[0.12]'}`
+                                        : `${isMobile ? 'bg-white text-gray-800 rounded-[20px] rounded-bl-md px-4 py-3 text-sm border border-gray-200/80 shadow-[0_2px_12px_rgba(15,23,42,0.05)] message-content' : 'bg-[#dfeafa] text-[#13233f] rounded-[28px] rounded-bl-md px-10 py-8 border border-[#2d5fb8]/[0.14]'}`
                                         }`}>
                                         {msg.role === 'assistant' ? (
                                             <FormattedMessage content={getContentWithoutSources(msg.content, userMessage)} />
@@ -1490,7 +1490,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                             <motion.div
                                 initial={{ opacity: 0, y: 6 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className={`flex justify-start mb-6 ${isMobile ? 'max-w-none' : 'max-w-5xl mx-auto w-full'} ${fadeOutLoader ? 'animate-fade-out' : ''}`}
+                                className={`flex justify-start mb-6 ${isMobile ? 'max-w-none' : 'max-w-6xl mx-auto w-full'} ${fadeOutLoader ? 'animate-fade-out' : ''}`}
                             >
                                 <div className={isMobile
                                     ? 'h-10 px-4 rounded-[20px] rounded-bl-md bg-white border border-gray-200/80 shadow-sm flex items-center gap-1.5'
@@ -1516,7 +1516,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                         <div ref={messagesEndRef} />
                     </div>
                     <div className={`relative flex-shrink-0 ${isMobile ? 'bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)]' : 'bg-white/85 backdrop-blur-md border-t border-[#eef2f7]'}`}>
-                        <div className={`mx-auto ${isMobile ? 'px-3.5 pt-2.5 pb-3' : 'px-4 pt-3 pb-5 max-w-5xl'}`}>
+                        <div className={`mx-auto ${isMobile ? 'px-3.5 pt-2.5 pb-3' : 'px-4 pt-3 pb-5 max-w-6xl'}`}>
                             {/* Mode toggle - smaller on mobile */}
                             <div className={`flex justify-center items-center gap-2 ${isMobile ? 'mb-2.5' : 'mb-3'}`}>
                                 <div className={`inline-flex rounded-full ${isMobile ? 'bg-gray-100 p-0.5 border border-gray-200/70' : 'bg-[#f3f6fa] p-1 gap-1'}`}>
