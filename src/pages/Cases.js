@@ -32,7 +32,7 @@ const TYPE_BLURBS = {
     summary: 'A clear write-up for the client.',
     callback: 'Notes for a follow-up call.'
 };
-const FONT = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
+const FONT = { fontFamily: "var(--font-sans)" };
 const EASE = [0.2, 0.7, 0.2, 1];
 
 // Entrance lives on a wrapper and the hover lift on the card, so the two never fight over transform.

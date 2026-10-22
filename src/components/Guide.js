@@ -411,7 +411,7 @@ const Guide = ({ id, onClose }) => {
                         ? 'w-full h-full bg-gradient-to-b from-[#f3f7fd] to-white flex flex-col'
                         : 'w-full max-w-[1120px] h-[min(780px,calc(100vh-48px))] rounded-[32px] bg-white overflow-hidden flex shadow-[0_40px_120px_-40px_rgba(19,35,63,0.55)]'
                 }
-                style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+                style={{ fontFamily: "var(--font-sans)" }}
             >
                 {!mobile && (
                     <aside className="w-[300px] shrink-0 bg-gradient-to-b from-[#f3f7fd] to-[#e9f1fc] border-r border-[#2d5fb8]/10 p-7 flex flex-col">

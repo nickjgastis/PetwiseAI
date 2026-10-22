@@ -1489,7 +1489,7 @@ const Dashboard = () => {
                 {/* Sidebar Navigation */}
                 <aside
                     className={`fixed top-0 left-0 h-full z-50 flex flex-col transition-all duration-300 bg-gradient-to-br from-[#eaf2fd] via-[#f3f7fd] to-[#e3edfb] border-r border-[#e3eaf5] ${isMobileMenuOpen ? 'left-0' : 'left-[-250px]'} ${isSidebarCollapsed ? 'w-20 sidebar-collapsed' : 'w-56'} md:left-0`}
-                    style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+                    style={{ fontFamily: "var(--font-sans)" }}
                 >
                     {/* Own clipping layer: the account menu pops out past the sidebar edge */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">

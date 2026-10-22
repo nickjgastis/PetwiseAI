@@ -154,7 +154,7 @@ const Help = () => {
 
     return (
         <>
-            <div className="min-h-screen bg-gradient-to-b from-[#f6f8fb] to-white" style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className="min-h-screen bg-gradient-to-b from-[#f6f8fb] to-white" style={{ fontFamily: "var(--font-sans)" }}>
                 <div className="max-w-5xl mx-auto px-5 sm:px-8 pt-12 sm:pt-16 pb-16">
                     <motion.header initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }} className="mb-12">
                         <h1 className={`m-0 pb-1 text-[2.4rem] sm:text-[3rem] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>Help center</h1>

@@ -3223,7 +3223,7 @@ const QuickSOAP = () => {
                         <div
                             className="flex flex-col gap-3"
                             style={{
-                                fontFamily: "'Inter', sans-serif",
+                                fontFamily: "var(--font-sans)",
                                 background: 'linear-gradient(180deg, #ffffff 0%, #f8faff 100%)',
                                 padding: '16px 24px',
                             }}
@@ -3318,7 +3318,7 @@ const QuickSOAP = () => {
                                     style={{
                                         maxHeight: '120px',
                                         minHeight: '42px',
-                                        fontFamily: "'Inter', sans-serif",
+                                        fontFamily: "var(--font-sans)",
                                         overflow: 'auto',
                                         border: '1px solid #e8ecf2',
                                         boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
@@ -3407,7 +3407,7 @@ const QuickSOAP = () => {
                         {/* Sticky header: the case you're in, then the tools for this note */}
                         <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-[#e7ecf3] shadow-[0_10px_30px_-24px_rgba(19,35,63,0.35)]">
                             <CaseBar caseId={activeCaseId} recordType={recordType} onBack={() => requestLeave({ kind: 'back' })} refreshKey={caseBarKey} />
-                            <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "var(--font-sans)" }}>
                                 <AnimatePresence mode="wait" initial={false}>
                                     {isRecording ? (
                                         <motion.div key="rec" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.96 }} transition={{ duration: 0.18 }} className="flex items-center gap-2 shrink-0 rounded-full bg-[#f3f7fd] border border-[#e3ecf8] pl-3.5 pr-1 py-1">
@@ -3473,7 +3473,7 @@ const QuickSOAP = () => {
                                     <motion.p key="err" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="px-6 pb-2 m-0 text-[13px] text-red-500 overflow-hidden">{error}</motion.p>
                                 )}
                             </AnimatePresence>
-                            <div className="border-t border-[#eef2f7]" style={{ fontFamily: "'Inter', sans-serif" }}>
+                            <div className="border-t border-[#eef2f7]" style={{ fontFamily: "var(--font-sans)" }}>
                                     <button
                                         type="button"
                                         onClick={() => setShowDictations((v) => !v)}
@@ -3530,7 +3530,7 @@ const QuickSOAP = () => {
                                                             }}
                                                             placeholder="Anything to add or correct, e.g. weight was 12.4 kg, add recheck in 2 weeks"
                                                             className="w-full px-3.5 py-2.5 rounded-2xl bg-[#f6f8fb] border border-transparent text-[14px] text-[#13233f] leading-relaxed resize-none focus:outline-none focus:bg-white focus:border-[#2d5fb8]/30 transition-colors placeholder:text-[#1a2b4a]/40"
-                                                            style={{ maxHeight: '200px', overflow: 'auto', fontFamily: "'Inter', sans-serif" }}
+                                                            style={{ maxHeight: '200px', overflow: 'auto', fontFamily: "var(--font-sans)" }}
                                                             disabled={isTranscribing || isGenerating}
                                                         />
                                                     </div>
@@ -3543,7 +3543,7 @@ const QuickSOAP = () => {
 
                         <div className="mx-auto w-full max-w-[1120px] px-6 pt-6">
                             {isGenerating && (
-                                <div className="mb-5 rounded-[20px] bg-[#eef4fc] border border-[#d6e3f7] px-5 py-3.5 flex items-center gap-3" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                <div className="mb-5 rounded-[20px] bg-[#eef4fc] border border-[#d6e3f7] px-5 py-3.5 flex items-center gap-3" style={{ fontFamily: "var(--font-sans)" }}>
                                     <span className="w-4 h-4 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin shrink-0" />
                                     <p className="m-0 text-[14px] font-medium text-[#13233f]">Writing your {recordType === 'soap' ? 'SOAP' : recordType === 'summary' ? 'summary' : 'callback'}. It saves to this case automatically.</p>
                                 </div>
@@ -3562,13 +3562,13 @@ const QuickSOAP = () => {
                                             }
                                         }}
                                         className="block w-full p-0 pb-1 m-0 !text-[22px] leading-[1.3] font-semibold text-[#13233f] bg-transparent border-0 border-b-2 border-[#2d5fb8]/40 focus:outline-none tracking-tight"
-                                        style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+                                        style={{ fontFamily: "var(--font-sans)" }}
                                         autoFocus
                                     />
                                 ) : (
                                     <h2
                                         className="m-0 text-[22px] leading-[1.3] font-semibold text-[#13233f] cursor-text transition-colors pb-1 border-b-2 border-transparent hover:border-[#2d5fb8]/30 tracking-tight"
-                                        style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+                                        style={{ fontFamily: "var(--font-sans)" }}
                                         onClick={() => setIsEditingReportName(true)}
                                         title="Click to rename"
                                     >
@@ -3663,7 +3663,7 @@ const QuickSOAP = () => {
                                                                     </span>
                                                                     <h3
                                                                         className="text-white font-semibold tracking-wider uppercase"
-                                                                        style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', letterSpacing: '0.08em' }}
+                                                                        style={{ fontFamily: "var(--font-sans)", fontSize: '12px', letterSpacing: '0.08em' }}
                                                                     >
                                                                         {section.name}
                                                                     </h3>
@@ -3674,7 +3674,7 @@ const QuickSOAP = () => {
                                                                         ? 'bg-white text-gray-700'
                                                                         : 'text-white hover:bg-white/20'
                                                                         }`}
-                                                                    style={{ fontFamily: "'Inter', sans-serif", backgroundColor: copiedSection === section.name ? undefined : 'rgba(255,255,255,0.1)' }}
+                                                                    style={{ fontFamily: "var(--font-sans)", backgroundColor: copiedSection === section.name ? undefined : 'rgba(255,255,255,0.1)' }}
                                                                 >
                                                                     <FaCopy className="text-[9px]" />
                                                                     {copiedSection === section.name ? 'Copied!' : 'Copy'}
@@ -3707,7 +3707,7 @@ const QuickSOAP = () => {
                                                                     }}
                                                                     className="w-full bg-white resize-none text-gray-800 focus:outline-none rounded-lg transition-shadow"
                                                                     style={{
-                                                                        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                                                        fontFamily: "var(--font-sans)",
                                                                         fontSize: '14px',
                                                                         lineHeight: '1.8',
                                                                         height: 'auto',
@@ -3754,7 +3754,7 @@ const QuickSOAP = () => {
                                                     </span>
                                                     <h3
                                                         className="text-white font-semibold tracking-wider uppercase"
-                                                        style={{ fontFamily: "'Inter', sans-serif", fontSize: '12px', letterSpacing: '0.08em' }}
+                                                        style={{ fontFamily: "var(--font-sans)", fontSize: '12px', letterSpacing: '0.08em' }}
                                                     >
                                                         {recordType === 'summary' ? 'Clinical Summary' : 'Callback Notes'}
                                                     </h3>
@@ -3766,7 +3766,7 @@ const QuickSOAP = () => {
                                                     }}
                                                     className="w-full px-5 py-4 border-none focus:outline-none resize-none text-gray-800 bg-white flex-1 rounded-b-2xl"
                                                     style={{
-                                                        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                                                        fontFamily: "var(--font-sans)",
                                                         fontSize: '14px',
                                                         lineHeight: '1.8',
                                                         minHeight: 'calc(100vh - 350px)',
@@ -3786,14 +3786,14 @@ const QuickSOAP = () => {
                                                     ? 'bg-primary-100 text-primary-700'
                                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800'
                                                     }`}
-                                                style={{ fontFamily: "'Inter', sans-serif" }}
+                                                style={{ fontFamily: "var(--font-sans)" }}
                                             >
                                                 {copiedSection === 'all' ? '✓ Copied!' : 'Copy All'}
                                             </button>
                                             <button
                                                 onClick={handlePrint}
                                                 className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all border-none cursor-pointer bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 flex items-center gap-1.5"
-                                                style={{ fontFamily: "'Inter', sans-serif" }}
+                                                style={{ fontFamily: "var(--font-sans)" }}
                                                 title="Print report"
                                             >
                                                 <FaPrint className="text-[10px]" />

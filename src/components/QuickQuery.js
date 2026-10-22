@@ -1264,7 +1264,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                     />
                 )}
             </AnimatePresence>
-            <div className={`${isMobile ? 'h-full overflow-hidden bg-[#f5f7fb]' : 'h-screen overflow-hidden bg-gradient-to-b from-[#f6f8fb] to-white'} flex flex-col`} style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+            <div className={`${isMobile ? 'h-full overflow-hidden bg-[#f5f7fb]' : 'h-screen overflow-hidden bg-gradient-to-b from-[#f6f8fb] to-white'} flex flex-col`} style={{ fontFamily: "var(--font-sans)" }}>
                 {!isMobile && messages.length > 0 && (
                     <div className="flex-shrink-0 border-b border-[#eef2f7] bg-white/80 backdrop-blur-md">
                         <div className="max-w-6xl mx-auto h-[60px] px-4 flex items-center justify-between">

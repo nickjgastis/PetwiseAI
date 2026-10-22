@@ -28,7 +28,7 @@
     color: white;
     font-size: 32px;
     margin: 0 0 8px 0;
-    font-family: 'Inter', 'Helvetica', sans-serif;
+    font-family: var(--font-sans);
     letter-spacing: 0.035em;
 }
 

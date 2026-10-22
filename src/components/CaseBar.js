@@ -5,7 +5,7 @@ import { supabase } from '../supabaseClient';
 import { typeStyle, GRADIENT_TEXT } from './caseStyles';
 
 const EASE = [0.2, 0.7, 0.2, 1];
-const FONT = { fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
+const FONT = { fontFamily: "var(--font-sans)" };
 const shortDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 // Top row of the editor: which case you're in and which note you're editing.

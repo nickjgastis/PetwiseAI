@@ -259,7 +259,7 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className={`fixed inset-0 z-[9997] flex ${isMobile ? '' : 'items-center justify-center p-6 bg-[#13233f]/45 backdrop-blur-md'}`}
-            style={{ fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}
+            style={{ fontFamily: "var(--font-sans)" }}
         >
             <motion.div
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
