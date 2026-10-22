@@ -3612,7 +3612,7 @@ const QuickSOAP = () => {
                             </div>
                         </div>
 
-                        <div className={`mx-auto w-full px-6 pt-6 ${recordType === 'dental' ? 'max-w-[1680px]' : 'max-w-[1120px]'}`}>
+                        <div className="mx-auto w-full max-w-[1680px] px-6 pt-3">
                             {isGenerating && (
                                 <div className="mb-5 rounded-[20px] bg-[#eef4fc] border border-[#d6e3f7] px-5 py-3.5 flex items-center gap-3" style={{ fontFamily: "var(--font-sans)" }}>
                                     <span className="w-4 h-4 rounded-full border-2 border-[#2d5fb8]/25 border-t-[#2d5fb8] animate-spin shrink-0" />
@@ -3819,7 +3819,6 @@ const QuickSOAP = () => {
                                                     >
                                                         {(TEXT_RECORDS[recordType] || TEXT_RECORDS.callback).title}
                                                     </h3>
-                                                    <span className="text-white/40">·</span>
                                                     <RecordName name={reportName} onChange={setReportName} tone="onColor" />
                                                 </div>
                                                 <textarea

@@ -120,10 +120,7 @@ const DentalWorkspace = ({ name, onNameChange, report, onReportChange, dental, o
                     Dental Record
                 </h3>
                 {onNameChange && (
-                    <>
-                        <span className="text-white/40">·</span>
-                        <RecordName name={name} onChange={onNameChange} tone="onColor" />
-                    </>
+                    <RecordName name={name} onChange={onNameChange} tone="onColor" />
                 )}
                 <div className="ml-auto shrink-0 flex items-center gap-1">
                     <button type="button" onClick={onCopy} className={`${HEAD_BTN} ${copied ? 'bg-white text-violet-700' : 'bg-white/15 text-white hover:bg-white/25'}`}>
