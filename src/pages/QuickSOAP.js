@@ -3233,16 +3233,6 @@ const QuickSOAP = () => {
                                         </motion.button>
                                     )}
                                 </AnimatePresence>
-                                {(dictations.length > 0 || input.trim()) && (
-                                    <button
-                                        type="button"
-                                        onClick={handleGenerateSOAP}
-                                        disabled={isGenerating || isRecording || isTranscribing}
-                                        className="inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_8px_20px_-10px_rgba(45,95,184,0.7)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-                                    >
-                                        <FiRefreshCw className={`text-[13px] ${isGenerating ? 'animate-spin' : ''}`} /> {isGenerating ? 'Generating…' : 'Regenerate'}
-                                    </button>
-                                )}
                                 {!isRecording && !isTranscribing && (
                                     <button
                                         type="button"
@@ -3253,21 +3243,32 @@ const QuickSOAP = () => {
                                         <FiEdit3 className="text-[14px] text-[#2d5fb8]" /> Type
                                     </button>
                                 )}
-                                <span className="flex-1" />
-                                <span className="w-px h-6 bg-[#e7ecf3] mx-1 shrink-0" />
-                                {isAuthenticated && (
-                                    <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 disabled:opacity-40 ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]'}`}>
-                                        {saveMessageVisible ? <FiCheck className="text-[14px]" /> : <FiSave className="text-[14px]" />}
-                                        <span className="hidden xl:inline">{isSaving ? 'Saving…' : saveMessageVisible ? 'Saved' : 'Save'}</span>
+                                {(dictations.length > 0 || input.trim()) && (
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateSOAP}
+                                        disabled={isGenerating || isRecording || isTranscribing}
+                                        className="inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_8px_20px_-10px_rgba(45,95,184,0.7)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                                    >
+                                        <FiRefreshCw className={`text-[13px] ${isGenerating ? 'animate-spin' : ''}`} /> {isGenerating ? 'Generating…' : 'Regenerate'}
                                     </button>
                                 )}
-                                <button type="button" onClick={copyAll} title="Copy all" className={`inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 ${copiedSection === 'all' ? 'bg-emerald-50 text-emerald-700' : 'bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]'}`}>
-                                    {copiedSection === 'all' ? <FiCheck className="text-[14px]" /> : <FiCopy className="text-[14px]" />}
-                                    <span className="hidden xl:inline">{copiedSection === 'all' ? 'Copied' : 'Copy all'}</span>
-                                </button>
-                                <button type="button" onClick={handlePrint} title="Print" className="inline-flex items-center gap-1.5 h-10 px-3 rounded-full text-[13px] font-medium border-none cursor-pointer transition-colors shrink-0 bg-transparent text-[#1a2b4a]/70 hover:bg-[#f6f8fb] hover:text-[#13233f]">
-                                    <FiPrinter className="text-[14px]" /> <span className="hidden xl:inline">Print</span>
-                                </button>
+                                <span className="flex-1" />
+                                <div className="flex items-center gap-2 shrink-0">
+                                    {isAuthenticated && (
+                                        <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold cursor-pointer transition-colors shrink-0 border disabled:opacity-40 disabled:cursor-not-allowed ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-[#e9f6fd] text-[#2d5fb8] border-[#cde6f8] hover:bg-[#d8effb]'}`}>
+                                            {saveMessageVisible ? <FiCheck className="text-[15px]" /> : <FiSave className="text-[15px]" />}
+                                            {isSaving ? 'Saving…' : saveMessageVisible ? 'Saved' : 'Save'}
+                                        </button>
+                                    )}
+                                    <button type="button" onClick={copyAll} title="Copy all" className={`inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold cursor-pointer transition-colors shrink-0 border ${copiedSection === 'all' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-[#13233f] border-[#dfe6f0] hover:border-[#2d5fb8]/30 hover:bg-[#f6f8fb]'}`}>
+                                        {copiedSection === 'all' ? <FiCheck className="text-[15px]" /> : <FiCopy className="text-[15px] text-[#2d5fb8]" />}
+                                        {copiedSection === 'all' ? 'Copied' : 'Copy all'}
+                                    </button>
+                                    <button type="button" onClick={handlePrint} title="Print" className="inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold cursor-pointer transition-colors shrink-0 border bg-white text-[#13233f] border-[#dfe6f0] hover:border-[#2d5fb8]/30 hover:bg-[#f6f8fb]">
+                                        <FiPrinter className="text-[15px] text-[#2d5fb8]" /> Print
+                                    </button>
+                                </div>
                             </div>
                             <AnimatePresence initial={false}>
                                 {error && (
