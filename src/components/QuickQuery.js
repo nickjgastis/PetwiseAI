@@ -5,6 +5,7 @@ import { supabase } from '../supabaseClient';
 import { Document, Page, Text, StyleSheet, pdf } from '@react-pdf/renderer';
 import FormattedMessage from './FormattedQueryMessage';
 import { FaQuestionCircle, FaTimes, FaArrowRight, FaArrowLeft, FaSearch, FaCopy, FaFileAlt, FaMicrophone, FaStop } from 'react-icons/fa';
+import { FiArrowUp } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from './UpgradeNudge';
@@ -1194,6 +1195,18 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
         }));
     };
 
+    const sendButton = (
+        <button
+            type="submit"
+            className={`${isMobile ? 'w-9 h-9 active:scale-95 touch-manipulation' : 'w-8 h-8 cursor-pointer hover:bg-[#2350a3]'} rounded-full border-none bg-[#2d5fb8] text-white flex items-center justify-center flex-shrink-0 transition-colors duration-200 disabled:bg-[#e7ecf3] disabled:text-[#1a2b4a]/35 disabled:cursor-not-allowed`}
+            disabled={isLoading || !inputMessage.trim() || isRecording}
+            aria-label="Send message"
+            title="Send"
+        >
+            <FiArrowUp className={isMobile ? 'text-[18px]' : 'text-[16px]'} strokeWidth={2.5} />
+        </button>
+    );
+
     return (
         <>
             <style dangerouslySetInnerHTML={{
@@ -1565,7 +1578,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 }
                                             }}
                                             placeholder={isRecording ? 'Listening… tap stop when finished' : 'Ask a clinical question…'}
-                                            className="w-full min-h-[22px] max-h-[96px] my-3 ml-4 mr-11 bg-transparent border-0 outline-none resize-none placeholder-gray-400 overflow-y-auto hide-scrollbar"
+                                            className="w-full min-h-[22px] max-h-[96px] my-3 ml-4 mr-[84px] bg-transparent border-0 outline-none resize-none placeholder-gray-400 overflow-y-auto hide-scrollbar"
                                             style={{
                                                 height: '22px',
                                                 maxHeight: '96px',
@@ -1600,6 +1613,7 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                     <FaStop className="text-sm" />
                                                 </button>
                                             )}
+                                            {!isRecording && sendButton}
                                             {isTranscribing && (
                                                 <div className="w-9 h-9 text-[#3468bd] flex items-center justify-center">
                                                     <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -1640,12 +1654,12 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                 }
                                             }}
                                             placeholder="Ask me anything about veterinary medicine..."
-                                            className="block w-full min-h-[52px] max-h-[120px] pl-5 pr-20 py-[14px] text-[15px] text-[#13233f] placeholder:text-[#1a2b4a]/40 border border-[#e7ecf3] rounded-[26px] bg-white focus:border-[#2d5fb8]/35 focus:outline-none shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)] resize-none transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed hide-scrollbar overflow-y-auto"
+                                            className="block w-full min-h-[52px] max-h-[120px] pl-5 pr-24 py-[14px] text-[15px] text-[#13233f] placeholder:text-[#1a2b4a]/40 border border-[#e7ecf3] rounded-[26px] bg-white focus:border-[#2d5fb8]/35 focus:outline-none shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)] resize-none transition-colors duration-200 disabled:opacity-70 disabled:cursor-not-allowed hide-scrollbar overflow-y-auto"
                                             disabled={isLoading || isRecording}
                                             rows="1"
                                         />
                                         {/* Desktop mic and collapse buttons */}
-                                        <div className="absolute top-[10px] right-3 flex items-center gap-1">
+                                        <div className="absolute bottom-[10px] right-2.5 flex items-center gap-1">
                                             {!isRecording && !isTranscribing && (
                                                 <button
                                                     type="button"
@@ -1676,42 +1690,10 @@ By adhering to these guidelines, ensure responses are **short, actionable, and f
                                                     </svg>
                                                 </div>
                                             )}
-                                            {inputMessage && !isRecording && !isTranscribing && (
-                                                <button
-                                                    type="button"
-                                                    className="p-1 text-gray-400 hover:text-primary-500 transition-colors duration-200 rounded-full hover:bg-gray-100"
-                                                    onClick={() => {
-                                                        if (textareaRef.current) {
-                                                            textareaRef.current.style.height = '52px';
-                                                        }
-                                                    }}
-                                                    aria-label="Collapse input"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <path d="m18 15-6-6-6 6" />
-                                                    </svg>
-                                                </button>
-                                            )}
+                                            {sendButton}
                                         </div>
                                     </div>
                                 )}
-                                {/* Send button - smaller on mobile */}
-                                <button
-                                    type="submit"
-                                    className={`${isMobile ? 'w-[46px] h-[46px] active:scale-95 shadow-md shadow-blue-200/70 bg-[#3468bd]' : 'w-[52px] h-[52px] bg-[#2d5fb8] hover:bg-[#2350a3] shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] cursor-pointer border-none'} text-white rounded-full disabled:bg-gray-300 disabled:shadow-none disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center flex-shrink-0 touch-manipulation`}
-                                    disabled={isLoading || !inputMessage.trim() || isRecording}
-                                    aria-label="Send message"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        viewBox="0 0 24 24"
-                                        fill="currentColor"
-                                        width={isMobile ? "16" : "18"}
-                                        height={isMobile ? "16" : "18"}
-                                    >
-                                        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-                                    </svg>
-                                </button>
                             </form>
                         </div>
                     </div>
