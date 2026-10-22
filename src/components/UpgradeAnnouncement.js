@@ -62,6 +62,48 @@ const CaseMock = ({ compact = false }) => {
     );
 };
 
+const DIAGRAM_ROWS = [
+    { type: 'soap', title: 'Vomiting, 2 days' },
+    { type: 'summary', title: 'Discharge summary' },
+    { type: 'callback', title: 'Day 2 check-in' }
+];
+
+const CaseDiagram = () => (
+    <div>
+        <div className="relative z-10 flex items-center gap-3 rounded-[22px] bg-white border border-[#e7ecf3] p-4 shadow-[0_24px_50px_-30px_rgba(19,35,63,0.45)]">
+            <span className="w-11 h-11 rounded-2xl bg-[#e9f6fd] text-[#2d5fb8] flex items-center justify-center text-[19px]">
+                <FiFolder />
+            </span>
+            <div className="min-w-0">
+                <p className="m-0 text-[11px] font-bold uppercase tracking-[0.1em] text-[#2d5fb8]">Case</p>
+                <p className="m-0 text-[17px] font-semibold text-[#13233f]">Bella</p>
+                <p className="m-0 text-[12.5px] text-[#1a2b4a]/50">Today · 3 records</p>
+            </div>
+        </div>
+        <div className="ml-[38px] pl-7 pt-3.5 pb-2.5 border-l-2 border-[#2d5fb8]/20">
+            <p className="m-0 text-[11px] font-bold uppercase tracking-[0.1em] text-[#1a2b4a]/45">Record types</p>
+        </div>
+        <div className="ml-[38px]">
+            {DIAGRAM_ROWS.map((r, idx) => {
+                const t = TYPE_STYLES[r.type];
+                const lastRow = idx === DIAGRAM_ROWS.length - 1;
+                return (
+                    <div key={r.type} className="relative pl-7 pb-2.5 last:pb-0">
+                        {!lastRow && <span className="absolute left-0 top-0 bottom-0 border-l-2 border-[#2d5fb8]/20" />}
+                        <span className="absolute left-0 top-0 h-1/2 w-5 border-l-2 border-b-2 border-[#2d5fb8]/20 rounded-bl-[10px]" />
+                        <div className="rounded-[16px] bg-white border border-[#e7ecf3] px-3.5 py-2.5 shadow-[0_14px_30px_-24px_rgba(19,35,63,0.45)]">
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${t.soft}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} /> {t.label}
+                            </span>
+                            <p className="m-0 mt-1 text-[14px] font-semibold text-[#13233f]">{r.title}</p>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    </div>
+);
+
 const Feature = ({ icon: Icon, title, text }) => (
     <div className="flex items-start gap-3.5">
         <span className="w-10 h-10 shrink-0 rounded-2xl bg-[#2d5fb8]/10 text-[#2d5fb8] flex items-center justify-center text-[17px]">
@@ -234,7 +276,8 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
                         <div className="absolute -top-20 -left-16 w-72 h-72 rounded-full bg-[#5cccf0]/25 blur-3xl" />
                         <div className="absolute -bottom-24 -right-10 w-80 h-80 rounded-full bg-[#2d5fb8]/20 blur-3xl" />
                         <motion.div className="relative w-full max-w-[340px]" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: EASE, delay: 0.15 }}>
-                            <CaseMock />
+                            <h3 className={`m-0 mb-5 pb-1 text-[38px] font-bold tracking-[-0.03em] leading-none ${GRADIENT_TEXT}`}>Cases</h3>
+                            <CaseDiagram />
                             <div className="absolute -right-4 -bottom-5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#2d5fb8] shadow-[0_14px_30px_-16px_rgba(19,35,63,0.5)]">
                                 <FiSend className="text-[12px]" /> From your phone
                             </div>
