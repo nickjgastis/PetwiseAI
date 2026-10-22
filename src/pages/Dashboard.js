@@ -16,10 +16,11 @@ import Templates from '../components/Templates';
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
 import { FaFileAlt, FaSearch, FaSave, FaUser, FaSignOutAlt, FaQuestionCircle, FaClipboard, FaMicrophone, FaCircle, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen, FaPlus } from 'react-icons/fa';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
+import UpgradeAnnouncement, { shouldShowUpgrade, markUpgradeSeen } from '../components/UpgradeAnnouncement';
 import UsageRing from '../components/UsageRing';
 import { useUsage, trialPlanLabel, getTier } from '../hooks/useUsage';
 import PaymentIssueBanner from '../components/PaymentIssueBanner';
@@ -252,6 +253,7 @@ const Dashboard = () => {
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default true for existing users
     const [onboardingData, setOnboardingData] = useState(null); // New onboarding flow data (null = no row = skip)
     const [showAppTour, setShowAppTour] = useState(false); // First-run tutorial for brand-new users
+    const [showUpgrade, setShowUpgrade] = useState(false);
     const [showAccountMenu, setShowAccountMenu] = useState(false); // Sidebar footer account popup
     const [showQRModal, setShowQRModal] = useState(false); // Mobile app QR popup
     const accountMenuRef = useRef(null);
@@ -915,7 +917,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour, created_at')
                 .eq('auth0_user_id', user.sub)
                 .single();
             let userData = data;
@@ -954,7 +956,7 @@ const Dashboard = () => {
                             // Fetch the existing user
                             const { data: existingUser, error: fetchError } = await supabase
                                 .from('users')
-                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour')
+                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour, created_at')
                                 .eq('auth0_user_id', user.sub)
                                 .single();
                             
@@ -1038,6 +1040,8 @@ const Dashboard = () => {
             setUserData(userData);
             // First-run tutorial for brand-new users (backfilled true for existing users)
             setShowAppTour(userData.has_seen_app_tour === false);
+            if (userData.has_seen_app_tour === false) markUpgradeSeen(user.sub);
+            else setShowUpgrade(shouldShowUpgrade(userData, user.sub));
 
             // Check new onboarding flow table (find or create for new users)
             try {
@@ -1416,6 +1420,11 @@ const Dashboard = () => {
                     onComplete={() => setShowAppTour(false)}
                 />
             )}
+            <AnimatePresence>
+                {showUpgrade && !showAppTour && (
+                    <UpgradeAnnouncement isMobile={isMobile} sub={user?.sub} onClose={() => setShowUpgrade(false)} />
+                )}
+            </AnimatePresence>
             {/* Mobile app QR popup (from sidebar account menu) */}
             {showQRModal && (
                 <div
@@ -1523,7 +1532,7 @@ const Dashboard = () => {
                             </Link>
                         </li>
 
-                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={FaFolderOpen} label="Cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
+                        <SideLink to="/dashboard/cases" active={isCasesPath} icon={FaFolderOpen} label="Cases" tour="cases" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} dot={hasNewMobileSOAP && !isMobile} />
                         <SideLink to="/dashboard/quick-query" active={location.pathname === '/dashboard/quick-query'} icon={FaSearch} label="PetQUERY" tooltip="PetQUERY" tour="petquery" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
 
                         {subscriptionStatus === 'past_due' && (
