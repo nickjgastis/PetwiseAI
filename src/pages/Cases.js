@@ -8,6 +8,7 @@ import { supabase } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
 import { useDictation } from '../hooks/useDictation';
+import WaveBars, { RecordingStatus } from '../components/WaveBars';
 import { TYPE_STYLES, typeStyle, GRADIENT_TEXT } from '../components/caseStyles';
 import {
     normalizeType,
@@ -309,7 +310,6 @@ const visitInput = (notes) => {
     return '';
 };
 
-const fmtClock = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const SWAP = { initial: { opacity: 0, scale: 0.97 }, animate: { opacity: 1, scale: 1 }, exit: { opacity: 0, scale: 0.97 }, transition: { duration: 0.18, ease: EASE } };
 
 const DictationPad = ({ dictation, onStart, onStop }) => {
@@ -339,19 +339,8 @@ const DictationPad = ({ dictation, onStart, onStop }) => {
                 )}
                 {(status === 'recording' || status === 'paused') && (
                     <motion.div key="rec" {...SWAP} className="w-full flex flex-col items-center">
-                        <div className="flex items-center gap-2 mb-3 text-[13px] font-medium text-[#1a2b4a]/70">
-                            <span className={`w-2 h-2 rounded-full ${live ? 'bg-red-500 animate-pulse' : 'bg-[#1a2b4a]/30'}`} />
-                            {live ? 'Listening' : 'Paused'} · <span className="tabular-nums">{fmtClock(seconds)}</span>
-                        </div>
-                        <div className="flex items-center justify-center gap-[3px] h-14 w-full max-w-sm">
-                            {levels.map((l, i) => (
-                                <span
-                                    key={i}
-                                    className={`w-[4px] rounded-full transition-[height] duration-100 ${live ? 'bg-[#2d5fb8]' : 'bg-[#1a2b4a]/20'}`}
-                                    style={{ height: `${live ? 6 + l * 50 : 6}px`, opacity: live ? 0.45 + l * 0.55 : 1 }}
-                                />
-                            ))}
-                        </div>
+                        <RecordingStatus live={live} seconds={seconds} className="mb-3" />
+                        <WaveBars levels={levels} live={live} height={56} />
                         <div className="flex items-center gap-2 mt-4">
                             <PillButton variant="secondary" onClick={live ? pause : resume} className="!px-4 !py-2 !text-[13px]">
                                 {live ? <><FiPause /> Pause</> : <><FiPlay /> Resume</>}
