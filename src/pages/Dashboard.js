@@ -283,7 +283,7 @@ const Dashboard = () => {
     const [showTrialUpgrade, setShowTrialUpgrade] = useState(false);
     const [draftsWaitingForLimit, setDraftsWaitingForLimit] = useState(0); // Mobile drafts blocked by the daily free cap
     const limitBlockedUntilRef = useRef(0); // Backoff so we don't hammer the API with 403s while capped
-    const [mobileReportTypes, setMobileReportTypes] = useState({ soap: 0, summary: 0, callback: 0 }); // Track types being generated
+    const [mobileReportTypes, setMobileReportTypes] = useState({ soap: 0, summary: 0, callback: 0, dental: 0 }); // Track types being generated
     const isProcessingQueueRef = useRef(false);
     const processingDraftIdsRef = useRef(new Set()); // Track which drafts are currently being processed
 
@@ -375,7 +375,7 @@ const Dashboard = () => {
         if (isMobile || !isAuthenticated || !user) {
             // Reset count when logged out
             setMobileReportsGenerating(0);
-            setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
+            setMobileReportTypes({ soap: 0, summary: 0, callback: 0, dental: 0 });
             return;
         }
 
@@ -612,7 +612,7 @@ const Dashboard = () => {
 
                 if (userError || !userData) {
                     setMobileReportsGenerating(0);
-                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
+                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0, dental: 0 });
                     return;
                 }
 
@@ -632,7 +632,7 @@ const Dashboard = () => {
 
                 if (draftError || !allDrafts || allDrafts.length === 0) {
                     setMobileReportsGenerating(0);
-                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
+                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0, dental: 0 });
                     return;
                 }
 
@@ -644,12 +644,12 @@ const Dashboard = () => {
 
                 if (sentDrafts.length === 0) {
                     setMobileReportsGenerating(0);
-                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
+                    setMobileReportTypes({ soap: 0, summary: 0, callback: 0, dental: 0 });
                     return;
                 }
 
                 // Count types being generated
-                const typeCounts = { soap: 0, summary: 0, callback: 0 };
+                const typeCounts = { soap: 0, summary: 0, callback: 0, dental: 0 };
                 sentDrafts.forEach(d => {
                     const type = d.record_type || d.form_data?.record_type || 'soap';
                     const normalizedType = type === 'quicksoap' ? 'soap' : type;
@@ -680,7 +680,7 @@ const Dashboard = () => {
                         // back off for 10 minutes (or until upgrade clears it).
                         setDraftsWaitingForLimit(sentDrafts.length - i);
                         setMobileReportsGenerating(0);
-                        setMobileReportTypes({ soap: 0, summary: 0, callback: 0 });
+                        setMobileReportTypes({ soap: 0, summary: 0, callback: 0, dental: 0 });
                         limitBlockedUntilRef.current = Date.now() + 10 * 60 * 1000;
                         return;
                     }
@@ -708,7 +708,7 @@ const Dashboard = () => {
                 ) || [];
 
                 // Update type counts for remaining
-                const remainingTypeCounts = { soap: 0, summary: 0, callback: 0 };
+                const remainingTypeCounts = { soap: 0, summary: 0, callback: 0, dental: 0 };
                 remainingSentDrafts.forEach(d => {
                     const type = d.record_type || d.form_data?.record_type || 'soap';
                     const normalizedType = type === 'quicksoap' ? 'soap' : type;
@@ -1668,6 +1668,9 @@ const Dashboard = () => {
                                             }
                                             if (mobileReportTypes.callback > 0) {
                                                 parts.push(`${mobileReportTypes.callback} Callback${mobileReportTypes.callback > 1 ? 's' : ''}`);
+                                            }
+                                            if (mobileReportTypes.dental > 0) {
+                                                parts.push(`${mobileReportTypes.dental} Dental record${mobileReportTypes.dental > 1 ? 's' : ''}`);
                                             }
                                             if (parts.length === 0) {
                                                 return mobileReportsGenerating === 1 

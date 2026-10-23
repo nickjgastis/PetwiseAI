@@ -1,10 +1,12 @@
 import React from 'react';
 import { FaClipboardList, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
+import { PiTooth } from 'react-icons/pi';
 
 const TYPE_INFO = {
     soap: { icon: FaClipboardList, iconClass: 'text-blue-600', chip: 'SOAP Record', noun: 'SOAP report' },
     summary: { icon: FaFileAlt, iconClass: 'text-emerald-600', chip: 'Summary', noun: 'summary' },
-    callback: { icon: FaPhoneAlt, iconClass: 'text-amber-600', chip: 'Callback', noun: 'callback notes' }
+    callback: { icon: FaPhoneAlt, iconClass: 'text-amber-600', chip: 'Callback', noun: 'callback notes' },
+    dental: { icon: PiTooth, iconClass: 'text-violet-600', chip: 'Dental Record', noun: 'dental record' }
 };
 
 const ORBS = [
