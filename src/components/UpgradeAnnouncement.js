@@ -3,13 +3,37 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowRight, FiFolder, FiMic, FiPlus, FiSend, FiSmartphone, FiX } from 'react-icons/fi';
+import { PiTooth } from 'react-icons/pi';
+import DentalChart from './DentalChart';
 import Guide, { StepBody, NAME_SCRIPT } from './Guide';
 import { BRAND_WASH, TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
 import { requestNewCase } from '../utils/cases';
 
 const EASE = [0.2, 0.7, 0.2, 1];
-const SEEN_KEY = 'petwise_upgrade_cases_v1';
+const SEEN_KEY = 'petwise_upgrade_cases_v2';
 const NEW_ACCOUNT_MS = 3 * 24 * 60 * 60 * 1000;
+const VIOLET_TEXT = 'bg-clip-text text-transparent bg-gradient-to-r from-[#6d28d9] via-[#8b5cf6] to-[#c084fc]';
+
+const DENTAL_SAMPLE = {
+    104: { status: 'watch' },
+    108: { status: 'extracted' },
+    201: { status: 'missing' },
+    309: { status: 'periodontal' },
+    409: { status: 'extracted' }
+};
+const DENTAL_POINTS = ['Pick Dental, then dictate', 'Every tooth charted, dog and cat', 'PDF with the chart on page one'];
+
+const DentalCard = ({ compact = false }) => (
+    <div className={`rounded-[24px] bg-white border border-[#e7ecf3] shadow-[0_30px_60px_-36px_rgba(19,35,63,0.45)] ${compact ? 'p-3' : 'p-4'}`}>
+        <div className="flex items-center gap-2.5 mb-2">
+            <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-violet-50 text-violet-700 text-[11.5px] font-semibold">
+                <PiTooth className="text-[13px]" /> Dental
+            </span>
+            <span className="text-[14px] font-semibold text-[#13233f]">Max</span>
+        </div>
+        <DentalChart species="canine" teeth={DENTAL_SAMPLE} showLegend={!compact} maxHeight={compact ? '220px' : '340px'} />
+    </div>
+);
 
 const seenKey = (sub) => `${SEEN_KEY}:${sub || 'anon'}`;
 
@@ -112,6 +136,13 @@ const Feature = ({ icon: Icon, title, text }) => (
     </div>
 );
 
+const DENTAL_SLIDE = {
+    eyebrow: 'New',
+    title: 'Dental Records',
+    body: 'Dictate the dental the way you would say it to a tech. PetWise charts every tooth and writes the record next to it. It’s included in your plan.',
+    dental: true
+};
+
 const DESKTOP_SLIDES = [
     {
         eyebrow: 'What’s new',
@@ -119,20 +150,21 @@ const DESKTOP_SLIDES = [
         body: 'Your records are now organised into cases. Each patient visit is one case, with every record for that visit in one place.',
         visual: true
     },
+    DENTAL_SLIDE,
     {
         eyebrow: 'How it works now',
         title: 'Start a case, add records',
         features: [
             { icon: FiPlus, title: 'New case', text: 'Start a visit from the top of the sidebar, dictate, and generate.' },
             { icon: FiFolder, title: 'Cases', text: 'Find any patient and see all their records together.' },
-            { icon: FiMic, title: 'Record types', text: 'SOAP, Summary and Callback can all live in the same case.' },
+            { icon: FiMic, title: 'Record types', text: 'SOAP, Summary, Callback and Dental can all live in the same case.' },
             { icon: FiSmartphone, title: 'Your phone', text: 'Open a patient’s case on your phone to add to it, or start a new case. Whatever you send goes into that case.' }
         ]
     },
     {
         eyebrow: 'Nothing lost',
         title: 'Your records came with you',
-        body: 'We moved your existing records into cases, grouped by patient and day. Older PetSOAP records are still in Saved Records, under More in the sidebar.',
+        body: 'Each of your existing records is now its own case, named after the patient. Older PetSOAP records are still in Saved Records, under More in the sidebar.',
         tip: true
     }
 ];
@@ -144,6 +176,7 @@ const MOBILE_SLIDES = [
         body: 'Every patient visit is now a case. Start a new case or open an existing one, dictate, and the record goes into that case on your desktop.',
         visual: true
     },
+    DENTAL_SLIDE,
     {
         eyebrow: 'Dictating',
         title: 'Say the name first',
@@ -177,9 +210,20 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
         <AnimatePresence mode="wait" initial={false}>
             <motion.div key={i} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.22, ease: EASE }}>
                 <p className="m-0 mb-2 text-[12px] font-bold uppercase tracking-[0.12em] text-[#2d5fb8]">{slide.eyebrow}</p>
-                <h2 className={`m-0 mb-4 pb-1 font-bold tracking-[-0.03em] leading-tight ${i === 0 ? `${GRADIENT_TEXT} text-[32px] sm:text-[40px]` : 'font-display text-[#13233f] text-[26px] sm:text-[32px]'}`}>{slide.title}</h2>
+                <h2 className={`m-0 mb-4 pb-1 font-bold tracking-[-0.03em] leading-tight ${i === 0 ? `${GRADIENT_TEXT} text-[32px] sm:text-[40px]` : slide.dental ? `${VIOLET_TEXT} text-[32px] sm:text-[40px]` : 'font-display text-[#13233f] text-[26px] sm:text-[32px]'}`}>{slide.title}</h2>
                 {slide.body && <p className="m-0 mb-6 text-[16px] sm:text-[17px] text-[#1a2b4a]/70 leading-relaxed">{slide.body}</p>}
                 {slide.visual && isMobile && <CaseMock compact />}
+                {slide.dental && isMobile && <DentalCard compact />}
+                {slide.dental && (
+                    <ul className={`m-0 p-0 list-none space-y-2.5 ${isMobile ? 'mt-5' : ''}`}>
+                        {DENTAL_POINTS.map((point) => (
+                            <li key={point} className="flex items-center gap-2.5 text-[15px] text-[#1a2b4a]/75">
+                                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 shrink-0" />
+                                {point}
+                            </li>
+                        ))}
+                    </ul>
+                )}
                 {slide.features && (
                     <div className="space-y-5 mt-2">
                         {slide.features.map((f) => <Feature key={f.title} {...f} />)}
@@ -271,13 +315,22 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
                     <div className={`w-[44%] shrink-0 relative ${BRAND_WASH} flex items-center justify-center p-10 overflow-hidden`}>
                         <div className="absolute -top-20 -left-16 w-72 h-72 rounded-full bg-[#5cccf0]/25 blur-3xl" />
                         <div className="absolute -bottom-24 -right-10 w-80 h-80 rounded-full bg-[#2d5fb8]/20 blur-3xl" />
-                        <motion.div className="relative w-full max-w-[340px]" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.6, ease: EASE, delay: 0.15 }}>
-                            <h3 className={`m-0 mb-5 pb-1 text-[38px] font-bold tracking-[-0.03em] leading-none ${GRADIENT_TEXT}`}>Cases</h3>
-                            <CaseDiagram />
-                            <div className="absolute -right-4 -bottom-5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#2d5fb8] shadow-[0_14px_30px_-16px_rgba(19,35,63,0.5)]">
-                                <FiSend className="text-[12px]" /> From your phone
-                            </div>
-                        </motion.div>
+                        <AnimatePresence mode="wait" initial={false}>
+                            {slide.dental ? (
+                                <motion.div key="dental" className="relative w-full max-w-[380px]" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -8, opacity: 0 }} transition={{ duration: 0.35, ease: EASE }}>
+                                    <h3 className={`m-0 mb-5 pb-1 text-[38px] font-bold tracking-[-0.03em] leading-none ${VIOLET_TEXT}`}>Dental</h3>
+                                    <DentalCard />
+                                </motion.div>
+                            ) : (
+                                <motion.div key="cases" className="relative w-full max-w-[340px]" initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -8, opacity: 0 }} transition={{ duration: 0.6, ease: EASE, delay: 0.15 }}>
+                                    <h3 className={`m-0 mb-5 pb-1 text-[38px] font-bold tracking-[-0.03em] leading-none ${GRADIENT_TEXT}`}>Cases</h3>
+                                    <CaseDiagram />
+                                    <div className="absolute -right-4 -bottom-5 inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-2 text-[12.5px] font-semibold text-[#2d5fb8] shadow-[0_14px_30px_-16px_rgba(19,35,63,0.5)]">
+                                        <FiSend className="text-[12px]" /> From your phone
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                 )}
                 <div className="flex-1 min-w-0 flex flex-col">
