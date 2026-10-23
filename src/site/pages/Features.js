@@ -14,6 +14,7 @@ import {
     FiZap
 } from 'react-icons/fi';
 import SiteLayout from '../SiteLayout';
+import { DentalSection } from '../DentalDemo';
 import { Seo, softwareLd } from '../seo';
 import { Container, CtaBand, FeatureGrid, ImageBand, Highlight, Section, SectionHeading, SplitFeature } from '../ui';
 
@@ -55,6 +56,8 @@ const Features = () => (
                 <FeatureGrid items={DOCUMENTATION} />
             </Container>
         </section>
+
+        <DentalSection />
 
         <div className="pt-3 sm:pt-5 bg-white">
             <ImageBand
