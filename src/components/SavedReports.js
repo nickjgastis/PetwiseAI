@@ -1187,7 +1187,7 @@ const SavedReports = () => {
                         <div className="flex-1 bg-white rounded-xl shadow-md border border-gray-200">
                             <input
                                 type="text"
-                                placeholder="Search records..."
+                                placeholder="Search by patient, date or text"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full px-4 py-3 rounded-xl border-0 focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-400"

@@ -266,7 +266,7 @@ const CaseList = ({ mobile = false }) => {
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Find a patient"
+                            placeholder="Find a patient or date"
                             className="w-full pl-11 pr-4 py-3 bg-white border border-[#e7ecf3] rounded-full text-[15px] shadow-[0_6px_20px_-14px_rgba(19,35,63,0.25)] focus:outline-none focus:border-[#2d5fb8]/30 transition-colors"
                         />
                     </div>
@@ -300,7 +300,7 @@ const CaseList = ({ mobile = false }) => {
                         {!mobile && <PillButton onClick={() => setNaming(true)}><FiPlus /> Start a new case</PillButton>}
                     </motion.div>
                 ) : groups.length === 0 ? (
-                    <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No patients match “{search}”.</p>
+                    <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No cases match “{search}”.</p>
                 ) : (
                     <div className={`transition-opacity ${loading || searching ? 'opacity-60' : ''}`}>
                     {groups.map((g, gi) => (

@@ -334,8 +334,9 @@ const pageSize = (n) => Math.min(Math.max(parseInt(n, 10) || PAGE_SIZE, 1), MAX_
 const searchTerm = (q) => String(q || '').replace(/[,()"\\%*]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
 
 // Newest first, ties broken by id so a cursor never skips or repeats a row.
+// A cursor with only a phase (search moving from name matches to text matches) starts that phase at the top.
 const afterCursor = (q, col, cursor) => {
-    if (!cursor) return q;
+    if (!cursor || (cursor.phase && !cursor[col])) return q;
     const at = cursor[col];
     if (!TIMESTAMP.test(at || '') || !UUID.test(cursor.id || '')) throw fail(400, 'Invalid cursor', '400');
     return q.or(`${col}.lt."${at}",and(${col}.eq."${at}",id.lt.${cursor.id})`);
@@ -344,6 +345,22 @@ const afterCursor = (q, col, cursor) => {
 const nextCursor = (rows, col, hasMore) => {
     const last = rows[rows.length - 1];
     return hasMore && last ? { [col]: last[col], id: last.id } : null;
+};
+
+// Day or month range picked by the client in the vet's own timezone.
+const dateRange = (q, col, from, to) => {
+    if (!from && !to) return q;
+    if (Number.isNaN(Date.parse(from)) || Number.isNaN(Date.parse(to))) throw fail(400, 'Invalid date range', '400');
+    return q.gte(col, new Date(from).toISOString()).lt(col, new Date(to).toISOString());
+};
+
+const newestFirst = async (q, col, cursor, limit) => {
+    const { data, error } = await afterCursor(q, col, cursor)
+        .order(col, { ascending: false })
+        .order('id', { ascending: false })
+        .limit(limit);
+    if (error) throw error;
+    return data;
 };
 
 const listRoute = (handler) => async (req, res) => {
@@ -358,41 +375,60 @@ const listRoute = (handler) => async (req, res) => {
     }
 };
 
-// Saved Records: { cursor, limit, q, type } -> { data, nextCursor }. Search covers the whole history.
-router.post('/records', requireUser, listRoute(async (supabase, uid, { cursor, limit, q, type }) => {
+const RECORD_COLUMNS = 'id, report_name, report_text, form_data, record_type, case_id, created_at';
+
+// Saved Records: { cursor, limit, q, type, from, to } -> { data, nextCursor }. Search covers the whole history.
+// A search lists records named after the term (record name or patient) first, then ones that only
+// mention it in the text. Text matches start a word, so "ned" finds Ned but not "planned".
+router.post('/records', requireUser, listRoute(async (supabase, uid, { cursor, limit, q, type, from, to }) => {
     const size = pageSize(limit);
-    let query = supabase
-        .from('saved_reports')
-        .select('id, report_name, report_text, form_data, record_type, case_id, created_at')
-        .eq('user_id', uid);
-    if (type && type !== 'all') {
-        if (!RECORD_FILTERS[type]) throw fail(400, 'Unknown record type', '400');
-        query = query.in('record_type', RECORD_FILTERS[type]);
-    }
-    const term = searchTerm(q);
-    // Names match anywhere; record text only at a word start, so "ned" finds Ned but not "planned".
-    // \\m is Postgres's start-of-word, doubled because or() values are quoted.
-    if (term) {
-        query = query.or(
-            `report_name.ilike.%${term}%,form_data->>petName.ilike.%${term}%,report_text.imatch."\\\\m${term.replace(/[.^$|?+{}[\]]/g, '.')}"`
-        );
-    }
-    query = afterCursor(query, 'created_at', cursor);
-    const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(size + 1);
-    if (error) throw error;
-    const page = data.slice(0, size);
-    return {
-        // Drafts still generating on desktop stay hidden; they are dropped after paging so the cursor stays exact.
-        data: page.filter((r) => r.report_text || r.form_data?.sent_to_desktop !== true),
-        nextCursor: nextCursor(page, 'created_at', data.length > size),
+    if (type && type !== 'all' && !RECORD_FILTERS[type]) throw fail(400, 'Unknown record type', '400');
+    const base = () => {
+        let query = supabase.from('saved_reports').select(RECORD_COLUMNS).eq('user_id', uid);
+        if (type && type !== 'all') query = query.in('record_type', RECORD_FILTERS[type]);
+        return dateRange(query, 'created_at', from, to);
     };
+    // Drafts still generating on desktop stay hidden; dropped after paging so the cursor stays exact.
+    const visible = (rows) => rows.filter((r) => r.report_text || r.form_data?.sent_to_desktop !== true);
+
+    const term = searchTerm(q);
+    if (!term) {
+        const rows = await newestFirst(base(), 'created_at', cursor, size + 1);
+        const page = rows.slice(0, size);
+        return { data: visible(page), nextCursor: nextCursor(page, 'created_at', rows.length > size) };
+    }
+
+    const like = `%${term}%`;
+    // \m is Postgres's start-of-word; regex characters in the term are treated as "any character".
+    const word = `\\m${term.replace(/[.^$|?+{}[\]]/g, '.')}`;
+    const byName = () => base().or(`report_name.ilike.${like},form_data->>petName.ilike.${like}`);
+    const byTextOnly = () => base()
+        .filter('report_text', 'imatch', word)
+        .or(`report_name.is.null,report_name.not.ilike.${like}`)
+        .or(`form_data->>petName.is.null,form_data->>petName.not.ilike.${like}`);
+
+    let page = [];
+    let next = null;
+    if (!cursor || cursor.phase !== 'text') {
+        const rows = await newestFirst(byName(), 'created_at', cursor, size + 1);
+        page = rows.slice(0, size);
+        if (rows.length > size) next = { phase: 'name', ...nextCursor(page, 'created_at', true) };
+        else if (page.length === size) next = { phase: 'text' };
+    }
+    if (!next && page.length < size) {
+        const textCursor = cursor?.phase === 'text' ? cursor : null;
+        const room = size - page.length;
+        const rows = await newestFirst(byTextOnly(), 'created_at', textCursor, room + 1);
+        const more = rows.slice(0, room);
+        page = page.concat(more);
+        if (rows.length > room) next = { phase: 'text', ...nextCursor(more, 'created_at', true) };
+    }
+    return { data: visible(page), nextCursor: next };
 }));
 
-// Cases: { cursor, limit, q } -> { data, notes, nextCursor }. notes covers only the returned cases.
-router.post('/cases', requireUser, listRoute(async (supabase, uid, { cursor, limit, q }) => {
+// Cases: { cursor, limit, q, from, to } -> { data, notes, nextCursor }. notes covers only the returned cases.
+// A date search matches the visit day (created_at), not the last edit.
+router.post('/cases', requireUser, listRoute(async (supabase, uid, { cursor, limit, q, from, to }) => {
     const size = pageSize(limit);
     let query = supabase
         .from('cases')
@@ -400,12 +436,8 @@ router.post('/cases', requireUser, listRoute(async (supabase, uid, { cursor, lim
         .eq('user_id', uid);
     const term = searchTerm(q);
     if (term) query = query.or(`pet_name.ilike.%${term}%,title.ilike.%${term}%`);
-    query = afterCursor(query, 'updated_at', cursor);
-    const { data, error } = await query
-        .order('updated_at', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(size + 1);
-    if (error) throw error;
+    query = dateRange(query, 'created_at', from, to);
+    const data = await newestFirst(query, 'updated_at', cursor, size + 1);
     const page = data.slice(0, size);
 
     let notes = [];

@@ -1,11 +1,28 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchPage } from '../supabaseClient';
+import { parseSearchDate } from '../utils/searchDate';
 
 const SEARCH_DELAY = 250;
 const MAX_REFRESH = 200;
 
+const asRange = (r) => ({ from: r.from.toISOString(), to: r.to.toISOString() });
+
+// A typed date ("Oct 21", "10/21") searches that day. It can lead or follow a name: "Ned 10/21", "Oct 21 Bella".
+const searchBody = (query) => {
+    const whole = parseSearchDate(query);
+    if (whole) return asRange(whole);
+    const words = query.split(/\s+/).filter(Boolean);
+    for (let n = Math.min(4, words.length - 1); n >= 1; n--) {
+        const tail = parseSearchDate(words.slice(-n).join(' '));
+        if (tail) return { q: words.slice(0, -n).join(' '), ...asRange(tail) };
+        const head = parseSearchDate(words.slice(0, n).join(' '));
+        if (head) return { q: words.slice(n).join(' '), ...asRange(head) };
+    }
+    return { q: query };
+};
+
 // Server-paged list for /api/db/records and /api/db/cases. A search or filter change starts over at
-// page 1 and searches the whole history. `initial` paints instantly (e.g. a cached first page).
+// page 1 and searches the whole history, by name, text or date. `initial` paints instantly (e.g. a cached first page).
 export default function usePagedList(list, { q = '', type, enabled = true, initial = null } = {}) {
     const [state, setState] = useState(() => initial || { items: [], notes: [], nextCursor: null });
     const [loading, setLoading] = useState(!initial);
@@ -27,7 +44,7 @@ export default function usePagedList(list, { q = '', type, enabled = true, initi
         const id = ++requestId.current;
         if (!keep) setLoading(true);
         const limit = keep ? Math.min(Math.max(itemCount.current, 50), MAX_REFRESH) : undefined;
-        const res = await fetchPage(list, { q: query, type, limit });
+        const res = await fetchPage(list, { ...searchBody(query), type, limit });
         if (id !== requestId.current) return;
         if (res.error) {
             setError(res.error.message || 'Could not load.');
@@ -46,7 +63,7 @@ export default function usePagedList(list, { q = '', type, enabled = true, initi
         if (!state.nextCursor || loadingMore) return;
         const id = requestId.current;
         setLoadingMore(true);
-        const res = await fetchPage(list, { q: query, type, cursor: state.nextCursor });
+        const res = await fetchPage(list, { ...searchBody(query), type, cursor: state.nextCursor });
         setLoadingMore(false);
         if (id !== requestId.current) return;
         if (res.error) return setError(res.error.message || 'Could not load more.');
