@@ -62,6 +62,24 @@ const About = () => (
             </div>
         </Section>
 
+        <Section className="!pt-0">
+            <SectionHeading eyebrow="As featured on NAVC's VetFolio" title="See how PetWise started." />
+            <Reveal>
+                <div className="relative w-full aspect-video overflow-hidden rounded-[28px] bg-black shadow-[0_24px_60px_-30px_rgba(19,35,63,0.45)]">
+                    <iframe
+                        className="absolute inset-0 h-full w-full"
+                        src="https://www.youtube.com/embed/LDdPAKytHDA?si=sVUyOQEL03OYZN7N"
+                        title="PetWise as featured on NAVC's VetFolio"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerPolicy="strict-origin-when-cross-origin"
+                        allowFullScreen
+                        loading="lazy"
+                    />
+                </div>
+            </Reveal>
+        </Section>
+
         <Section tone="wash">
             <SectionHeading eyebrow="What we believe" title="Technology should fit the clinic, not the other way around." />
             <div className="grid gap-10 md:grid-cols-3">

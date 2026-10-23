@@ -15,7 +15,8 @@ export const NAV = [
     { label: 'Clinical Assistant', to: '/veterinary-clinical-assistant' },
     { label: 'Features', to: '/features' },
     { label: 'Pricing', to: '/pricing' },
-    { label: 'Blog', to: '/blog' }
+    { label: 'Blog', to: '/blog' },
+    { label: 'About', to: '/about' }
 ];
 
 export const FOOTER = [
