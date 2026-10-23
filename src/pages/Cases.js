@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck, FiDownload } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
@@ -385,7 +385,7 @@ const customTitle = (note) => {
     return name;
 };
 
-const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
+const NoteBox = ({ note, onOpen, isNew, previewPending, selected, selecting, onToggle }) => {
     const card = note.form_data?.card;
     const info = typeStyle(note.record_type || note.form_data?.record_type);
     const Icon = info.icon;
@@ -408,14 +408,15 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
             {...LIFT}
             initial={isNew ? { scale: 0.94 } : false}
             animate={{ scale: 1 }}
-            onClick={() => onOpen(note)}
+            onClick={() => (selecting ? onToggle(note.id) : onOpen(note))}
             onKeyDown={(e) => {
                 if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
                     e.preventDefault();
-                    onOpen(note);
+                    if (selecting) onToggle(note.id);
+                    else onOpen(note);
                 }
             }}
-            className={`group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col min-h-[180px] cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover} ${isNew ? 'ring-2 ring-[#5cccf0]/50' : ''}`}
+            className={`group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col min-h-[180px] cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover} ${selected ? 'ring-2 ring-[#2d5fb8] border-transparent' : isNew ? 'ring-2 ring-[#5cccf0]/50' : ''}`}
         >
             <div className={`h-1 w-full bg-gradient-to-r ${info.bar}`} />
             <div className="p-5 flex flex-col flex-1 min-h-0">
@@ -423,7 +424,20 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
                     <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11.5px] font-semibold ${info.soft}`}>
                         <Icon className="text-[10.5px]" /> {info.label}
                     </span>
-                    <span className="text-[12px] text-[#1a2b4a]/45">{formatDateTime(note.created_at)}</span>
+                    <span className="ml-auto text-[12px] text-[#1a2b4a]/45">{formatDateTime(note.created_at)}</span>
+                    <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={selected}
+                        aria-label="Select record"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onToggle(note.id);
+                        }}
+                        className={`shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] cursor-pointer transition-all ${selected ? 'bg-[#2d5fb8] border-[#2d5fb8] text-white' : `bg-white border-[#c9d3e1] text-transparent hover:border-[#2d5fb8] ${selecting ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'}`}`}
+                    >
+                        <FiCheck className="text-[12px]" strokeWidth={3} />
+                    </button>
                 </div>
 
                 <AnimatePresence mode="wait" initial={false}>
@@ -463,7 +477,7 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
                 </AnimatePresence>
 
                 <div className="mt-4 flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className={`inline-flex items-center gap-1 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 transition-opacity ${selecting ? '' : 'group-hover:opacity-100'}`}>
                         <FiEdit2 className="text-[11px]" /> Open and edit
                     </span>
                     <button
@@ -748,6 +762,9 @@ const CaseDetail = ({ caseId }) => {
     const [generating, setGenerating] = useState(false);
     const [announcement, setAnnouncement] = useState(null);
     const [showUpgrade, setShowUpgrade] = useState(false);
+    const [selected, setSelected] = useState(() => new Set());
+    const [bulkDone, setBulkDone] = useState(null);
+    const [exporting, setExporting] = useState(false);
 
     const load = useCallback(async () => {
         const [{ data: c }, { data: n }] = await Promise.all([
@@ -812,6 +829,72 @@ const CaseDetail = ({ caseId }) => {
     const openInEditor = (note) => {
         loadNoteIntoQuickSOAP(note);
         navigate('/dashboard/quicksoap');
+    };
+
+    const toggleSelected = (id) => {
+        setSelected((prev) => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    useEffect(() => {
+        if (!selected.size) return undefined;
+        const onKey = (e) => e.key === 'Escape' && setSelected(new Set());
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [selected.size]);
+
+    // Selected records in case order (oldest first), as they appear on the page.
+    const selectedNotes = notes.filter((n) => selected.has(n.id));
+    const recordHeading = (n) => `${typeStyle(n.record_type).label} · ${formatDateTime(n.created_at)}`;
+
+    const flash = (kind) => {
+        setBulkDone(kind);
+        setTimeout(() => setBulkDone(null), 1800);
+    };
+
+    const copySelected = async () => {
+        const text = selectedNotes.length === 1
+            ? selectedNotes[0].report_text
+            : selectedNotes.map((n) => `${recordHeading(n).toUpperCase()}\n\n${(n.report_text || '').trim()}`).join('\n\n\n');
+        try {
+            await navigator.clipboard.writeText(text);
+            flash('copy');
+        } catch (err) {
+            console.error('Copy failed:', err);
+        }
+    };
+
+    const downloadSelected = async () => {
+        setExporting(true);
+        try {
+            const [{ pdf }, { CaseRecordsPDF }] = await Promise.all([import('@react-pdf/renderer'), import('../components/RecordPDF')]);
+            const pet = caseRow?.pet_name || 'Case';
+            const records = selectedNotes.map((n) => ({
+                id: n.id,
+                type: normalizeType(n.record_type),
+                title: `${pet} · ${recordHeading(n)}`,
+                text: n.report_text,
+                dental: n.form_data?.dental
+            }));
+            const blob = await pdf(<CaseRecordsPDF title={`${pet} records`} records={records} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${pet} records ${formatDate(new Date())}.pdf`.replace(/[\\/:*?"<>|]/g, '');
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 4000);
+            flash('pdf');
+        } catch (err) {
+            console.error('PDF export failed:', err);
+        } finally {
+            setExporting(false);
+        }
     };
 
     const onCreated = (saved, extractedPetName) => {
@@ -972,11 +1055,53 @@ const CaseDetail = ({ caseId }) => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {notes.map((note, i) => (
                             <FadeIn key={note.id} delay={0.05 + Math.min(i, 8) * 0.035}>
-                                <NoteBox note={note} onOpen={openInEditor} isNew={freshNoteIds.has(note.id)} previewPending={pendingPreviews.has(note.id)} />
+                                <NoteBox
+                                    note={note}
+                                    onOpen={openInEditor}
+                                    isNew={freshNoteIds.has(note.id)}
+                                    previewPending={pendingPreviews.has(note.id)}
+                                    selected={selected.has(note.id)}
+                                    selecting={selected.size > 0}
+                                    onToggle={toggleSelected}
+                                />
                             </FadeIn>
                         ))}
                     </div>
                 )}
+
+                <AnimatePresence>
+                    {selected.size > 0 && (
+                        <motion.div
+                            key="bulk"
+                            initial={{ opacity: 0, y: 16 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 16 }}
+                            transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                            className="sticky bottom-6 z-30 mt-6 flex justify-center pointer-events-none"
+                        >
+                            <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 rounded-full bg-[#13233f] text-white pl-5 pr-1.5 py-1.5 shadow-[0_24px_50px_-18px_rgba(19,35,63,0.6)]">
+                                <span className="text-[14px] font-semibold mr-1">{selected.size} selected</span>
+                                {selected.size < notes.length && (
+                                    <button type="button" onClick={() => setSelected(new Set(notes.map((n) => n.id)))} className="h-9 px-3 rounded-full text-[13px] font-medium text-white/70 hover:text-white bg-transparent hover:bg-white/10 border-none cursor-pointer transition-colors">
+                                        Select all
+                                    </button>
+                                )}
+                                <span className="w-px h-5 bg-white/15 mx-1" />
+                                <button type="button" onClick={copySelected} className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[13.5px] font-semibold text-white bg-white/10 hover:bg-white/20 border-none cursor-pointer transition-colors">
+                                    {bulkDone === 'copy' ? <FiCheck className="text-[14px]" /> : <FiCopy className="text-[14px]" />}
+                                    {bulkDone === 'copy' ? 'Copied' : 'Copy'}
+                                </button>
+                                <button type="button" onClick={downloadSelected} disabled={exporting} className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[13.5px] font-semibold text-[#13233f] bg-white hover:bg-[#eef4fc] border-none cursor-pointer transition-colors disabled:opacity-70">
+                                    {exporting ? <span className="w-3.5 h-3.5 rounded-full border-2 border-[#13233f]/25 border-t-[#13233f] animate-spin" /> : bulkDone === 'pdf' ? <FiCheck className="text-[14px]" /> : <FiDownload className="text-[14px]" />}
+                                    Download PDF
+                                </button>
+                                <button type="button" onClick={() => setSelected(new Set())} title="Clear selection" className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 bg-transparent border-none cursor-pointer transition-colors">
+                                    <FiX className="text-[15px]" />
+                                </button>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             {showUpgrade && (
