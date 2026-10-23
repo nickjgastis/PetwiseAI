@@ -118,7 +118,8 @@ async function logUsageEvent(sub, eventType) {
 
 // Middleware setup
 app.use('/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+// Long dictations are stored twice in form_data (dictations and lastInput); records already pass 100kb.
+app.use(express.json({ limit: '10mb' }));
 
 // Multer setup for file uploads (QuickSOAP)
 // Use disk storage for temp files to enable audio processing
