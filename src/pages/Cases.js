@@ -5,6 +5,7 @@ import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck, FiDownload, FiTrash2 } from 'react-icons/fi';
 import { supabase, authHeaders } from '../supabaseClient';
+import DentalSpeciesPicker, { SPECIES_LABEL } from '../components/DentalSpeciesPicker';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
 import { useDictation } from '../hooks/useDictation';
@@ -518,7 +519,11 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
     const { user } = useAuth0();
     const usage = useUsage();
     const dictation = useDictation();
-    const [type, setType] = useState(() => initialType || (notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap'));
+    const fallbackType = notes.some((n) => normalizeType(n.record_type) === 'soap') ? 'callback' : 'soap';
+    const [type, setType] = useState(() => (initialType && initialType !== 'dental' ? initialType : fallbackType));
+    const [species, setSpecies] = useState(null);
+    // Starting a case with Dental asks for the species before the panel switches to it.
+    const [speciesPicker, setSpeciesPicker] = useState(initialType === 'dental');
     const [text, setText] = useState('');
     const baseInput = useMemo(() => visitInput(notes), [notes]);
     const [includeEarlier, setIncludeEarlier] = useState(false);
@@ -579,6 +584,7 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                 input,
                 user: user ? { sub: user.sub } : null,
                 recordType: type,
+                ...(type === 'dental' ? { species } : {}),
                 tz: getBrowserTimezone()
             });
             notifyUsageUpdated();
@@ -644,6 +650,15 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                     />,
                     document.body
                 )}
+            <DentalSpeciesPicker
+                open={speciesPicker}
+                onPick={(s) => {
+                    setSpecies(s);
+                    setType('dental');
+                    setSpeciesPicker(false);
+                }}
+                onClose={() => setSpeciesPicker(false)}
+            />
             <div className="rounded-[24px] border border-[#e7ecf3] bg-white p-3 sm:p-4 mb-6 shadow-[0_18px_40px_-30px_rgba(19,35,63,0.3)]">
                 <div className="flex items-center gap-2 mb-3">
                     <div className="bg-[#f6f8fb] rounded-full p-0.5 inline-flex gap-0.5 max-w-full overflow-x-auto">
@@ -654,13 +669,16 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                                     key={key}
                                     type="button"
                                     disabled={generating}
-                                    onClick={() => setType(key)}
+                                    onClick={() => (key === 'dental' ? setSpeciesPicker(true) : setType(key))}
                                     className={`relative px-3 py-1.5 text-[13px] font-medium rounded-full whitespace-nowrap flex items-center gap-1.5 border-none cursor-pointer bg-transparent transition-colors ${type === key ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
                                 >
                                     {type === key && (
                                         <motion.span layoutId="addnote-type" className={`absolute inset-0 rounded-full ${info.solid} shadow-sm`} transition={{ type: 'spring', stiffness: 500, damping: 38 }} />
                                     )}
-                                    <span className="relative flex items-center gap-1.5"><Icon className="text-[11px]" /> {info.label}</span>
+                                    <span className="relative flex items-center gap-1.5">
+                                        <Icon className="text-[11px]" /> {info.label}
+                                        {key === 'dental' && type === 'dental' && species && <span className="opacity-85">· {SPECIES_LABEL[species]}</span>}
+                                    </span>
                                 </button>
                             );
                         })}

@@ -26,7 +26,7 @@ Return JSON only:
   "teeth": [{ "id": "108", "status": "...", "note": string }]
 }
 
-species: from the dictation ("dog", "cat", breed, or tooth numbers that only exist in one species). Default "canine" if unclear.
+species: SPECIES_RULE
 
 teeth: one entry per tooth that has a finding. Use Modified Triadan numbers: quadrant 1 right maxilla, 2 left maxilla, 3 left mandible, 4 right mandible; 01-03 incisors, 04 canine, 05-08 premolars, 09-11 molars.
 Map spoken names to numbers, e.g. "upper right fourth premolar" = 108, "left mandibular first molar" = 309, "one-oh-eight" = 108. Expand ranges like "406 through 410" into each tooth.
@@ -45,7 +45,15 @@ Home Care and Follow-up
 Section headings go on their own line with no symbols. No asterisks, pound signs or other markdown anywhere.
 Only use information that was stated. Rephrase professionally, never invent findings, doses or teeth.`;
 
-async function generateDental(input) {
+const SPECIES_GUESS = 'from the dictation ("dog", "cat", breed, or tooth numbers that only exist in one species). Default "canine" if unclear.';
+
+// The vet picks the species before dictating; guessing is only a fallback for older clients.
+async function generateDental(input, chosenSpecies) {
+    const fixed = chosenSpecies === 'canine' || chosenSpecies === 'feline' ? chosenSpecies : null;
+    const prompt = PROMPT.replace(
+        'SPECIES_RULE',
+        fixed ? `"${fixed}". The vet chose this; always return it and use ${fixed} Modified Triadan numbering.` : SPECIES_GUESS
+    );
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -56,7 +64,7 @@ async function generateDental(input) {
             model: 'gpt-5.4-mini',
             response_format: { type: 'json_object' },
             messages: [
-                { role: 'system', content: PROMPT },
+                { role: 'system', content: prompt },
                 { role: 'user', content: input }
             ]
         })
@@ -65,7 +73,7 @@ async function generateDental(input) {
     const data = await res.json();
     const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
 
-    const species = parsed.species === 'feline' ? 'feline' : 'canine';
+    const species = fixed || (parsed.species === 'feline' ? 'feline' : 'canine');
     const valid = toothSet(species);
     const teeth = {};
     const unmatched = [];

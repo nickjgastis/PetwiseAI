@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion, useSpring } from 'framer-motion';
 import { FiMinus, FiPlus, FiMaximize2, FiX } from 'react-icons/fi';
+import { PiCat, PiDog } from 'react-icons/pi';
 import DentalChart, { ChartLegend, Swatch } from './DentalChart';
+import { SPECIES_LABEL } from './DentalSpeciesPicker';
 import { buildChart } from '../dental/geometry';
 import { STATUSES, STATUS_ORDER, toothLabel } from '../dental/teeth';
 
@@ -277,9 +279,6 @@ const DentalChartCanvas = ({ dental, onChange, height, onExpand }) => {
         const { [id]: _, ...rest } = teeth;
         onChange({ ...dental, species, teeth: merged.status === 'normal' && !merged.note ? rest : { ...teeth, [id]: merged } });
     };
-    const setSpecies = (s) => {
-        if (s !== species) onChange({ ...dental, species: s, teeth: {} });
-    };
 
     const current = selected ? teeth[selected] || { status: 'normal' } : null;
     const charted = Object.keys(teeth).sort();
@@ -303,19 +302,10 @@ const DentalChartCanvas = ({ dental, onChange, height, onExpand }) => {
                         ))}
                     </div>
                 </div>
-                <div className="shrink-0 inline-flex gap-0.5 p-0.5 rounded-full bg-[#f3f6fa]">
-                    {['canine', 'feline'].map((s) => (
-                        <button
-                            key={s}
-                            type="button"
-                            onClick={() => setSpecies(s)}
-                            title={s === species ? undefined : 'Switching clears the chart'}
-                            className={`h-7 px-2.5 rounded-full text-[12px] font-semibold border-none cursor-pointer transition-colors ${s === species ? 'bg-white text-violet-700 shadow-[0_1px_3px_rgba(19,35,63,0.12)]' : 'bg-transparent text-[#1a2b4a]/55 hover:text-[#13233f]'}`}
-                        >
-                            {s === 'canine' ? 'Dog' : 'Cat'}
-                        </button>
-                    ))}
-                </div>
+                <span className="shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-violet-50 text-violet-700 text-[12px] font-semibold">
+                    {React.createElement(species === 'feline' ? PiCat : PiDog, { className: 'text-[14px]' })}
+                    {SPECIES_LABEL[species]}
+                </span>
             </div>
 
             <div

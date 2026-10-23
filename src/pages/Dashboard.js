@@ -448,6 +448,7 @@ const Dashboard = () => {
                     input: combinedInput.trim(),
                     user: user ? { sub: user.sub } : null,
                     recordType: draftRecordType,
+                    species: formData.species,
                     tz: Intl.DateTimeFormat().resolvedOptions().timeZone
                 });
 

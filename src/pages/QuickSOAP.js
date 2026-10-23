@@ -37,6 +37,7 @@ import DentalPDFDocument from '../components/DentalPDF';
 import { QuickSOAPPDFDocument } from '../components/RecordPDF';
 import { toPlainText } from '../utils/recordText';
 import CountBadge from '../components/CountBadge';
+import DentalSpeciesPicker, { SPECIES_LABEL } from '../components/DentalSpeciesPicker';
 
 const TEXT_RECORDS = {
     summary: { bar: 'from-emerald-500 to-emerald-600', icon: FaFileAlt, title: 'Clinical Summary', placeholder: 'Your clinical summary will appear here...' },
@@ -368,6 +369,10 @@ const QuickSOAP = () => {
         return 'soap';
     });
     const [dental, setDental] = useState(() => (typeof window !== 'undefined' ? readStoredDental() : null));
+    const [dentalSpecies, setDentalSpecies] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('quickSOAP_dentalSpecies') : null));
+    const [speciesPicker, setSpeciesPicker] = useState(false);
+    // Generate or send was pressed on a dental record with no species yet; continue once one is picked.
+    const afterSpecies = useRef(null);
     const pollingIntervalRef = useRef(null);
 
     // New chunked recording state
@@ -735,6 +740,7 @@ const QuickSOAP = () => {
         setLastDictationCount(0);
         setSelectedTemplate(null);
         setDental(null);
+        setDentalSpecies(null);
 
         // Clear localStorage
         localStorage.removeItem('quickSOAP_dictations');
@@ -745,6 +751,7 @@ const QuickSOAP = () => {
         localStorage.removeItem('quickSOAP_reportName');
         localStorage.removeItem('quickSOAP_selectedTemplate');
         localStorage.removeItem('quickSOAP_dental');
+        localStorage.removeItem('quickSOAP_dentalSpecies');
         localStorage.removeItem(CASE_KEY);
         localStorage.removeItem(NOTE_TYPE_KEY);
         localStorage.removeItem(SAVED_SNAPSHOT_KEY);
@@ -792,6 +799,8 @@ const QuickSOAP = () => {
             setRecordType(normalizedType);
             localStorage.setItem('quickSOAP_recordType', normalizedType);
         }
+        const draftSpecies = formData.dental?.species || formData.species;
+        if (draftSpecies === 'canine' || draftSpecies === 'feline') setDentalSpecies(draftSpecies);
         // Check if dictations have been sent to desktop (mobile only)
         if (isMobile && formData.sent_to_desktop === true) {
             setHasBeenSentToDesktop(true);
@@ -998,6 +1007,11 @@ const QuickSOAP = () => {
         if (dental) localStorage.setItem('quickSOAP_dental', JSON.stringify(dental));
         else localStorage.removeItem('quickSOAP_dental');
     }, [dental]);
+
+    useEffect(() => {
+        if (dentalSpecies) localStorage.setItem('quickSOAP_dentalSpecies', dentalSpecies);
+        else localStorage.removeItem('quickSOAP_dentalSpecies');
+    }, [dentalSpecies]);
 
     // Parse report when it changes (but skip if manually editing)
     useEffect(() => {
@@ -1784,7 +1798,7 @@ const QuickSOAP = () => {
         }
     };
 
-    const handleGenerateSOAP = async () => {
+    const handleGenerateSOAP = async (picked) => {
         // Combine template (if any) + all dictations + manual input
         const templatePrefix = selectedTemplate ? `[TEMPLATE - Use as baseline for this record]\n${selectedTemplate.template_text}\n\n[DICTATION - Additional findings and observations]\n` : '';
         const allDictations = dictations.map(d => d.fullText || '').filter(text => text.trim()).join('\n\n');
@@ -1800,6 +1814,13 @@ const QuickSOAP = () => {
         if (!combinedInput.trim()) {
             setError('Please add at least one dictation or additional notes first.');
             console.log('[QuickSOAP] Rejected - empty combined input');
+            return;
+        }
+
+        const species = recordType === 'dental' ? (typeof picked === 'string' ? picked : dental?.species || dentalSpecies) : undefined;
+        if (recordType === 'dental' && !species) {
+            afterSpecies.current = 'generate';
+            setSpeciesPicker(true);
             return;
         }
 
@@ -1822,6 +1843,7 @@ const QuickSOAP = () => {
                         input: combinedInput.trim(),
                         user: user ? { sub: user.sub } : null,
                         recordType,
+                        species,
                         tz: getBrowserTimezone()
                     });
 
@@ -1890,6 +1912,7 @@ const QuickSOAP = () => {
                     input: combinedInput.trim(),
                     user: user ? { sub: user.sub } : null,
                     recordType,
+                    species,
                     tz: getBrowserTimezone()
                 });
 
@@ -2266,11 +2289,16 @@ const QuickSOAP = () => {
             setShowUpgradeModal(true);
             return;
         }
+        if (recordType === 'dental' && !dentalSpecies) {
+            afterSpecies.current = 'send';
+            setSpeciesPicker(true);
+            return;
+        }
         sendToDesktop();
     };
 
     // Send dictations to desktop (mobile only)
-    const sendToDesktop = async ({ quiet = false } = {}) => {
+    const sendToDesktop = async ({ quiet = false, species = dentalSpecies } = {}) => {
         if (!isAuthenticated || !user || !isMobile) return false;
 
         setIsSendingToDesktop(true);
@@ -2295,6 +2323,7 @@ const QuickSOAP = () => {
             // Prepare form_data with sent_to_desktop flag
             const formData = {
                 record_type: recordType,
+                ...(recordType === 'dental' && species ? { species } : {}),
                 dictations: dictations,
                 input: input,
                 report: null,
@@ -2437,6 +2466,27 @@ const QuickSOAP = () => {
     const CARD = `w-full ${isMobile ? 'max-w-[560px]' : 'max-w-[680px]'} mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]`;
     const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
 
+    const chooseType = (t) => {
+        if (t !== 'dental') return setRecordType(t);
+        afterSpecies.current = null;
+        setSpeciesPicker(true);
+    };
+
+    const pickSpecies = (s) => {
+        setDentalSpecies(s);
+        setRecordType('dental');
+        setSpeciesPicker(false);
+        const next = afterSpecies.current;
+        afterSpecies.current = null;
+        if (next === 'generate') handleGenerateSOAP(s);
+        else if (next === 'send') sendToDesktop({ species: s });
+    };
+
+    const closeSpeciesPicker = () => {
+        afterSpecies.current = null;
+        setSpeciesPicker(false);
+    };
+
     const noteTypeControl = isMobile ? (
         <div className="grid grid-cols-2 gap-1.5 w-[188px] aspect-square mx-auto">
             {RECORD_TYPES.map((t) => {
@@ -2447,7 +2497,7 @@ const QuickSOAP = () => {
                     <button
                         key={t}
                         type="button"
-                        onClick={() => setRecordType(t)}
+                        onClick={() => chooseType(t)}
                         className={`relative flex flex-col items-center justify-center gap-1 rounded-[16px] font-semibold cursor-pointer border transition-colors ${on ? 'text-white border-transparent' : 'text-[#1a2b4a]/65 bg-white border-[#e7ecf3]'}`}
                     >
                         {on && (
@@ -2458,7 +2508,10 @@ const QuickSOAP = () => {
                             />
                         )}
                         <Icon className="relative text-[18px]" />
-                        <span className="relative text-[12px]">{s.label}</span>
+                        <span className="relative text-[12px] leading-tight text-center">
+                            {s.label}
+                            {t === 'dental' && on && dentalSpecies && <span className="block text-[10.5px] font-medium opacity-85">{SPECIES_LABEL[dentalSpecies]}</span>}
+                        </span>
                     </button>
                 );
             })}
@@ -2473,7 +2526,7 @@ const QuickSOAP = () => {
                     <button
                         key={t}
                         type="button"
-                        onClick={() => setRecordType(t)}
+                        onClick={() => chooseType(t)}
                         className={`relative flex-1 h-10 rounded-full text-[14.5px] font-display font-semibold tracking-[-0.01em] border-none cursor-pointer bg-transparent transition-colors ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
                     >
                         {on && (
@@ -2485,6 +2538,7 @@ const QuickSOAP = () => {
                         )}
                         <span className="relative inline-flex items-center justify-center gap-1.5">
                             <Icon className="text-[13px]" /> {s.label}
+                            {t === 'dental' && on && dentalSpecies && <span className="font-medium opacity-85">· {SPECIES_LABEL[dentalSpecies]}</span>}
                         </span>
                     </button>
                 );
@@ -2497,6 +2551,7 @@ const QuickSOAP = () => {
     return (
         <>
             <CaseCreatedOverlay announcement={caseAnnouncement} />
+            <DentalSpeciesPicker open={speciesPicker} sheet={isMobile} onPick={pickSpecies} onClose={closeSpeciesPicker} />
             <style>{`
                 @keyframes fadeIn {
                     from {

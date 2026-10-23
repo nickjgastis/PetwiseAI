@@ -1522,7 +1522,7 @@ app.post('/api/generate-soap', async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
 
     try {
-        const { input, user, recordType = 'soap', tz } = req.body;
+        const { input, user, recordType = 'soap', tz, species } = req.body;
 
         console.log('[SOAP] Received request, input length:', input?.length || 0, 'recordType:', recordType);
 
@@ -1552,7 +1552,7 @@ app.post('/api/generate-soap', async (req, res) => {
         const runner = new Runner();
 
         if (recordType === 'dental') {
-            const { report, petName, dental } = await generateDental(input.trim());
+            const { report, petName, dental } = await generateDental(input.trim(), species);
             if (!report) throw new Error('dental generation failed - no output');
             if (user?.sub) {
                 try {
