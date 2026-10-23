@@ -113,7 +113,7 @@ export const Highlight = ({ dark = false, children }) => (
 );
 
 // Photo bleeds off the right edge and fades into the background behind the copy. Below lg it stacks under the copy.
-export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, imageAlt, imagePosition = 'center', badge }) => (
+export const PhotoHero = ({ eyebrow, title, body, afterBody, children, microcopy, image, imageAlt, imagePosition = 'center', badge }) => (
     <section className="relative -mt-[76px] overflow-hidden bg-[#f6f1ec]">
         <div className="hidden lg:block absolute inset-y-0 right-0 w-[62%] [mask-image:linear-gradient(to_right,transparent_8%,black_52%)]">
             <img src={image} alt={imageAlt} className="w-full h-full object-cover" style={{ objectPosition: imagePosition }} fetchpriority="high" />
@@ -125,6 +125,7 @@ export const PhotoHero = ({ eyebrow, title, body, children, microcopy, image, im
                     {title}
                 </h1>
                 {body && <p className="mt-6 max-w-lg mx-auto lg:mx-0 text-lg sm:text-xl leading-relaxed text-[#1a2b4a]/70">{body}</p>}
+                {afterBody && <div className="mt-6">{afterBody}</div>}
                 {children && <div className="mt-9 flex flex-col sm:flex-row gap-3 sm:justify-center lg:justify-start">{children}</div>}
                 {microcopy && <p className="mt-5 text-sm text-[#1a2b4a]/55">{microcopy}</p>}
             </div>

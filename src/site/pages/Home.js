@@ -1,5 +1,7 @@
 import React from 'react';
 import { FiClipboard, FiFileText, FiMessageCircle, FiMic, FiPhoneCall, FiUsers } from 'react-icons/fi';
+import { FaClipboardList, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
+import { PiTooth } from 'react-icons/pi';
 import SiteLayout from '../SiteLayout';
 import { Seo, faqLd, organizationLd, softwareLd } from '../seo';
 import { PRESS } from '../siteConfig';
@@ -107,6 +109,13 @@ const FAQS = [
     }
 ];
 
+const RECORD_TYPES = [
+    { label: 'SOAP', icon: FaClipboardList, className: 'bg-blue-50 text-blue-700 ring-blue-600/15' },
+    { label: 'Summary', icon: FaFileAlt, className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15' },
+    { label: 'Callback', icon: FaPhoneAlt, className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
+    { label: 'Dental', icon: PiTooth, className: 'bg-violet-50 text-violet-700 ring-violet-600/15' }
+];
+
 const Home = () => (
     <SiteLayout>
         <Seo
@@ -123,7 +132,17 @@ const Home = () => (
                     Finish your notes <Highlight dark>before you leave.</Highlight>
                 </>
             }
-            body="PetWise listens to the appointment and writes the SOAP note for you. Built by a veterinarian, for veterinarians."
+            body="PetWise listens to the appointment and writes the SOAP note for you."
+            afterBody={
+                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                    {RECORD_TYPES.map(({ label, icon: Icon, className }) => (
+                        <span key={label} className={`inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13.5px] font-semibold ring-1 ${className}`}>
+                            <Icon className="text-[12px]" />
+                            {label}
+                        </span>
+                    ))}
+                </div>
+            }
             microcopy="10 days unlimited. No credit card."
             image="/site/hero-cat.jpg"
             imageAlt="A tabby cat held in its owner's lap, raising a paw"
