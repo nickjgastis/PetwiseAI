@@ -2,7 +2,7 @@
 // Never sends. Read-only against Supabase.
 //   node scripts/upgrade-email-draft.js          dry run: counts only
 //   node scripts/upgrade-email-draft.js --apply  create audience, contacts and draft broadcast
-// Needs RESEND_ADMIN_API_KEY (full access); the app's RESEND_API_KEY is send-only.
+// Needs RESEND_FULL_ACCESS_KEY (full access); the app's RESEND_API_KEY is send-only.
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const fs = require('fs');
 const path = require('path');
@@ -15,7 +15,7 @@ const SUBJECT = 'PetWise is getting a big upgrade this weekend';
 const PREVIEW = 'Cases, dental charts and a whole new look. No downtime, nothing to do.';
 const REPLY_TO = 'support@petwise.vet';
 // nickname is skipped: Auth0 fills it from the email, so it makes greetings like "Hi Drjsmith42".
-const NAME_COLUMNS = ['first_name', 'given_name', 'full_name', 'name', 'display_name'];
+const NAME_COLUMNS = ['dvm_name'];
 
 const supabase = createClient(process.env.REACT_APP_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -24,7 +24,7 @@ const resend = async (method, url, body) => {
     for (let attempt = 0; attempt < 5; attempt++) {
         const res = await fetch(`https://api.resend.com${url}`, {
             method,
-            headers: { Authorization: `Bearer ${process.env.RESEND_ADMIN_API_KEY}`, 'Content-Type': 'application/json' },
+            headers: { Authorization: `Bearer ${process.env.RESEND_FULL_ACCESS_KEY}`, 'Content-Type': 'application/json' },
             body: body ? JSON.stringify(body) : undefined
         });
         if (res.status === 429) {
@@ -38,11 +38,14 @@ const resend = async (method, url, body) => {
     throw new Error(`${method} ${url}: rate limited`);
 };
 
+// Matches the app's "Dr. {dvm_name}" display; stored in Resend's first_name so the template stays {{{FIRST_NAME|there}}}.
 const firstName = (u, col) => {
-    const raw = (col && u[col]) || '';
-    const first = String(raw).trim().split(/\s+/)[0] || '';
-    if (!first || first.includes('@') || first.length > 30) return undefined;
-    return first.charAt(0).toUpperCase() + first.slice(1);
+    const name = String((col && u[col]) || '')
+        .trim()
+        .replace(/^dr\.?\s+/i, '')
+        .replace(/\s+/g, ' ');
+    if (!name || name.includes('@') || name.length > 40) return undefined;
+    return `Dr. ${name}`;
 };
 
 async function loadUsers() {
@@ -79,8 +82,12 @@ async function main() {
     const named = users.filter((u) => firstName(u, nameCol)).length;
     console.log(`name column: ${nameCol || 'none'}`);
     console.log(`active paying rows: ${total}, unique emails: ${users.length}, with first name: ${named}`);
+    users.forEach((u) => {
+        const g = firstName(u, nameCol);
+        console.log(`  greeting: ${g ? g.replace(/(\S)\S*/g, '$1***') : 'there'}`);
+    });
     if (!APPLY) return console.log('dry run, nothing created. Re-run with --apply.');
-    if (!process.env.RESEND_ADMIN_API_KEY) throw new Error('Set RESEND_ADMIN_API_KEY (full access key) in .env');
+    if (!process.env.RESEND_FULL_ACCESS_KEY) throw new Error('Set RESEND_FULL_ACCESS_KEY (full access key) in .env');
 
     const audience = await resend('POST', '/audiences', { name: AUDIENCE_NAME });
     console.log(`audience created: ${AUDIENCE_NAME}`);
