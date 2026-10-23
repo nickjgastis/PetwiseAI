@@ -271,12 +271,11 @@ const QuickSOAP = () => {
     const [queuedSoaps, setQueuedSoaps] = useState(0);
     const refreshQueuedSoaps = useCallback(async () => {
         if (usage.isUnlimited || !isAuthenticated) return setQueuedSoaps(0);
-        const { count } = await supabase
+        const { data } = await supabase
             .from('saved_reports')
-            .select('id', { count: 'exact', head: true })
-            .is('report_text', null)
-            .eq('form_data->>sent_to_desktop', 'true');
-        setQueuedSoaps(count || 0);
+            .select('id, form_data')
+            .is('report_text', null);
+        setQueuedSoaps((data || []).filter((d) => d.form_data?.sent_to_desktop === true).length);
     }, [usage.isUnlimited, isAuthenticated]);
     useEffect(() => { refreshQueuedSoaps(); }, [refreshQueuedSoaps, usage.soap.used]);
     const outOfSoaps = !usage.isUnlimited && usage.soap.remaining - queuedSoaps <= 0;
