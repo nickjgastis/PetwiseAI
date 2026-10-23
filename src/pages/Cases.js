@@ -45,6 +45,12 @@ const FadeIn = ({ delay = 0, children, className = '', play = true }) => (
         {children}
     </motion.div>
 );
+const ROW_LIFT = {
+    whileHover: { y: -2 },
+    whileTap: { scale: 0.99 },
+    transition: { type: 'spring', stiffness: 420, damping: 30 }
+};
+
 const LIFT = {
     whileHover: { y: -4 },
     whileTap: { scale: 0.985 },
@@ -279,12 +285,14 @@ const CaseList = ({ mobile = false }) => {
                 {loading ? (
                     <section aria-hidden className={`animate-pulse ${mobile ? 'mb-7' : 'mb-10'}`}>
                         <div className="h-5 mb-3 ml-1 flex items-center"><span className="h-3 w-14 rounded-full bg-[#1a2b4a]/[0.07]" /></div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-2.5">
                             {[0, 1, 2].map((i) => (
-                                <div key={i} className={`flex flex-col bg-white border border-[#e7ecf3] ${mobile ? 'h-[112px] rounded-[20px] p-4' : 'h-[132px] rounded-[24px] p-5'}`}>
-                                    <span className="mt-1 h-3.5 w-28 rounded-full bg-[#1a2b4a]/[0.08]" />
-                                    <span className="mt-2.5 h-2.5 w-36 rounded-full bg-[#1a2b4a]/[0.05]" />
-                                    <span className="mt-auto h-[22px] w-16 rounded-full bg-[#1a2b4a]/[0.05]" />
+                                <div key={i} className={`flex items-center gap-4 bg-white border border-[#e7ecf3] rounded-[20px] ${mobile ? 'h-[92px] px-4' : 'h-[72px] px-5'}`}>
+                                    <div className="flex-1">
+                                        <span className="block h-3.5 w-32 rounded-full bg-[#1a2b4a]/[0.08]" />
+                                        <span className="block mt-2.5 h-2.5 w-40 rounded-full bg-[#1a2b4a]/[0.05]" />
+                                    </div>
+                                    {!mobile && <span className="h-[24px] w-24 rounded-full bg-[#1a2b4a]/[0.05]" />}
                                 </div>
                             ))}
                         </div>
@@ -307,46 +315,44 @@ const CaseList = ({ mobile = false }) => {
                     groups.map((g, gi) => (
                         <section key={g.label} className={mobile ? 'mb-7' : 'mb-10'}>
                             <h2 className="text-[14px] font-semibold text-[#1a2b4a]/50 mb-3 ml-1">{g.label}</h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="flex flex-col gap-2.5">
                                 {g.items.map((c, i) => {
                                     const types = typesByCase[c.id] || {};
                                     const total = Object.values(types).reduce((a, b) => a + b, 0);
                                     const isNew = !mobile && unviewed.has(c.id);
                                     const isPending = !c.pet_name && !c.title && pending.has(c.id);
+                                    const status = total > 0 ? (
+                                        RECORD_TYPES.filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)
+                                    ) : pending.has(c.id) ? (
+                                        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#2d5fb8]/80">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#2d5fb8] animate-pulse" />
+                                            <span className="truncate">{mobile ? 'Generates when your desktop is open' : 'From your phone'}</span>
+                                        </span>
+                                    ) : (
+                                        <span className="text-[12.5px] text-[#1a2b4a]/40">No records yet</span>
+                                    );
                                     return (
                                         <FadeIn key={c.id} play={animateIn} delay={Math.min(gi * 3 + i, 10) * 0.03}>
                                         <motion.button
                                             type="button"
-                                            {...LIFT}
+                                            {...ROW_LIFT}
                                             onClick={() => (mobile ? requestNewCase(navigate, c.id) : navigate(`/dashboard/cases/${c.id}`))}
-                                            className={`group w-full text-left border bg-white cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] flex flex-col ${mobile ? 'h-[112px] rounded-[20px] p-4' : 'h-[132px] rounded-[24px] p-5'} ${isNew ? 'border-[#2d5fb8]/35 shadow-[0_14px_34px_-22px_rgba(45,95,184,0.55)]' : 'border-[#e7ecf3] hover:border-[#d6e3f7]'}`}
+                                            className={`group w-full text-left border bg-white cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_18px_40px_-26px_rgba(19,35,63,0.3)] flex items-center gap-4 rounded-[20px] ${mobile ? 'px-4 py-3.5' : 'px-5 py-4'} ${isNew ? 'border-[#2d5fb8]/35 shadow-[0_14px_34px_-22px_rgba(45,95,184,0.55)]' : 'border-[#e7ecf3] hover:border-[#d6e3f7]'}`}
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="flex items-center gap-2 m-0 text-[16px] font-semibold text-[#13233f]">
-                                                        {isNew && <span title="New from your phone" className="shrink-0 w-2.5 h-2.5 rounded-full bg-[#2d5fb8] ring-4 ring-[#2d5fb8]/15" />}
-                                                        <span className={`truncate ${isPending ? 'text-[#1a2b4a]/45' : ''}`}>{caseName(c, pending, mobile ? 'Waiting to generate' : 'Generating…')}</span>
-                                                    </p>
-                                                    <p className="text-[12.5px] text-[#1a2b4a]/50 mt-0.5 truncate">
-                                                        {formatDateTime(c.updated_at)}
-                                                        {total > 0 && ` · ${total} ${total === 1 ? 'record' : 'records'}`}
-                                                        {isNew && <span className="font-medium text-[#2d5fb8]"> · New from phone</span>}
-                                                    </p>
-                                                </div>
-                                                <FiChevronRight className="text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] group-hover:translate-x-0.5 transition-all" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="flex items-center gap-2 m-0 text-[16px] font-semibold text-[#13233f]">
+                                                    {isNew && <span title="New from your phone" className="shrink-0 w-2.5 h-2.5 rounded-full bg-[#2d5fb8] ring-4 ring-[#2d5fb8]/15" />}
+                                                    <span className={`truncate ${isPending ? 'text-[#1a2b4a]/45' : ''}`}>{caseName(c, pending, mobile ? 'Waiting to generate' : 'Generating…')}</span>
+                                                </p>
+                                                <p className="m-0 text-[12.5px] text-[#1a2b4a]/50 mt-0.5 truncate">
+                                                    {formatDateTime(c.updated_at)}
+                                                    {total > 0 && ` · ${total} ${total === 1 ? 'record' : 'records'}`}
+                                                    {isNew && <span className="font-medium text-[#2d5fb8]"> · New from phone</span>}
+                                                </p>
+                                                <div className="sm:hidden mt-2 flex items-center gap-1.5 overflow-hidden">{status}</div>
                                             </div>
-                                            <div className="mt-auto flex items-center gap-1.5 overflow-hidden h-[26px] shrink-0">
-                                                {total > 0 ? (
-                                                    RECORD_TYPES.filter((t) => types[t]).map((t) => <TypeChip key={t} type={t} count={types[t]} />)
-                                                ) : pending.has(c.id) ? (
-                                                    <span className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#2d5fb8]/80">
-                                                        <span className="w-1.5 h-1.5 rounded-full bg-[#2d5fb8] animate-pulse" />
-                                                        <span className="truncate">{mobile ? 'Generates when your desktop is open' : 'From your phone'}</span>
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[12.5px] text-[#1a2b4a]/40">No records yet</span>
-                                                )}
-                                            </div>
+                                            <div className="hidden sm:flex items-center justify-end gap-1.5 shrink-0 max-w-[50%] overflow-hidden">{status}</div>
+                                            <FiChevronRight className="shrink-0 text-[#1a2b4a]/25 group-hover:text-[#2d5fb8] group-hover:translate-x-0.5 transition-all" />
                                         </motion.button>
                                         </FadeIn>
                                     );
