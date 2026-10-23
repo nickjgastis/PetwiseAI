@@ -370,7 +370,13 @@ router.post('/records', requireUser, listRoute(async (supabase, uid, { cursor, l
         query = query.in('record_type', RECORD_FILTERS[type]);
     }
     const term = searchTerm(q);
-    if (term) query = query.or(`report_name.ilike.%${term}%,report_text.ilike.%${term}%,form_data->>petName.ilike.%${term}%`);
+    // Names match anywhere; record text only at a word start, so "ned" finds Ned but not "planned".
+    // \\m is Postgres's start-of-word, doubled because or() values are quoted.
+    if (term) {
+        query = query.or(
+            `report_name.ilike.%${term}%,form_data->>petName.ilike.%${term}%,report_text.imatch."\\\\m${term.replace(/[.^$|?+{}[\]]/g, '.')}"`
+        );
+    }
     query = afterCursor(query, 'created_at', cursor);
     const { data, error } = await query
         .order('created_at', { ascending: false })
