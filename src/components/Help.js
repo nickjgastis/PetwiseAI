@@ -3,9 +3,11 @@ import { useAuth0 } from '@auth0/auth0-react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowRight, FiChevronDown, FiFolder, FiMail, FiMessageCircle, FiMic, FiPlay, FiSmartphone } from 'react-icons/fi';
+import { PiTooth } from 'react-icons/pi';
 import Footer from './Footer';
 import Guide, { StepBody, NAME_SCRIPT, SPEAK_TIPS } from './Guide';
 import { BRAND_WASH, GRADIENT_TEXT } from './caseStyles';
+import UpgradeAnnouncement from './UpgradeAnnouncement';
 
 const EASE = [0.2, 0.7, 0.2, 1];
 
@@ -145,8 +147,9 @@ const FaqItem = ({ q, a }) => {
 };
 
 const Help = () => {
-    const { isAuthenticated } = useAuth0();
+    const { isAuthenticated, user } = useAuth0();
     const [guide, setGuide] = useState(null);
+    const [showWhatsNew, setShowWhatsNew] = useState(false);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -160,6 +163,32 @@ const Help = () => {
                         <h1 className={`m-0 pb-1 text-[2.4rem] sm:text-[3rem] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>Help center</h1>
                         <p className="m-0 mt-2 text-[17px] text-[#1a2b4a]/60 max-w-[560px]">Everything you need to make records, manage cases and get answers. Each guide takes about a minute.</p>
                     </motion.header>
+
+                    <motion.button
+                        type="button"
+                        onClick={() => setShowWhatsNew(true)}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, ease: EASE, delay: 0.05 }}
+                        className={`group w-full mb-14 text-left rounded-[28px] ${BRAND_WASH} border border-[#e3ecf8] p-6 sm:p-7 flex flex-col sm:flex-row sm:items-center gap-5 cursor-pointer hover:border-[#2d5fb8]/30 transition-colors`}
+                    >
+                        <div className="flex -space-x-2 shrink-0">
+                            <span className="w-12 h-12 rounded-[16px] text-white flex items-center justify-center text-[20px] ring-4 ring-white/70 shadow-[0_12px_26px_-14px_rgba(45,95,184,0.8)]" style={{ background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' }}>
+                                <FiFolder />
+                            </span>
+                            <span className="w-12 h-12 rounded-[16px] text-white flex items-center justify-center text-[22px] ring-4 ring-white/70 bg-gradient-to-br from-[#8b5cf6] to-[#6d28d9] shadow-[0_12px_26px_-14px_rgba(109,40,217,0.8)]">
+                                <PiTooth />
+                            </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="m-0 mb-1 text-[12px] font-bold uppercase tracking-[0.12em] text-[#2d5fb8]">What’s new</p>
+                            <p className="m-0 text-[19px] font-semibold text-[#13233f]">Cases and Dental Records</p>
+                            <p className="m-0 mt-1 text-[15px] text-[#1a2b4a]/60 leading-relaxed">Every visit is now a case, and you can dictate a full dental chart. See what changed.</p>
+                        </div>
+                        <span className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-[14px] font-semibold text-white bg-[#2d5fb8] group-hover:bg-[#2350a3] shrink-0 self-start sm:self-auto shadow-[0_10px_30px_-14px_rgba(45,95,184,0.7)] transition-colors">
+                            See what’s new <FiArrowRight />
+                        </span>
+                    </motion.button>
 
                     <Section eyebrow="Start here" title="The basics">
                         <div className="grid sm:grid-cols-2 gap-4">
@@ -252,6 +281,7 @@ const Help = () => {
             </div>
             {!isAuthenticated && <Footer />}
             <AnimatePresence>{guide && <Guide key={guide} id={guide} onClose={() => setGuide(null)} />}</AnimatePresence>
+            <AnimatePresence>{showWhatsNew && <UpgradeAnnouncement isMobile={false} sub={user?.sub} onClose={() => setShowWhatsNew(false)} />}</AnimatePresence>
         </>
     );
 };
