@@ -123,8 +123,7 @@ const CasePicker = ({ onPick, onClose }) => {
 };
 
 // Pill above the recorder: start a new case (default) or file this note into an existing one.
-// `bigClass` turns the "add to existing case" link into a second heading line at that text size.
-const CaseTarget = ({ caseId, onChange, disabled = false, light = false, bigClass = '' }) => {
+const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
     const [open, setOpen] = useState(false);
     const [caseRow, setCaseRow] = useState(null);
     const onChangeRef = useRef(onChange);
@@ -162,20 +161,20 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false, bigClas
                     <motion.div
                         key="selected"
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        className={`inline-flex items-center gap-2 rounded-full pl-1.5 pr-1.5 py-1.5 text-[13px] ${base}`}
+                        className={`inline-flex items-center gap-2.5 rounded-full h-12 pl-2 pr-2 text-[15px] ${base}`}
                     >
-                        <FiFolder className="ml-1.5 text-[14px] text-[#2d5fb8]" />
+                        <FiFolder className="ml-2 text-[17px] text-[#2d5fb8]" />
                         <span>
                             Adding to <span className="font-semibold">{caseRow.pet_name || (caseRow.pending ? 'this case' : 'Unnamed patient')}</span>
                             <span className="opacity-50"> · {caseRow.pending ? 'Waiting to generate' : dayLabel(caseRow.created_at)}</span>
                         </span>
                         {!disabled && (
                             <>
-                                <button type="button" onClick={() => setOpen(true)} className="px-2.5 py-1 rounded-full text-[12px] font-medium text-[#2d5fb8] bg-[#e9f6fd] hover:bg-[#d8effb] border-none cursor-pointer">
+                                <button type="button" onClick={() => setOpen(true)} className="px-3.5 h-8 rounded-full text-[13.5px] font-medium text-[#2d5fb8] bg-[#e9f6fd] hover:bg-[#d8effb] border-none cursor-pointer">
                                     Change
                                 </button>
-                                <button type="button" onClick={() => onChange(null)} title="Start a new case instead" className="w-6 h-6 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 hover:bg-black/5 border-none bg-transparent cursor-pointer">
-                                    <FiX className="text-[13px]" />
+                                <button type="button" onClick={() => onChange(null)} title="Start a new case instead" className="w-8 h-8 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 hover:bg-black/5 border-none bg-transparent cursor-pointer">
+                                    <FiX className="text-[15px]" />
                                 </button>
                             </>
                         )}
@@ -187,19 +186,11 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false, bigClas
                         disabled={disabled}
                         onClick={() => setOpen(true)}
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        className={bigClass
-                            ? `m-0 p-0 border-none bg-transparent font-bold tracking-[-0.03em] leading-[1.1] pb-1 text-[#1a2b4a]/30 hover:text-[#2d5fb8] cursor-pointer transition-colors disabled:opacity-50 disabled:hover:text-[#1a2b4a]/30 ${bigClass}`
-                            : `inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-colors disabled:opacity-50 ${base}`}
+                        className={`inline-flex items-center gap-2.5 rounded-full h-12 px-6 text-[15px] font-semibold cursor-pointer transition-colors disabled:opacity-50 ${base}`}
                     >
-                        {bigClass ? (
-                            'or add to existing case'
-                        ) : (
-                            <>
-                                <FiFolder className="text-[14px] opacity-70" />
-                                or add to an existing case
-                                <FiPlus className="text-[13px] opacity-50" />
-                            </>
-                        )}
+                        <FiFolder className="text-[17px] text-[#2d5fb8]" />
+                        or add to an existing case
+                        <FiPlus className="text-[15px] opacity-50" />
                     </motion.button>
                 )}
             </AnimatePresence>
