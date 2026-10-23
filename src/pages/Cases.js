@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
@@ -390,13 +390,31 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
     const info = typeStyle(note.record_type || note.form_data?.record_type);
     const Icon = info.icon;
     const title = customTitle(note) || card?.title || `${info.label} record`;
+    const [copied, setCopied] = useState(false);
+    const copy = async (e) => {
+        e.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(note.report_text || '');
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1800);
+        } catch (err) {
+            console.error('Copy failed:', err);
+        }
+    };
     return (
-        <motion.button
-            type="button"
+        <motion.div
+            role="button"
+            tabIndex={0}
             {...LIFT}
             initial={isNew ? { scale: 0.94 } : false}
             animate={{ scale: 1 }}
             onClick={() => onOpen(note)}
+            onKeyDown={(e) => {
+                if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault();
+                    onOpen(note);
+                }
+            }}
             className={`group w-full text-left rounded-[24px] border border-[#e7ecf3] bg-white overflow-hidden flex flex-col min-h-[180px] cursor-pointer transition-[box-shadow,border-color] duration-300 hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] ${info.hover} ${isNew ? 'ring-2 ring-[#5cccf0]/50' : ''}`}
         >
             <div className={`h-1 w-full bg-gradient-to-r ${info.bar}`} />
@@ -444,11 +462,22 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
                     )}
                 </AnimatePresence>
 
-                <span className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 group-hover:opacity-100 transition-opacity">
-                    <FiEdit2 className="text-[11px]" /> Open and edit
-                </span>
+                <div className="mt-4 flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[#2d5fb8] opacity-0 group-hover:opacity-100 transition-opacity">
+                        <FiEdit2 className="text-[11px]" /> Open and edit
+                    </span>
+                    <button
+                        type="button"
+                        onClick={copy}
+                        title="Copy the whole record"
+                        className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12.5px] font-semibold border cursor-pointer transition-colors ${copied ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-[#13233f] border-[#dfe6f0] hover:border-[#2d5fb8]/30 hover:bg-[#f6f8fb]'}`}
+                    >
+                        {copied ? <FiCheck className="text-[13px]" /> : <FiCopy className="text-[13px] text-[#2d5fb8]" />}
+                        {copied ? 'Copied' : 'Copy all'}
+                    </button>
+                </div>
             </div>
-        </motion.button>
+        </motion.div>
     );
 };
 
