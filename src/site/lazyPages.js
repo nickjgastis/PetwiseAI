@@ -10,6 +10,7 @@ export const LAZY_PAGES = {
     Pricing: page(() => import(/* webpackChunkName: "site" */ './pages/Pricing')),
     Students: page(() => import(/* webpackChunkName: "site" */ './pages/Students')),
     About: page(() => import(/* webpackChunkName: "site" */ './pages/About')),
+    Demo: page(() => import(/* webpackChunkName: "site" */ './pages/Demo')),
     Help: page(() => import(/* webpackChunkName: "site" */ './pages/Help')),
     Updates: page(() => import(/* webpackChunkName: "site" */ './pages/Updates')),
     Install: page(() => import(/* webpackChunkName: "site" */ './pages/Install')),

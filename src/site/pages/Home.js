@@ -161,8 +161,8 @@ const Home = () => (
             }
         >
             <SignupButton placement="home_hero" />
-            <ButtonLink href="#how-it-works" variant="outline" arrow={false} className="bg-white/60 backdrop-blur">
-                See how it works
+            <ButtonLink to="/demo" variant="outline" arrow={false} trackAs="book_demo_home_hero" className="bg-white/60 backdrop-blur">
+                Book a demo
             </ButtonLink>
         </PhotoHero>
 

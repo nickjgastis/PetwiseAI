@@ -6,6 +6,7 @@ export { default as Features } from './Features';
 export { default as Pricing } from './Pricing';
 export { default as Students } from './Students';
 export { default as About } from './About';
+export { default as Demo } from './Demo';
 export { default as Help } from './Help';
 export { default as Updates } from './Updates';
 export { default as Install } from './Install';

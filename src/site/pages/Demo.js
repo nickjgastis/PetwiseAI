@@ -1,0 +1,35 @@
+import React from 'react';
+import SiteLayout from '../SiteLayout';
+import { Seo } from '../seo';
+import { Container, Highlight } from '../ui';
+
+const Demo = () => (
+    <SiteLayout>
+        <Seo
+            title="Book a Demo | PetWise Veterinary AI Scribe"
+            description="Book a free 1 on 1 demo of PetWise. See AI dictation for SOAP notes, summaries, callbacks and dental records in your own workflow."
+            path="/demo"
+        />
+        <section className="bg-[#f6f8fb]">
+            <Container className="pt-10 sm:pt-14 pb-20 sm:pb-28">
+                <div className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
+                    <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd]">Book a demo</p>
+                    <h1 className="mt-4 text-[2.25rem] sm:text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-[#13233f]">
+                        See PetWise <Highlight dark>in your workflow.</Highlight>
+                    </h1>
+                    <p className="mt-4 text-lg text-[#1a2b4a]/65">Pick a time that works for you. We will walk you through it and answer your questions.</p>
+                </div>
+                <div className="max-w-4xl mx-auto overflow-hidden rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]">
+                    <iframe
+                        title="Book a PetWise demo"
+                        src="https://calendar.google.com/calendar/appointments/schedules/AcZssZ3PQ4gY09WOIVkRUKVviprRA-IcY_6RX1z_lfVZxwFFl2LLaC4wnTtRVwQgebSr0rRN2X3sxnIe?gv=true"
+                        className="block w-full h-[760px] sm:h-[680px] border-0"
+                        frameBorder="0"
+                    />
+                </div>
+            </Container>
+        </section>
+    </SiteLayout>
+);
+
+export default Demo;
