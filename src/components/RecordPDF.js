@@ -2,7 +2,7 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { DentalPages } from './DentalPDF';
 
-const INK = '#13233f';
+const INK = '#000000';
 const MUTED = '#6b7689';
 
 // Same look as the dental PDF; the eyebrow takes the record type's color.
@@ -12,8 +12,7 @@ const TYPES = {
     callback: { eyebrow: 'CALLBACK', color: '#d97706' }
 };
 
-// Matches the section colors in the SOAP editor.
-const SOAP_SECTIONS = { subjective: '#2563eb', objective: '#059669', assessment: '#d97706', plan: '#dc2626' };
+const SOAP_SECTIONS = new Set(['subjective', 'objective', 'assessment', 'plan']);
 
 const styles = StyleSheet.create({
     page: { paddingTop: 34, paddingBottom: 46, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: INK },
@@ -60,14 +59,26 @@ const toBlocks = (text, type) => {
         if (isHeadingLine(lines, i)) {
             flush();
             const label = clean(line).replace(/:$/, '');
-            const sectionColor = type === 'soap' && SOAP_SECTIONS[label.toLowerCase()];
-            blocks.push(sectionColor ? { kind: 'section', text: label, color: sectionColor } : { kind: 'heading', text: label });
+            blocks.push({ kind: type === 'soap' && SOAP_SECTIONS.has(label.toLowerCase()) ? 'section' : 'heading', text: label });
             return;
         }
         para.push(line);
     });
     flush();
-    return blocks;
+    // SOAP output repeats a section name as its first sub-heading ("Assessment" then "Assessment:"),
+    // and sub-headings with nothing under them are dropped.
+    const isHead = (b) => b && (b.kind === 'section' || b.kind === 'heading');
+    const out = [];
+    blocks.forEach((b, i) => {
+        const prev = out.filter((x) => x.kind !== 'gap').pop();
+        if (isHead(b) && isHead(prev) && prev.text.toLowerCase() === b.text.toLowerCase()) return;
+        if (b.kind === 'heading') {
+            const next = blocks.slice(i + 1).find((x) => x.kind !== 'gap');
+            if (!next || isHead(next)) return;
+        }
+        out.push(b);
+    });
+    return out;
 };
 
 // "**Weight:** 12.4 kg" keeps its label bold.
@@ -91,7 +102,7 @@ export const TextRecordPage = ({ reportText, title, type = 'soap' }) => {
             {blocks.map((b, i) => {
                 if (b.kind === 'gap') return <View key={i} style={styles.gap} />;
                 if (b.kind === 'section') {
-                    return <Text key={i} style={[styles.section, { color: b.color }, i === 0 && { borderTopWidth: 0, marginTop: 6 }]} minPresenceAhead={30}>{b.text}</Text>;
+                    return <Text key={i} style={[styles.section, i === 0 && { borderTopWidth: 0, marginTop: 6 }]} minPresenceAhead={30}>{b.text}</Text>;
                 }
                 if (b.kind === 'heading') return <Text key={i} style={styles.heading} minPresenceAhead={24}>{b.text}</Text>;
                 return <Text key={i} style={styles.body}>{renderInline(b.text)}</Text>;

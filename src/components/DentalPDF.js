@@ -4,7 +4,7 @@ import { buildChart } from '../dental/geometry';
 import { STATUSES, STATUS_ORDER, toothLabel } from '../dental/teeth';
 import { parseSections } from '../dental/sections';
 
-const INK = '#13233f';
+const INK = '#000000';
 const MUTED = '#6b7689';
 
 const styles = StyleSheet.create({

@@ -57,8 +57,10 @@ const LIFT = {
     transition: { type: 'spring', stiffness: 420, damping: 30 }
 };
 
-const formatDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-const formatDateTime = (d) => new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+// saved_reports timestamps come back without a zone ("2026-10-23T02:21:13") but are UTC.
+const toDate = (d) => new Date(typeof d === 'string' && /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(d) ? `${d}Z` : d);
+const formatDate = (d) => toDate(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+const formatDateTime = (d) => toDate(d).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const plain = (text) => (text || '').replace(/[*#_`>]/g, '');
 
 const dayBucket = (d) => {
