@@ -5,6 +5,7 @@ import { Seo, faqLd, organizationLd, softwareLd } from '../seo';
 import { PRESS } from '../siteConfig';
 import { SoapNote } from '../demos';
 import DictationDemo from '../DictationDemo';
+import DentalDemo from '../DentalDemo';
 import { PRICES } from '../../constants/pricing';
 import { BRAND_WASH } from '../../brand';
 import {
@@ -145,6 +146,30 @@ const Home = () => (
                 See how it works
             </ButtonLink>
         </PhotoHero>
+
+        <Section>
+            <SectionHeading
+                align="center"
+                eyebrow="New"
+                title={
+                    <>
+                        Now with <Highlight dark>dental records.</Highlight>
+                    </>
+                }
+                body="Dictate the dental the way you would say it to a tech. PetWise charts every tooth and writes the record next to it."
+            />
+            <Reveal delay={120}>
+                <DentalDemo />
+            </Reveal>
+            <Reveal delay={180} className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-2 text-[14px] text-[#1a2b4a]/60">
+                {['Modified Triadan, dog and cat', 'Tap a tooth to change a finding', 'PDF with the chart on page one'].map((p) => (
+                    <span key={p} className="inline-flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-violet-500" />
+                        {p}
+                    </span>
+                ))}
+            </Reveal>
+        </Section>
 
         <Section>
             <Reveal as="figure" className="max-w-4xl mx-auto text-center">
