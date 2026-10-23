@@ -7,7 +7,7 @@ const Demo = () => (
     <SiteLayout>
         <Seo
             title="Book a Demo | PetWise Veterinary AI Scribe"
-            description="Book a free 1 on 1 demo of PetWise. See AI dictation for SOAP notes, summaries, callbacks and dental records in your own workflow."
+            description="Book a free one on one demo with Stacey Gastis, DVM. A walkthrough of your real clinical workflows, with free trial setup. Bring your team."
             path="/demo"
         />
         <section className="bg-[#f6f8fb]">
@@ -15,9 +15,9 @@ const Demo = () => (
                 <div className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
                     <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#3468bd]">Book a demo</p>
                     <h1 className="mt-4 text-[2.25rem] sm:text-[2.75rem] leading-[1.05] font-semibold tracking-[-0.035em] text-[#13233f]">
-                        See PetWise <Highlight dark>in your workflow.</Highlight>
+                        One on one with <Highlight dark>Dr. Gastis.</Highlight>
                     </h1>
-                    <p className="mt-4 text-lg text-[#1a2b4a]/65">Pick a time that works for you. We will walk you through it and answer your questions.</p>
+                    <p className="mt-4 text-lg text-[#1a2b4a]/65">A walkthrough of your real workflows, with free trial setup. Bring your team.</p>
                 </div>
                 <div className="max-w-4xl mx-auto overflow-hidden rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]">
                     <iframe
