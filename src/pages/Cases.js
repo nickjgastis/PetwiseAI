@@ -473,7 +473,7 @@ const NoteBox = ({ note, onOpen, isNew, previewPending }) => {
                         className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12.5px] font-semibold border cursor-pointer transition-colors ${copied ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-white text-[#13233f] border-[#dfe6f0] hover:border-[#2d5fb8]/30 hover:bg-[#f6f8fb]'}`}
                     >
                         {copied ? <FiCheck className="text-[13px]" /> : <FiCopy className="text-[13px] text-[#2d5fb8]" />}
-                        {copied ? 'Copied' : 'Copy all'}
+                        {copied ? 'Copied' : 'Copy'}
                     </button>
                 </div>
             </div>
