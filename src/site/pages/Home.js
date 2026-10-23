@@ -110,10 +110,10 @@ const FAQS = [
 ];
 
 const RECORD_TYPES = [
-    { label: 'SOAP', icon: FaClipboardList, className: 'from-blue-500 to-blue-600 shadow-blue-600/25' },
-    { label: 'Summary', icon: FaFileAlt, className: 'from-emerald-500 to-emerald-600 shadow-emerald-600/25' },
-    { label: 'Callback', icon: FaPhoneAlt, className: 'from-amber-500 to-amber-600 shadow-amber-600/25' },
-    { label: 'Dental', icon: PiTooth, className: 'from-violet-500 to-violet-600 shadow-violet-600/25' }
+    { label: 'SOAP', icon: FaClipboardList, className: 'from-blue-400 to-blue-500 shadow-blue-500/20' },
+    { label: 'Summary', icon: FaFileAlt, className: 'from-emerald-400 to-emerald-500 shadow-emerald-500/20' },
+    { label: 'Callback', icon: FaPhoneAlt, className: 'from-amber-400 to-amber-500 shadow-amber-500/20' },
+    { label: 'Dental', icon: PiTooth, className: 'from-violet-400 to-violet-500 shadow-violet-500/20' }
 ];
 
 const Home = () => (
@@ -134,10 +134,10 @@ const Home = () => (
             }
             body="AI dictation for every scenario in your practice."
             afterBody={
-                <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center lg:justify-start">
                     {RECORD_TYPES.map(({ label, icon: Icon, className }) => (
-                        <span key={label} className={`inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13.5px] font-semibold text-white bg-gradient-to-b shadow-[0_6px_14px_-6px] ${className}`}>
-                            <Icon className="text-[12px]" />
+                        <span key={label} className={`inline-flex items-center gap-1 sm:gap-1.5 h-7 sm:h-8 px-2.5 sm:px-3.5 rounded-full text-[12px] sm:text-[13.5px] font-semibold text-white bg-gradient-to-b shadow-[0_4px_10px_-6px] ${className}`}>
+                            <Icon className="text-[11px] sm:text-[12px]" />
                             {label}
                         </span>
                     ))}
