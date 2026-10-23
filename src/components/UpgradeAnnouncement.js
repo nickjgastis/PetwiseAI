@@ -10,8 +10,6 @@ import { BRAND_WASH, TYPE_STYLES, GRADIENT_TEXT } from './caseStyles';
 import { requestNewCase } from '../utils/cases';
 
 const EASE = [0.2, 0.7, 0.2, 1];
-const SEEN_KEY = 'petwise_upgrade_cases_v2';
-const NEW_ACCOUNT_MS = 3 * 24 * 60 * 60 * 1000;
 const VIOLET_TEXT = 'bg-clip-text text-transparent bg-gradient-to-r from-[#6d28d9] via-[#8b5cf6] to-[#c084fc]';
 
 const DENTAL_SAMPLE = {
@@ -34,18 +32,6 @@ const DentalCard = ({ compact = false }) => (
         <DentalChart species="canine" teeth={DENTAL_SAMPLE} showLegend={!compact} maxHeight={compact ? '220px' : '340px'} />
     </div>
 );
-
-const seenKey = (sub) => `${SEEN_KEY}:${sub || 'anon'}`;
-
-// Existing users only: brand-new accounts get the AppTour instead.
-export const shouldShowUpgrade = (userData, sub) => {
-    if (!userData || userData.has_seen_app_tour === false) return false;
-    if (localStorage.getItem(seenKey(sub))) return false;
-    const created = userData.created_at ? new Date(userData.created_at).getTime() : 0;
-    return !created || Date.now() - created > NEW_ACCOUNT_MS;
-};
-
-export const markUpgradeSeen = (sub) => localStorage.setItem(seenKey(sub), new Date().toISOString());
 
 const CaseMock = ({ compact = false }) => {
     const rows = [
@@ -192,7 +178,7 @@ const MOBILE_SLIDES = [
     }
 ];
 
-const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
+const UpgradeAnnouncement = ({ isMobile, onClose }) => {
     const navigate = useNavigate();
     const slides = isMobile ? MOBILE_SLIDES : DESKTOP_SLIDES;
     const [i, setI] = useState(0);
@@ -201,7 +187,6 @@ const UpgradeAnnouncement = ({ isMobile, sub, onClose }) => {
     const last = i === slides.length - 1;
 
     const close = (after) => {
-        markUpgradeSeen(sub);
         onClose();
         if (after) after();
     };

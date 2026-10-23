@@ -125,3 +125,5 @@ export const authHeaders = async () => {
 
 // Paged lists: 'records' or 'cases'. Resolves { data, nextCursor, error } (cases also returns notes).
 export const fetchPage = (list, body = {}) => execute(body, `/api/db/${list}`);
+
+export const markAnnouncementSeen = (id) => execute({ id }, '/api/db/announcements/seen');

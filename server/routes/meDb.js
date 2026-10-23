@@ -465,5 +465,36 @@ router.post('/cases', requireUser, listRoute(async (supabase, uid, { cursor, lim
     return { data: page, notes, nextCursor: nextCursor(page, 'updated_at', data.length > size) };
 }));
 
+const ANNOUNCEMENT_ID = /^[a-z0-9-]{1,64}$/;
+
+router.post('/announcements/seen', requireUser, async (req, res) => {
+    const supabase = req.app.locals.supabase;
+    const id = String(req.body?.id || '');
+    try {
+        if (!ANNOUNCEMENT_ID.test(id)) throw fail(400, 'Invalid announcement id', '400');
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('seen_announcements')
+            .eq('auth0_user_id', req.auth0Sub)
+            .maybeSingle();
+        if (error) throw error;
+        if (!user) throw fail(404, 'User not found', '404');
+        const seen = { ...(user.seen_announcements || {}) };
+        if (!seen[id]) {
+            seen[id] = new Date().toISOString();
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ seen_announcements: seen })
+                .eq('auth0_user_id', req.auth0Sub);
+            if (updateError) throw updateError;
+        }
+        return res.json({ data: seen, error: null });
+    } catch (err) {
+        const status = err.status || 500;
+        console.error('[api/db announcements]', err.message || err);
+        return res.status(status).json({ data: null, error: { message: err.message || 'Query failed', code: err.code || String(status) } });
+    }
+});
+
 module.exports = router;
 module.exports.requireUser = requireUser;

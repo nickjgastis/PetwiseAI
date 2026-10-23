@@ -22,7 +22,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
 import AppTour from '../components/onboarding/AppTour';
-import UpgradeAnnouncement, { shouldShowUpgrade, markUpgradeSeen } from '../components/UpgradeAnnouncement';
+import { nextAnnouncement, dismissAnnouncements } from '../announcements';
 import UsageRing from '../components/UsageRing';
 import { BRAND_WASH } from '../components/caseStyles';
 import { useUsage, trialPlanLabel, getTier } from '../hooks/useUsage';
@@ -259,7 +259,7 @@ const Dashboard = () => {
     const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(true); // Default true for existing users
     const [onboardingData, setOnboardingData] = useState(null); // New onboarding flow data (null = no row = skip)
     const [showAppTour, setShowAppTour] = useState(false); // First-run tutorial for brand-new users
-    const [showUpgrade, setShowUpgrade] = useState(false);
+    const [announcement, setAnnouncement] = useState(null);
     const [showAccountMenu, setShowAccountMenu] = useState(false); // Sidebar footer account popup
     const [showQRModal, setShowQRModal] = useState(false); // Mobile app QR popup
     const accountMenuRef = useRef(null);
@@ -920,7 +920,7 @@ const Dashboard = () => {
         try {
             const { data, error } = await supabase
                 .from('users')
-                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour, created_at')
+                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour, created_at, seen_announcements')
                 .eq('auth0_user_id', user.sub)
                 .single();
             let userData = data;
@@ -959,7 +959,7 @@ const Dashboard = () => {
                             // Fetch the existing user
                             const { data: existingUser, error: fetchError } = await supabase
                                 .from('users')
-                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour, created_at')
+                                .select('subscription_status, subscription_interval, stripe_customer_id, has_accepted_terms, email, nickname, dvm_name, grace_period_end, subscription_end_date, plan_label, student_school_email, student_grad_year, has_completed_onboarding, has_used_trial, has_activated_stripe_trial, welcome_email_sent_at, has_seen_app_tour, created_at, seen_announcements')
                                 .eq('auth0_user_id', user.sub)
                                 .single();
                             
@@ -1043,8 +1043,8 @@ const Dashboard = () => {
             setUserData(userData);
             // First-run tutorial for brand-new users (backfilled true for existing users)
             setShowAppTour(userData.has_seen_app_tour === false);
-            if (userData.has_seen_app_tour === false) markUpgradeSeen(user.sub);
-            else setShowUpgrade(shouldShowUpgrade(userData, user.sub));
+            if (userData.has_seen_app_tour === false) dismissAnnouncements(userData, user.sub);
+            else setAnnouncement(nextAnnouncement(userData, user.sub));
 
             // Check new onboarding flow table (find or create for new users)
             try {
@@ -1226,8 +1226,15 @@ const Dashboard = () => {
 
     const upgradeAnnouncement = (
         <AnimatePresence>
-            {showUpgrade && !showAppTour && (
-                <UpgradeAnnouncement isMobile={isMobile} sub={user?.sub} onClose={() => setShowUpgrade(false)} />
+            {announcement && !showAppTour && (
+                <announcement.Component
+                    key={announcement.id}
+                    isMobile={isMobile}
+                    onClose={() => {
+                        dismissAnnouncements(userData, user?.sub);
+                        setAnnouncement(null);
+                    }}
+                />
             )}
         </AnimatePresence>
     );
