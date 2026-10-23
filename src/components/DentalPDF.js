@@ -9,7 +9,7 @@ const MUTED = '#6b7689';
 
 const styles = StyleSheet.create({
     page: { paddingVertical: 34, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: INK },
-    eyebrow: { fontSize: 8, letterSpacing: 1.2, color: '#7c3aed', fontFamily: 'Helvetica-Bold', marginBottom: 4 },
+    eyebrow: { fontSize: 8, letterSpacing: 1.2, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
     title: { fontSize: 16, fontFamily: 'Helvetica-Bold', marginBottom: 3 },
     sub: { fontSize: 9, color: MUTED, marginBottom: 14 },
     chartWrap: { alignItems: 'center', marginBottom: 10 },

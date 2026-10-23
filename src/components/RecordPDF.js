@@ -6,11 +6,11 @@ import { toBlocks } from '../utils/recordText';
 const INK = '#000000';
 const MUTED = '#6b7689';
 
-// Same look as the dental PDF; the eyebrow takes the record type's color.
+// Same look as the dental PDF.
 const TYPES = {
-    soap: { eyebrow: 'SOAP RECORD', color: '#2563eb' },
-    summary: { eyebrow: 'SUMMARY', color: '#059669' },
-    callback: { eyebrow: 'CALLBACK', color: '#d97706' }
+    soap: { eyebrow: 'SOAP RECORD' },
+    summary: { eyebrow: 'SUMMARY' },
+    callback: { eyebrow: 'CALLBACK' }
 };
 
 const styles = StyleSheet.create({
@@ -40,7 +40,7 @@ export const TextRecordPage = ({ reportText, title, type = 'soap' }) => {
     const blocks = toBlocks(reportText, type);
     return (
         <Page size="A4" style={styles.page}>
-            <Text style={[styles.eyebrow, { color: info.color }]}>{info.eyebrow}</Text>
+            <Text style={styles.eyebrow}>{info.eyebrow}</Text>
             <Text style={styles.title}>{title}</Text>
             <Text style={styles.sub}>{printedOn()}</Text>
             {blocks.map((b, i) => {
