@@ -741,6 +741,8 @@ const QuickSOAP = () => {
         setSelectedTemplate(null);
         setDental(null);
         setDentalSpecies(null);
+        // The species is per record, so a fresh start can't stay on Dental without one.
+        setRecordType((t) => (t === 'dental' ? 'soap' : t));
 
         // Clear localStorage
         localStorage.removeItem('quickSOAP_dictations');
