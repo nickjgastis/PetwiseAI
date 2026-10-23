@@ -66,10 +66,10 @@ const FAQ = [
             {
                 q: 'Where are my older records?',
                 a: 'Records made before cases existed are in Saved Records, under More in the sidebar.'
-            }
-        ]
-    },
-    {
+                }
+            ]
+        },
+        {
         title: 'Dictation',
         items: [
             {
@@ -83,23 +83,23 @@ const FAQ = [
             {
                 q: 'I said something wrong',
                 a: 'Say "correction" and the right value, e.g. "correction, weight is 28 kilos". Or just fix it in the editor afterwards.'
-            }
-        ]
-    },
-    {
+                }
+            ]
+        },
+        {
         title: 'Phone',
         items: [
-            {
+                {
                 q: 'Do I need to download an app?',
                 a: 'No. Open petwise.vet on your phone, log in, and add it to your home screen. It opens like an app.'
-            },
-            {
+                },
+                {
                 q: 'My phone dictation has not shown up',
                 a: 'Keep PetWise open and logged in on your computer. It writes the record as soon as it sees the dictation and puts it in the case you dictated in on your phone, marked with a blue dot.'
-            }
-        ]
-    },
-    {
+                }
+            ]
+        },
+        {
         title: 'PetQuery',
         items: [
             {
@@ -124,16 +124,16 @@ const Section = ({ eyebrow, title, children, className = '' }) => (
 
 const FaqItem = ({ q, a }) => {
     const [open, setOpen] = useState(false);
-    return (
+            return (
         <div className="border-b border-[#eef2f7] last:border-b-0">
-            <button
+                                <button
                 type="button"
                 onClick={() => setOpen(!open)}
                 className="w-full flex items-center justify-between gap-4 py-4 px-1 text-left bg-transparent border-none cursor-pointer text-[15.5px] font-semibold text-[#13233f] hover:text-[#2d5fb8] transition-colors"
-            >
+                                >
                 {q}
                 <FiChevronDown className={`shrink-0 text-[#1a2b4a]/40 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
-            </button>
+                                </button>
             <AnimatePresence initial={false}>
                 {open && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: EASE }} className="overflow-hidden">
@@ -141,9 +141,9 @@ const FaqItem = ({ q, a }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
-    );
-};
+            </div>
+        );
+    };
 
 const Help = () => {
     const { isAuthenticated, user } = useAuth0();
@@ -209,13 +209,13 @@ const Help = () => {
                                         <p className="m-0 text-[19px] font-semibold text-[#13233f]">{s.title}</p>
                                         <p className="m-0 mt-1 mb-5 text-[15px] text-[#1a2b4a]/60 leading-relaxed">{s.text}</p>
                                         <div className="mt-auto flex flex-wrap items-center gap-2">
-                                            <button
+                            <button
                                                 type="button"
                                                 onClick={() => setGuide(s.guide)}
                                                 className="inline-flex items-center gap-2 h-10 px-5 rounded-full text-[14px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-14px_rgba(45,95,184,0.7)] transition-colors"
-                                            >
+                            >
                                                 <FiPlay className="text-[12px]" /> Show me how
-                                            </button>
+                            </button>
                                             {s.to && isAuthenticated && (
                                                 <Link to={s.to} className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[14px] font-semibold text-[#13233f] hover:text-[#2d5fb8] no-underline transition-colors">
                                                     Go to {s.cta} <FiArrowRight />
@@ -297,4 +297,4 @@ const Help = () => {
     );
 };
 
-export default Help;
+export default Help; 
