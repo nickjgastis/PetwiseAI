@@ -23,6 +23,7 @@ import {
     caseName
 } from '../utils/cases';
 import { CaseCreatedOverlay } from '../components/CaseBar';
+import { toPlainText } from '../utils/recordText';
 import GeneratingLoader from '../components/GeneratingLoader';
 import { createPortal } from 'react-dom';
 
@@ -377,6 +378,12 @@ const CaseList = ({ mobile = false }) => {
     );
 };
 
+// What Copy puts on the clipboard: clean text, no markdown. Dental text is already plain.
+const copyText = (note) => {
+    const type = normalizeType(note.record_type || note.form_data?.record_type);
+    return type === 'dental' ? note.report_text || '' : toPlainText(note.report_text, type);
+};
+
 // Cached cards are tied to the record text length so an edited record gets a fresh card.
 const cardSource = (note) => (note.report_text || '').length;
 
@@ -396,7 +403,7 @@ const NoteBox = ({ note, onOpen, isNew, previewPending, selected, selecting, onT
     const copy = async (e) => {
         e.stopPropagation();
         try {
-            await navigator.clipboard.writeText(note.report_text || '');
+            await navigator.clipboard.writeText(copyText(note));
             setCopied(true);
             setTimeout(() => setCopied(false), 1800);
         } catch (err) {
@@ -860,8 +867,8 @@ const CaseDetail = ({ caseId }) => {
 
     const copySelected = async () => {
         const text = selectedNotes.length === 1
-            ? selectedNotes[0].report_text
-            : selectedNotes.map((n) => `${recordHeading(n).toUpperCase()}\n\n${(n.report_text || '').trim()}`).join('\n\n\n');
+            ? copyText(selectedNotes[0])
+            : selectedNotes.map((n) => `${recordHeading(n).toUpperCase()}\n\n${copyText(n).trim()}`).join('\n\n\n');
         try {
             await navigator.clipboard.writeText(text);
             flash('copy');

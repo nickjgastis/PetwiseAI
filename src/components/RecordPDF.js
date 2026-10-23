@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { DentalPages } from './DentalPDF';
+import { toBlocks } from '../utils/recordText';
 
 const INK = '#000000';
 const MUTED = '#6b7689';
@@ -11,8 +12,6 @@ const TYPES = {
     summary: { eyebrow: 'SUMMARY', color: '#059669' },
     callback: { eyebrow: 'CALLBACK', color: '#d97706' }
 };
-
-const SOAP_SECTIONS = new Set(['subjective', 'objective', 'assessment', 'plan']);
 
 const styles = StyleSheet.create({
     page: { paddingTop: 34, paddingBottom: 46, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: INK },
@@ -25,61 +24,6 @@ const styles = StyleSheet.create({
     gap: { height: 6 },
     footer: { position: 'absolute', bottom: 18, left: 40, right: 40, flexDirection: 'row', justifyContent: 'space-between', fontSize: 7.5, color: '#9aa3b2' }
 });
-
-const clean = (line) => line.replace(/\*\*/g, '').replace(/^#{1,6}\s*/, '').trim();
-
-// A short line that labels what follows: "Plan:", "**Diagnostics**", or a plain "Next steps" that opens a block.
-// Plain lines inside a block ("Vaccinations current") and "Label: value" lines stay body text.
-const isHeadingLine = (lines, i) => {
-    const t = lines[i].trim();
-    if (!t || !lines.slice(i + 1).some((l) => l.trim())) return false;
-    if (/^\*\*[^*]+\*\*:?$/.test(t) || /^#{1,6}\s/.test(t)) return true;
-    const c = clean(t);
-    if (c.length > 40 || /^[-•*\d]/.test(c)) return false;
-    if (/:$/.test(c)) return !c.slice(0, -1).includes(':');
-    const opensBlock = i === 0 || !lines[i - 1].trim();
-    return opensBlock && !c.includes(':') && /^[A-Z]/.test(c) && !/[.,;!?)]$/.test(c) && c.split(/\s+/).length <= 5 && !!lines[i + 1]?.trim();
-};
-
-// [{ kind: 'section' | 'heading' | 'text' | 'gap', text, color }]
-const toBlocks = (text, type) => {
-    const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
-    const blocks = [];
-    let para = [];
-    const flush = () => {
-        if (para.length) blocks.push({ kind: 'text', text: para.join('\n') });
-        para = [];
-    };
-    lines.forEach((line, i) => {
-        if (!line.trim()) {
-            flush();
-            if (blocks.length && blocks[blocks.length - 1].kind === 'text') blocks.push({ kind: 'gap' });
-            return;
-        }
-        if (isHeadingLine(lines, i)) {
-            flush();
-            const label = clean(line).replace(/:$/, '');
-            blocks.push({ kind: type === 'soap' && SOAP_SECTIONS.has(label.toLowerCase()) ? 'section' : 'heading', text: label });
-            return;
-        }
-        para.push(line);
-    });
-    flush();
-    // SOAP output repeats a section name as its first sub-heading ("Assessment" then "Assessment:"),
-    // and sub-headings with nothing under them are dropped.
-    const isHead = (b) => b && (b.kind === 'section' || b.kind === 'heading');
-    const out = [];
-    blocks.forEach((b, i) => {
-        const prev = out.filter((x) => x.kind !== 'gap').pop();
-        if (isHead(b) && isHead(prev) && prev.text.toLowerCase() === b.text.toLowerCase()) return;
-        if (b.kind === 'heading') {
-            const next = blocks.slice(i + 1).find((x) => x.kind !== 'gap');
-            if (!next || isHead(next)) return;
-        }
-        out.push(b);
-    });
-    return out;
-};
 
 // "**Weight:** 12.4 kg" keeps its label bold.
 const renderInline = (text) =>

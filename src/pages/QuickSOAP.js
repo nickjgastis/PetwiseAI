@@ -35,6 +35,7 @@ import DentalWorkspace from '../components/DentalWorkspace';
 import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
 import { QuickSOAPPDFDocument } from '../components/RecordPDF';
+import { toPlainText } from '../utils/recordText';
 import CountBadge from '../components/CountBadge';
 
 const TEXT_RECORDS = {
@@ -2359,7 +2360,7 @@ const QuickSOAP = () => {
 
     const copyAll = async () => {
         try {
-            await navigator.clipboard.writeText(report);
+            await navigator.clipboard.writeText(recordType === 'dental' ? report : toPlainText(report, recordType));
             setCopiedSection('all');
             setTimeout(() => setCopiedSection(null), 2000);
         } catch (err) {
