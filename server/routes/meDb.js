@@ -314,4 +314,117 @@ router.post('/', requireUser, async (req, res) => {
     }
 });
 
+// Paged lists. PostgREST caps a select at 1000 rows, so the generic route can't serve full histories.
+const PAGE_SIZE = 50;
+const MAX_PAGE = 200;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Raw Postgres timestamps: re-serializing through Date would drop microseconds and skip rows.
+const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}:\d{2})?$/;
+const RECORD_FILTERS = {
+    quicksoap: ['quicksoap', 'soap'],
+    petsoap: ['generator'],
+    summary: ['summary'],
+    callback: ['callback'],
+    dental: ['dental'],
+};
+
+const pageSize = (n) => Math.min(Math.max(parseInt(n, 10) || PAGE_SIZE, 1), MAX_PAGE);
+
+// Characters that would break PostgREST's or() syntax or act as wildcards.
+const searchTerm = (q) => String(q || '').replace(/[,()"\\%*]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 100);
+
+// Newest first, ties broken by id so a cursor never skips or repeats a row.
+const afterCursor = (q, col, cursor) => {
+    if (!cursor) return q;
+    const at = cursor[col];
+    if (!TIMESTAMP.test(at || '') || !UUID.test(cursor.id || '')) throw fail(400, 'Invalid cursor', '400');
+    return q.or(`${col}.lt."${at}",and(${col}.eq."${at}",id.lt.${cursor.id})`);
+};
+
+const nextCursor = (rows, col, hasMore) => {
+    const last = rows[rows.length - 1];
+    return hasMore && last ? { [col]: last[col], id: last.id } : null;
+};
+
+const listRoute = (handler) => async (req, res) => {
+    try {
+        const uid = await userUuid(req.app.locals.supabase, req.auth0Sub);
+        if (!uid) return res.json({ data: [], nextCursor: null, error: null });
+        return res.json({ ...(await handler(req.app.locals.supabase, uid, req.body || {})), error: null });
+    } catch (err) {
+        const status = err.status || 500;
+        console.error('[api/db list]', err.message || err);
+        return res.status(status).json({ data: null, nextCursor: null, error: { message: err.message || 'Query failed', code: err.code || String(status) } });
+    }
+};
+
+// Saved Records: { cursor, limit, q, type } -> { data, nextCursor }. Search covers the whole history.
+router.post('/records', requireUser, listRoute(async (supabase, uid, { cursor, limit, q, type }) => {
+    const size = pageSize(limit);
+    let query = supabase
+        .from('saved_reports')
+        .select('id, report_name, report_text, form_data, record_type, case_id, created_at')
+        .eq('user_id', uid);
+    if (type && type !== 'all') {
+        if (!RECORD_FILTERS[type]) throw fail(400, 'Unknown record type', '400');
+        query = query.in('record_type', RECORD_FILTERS[type]);
+    }
+    const term = searchTerm(q);
+    if (term) query = query.or(`report_name.ilike.%${term}%,report_text.ilike.%${term}%,form_data->>petName.ilike.%${term}%`);
+    query = afterCursor(query, 'created_at', cursor);
+    const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(size + 1);
+    if (error) throw error;
+    const page = data.slice(0, size);
+    return {
+        // Drafts still generating on desktop stay hidden; they are dropped after paging so the cursor stays exact.
+        data: page.filter((r) => r.report_text || r.form_data?.sent_to_desktop !== true),
+        nextCursor: nextCursor(page, 'created_at', data.length > size),
+    };
+}));
+
+// Cases: { cursor, limit, q } -> { data, notes, nextCursor }. notes covers only the returned cases.
+router.post('/cases', requireUser, listRoute(async (supabase, uid, { cursor, limit, q }) => {
+    const size = pageSize(limit);
+    let query = supabase
+        .from('cases')
+        .select('id, pet_name, title, created_at, updated_at')
+        .eq('user_id', uid);
+    const term = searchTerm(q);
+    if (term) query = query.or(`pet_name.ilike.%${term}%,title.ilike.%${term}%`);
+    query = afterCursor(query, 'updated_at', cursor);
+    const { data, error } = await query
+        .order('updated_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(size + 1);
+    if (error) throw error;
+    const page = data.slice(0, size);
+
+    let notes = [];
+    if (page.length) {
+        const { data: rows, error: notesErr } = await supabase
+            .from('saved_reports')
+            .select('id, case_id, record_type, report_text, form_data, created_at')
+            .eq('user_id', uid)
+            .in('case_id', page.map((c) => c.id));
+        if (notesErr) throw notesErr;
+        // Only the fields the list reads; report_text becomes a has-text flag to keep the payload small.
+        notes = rows.map((n) => ({
+            id: n.id,
+            case_id: n.case_id,
+            record_type: n.record_type,
+            created_at: n.created_at,
+            report_text: n.report_text ? true : null,
+            form_data: {
+                from_mobile: n.form_data?.from_mobile,
+                generated_at: n.form_data?.generated_at,
+                sent_to_desktop: n.form_data?.sent_to_desktop,
+            },
+        }));
+    }
+    return { data: page, notes, nextCursor: nextCursor(page, 'updated_at', data.length > size) };
+}));
+
 module.exports = router;

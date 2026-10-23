@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiFolder, FiSearch, FiX, FiChevronRight, FiPlus } from 'react-icons/fi';
+import { PiPawPrintFill } from 'react-icons/pi';
 import { supabase } from '../supabaseClient';
+import usePagedList from '../hooks/usePagedList';
 import { normalizeType, pendingCaseIds, caseName } from '../utils/cases';
 import { TYPE_STYLES, RECORD_TYPES, GRADIENT_TEXT } from './caseStyles';
 
@@ -16,44 +18,19 @@ const dayLabel = (d) => {
 };
 
 const CasePicker = ({ onPick, onClose }) => {
-    const [cases, setCases] = useState(null);
-    const [types, setTypes] = useState({});
-    const [pending, setPending] = useState(() => new Set());
     const [search, setSearch] = useState('');
+    const { items, notes, loading, loadingMore, hasMore, loadMore, searching } = usePagedList('cases', { q: search.trim() });
+    const cases = loading && !items.length ? null : items;
 
-    useEffect(() => {
-        let alive = true;
-        (async () => {
-            const { data } = await supabase
-                .from('cases')
-                .select('id, pet_name, title, created_at, updated_at')
-                .order('updated_at', { ascending: false })
-                .limit(100);
-            if (!alive) return;
-            setCases(data || []);
-            const ids = (data || []).map((c) => c.id);
-            if (!ids.length) return;
-            const { data: notes } = await supabase
-                .from('saved_reports')
-                .select('case_id, record_type, report_text, form_data')
-                .in('case_id', ids);
-            const map = {};
-            (notes || []).filter((n) => n.report_text).forEach((n) => {
-                const t = normalizeType(n.record_type);
-                map[n.case_id] = map[n.case_id] || new Set();
-                map[n.case_id].add(t);
-            });
-            if (!alive) return;
-            setTypes(map);
-            setPending(pendingCaseIds(notes));
-        })();
-        return () => { alive = false; };
-    }, []);
-
-    const filtered = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        return (cases || []).filter((c) => !q || (c.pet_name || '').toLowerCase().includes(q));
-    }, [cases, search]);
+    const { types, pending } = useMemo(() => {
+        const map = {};
+        notes.filter((n) => n.report_text).forEach((n) => {
+            const t = normalizeType(n.record_type);
+            map[n.case_id] = map[n.case_id] || new Set();
+            map[n.case_id].add(t);
+        });
+        return { types: map, pending: pendingCaseIds(notes) };
+    }, [notes]);
 
     return (
         <>
@@ -82,18 +59,18 @@ const CasePicker = ({ onPick, onClose }) => {
                             autoFocus
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by pet name"
+                            placeholder="Search by patient"
                             className="w-full pl-10 pr-4 py-3 rounded-full bg-[#f6f8fb] border border-transparent text-[15px] focus:outline-none focus:border-[#2d5fb8]/30 focus:bg-white transition-colors"
                         />
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto px-3 pb-3">
+                <div className={`flex-1 overflow-y-auto px-3 pb-3 transition-opacity ${searching ? 'opacity-60' : ''}`}>
                     {cases === null ? (
                         <p className="text-sm text-[#1a2b4a]/45 text-center py-10">Loading cases…</p>
-                    ) : filtered.length === 0 ? (
-                        <p className="text-sm text-[#1a2b4a]/45 text-center py-10">{cases.length ? 'No cases match.' : 'No cases yet.'}</p>
+                    ) : cases.length === 0 ? (
+                        <p className="text-sm text-[#1a2b4a]/45 text-center py-10">{search.trim() ? 'No cases match.' : 'No cases yet.'}</p>
                     ) : (
-                        filtered.map((c, i) => (
+                        cases.map((c, i) => (
                             <motion.button
                                 key={c.id}
                                 type="button"
@@ -115,6 +92,16 @@ const CasePicker = ({ onPick, onClose }) => {
                                 <FiChevronRight className="text-[#1a2b4a]/30 group-hover:text-[#2d5fb8] transition-colors" />
                             </motion.button>
                         ))
+                    )}
+                    {hasMore && cases?.length > 0 && (
+                        <button
+                            type="button"
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                            className="w-full mt-1 py-3 rounded-2xl text-[14px] font-medium text-[#2d5fb8] bg-transparent border-none cursor-pointer hover:bg-[#f6f8fb] disabled:opacity-60"
+                        >
+                            {loadingMore ? 'Loading' : 'Load more'}
+                        </button>
                     )}
                 </div>
             </motion.div>
@@ -161,20 +148,20 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
                     <motion.div
                         key="selected"
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        className={`inline-flex items-center gap-2.5 rounded-full h-12 pl-2 pr-2 text-[15px] ${base}`}
+                        className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto max-w-full min-w-0 overflow-hidden rounded-full h-12 sm:h-16 pl-3.5 sm:pl-5 pr-1.5 sm:pr-2.5 text-[14px] sm:text-[20px] text-white bg-gradient-to-r from-[#3f7ad6] via-[#2d5fb8] to-[#1e4a94] shadow-[0_14px_34px_-14px_rgba(45,95,184,0.75)]"
                     >
-                        <FiFolder className="ml-2 text-[17px] text-[#2d5fb8]" />
-                        <span>
+                        <PiPawPrintFill className="shrink-0 text-[18px] sm:text-[22px]" />
+                        <span className="min-w-0 flex-1 sm:flex-none truncate text-left">
                             Adding to <span className="font-semibold">{caseRow.pet_name || (caseRow.pending ? 'this case' : 'Unnamed patient')}</span>
-                            <span className="opacity-50"> · {caseRow.pending ? 'Waiting to generate' : dayLabel(caseRow.created_at)}</span>
+                            <span className={`${caseRow.pending ? '' : 'hidden sm:inline'} text-white/70`}> · {caseRow.pending ? 'Waiting to generate' : dayLabel(caseRow.created_at)}</span>
                         </span>
                         {!disabled && (
                             <>
-                                <button type="button" onClick={() => setOpen(true)} className="px-3.5 h-8 rounded-full text-[13.5px] font-medium text-[#2d5fb8] bg-[#e9f6fd] hover:bg-[#d8effb] border-none cursor-pointer">
+                                <button type="button" onClick={() => setOpen(true)} className="shrink-0 px-3 sm:px-4 h-8 sm:h-10 rounded-full text-[13px] sm:text-[14px] font-semibold text-[#2d5fb8] bg-white hover:bg-[#e9f6fd] border-none cursor-pointer">
                                     Change
                                 </button>
-                                <button type="button" onClick={() => onChange(null)} title="Start a new case instead" className="w-8 h-8 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 hover:bg-black/5 border-none bg-transparent cursor-pointer">
-                                    <FiX className="text-[15px]" />
+                                <button type="button" onClick={() => onChange(null)} title="Start a new case instead" className="shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/15 border-none bg-transparent cursor-pointer">
+                                    <FiX className="text-[15px] sm:text-[16px]" />
                                 </button>
                             </>
                         )}
@@ -189,7 +176,7 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
                         className={`inline-flex items-center gap-2.5 rounded-full h-12 px-6 text-[15px] font-semibold cursor-pointer transition-colors disabled:opacity-50 ${base}`}
                     >
                         <FiFolder className="text-[17px] text-[#2d5fb8]" />
-                        or add to existing case
+                        add to existing case
                         <FiPlus className="text-[15px] opacity-50" />
                     </motion.button>
                 )}

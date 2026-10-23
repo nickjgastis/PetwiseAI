@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck, FiDownload } from 'react-icons/fi';
+import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck, FiDownload, FiTrash2 } from 'react-icons/fi';
 import { supabase } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
@@ -25,6 +25,7 @@ import {
 import { CaseCreatedOverlay } from '../components/CaseBar';
 import { toPlainText } from '../utils/recordText';
 import GeneratingLoader from '../components/GeneratingLoader';
+import usePagedList from '../hooks/usePagedList';
 import { createPortal } from 'react-dom';
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -179,79 +180,64 @@ const NewCaseDialog = ({ onClose, onCreated }) => {
     );
 };
 
-const EMPTY_LIST = { cases: [], typesByCase: {}, unviewed: new Set(), pending: new Set() };
-// Last loaded list: revisiting Cases paints instantly and refreshes underneath.
+// Last unsearched first page: revisiting Cases paints instantly and refreshes underneath.
 let listCache = null;
 
 const CaseList = ({ mobile = false }) => {
     const navigate = useNavigate();
     const [naming, setNaming] = useState(false);
-    const [list, setList] = useState(listCache);
-    const { cases, typesByCase, unviewed, pending } = list || EMPTY_LIST;
-    const loading = !list;
     const [animateIn] = useState(!listCache);
-    const [error, setError] = useState('');
     const [search, setSearch] = useState('');
+    const { items: cases, notes, snapshot, loading, loadingMore, hasMore, loadMore, searching, error: listError, reload } = usePagedList('cases', {
+        q: search.trim(),
+        initial: listCache,
+    });
+    const error = listError ? 'Could not load cases.' : '';
+    const searched = search.trim().length > 0;
 
-    // Cases and their record counts land in one update, so cards never re-render with chips popping in.
-    const load = useCallback(async () => {
-        const { data, error: caseErr } = await supabase
-            .from('cases')
-            .select('id, pet_name, title, created_at, updated_at')
-            .order('updated_at', { ascending: false });
-        if (caseErr) {
-            setError('Could not load cases.');
-            setList(EMPTY_LIST);
-            return;
-        }
-        const ids = (data || []).map((c) => c.id);
-        const { data: notes } = ids.length
-            ? await supabase
-                .from('saved_reports')
-                .select('id, case_id, record_type, report_text, form_data, created_at')
-                .in('case_id', ids)
-            : { data: [] };
+    useEffect(() => {
+        if (!loading && !searched && !listError) listCache = snapshot;
+    }, [loading, searched, listError, snapshot]);
+
+    // Cases and their record counts land in one response, so cards never re-render with chips popping in.
+    const { typesByCase, unviewed, pending } = useMemo(() => {
         const map = {};
         const fresh = new Set();
-        (notes || []).filter((n) => n.report_text).forEach((n) => {
+        notes.filter((n) => n.report_text).forEach((n) => {
             const t = normalizeType(n.record_type);
             map[n.case_id] = map[n.case_id] || {};
             map[n.case_id][t] = (map[n.case_id][t] || 0) + 1;
             if (isUnviewedMobileNote(n)) fresh.add(n.case_id);
         });
-        const next = { cases: data || [], typesByCase: map, unviewed: fresh, pending: pendingCaseIds(notes) };
-        listCache = next;
-        setError('');
-        setList(next);
-    }, []);
+        return { typesByCase: map, unviewed: fresh, pending: pendingCaseIds(notes) };
+    }, [notes]);
+
+    const refresh = useCallback(() => reload({ keep: true }), [reload]);
 
     useEffect(() => {
-        load();
         localStorage.removeItem('hasNewMobileSOAP');
         localStorage.removeItem('mobileSOAPCount');
         window.dispatchEvent(new CustomEvent('clearMobileSOAPNotification'));
-        window.addEventListener('newMobileSOAPGenerated', load);
-        return () => window.removeEventListener('newMobileSOAPGenerated', load);
-    }, [load]);
+        window.addEventListener('newMobileSOAPGenerated', refresh);
+        return () => window.removeEventListener('newMobileSOAPGenerated', refresh);
+    }, [refresh]);
 
     useEffect(() => {
         if (!pending.size) return undefined;
-        const id = setInterval(load, 8000);
+        const id = setInterval(refresh, 8000);
         return () => clearInterval(id);
-    }, [pending, load]);
+    }, [pending, refresh]);
 
     const groups = useMemo(() => {
-        const q = search.trim().toLowerCase();
-        const list = q ? cases.filter((c) => (c.pet_name || c.title || '').toLowerCase().includes(q)) : cases;
         const out = [];
-        list.forEach((c) => {
+        cases.forEach((c) => {
             const label = dayBucket(c.updated_at);
             const g = out.find((x) => x.label === label);
             if (g) g.items.push(c);
             else out.push({ label, items: [c] });
         });
         return out;
-    }, [cases, search]);
+    }, [cases]);
 
     return (
         <div style={FONT}>
@@ -273,7 +259,7 @@ const CaseList = ({ mobile = false }) => {
                     />
                 )}
 
-                {(loading || cases.length > 0) && (
+                {(loading || cases.length > 0 || searched) && (
                     <div className={`relative max-w-md ${mobile ? 'mb-6' : 'mb-8'}`}>
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1a2b4a]/40" />
                         <input
@@ -285,7 +271,7 @@ const CaseList = ({ mobile = false }) => {
                     </div>
                 )}
 
-                {loading ? (
+                {loading && cases.length === 0 ? (
                     <section aria-hidden className={`animate-pulse ${mobile ? 'mb-7' : 'mb-10'}`}>
                         <div className="h-5 mb-3 ml-1 flex items-center"><span className="h-3 w-14 rounded-full bg-[#1a2b4a]/[0.07]" /></div>
                         <div className="flex flex-col gap-2.5">
@@ -302,7 +288,7 @@ const CaseList = ({ mobile = false }) => {
                     </section>
                 ) : error ? (
                     <p className="text-sm text-red-500 py-12 text-center">{error}</p>
-                ) : cases.length === 0 ? (
+                ) : cases.length === 0 && !searched ? (
                     <motion.div
                         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: EASE }}
                         className={`rounded-[28px] border border-[#e3ecf8] ${BRAND_WASH} py-16 px-6 text-center`}
@@ -315,7 +301,8 @@ const CaseList = ({ mobile = false }) => {
                 ) : groups.length === 0 ? (
                     <p className="text-[15px] text-[#1a2b4a]/50 py-12 text-center">No patients match “{search}”.</p>
                 ) : (
-                    groups.map((g, gi) => (
+                    <div className={`transition-opacity ${loading || searching ? 'opacity-60' : ''}`}>
+                    {groups.map((g, gi) => (
                         <section key={g.label} className={mobile ? 'mb-7' : 'mb-10'}>
                             <h2 className="text-[14px] font-semibold text-[#1a2b4a]/50 mb-3 ml-1">{g.label}</h2>
                             <div className="flex flex-col gap-2.5">
@@ -362,7 +349,15 @@ const CaseList = ({ mobile = false }) => {
                                 })}
                             </div>
                         </section>
-                    ))
+                    ))}
+                    {hasMore && (
+                        <div className="flex justify-center">
+                            <PillButton variant="secondary" onClick={loadMore} disabled={loadingMore}>
+                                {loadingMore ? 'Loading' : 'Load more'}
+                            </PillButton>
+                        </div>
+                    )}
+                    </div>
                 )}
             </div>
             <AnimatePresence>
@@ -443,7 +438,7 @@ const NoteBox = ({ note, onOpen, isNew, previewPending, selected, selecting, onT
                             e.stopPropagation();
                             onToggle(note.id);
                         }}
-                        className={`shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center border-[1.5px] cursor-pointer transition-all ${selected ? 'bg-[#2d5fb8] border-[#2d5fb8] text-white' : `bg-white border-[#c9d3e1] text-transparent hover:border-[#2d5fb8] ${selecting ? '' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100'}`}`}
+                        className={`shrink-0 w-[22px] h-[22px] rounded-[6px] flex items-center justify-center border-[1.5px] cursor-pointer transition-colors ${selected ? 'bg-[#2d5fb8] border-[#2d5fb8] text-white' : 'bg-white border-[#c9d3e1] text-transparent hover:border-[#2d5fb8]'}`}
                     >
                         <FiCheck className="text-[12px]" strokeWidth={3} />
                     </button>
@@ -739,7 +734,7 @@ const AddNotePanel = ({ caseRow, notes, initialType, onCreated, onCancel, onLimi
                                 onChange={(e) => setIncludeEarlier(e.target.checked)}
                                 className="w-4 h-4 accent-[#2d5fb8]"
                             />
-                            Include earlier dictation from this case
+                            Include all dictations for this case
                         </label>
                     ) : <span />}
                     <PillButton onClick={generate} disabled={busy} className="!px-4 !py-2 !text-[13.5px]">
@@ -774,6 +769,8 @@ const CaseDetail = ({ caseId }) => {
     const [selected, setSelected] = useState(() => new Set());
     const [bulkDone, setBulkDone] = useState(null);
     const [exporting, setExporting] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const load = useCallback(async () => {
         const [{ data: c }, { data: n }] = await Promise.all([
@@ -877,6 +874,21 @@ const CaseDetail = ({ caseId }) => {
         }
     };
 
+    const deleteSelected = async () => {
+        const ids = [...selected];
+        if (!ids.length) return;
+        setDeleting(true);
+        const { error } = await supabase.from('saved_reports').delete().in('id', ids);
+        setDeleting(false);
+        if (error) {
+            console.error('Delete failed:', error);
+            return;
+        }
+        setNotes((prev) => prev.filter((n) => !selected.has(n.id)));
+        setSelected(new Set());
+        setConfirmDelete(false);
+    };
+
     const downloadSelected = async () => {
         setExporting(true);
         try {
@@ -962,7 +974,7 @@ const CaseDetail = ({ caseId }) => {
                     <FiArrowLeft className="group-hover:-translate-x-0.5 transition-transform" /> All cases
                 </button>
 
-                <FadeIn className="relative overflow-hidden rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-8 mb-8">
+                <FadeIn className={`relative overflow-hidden rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-8 ${notes.length ? 'mb-4' : 'mb-8'}`}>
                     <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(92,204,240,0.18) 0%, rgba(92,204,240,0) 70%)' }} />
                     <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                         <div className="flex items-center gap-4 min-w-0">
@@ -1061,6 +1073,19 @@ const CaseDetail = ({ caseId }) => {
                         </FadeIn>
                     )
                 ) : (
+                    <>
+                    <div className="mb-3 ml-1">
+                        <button
+                            type="button"
+                            onClick={() => setSelected(selected.size === notes.length ? new Set() : new Set(notes.map((n) => n.id)))}
+                            className="inline-flex items-center gap-2 bg-transparent border-none cursor-pointer p-0 text-[13.5px] font-semibold text-[#1a2b4a]/70 hover:text-[#13233f]"
+                        >
+                            <span className={`w-[18px] h-[18px] rounded-[5px] flex items-center justify-center border-[1.5px] transition-colors ${selected.size === notes.length ? 'bg-[#2d5fb8] border-[#2d5fb8] text-white' : 'bg-white border-[#c9d3e1] text-transparent'}`}>
+                                <FiCheck className="text-[11px]" strokeWidth={3} />
+                            </span>
+                            Select all
+                        </button>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {notes.map((note, i) => (
                             <FadeIn key={note.id} delay={0.05 + Math.min(i, 8) * 0.035}>
@@ -1076,6 +1101,7 @@ const CaseDetail = ({ caseId }) => {
                             </FadeIn>
                         ))}
                     </div>
+                    </>
                 )}
 
                 <AnimatePresence>
@@ -1104,6 +1130,10 @@ const CaseDetail = ({ caseId }) => {
                                     {exporting ? <span className="w-3.5 h-3.5 rounded-full border-2 border-[#13233f]/25 border-t-[#13233f] animate-spin" /> : bulkDone === 'pdf' ? <FiCheck className="text-[14px]" /> : <FiDownload className="text-[14px]" />}
                                     Download PDF
                                 </button>
+                                <button type="button" onClick={() => setConfirmDelete(true)} className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[13.5px] font-semibold text-white bg-red-500 hover:bg-red-600 border-none cursor-pointer transition-colors">
+                                    <FiTrash2 className="text-[14px]" />
+                                    Delete
+                                </button>
                                 <button type="button" onClick={() => setSelected(new Set())} title="Clear selection" className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 bg-transparent border-none cursor-pointer transition-colors">
                                     <FiX className="text-[15px]" />
                                 </button>
@@ -1112,6 +1142,51 @@ const CaseDetail = ({ caseId }) => {
                     )}
                 </AnimatePresence>
             </div>
+
+            <AnimatePresence>
+                {confirmDelete && (
+                    <motion.div
+                        key="delete-records"
+                        className="fixed inset-0 z-[70] flex items-center justify-center px-4 bg-[#13233f]/30 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        onClick={() => !deleting && setConfirmDelete(false)}
+                        style={FONT}
+                    >
+                        <motion.div
+                            onClick={(e) => e.stopPropagation()}
+                            initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                            transition={{ duration: 0.26, ease: EASE }}
+                            className="w-full max-w-[420px] bg-white rounded-[28px] p-6 sm:p-7 shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)]"
+                        >
+                            <h3 className={`m-0 pb-0.5 text-[24px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>
+                                {selected.size === 1 ? 'Delete this record?' : `Delete these ${selected.size} records?`}
+                            </h3>
+                            <p className="mt-2 mb-0 text-[14.5px] leading-relaxed text-[#1a2b4a]/65">
+                                {selected.size === 1
+                                    ? 'It will be removed from this case. This can’t be undone.'
+                                    : 'They will be removed from this case. This can’t be undone.'}
+                            </p>
+                            <div className="flex justify-end gap-2 mt-6">
+                                <PillButton variant="secondary" onClick={() => setConfirmDelete(false)} disabled={deleting}>Cancel</PillButton>
+                                <button
+                                    type="button"
+                                    onClick={deleteSelected}
+                                    disabled={deleting}
+                                    className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-[14px] font-semibold text-white bg-red-500 hover:bg-red-600 border-none cursor-pointer transition-colors disabled:opacity-60"
+                                >
+                                    {deleting && <span className="w-3.5 h-3.5 rounded-full border-2 border-white/40 border-t-white animate-spin" />}
+                                    Delete
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {showUpgrade && (
                 <UpgradeModal

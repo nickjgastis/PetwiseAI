@@ -12,6 +12,7 @@ import { Node } from 'slate';
 import { useNavigate } from 'react-router-dom';
 import SOAPView from './SOAPView';
 import { loadNoteIntoQuickSOAP } from '../utils/cases';
+import usePagedList from '../hooks/usePagedList';
 
 const mainHeaders = [
     'Veterinary Medical Record:',
@@ -518,7 +519,6 @@ const parseReportForSOAP = (reportText) => {
 
 const SavedReports = () => {
     const { user, isAuthenticated, isLoading } = useAuth0();
-    const [reports, setReports] = useState([]);
     const [selectedReport, setSelectedReport] = useState(null);
     const [editingIndex, setEditingIndex] = useState(null);
     const [newReportName, setNewReportName] = useState('');
@@ -526,7 +526,6 @@ const SavedReports = () => {
     const [editor] = useState(() => withHistory(withReact(createEditor())));
     const [searchTerm, setSearchTerm] = useState('');
     const [editingReport, setEditingReport] = useState(null);
-    const [isLoadingReports, setIsLoadingReports] = useState(true);
     const [copyButtonText, setCopyButtonText] = useState('Copy to Clipboard');
     const [currentView, setCurrentView] = useState('soap'); // Default to SOAP view
     const [hasNewMobileSOAP, setHasNewMobileSOAP] = useState(false);
@@ -539,6 +538,17 @@ const SavedReports = () => {
         return savedFilter || 'all';
     });
     const navigate = useNavigate();
+    const {
+        items: reports,
+        setItems: setReports,
+        loading: isLoadingReports,
+        loadingMore,
+        hasMore,
+        loadMore,
+        searching,
+        error: listError,
+        reload: reloadReports,
+    } = usePagedList('records', { q: searchTerm, type: filterType, enabled: isAuthenticated && !!user });
 
     // Save filter type to localStorage whenever it changes
     useEffect(() => {
@@ -546,64 +556,15 @@ const SavedReports = () => {
     }, [filterType]);
 
     useEffect(() => {
-        const fetchReports = async () => {
-            if (!isAuthenticated || !user) return;
-
-            try {
-                setIsLoadingReports(true);
-                const { data: userData, error: userError } = await supabase
-                    .from('users')
-                    .select('id')
-                    .eq('auth0_user_id', user.sub)
-                    .single();
-
-                if (userError) throw userError;
-
-                const userId = userData?.id;
-
-                if (!userId) {
-                    console.error("User ID is undefined. Aborting fetch.");
-                    return;
-                }
-
-                const { data: reportsData, error: reportsError } = await supabase
-                    .from('saved_reports')
-                    .select('id, report_name, report_text, form_data, record_type')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false });
-
-                if (reportsError) throw reportsError;
-
-                // Filter out drafts that are being processed (sent_to_desktop but no report_text)
-                const filteredReportsData = reportsData?.filter(report => {
-                    // Exclude drafts that are being processed on desktop
-                    if (!report.report_text && report.form_data?.sent_to_desktop === true) {
-                        return false; // Don't show drafts being processed
-                    }
-                    return true;
-                }) || [];
-
-                setReports(filteredReportsData);
-                
-                // After fetching reports, check for desktop QuickSOAP notification
-                const hasNewDesktopQuickSOAPFlag = localStorage.getItem('hasNewDesktopQuickSOAP') === 'true';
-                if (hasNewDesktopQuickSOAPFlag) {
-                    setHasNewDesktopQuickSOAP(true);
-                    const newDesktopQuickSOAPIdFromStorage = localStorage.getItem('newDesktopQuickSOAPId');
-                    if (newDesktopQuickSOAPIdFromStorage) {
-                        setNewDesktopQuickSOAPId(newDesktopQuickSOAPIdFromStorage);
-                    }
-                }
-            } catch (error) {
-                setError("Failed to fetch reports. Please try again later.");
-                console.error("Unexpected error fetching reports:", error);
-            } finally {
-                setIsLoadingReports(false);
+        if (!isAuthenticated || !user) return;
+        if (localStorage.getItem('hasNewDesktopQuickSOAP') === 'true') {
+            setHasNewDesktopQuickSOAP(true);
+            const newDesktopQuickSOAPIdFromStorage = localStorage.getItem('newDesktopQuickSOAPId');
+            if (newDesktopQuickSOAPIdFromStorage) {
+                setNewDesktopQuickSOAPId(newDesktopQuickSOAPIdFromStorage);
             }
-        };
+        }
 
-        fetchReports();
-        
         // Clear sidebar notification when SavedReports component is viewed
         setHasNewMobileSOAP(false);
         localStorage.removeItem('hasNewMobileSOAP');
@@ -611,7 +572,7 @@ const SavedReports = () => {
         localStorage.removeItem('mobileSOAPCount');
         // Dispatch event to Dashboard to clear sidebar and site-wide notifications
         window.dispatchEvent(new CustomEvent('clearMobileSOAPNotification'));
-        
+
         // Note: Don't clear desktop QuickSOAP notification here - let user dismiss it manually
     }, [isAuthenticated, user]);
 
@@ -644,37 +605,7 @@ const SavedReports = () => {
                 localStorage.setItem('hasNewMobileSOAP', 'true');
                 localStorage.setItem('newMobileSOAPId', reportId);
                 // Refresh reports to show the new one
-                const fetchReports = async () => {
-                    try {
-                        const { data: userData } = await supabase
-                            .from('users')
-                            .select('id')
-                            .eq('auth0_user_id', user.sub)
-                            .single();
-
-                        if (userData) {
-                            const { data: reportsData } = await supabase
-                                .from('saved_reports')
-                                .select('id, report_name, report_text, form_data, record_type')
-                                .eq('user_id', userData.id)
-                                .order('created_at', { ascending: false });
-
-                            if (reportsData) {
-                                // Filter out drafts that are being processed
-                                const filteredReportsData = reportsData.filter(report => {
-                                    if (!report.report_text && report.form_data?.sent_to_desktop === true) {
-                                        return false; // Don't show drafts being processed
-                                    }
-                                    return true;
-                                });
-                                setReports(filteredReportsData);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error refreshing reports:', error);
-                    }
-                };
-                fetchReports();
+                reloadReports();
             }
         };
 
@@ -688,37 +619,7 @@ const SavedReports = () => {
                 localStorage.setItem('hasNewDesktopQuickSOAP', 'true');
                 localStorage.setItem('newDesktopQuickSOAPId', reportId);
                 // Refresh reports to show the new one
-                const fetchReports = async () => {
-                    try {
-                        const { data: userData } = await supabase
-                            .from('users')
-                            .select('id')
-                            .eq('auth0_user_id', user.sub)
-                            .single();
-
-                        if (userData) {
-                            const { data: reportsData } = await supabase
-                                .from('saved_reports')
-                                .select('id, report_name, report_text, form_data, record_type')
-                                .eq('user_id', userData.id)
-                                .order('created_at', { ascending: false });
-
-                            if (reportsData) {
-                                // Filter out drafts that are being processed
-                                const filteredReportsData = reportsData.filter(report => {
-                                    if (!report.report_text && report.form_data?.sent_to_desktop === true) {
-                                        return false; // Don't show drafts being processed
-                                    }
-                                    return true;
-                                });
-                                setReports(filteredReportsData);
-                            }
-                        }
-                    } catch (error) {
-                        console.error('Error refreshing reports:', error);
-                    }
-                };
-                fetchReports();
+                reloadReports();
             }
         };
 
@@ -729,7 +630,7 @@ const SavedReports = () => {
             window.removeEventListener('newMobileSOAPGenerated', handleNewMobileSOAP);
             window.removeEventListener('newDesktopQuickSOAPGenerated', handleNewDesktopQuickSOAP);
         };
-    }, [isAuthenticated, user]);
+    }, [isAuthenticated, user, reloadReports]);
 
     // Check for unopened desktop QuickSOAP reports after reports are fetched
     // This is for visual indicators only - notification banner is controlled by localStorage flag
@@ -858,7 +759,7 @@ const SavedReports = () => {
         setNewReportName(e.target.value);
     };
 
-    // Helper function to detect record type (moved before filteredReports)
+    // Helper function to detect record type
     const getRecordType = (report) => {
         // First check if record_type column exists (if migration was run)
         if (report.record_type) {
@@ -922,25 +823,6 @@ const SavedReports = () => {
         }
     };
 
-    const filteredReports = reports.filter(report => {
-        // Exclude drafts that are being processed (sent_to_desktop but no report_text)
-        if (!report.report_text && report.form_data?.sent_to_desktop === true) {
-            return false; // Don't show drafts being processed
-        }
-        // Filter by type
-        const recordType = getRecordType(report);
-        const matchesType = filterType === 'all' || 
-            (filterType === 'quicksoap' && (recordType === 'quicksoap' || recordType === 'soap')) ||
-            (filterType === 'petsoap' && recordType === 'generator') ||
-            (filterType === 'summary' && recordType === 'summary') ||
-            (filterType === 'callback' && recordType === 'callback');
-        
-        // Filter by search term
-        const matchesSearch = report.report_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            report.report_text.toLowerCase().includes(searchTerm.toLowerCase());
-        
-        return matchesType && matchesSearch;
-    });
 
     const handleSaveEdit = async (report) => {
         try {
@@ -1294,9 +1176,9 @@ const SavedReports = () => {
         <div className="saved-reports" style={{ backgroundColor: 'transparent', minHeight: '100vh' }}>
             <div className="max-w-6xl mx-auto px-6 py-8">
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-6">Saved Records</h2>
-                {error && (
+                {(error || listError) && (
                     <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-                        <p className="text-red-600 text-sm">{error}</p>
+                        <p className="text-red-600 text-sm">{error || listError}</p>
                     </div>
                 )}
 
@@ -1369,14 +1251,14 @@ const SavedReports = () => {
                     </div>
                 )}
 
-                <div className={`${selectedReport ? 'hidden' : ''}`}>
-                    {isLoadingReports ? (
+                <div className={`${selectedReport ? 'hidden' : ''} transition-opacity ${(isLoadingReports || searching) && reports.length > 0 ? 'opacity-60' : ''}`}>
+                    {isLoadingReports && reports.length === 0 ? (
                         <div className="flex justify-center items-center py-12">
                             <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent"></div>
                         </div>
-                    ) : filteredReports.length > 0 ? (
+                    ) : reports.length > 0 ? (
                         <div className="grid gap-4">
-                            {filteredReports.map((report, index) => {
+                            {reports.map((report, index) => {
                                 const isUnopenedMobile = isUnopenedMobileReport(report);
                                 const isUnopenedDesktop = isUnopenedDesktopQuickSOAP(report);
                                 const isUnopened = isUnopenedMobile || isUnopenedDesktop;
@@ -1451,7 +1333,22 @@ const SavedReports = () => {
                         </div>
                     ) : (
                         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-12 text-center">
-                            <p className="text-gray-500 text-lg">No saved reports available.</p>
+                            <p className="text-gray-500 text-lg">
+                                {searchTerm.trim() ? `No records match "${searchTerm.trim()}".` : 'No saved reports available.'}
+                            </p>
+                        </div>
+                    )}
+                    {hasMore && reports.length > 0 && (
+                        <div className="flex justify-center mt-6">
+                            <button
+                                type="button"
+                                onClick={loadMore}
+                                disabled={loadingMore}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white border border-gray-200 shadow-sm text-sm font-medium text-gray-700 hover:border-primary-500 hover:text-primary-600 transition-colors disabled:opacity-60"
+                            >
+                                {loadingMore && <span className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-primary-600 animate-spin" />}
+                                {loadingMore ? 'Loading' : 'Load more'}
+                            </button>
                         </div>
                     )}
                 </div>

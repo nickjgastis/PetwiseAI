@@ -8,13 +8,13 @@ export function bindSupabaseAccessToken(getter) {
     getAccessToken = getter;
 }
 
-async function execute(state) {
+async function execute(state, path = '/api/db') {
     try {
         const token = await getAccessToken();
         if (!token) {
             return { data: null, error: { message: 'Not authenticated', code: '401' } };
         }
-        const res = await fetch(`${API_URL}/api/db`, {
+        const res = await fetch(`${API_URL}${path}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -116,3 +116,6 @@ function channel() {
 }
 
 export const supabase = { from, channel };
+
+// Paged lists: 'records' or 'cases'. Resolves { data, nextCursor, error } (cases also returns notes).
+export const fetchPage = (list, body = {}) => execute(body, `/api/db/${list}`);
