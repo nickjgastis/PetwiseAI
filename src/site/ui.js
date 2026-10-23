@@ -438,7 +438,7 @@ export const Testimonials = ({ tone = 'white' }) => (
     </Section>
 );
 
-export const CtaBand = ({ title = 'Your next appointment can be your first PetWise record.', body = '10 days unlimited. No credit card. Keep PetWise Free when the trial ends.' }) => (
+export const CtaBand = ({ title = 'Your next appointment can be your first PetWise record.', body = '10 days unlimited. No credit card. Keep PetWise Free when the trial ends.', actions }) => (
     <section className="bg-white px-3 sm:px-5 pb-3 sm:pb-5">
         <div className="relative overflow-hidden rounded-[32px] bg-[linear-gradient(160deg,#3f7ad6_0%,#2d5fb8_45%,#2350a3_100%)] text-white">
             <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(50%_80%_at_85%_0%,rgba(92,204,240,0.4)_0%,rgba(92,204,240,0)_70%)]" />
@@ -447,10 +447,14 @@ export const CtaBand = ({ title = 'Your next appointment can be your first PetWi
                     <h2 className="mx-auto max-w-3xl text-[2rem] sm:text-[3rem] leading-[1.06] font-semibold tracking-[-0.03em]">{title}</h2>
                     <p className="mx-auto mt-5 max-w-xl text-lg text-white/75">{body}</p>
                     <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center">
-                        <SignupButton placement="cta_band" variant="light" />
-                        <ButtonLink to="/pricing" variant="ghost" className="!text-white hover:!bg-white/10">
-                            See pricing
-                        </ButtonLink>
+                        {actions || (
+                            <>
+                                <SignupButton placement="cta_band" variant="light" />
+                                <ButtonLink to="/pricing" variant="ghost" className="!text-white hover:!bg-white/10">
+                                    See pricing
+                                </ButtonLink>
+                            </>
+                        )}
                     </div>
                 </Reveal>
             </Container>

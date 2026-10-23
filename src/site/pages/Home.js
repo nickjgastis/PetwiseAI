@@ -222,6 +222,23 @@ const Home = () => (
             </div>
         </Section>
 
+        <CtaBand
+            title={
+                <>
+                    See it live with <Highlight>Dr. Gastis.</Highlight>
+                </>
+            }
+            body="A one on one walkthrough of your real workflows, with free trial setup. Bring your team."
+            actions={
+                <>
+                    <ButtonLink to="/demo" variant="light" trackAs="book_demo_home_steps">
+                        Book a demo
+                    </ButtonLink>
+                    <SignupButton placement="home_steps" variant="ghost" className="!text-white hover:!bg-white/10" />
+                </>
+            }
+        />
+
         <Section tone="wash">
             <SectionHeading
                 eyebrow="One workspace"
