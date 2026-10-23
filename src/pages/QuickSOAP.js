@@ -2372,7 +2372,7 @@ const QuickSOAP = () => {
             const title = reportName || 'SOAP Report';
             const doc = recordType === 'dental'
                 ? <DentalPDFDocument title={reportName || 'Dental record'} report={report} dental={dental} />
-                : <QuickSOAPPDFDocument reportText={report} title={title} />;
+                : <QuickSOAPPDFDocument reportText={report} title={title} type={recordType} />;
             const blob = await pdf(doc).toBlob();
             const url = URL.createObjectURL(blob);
 
