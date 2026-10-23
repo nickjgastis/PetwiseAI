@@ -71,7 +71,7 @@ const CasePicker = ({ onPick, onClose }) => {
             >
                 <div className="px-6 pt-6 pb-4">
                     <div className="flex items-center justify-between">
-                        <h3 className={`text-xl font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT}`}>Add to an existing case</h3>
+                        <h3 className={`text-xl font-bold tracking-tight pb-0.5 ${GRADIENT_TEXT}`}>Add to existing case</h3>
                         <button type="button" onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] border-none bg-transparent cursor-pointer">
                             <FiX />
                         </button>
@@ -189,7 +189,7 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
                         className={`inline-flex items-center gap-2.5 rounded-full h-12 px-6 text-[15px] font-semibold cursor-pointer transition-colors disabled:opacity-50 ${base}`}
                     >
                         <FiFolder className="text-[17px] text-[#2d5fb8]" />
-                        or add to an existing case
+                        or add to existing case
                         <FiPlus className="text-[15px] opacity-50" />
                     </motion.button>
                 )}
