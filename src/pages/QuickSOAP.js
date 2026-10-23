@@ -2883,11 +2883,9 @@ const QuickSOAP = () => {
                                             </div>
                                         )}
                                     </div>
-                                    {!isMobile && (
+                                    {!isMobile && (dictations.length > 0 || activeCaseId) && (
                                         <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
-                                            {dictations.length
-                                                ? 'Add more, or generate when you’re ready.'
-                                                : activeCaseId ? 'Dictate and it goes straight into this case.' : 'Dictate the visit and we’ll write the record.'}
+                                            {dictations.length ? 'Add more, or generate when you’re ready.' : 'Dictate and it goes straight into this case.'}
                                         </p>
                                     )}
                                     <div className={isMobile ? 'mt-3' : 'mt-5'}>
