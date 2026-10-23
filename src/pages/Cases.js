@@ -73,7 +73,8 @@ const dayBucket = (d) => {
     if (diffDays <= 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';
     if (diffDays < 7) return 'This week';
-    return 'Earlier';
+    const sameYear = date.getFullYear() === start.getFullYear();
+    return date.toLocaleDateString('en-US', sameYear ? { month: 'long' } : { month: 'long', year: 'numeric' });
 };
 
 const PillButton = ({ onClick, children, disabled, variant = 'primary', className = '' }) => (
