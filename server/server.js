@@ -1131,7 +1131,7 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
 });
 
 // Short previews for note cards on the case page. The client caches them in form_data.preview.
-app.post('/api/note-previews', async (req, res) => {
+app.post('/api/note-previews', meDbRouter.requireUser, async (req, res) => {
     const notes = Array.isArray(req.body?.notes) ? req.body.notes.slice(0, 12) : [];
     if (!notes.length) return res.json({ previews: {} });
 

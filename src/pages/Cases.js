@@ -4,7 +4,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 import axios from 'axios';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiArrowLeft, FiPlus, FiEdit2, FiSearch, FiFolder, FiX, FiMic, FiChevronRight, FiPause, FiPlay, FiSquare, FiCopy, FiCheck, FiDownload, FiTrash2 } from 'react-icons/fi';
-import { supabase } from '../supabaseClient';
+import { supabase, authHeaders } from '../supabaseClient';
 import { useUsage, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeModal from '../components/UpgradeModal';
 import { useDictation } from '../hooks/useDictation';
@@ -807,9 +807,9 @@ const CaseDetail = ({ caseId }) => {
         missing.forEach((n) => requestedPreviews.current.add(n.id));
         const ids = missing.map((n) => n.id);
         setPendingPreviews((prev) => new Set([...prev, ...ids]));
-        axios.post(`${API_URL}/api/note-previews`, {
+        authHeaders().then((headers) => axios.post(`${API_URL}/api/note-previews`, {
             notes: missing.map((n) => ({ id: n.id, type: n.record_type, text: plain(n.report_text) }))
-        }).then(({ data }) => {
+        }, { headers })).then(({ data }) => {
             const previews = data?.previews || {};
             const withCard = (n) => ({ ...(n.form_data || {}), card: { ...previews[n.id], src: cardSource(n) } });
             setNotes((prev) => prev.map((n) => (previews[n.id] ? { ...n, form_data: withCard(n) } : n)));

@@ -117,5 +117,11 @@ function channel() {
 
 export const supabase = { from, channel };
 
+// For endpoints outside /api/db that need the signed-in user.
+export const authHeaders = async () => {
+    const token = await getAccessToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Paged lists: 'records' or 'cases'. Resolves { data, nextCursor, error } (cases also returns notes).
 export const fetchPage = (list, body = {}) => execute(body, `/api/db/${list}`);

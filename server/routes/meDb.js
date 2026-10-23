@@ -466,3 +466,4 @@ router.post('/cases', requireUser, listRoute(async (supabase, uid, { cursor, lim
 }));
 
 module.exports = router;
+module.exports.requireUser = requireUser;
