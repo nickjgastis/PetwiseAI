@@ -15,9 +15,9 @@ import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
-import { FaSearch, FaUser, FaSignOutAlt, FaMicrophone, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard, FaFolderOpen } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { FiPlus } from 'react-icons/fi';
-import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill } from 'react-icons/pi';
+import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill, PiUser } from 'react-icons/pi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
@@ -169,39 +169,39 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                                     e.preventDefault();
                                     requestNewCase(navigate);
                                 }}
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isQuickSOAP ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isQuickSOAP ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
-                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isQuickSOAP ? 'bg-blue-50' : ''}`}>
-                                    <FaMicrophone className="text-lg" />
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isQuickSOAP ? 'bg-[#2d5fb8]/10' : ''}`}>
+                                    <FiPlus />
                                 </span>
-                                <span className={`text-[10px] mt-0.5 ${isQuickSOAP ? 'font-bold' : 'font-medium'}`}>New case</span>
+                                <span className={`text-[10px] mt-0.5 ${isQuickSOAP ? 'font-bold' : 'font-semibold'}`}>New case</span>
                             </Link>
                             <Link
                                 to="/dashboard/cases"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isCases ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isCases ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
-                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isCases ? 'bg-blue-50' : ''}`}>
-                                    <FaFolderOpen className="text-lg" />
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isCases ? 'bg-[#2d5fb8]/10' : ''}`}>
+                                    {isCases ? <PiPawPrintFill /> : <PiPawPrint />}
                                 </span>
-                                <span className={`text-[10px] mt-0.5 ${isCases ? 'font-bold' : 'font-medium'}`}>Cases</span>
+                                <span className={`text-[10px] mt-0.5 ${isCases ? 'font-bold' : 'font-semibold'}`}>Cases</span>
                             </Link>
                             <Link
                                 to="/dashboard/quick-query"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isPetQuery ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isPetQuery ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
-                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isPetQuery ? 'bg-blue-50' : ''}`}>
-                                    <FaSearch className="text-lg" />
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isPetQuery ? 'bg-[#2d5fb8]/10' : ''}`}>
+                                    {isPetQuery ? <PiSparkleFill /> : <PiSparkle />}
                                 </span>
-                                <span className={`text-[10px] mt-0.5 ${isPetQuery ? 'font-bold' : 'font-medium'}`}>PetQuery</span>
+                                <span className={`text-[10px] mt-0.5 ${isPetQuery ? 'font-bold' : 'font-semibold'}`}>PetQuery</span>
                             </Link>
                             <Link
                                 to="/dashboard/profile"
-                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isProfile ? 'text-[#3468bd]' : 'text-gray-400'}`}
+                                className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isProfile ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
-                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center transition-colors ${isProfile ? 'bg-blue-50' : ''}`}>
-                                    <FaUser className="text-lg" />
+                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isProfile ? 'bg-[#2d5fb8]/10' : ''}`}>
+                                    <PiUser />
                                 </span>
-                                <span className={`text-[10px] mt-0.5 ${isProfile ? 'font-bold' : 'font-medium'}`}>Profile</span>
+                                <span className={`text-[10px] mt-0.5 ${isProfile ? 'font-bold' : 'font-semibold'}`}>Profile</span>
                             </Link>
                         </div>
                     </nav>
