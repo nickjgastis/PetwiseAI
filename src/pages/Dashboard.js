@@ -1224,6 +1224,14 @@ const Dashboard = () => {
     // (Old PlanSelection / WelcomeToPetwise / TrialEnded gates removed — access
     // is no longer plan-gated; usage caps are enforced per-feature instead.)
 
+    const upgradeAnnouncement = (
+        <AnimatePresence>
+            {showUpgrade && !showAppTour && (
+                <UpgradeAnnouncement isMobile={isMobile} sub={user?.sub} onClose={() => setShowUpgrade(false)} />
+            )}
+        </AnimatePresence>
+    );
+
     // After onboarding, check if on mobile
     if (isMobile && !isLoading) {
         // Check if this is the admin route - allow access on mobile for admins
@@ -1237,11 +1245,14 @@ const Dashboard = () => {
         const isQuickSOAPRoute = window.location.pathname.includes('/quicksoap');
         if (isQuickSOAPRoute) {
             return (
-                <MobileAppShell visible={mobileAppVisible} location={location} lockScroll>
-                    <div className="h-full overflow-hidden bg-[#3369bd]">
-                        <QuickSOAP />
-                    </div>
-                </MobileAppShell>
+                <>
+                    <MobileAppShell visible={mobileAppVisible} location={location} lockScroll>
+                        <div className="h-full overflow-hidden bg-[#3369bd]">
+                            <QuickSOAP />
+                        </div>
+                    </MobileAppShell>
+                    {upgradeAnnouncement}
+                </>
             );
         }
 
@@ -1260,9 +1271,12 @@ const Dashboard = () => {
         const casesMatch = window.location.pathname.match(/\/dashboard\/cases(?:\/([^/]+))?/);
         if (casesMatch) {
             return (
-                <MobileAppShell visible={mobileAppVisible} location={location}>
-                    <Cases mobile />
-                </MobileAppShell>
+                <>
+                    <MobileAppShell visible={mobileAppVisible} location={location}>
+                        <Cases mobile />
+                    </MobileAppShell>
+                    {upgradeAnnouncement}
+                </>
             );
         }
 
@@ -1423,11 +1437,7 @@ const Dashboard = () => {
                     onComplete={() => setShowAppTour(false)}
                 />
             )}
-            <AnimatePresence>
-                {showUpgrade && !showAppTour && (
-                    <UpgradeAnnouncement isMobile={isMobile} sub={user?.sub} onClose={() => setShowUpgrade(false)} />
-                )}
-            </AnimatePresence>
+            {upgradeAnnouncement}
             {/* Mobile app QR popup (from sidebar account menu) */}
             {showQRModal && (
                 <div
