@@ -10,8 +10,8 @@ import './site.css';
 const Logo = () => (
     <Link to="/" className="flex items-center gap-2.5" aria-label="PetWise home">
         <img src="/PW.png" alt="" className="w-8 h-8 object-contain" width="32" height="32" />
-        <span className={`text-[17px] font-semibold tracking-tight transition-colors text-[#13233f]`}>
-            PetWise<span className={`font-normal text-[#13233f]/35`}>.vet</span>
+        <span className={`text-[17px] font-semibold tracking-[-0.03em] transition-colors text-[#13233f]`}>
+            Petwise<span className={`font-normal text-[#13233f]/35`}>.vet</span>
         </span>
     </Link>
 );
