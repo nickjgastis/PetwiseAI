@@ -76,7 +76,7 @@ const POINTS = ['Modified Triadan, dog and cat', 'Tap a tooth to change a findin
 export const DentalSection = () => (
     <Section>
         <Reveal className="text-center mx-auto max-w-2xl mb-12 sm:mb-16">
-            <p className="text-[13px] font-semibold tracking-[0.14em] uppercase mb-4 text-violet-600">New</p>
+            <p className="text-[13px] font-semibold tracking-[0.14em] uppercase mb-4 text-[#3468bd]">New</p>
             <h2 className="text-[2.25rem] sm:text-[3rem] leading-[1.05] font-semibold tracking-[-0.03em]">
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#6d28d9] via-[#8b5cf6] to-[#c084fc]">Dental Records</span>
             </h2>
