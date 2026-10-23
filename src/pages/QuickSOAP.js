@@ -5,7 +5,6 @@ import { supabase } from '../supabaseClient';
 import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPause, FaPlay, FaDesktop, FaCheckCircle, FaPrint, FaClipboardList, FaFileAlt, FaPhoneAlt } from 'react-icons/fa';
 import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
-import { Document, Page, Text, StyleSheet } from '@react-pdf/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiEdit3, FiCheck, FiX, FiArrowRight, FiHelpCircle, FiSmartphone } from 'react-icons/fi';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
@@ -35,6 +34,7 @@ import Guide from '../components/Guide';
 import DentalWorkspace from '../components/DentalWorkspace';
 import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
+import { QuickSOAPPDFDocument } from '../components/RecordPDF';
 import CountBadge from '../components/CountBadge';
 
 const TEXT_RECORDS = {
@@ -48,77 +48,6 @@ const readStoredDental = () => {
     } catch {
         return null;
     }
-};
-
-// PDF Document component for print/export
-const QuickSOAPPDFDocument = ({ reportText, title }) => {
-    const styles = StyleSheet.create({
-        page: {
-            padding: 40,
-            fontSize: 12,
-            fontFamily: 'Helvetica',
-            lineHeight: 1.2
-        },
-        title: {
-            fontSize: 16,
-            fontFamily: 'Helvetica-Bold',
-            marginBottom: 20
-        },
-        text: {
-            marginBottom: 0,
-            whiteSpace: 'pre-wrap',
-            fontFamily: 'Helvetica'
-        },
-        strongText: {
-            fontFamily: 'Helvetica-Bold',
-            marginBottom: 0,
-            fontSize: 12
-        },
-        lineBreak: {
-            height: 8
-        }
-    });
-
-    const renderContent = (content) => {
-        if (!content) return null;
-        const lines = content.split('\n');
-        return lines.map((line, index) => {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) {
-                return <Text key={`break-${index}`} style={styles.lineBreak}>{'\n'}</Text>;
-            }
-            // Check for bold markers or section headers (lines ending with colon that are headers)
-            const isBold = (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) ||
-                (trimmedLine.endsWith(':') && /^(Subjective|Objective|Assessment|Plan|Problem List|Primary Diagnosis|Differential Diagnoses|Prognosis|Treatment|Monitoring|Client Communication|Follow-up|Follow-Up|Presenting Complaint|History|Owner Observations|Physical Exam|Vital Signs|Diagnostics):$/i.test(trimmedLine));
-
-            if (isBold) {
-                const cleanText = trimmedLine.replace(/^\*\*|\*\*$/g, '');
-                return (
-                    <Text key={index} style={styles.strongText}>
-                        {cleanText}
-                        {'\n'}
-                    </Text>
-                );
-            }
-            // Clean any remaining markdown from the line
-            const cleanLine = line.replace(/\*\*/g, '').replace(/#{1,6}\s*/g, '');
-            return (
-                <Text key={index} style={styles.text}>
-                    {cleanLine}
-                    {'\n'}
-                </Text>
-            );
-        });
-    };
-
-    return (
-        <Document>
-            <Page size="A4" style={styles.page}>
-                <Text style={styles.title}>{title}</Text>
-                {renderContent(reportText)}
-            </Page>
-        </Document>
-    );
 };
 
 const API_URL = process.env.NODE_ENV === 'production'
@@ -2888,13 +2817,8 @@ const QuickSOAP = () => {
                                             {dictations.length ? 'Add more, or generate when you’re ready.' : 'Dictate and it goes straight into this case.'}
                                         </p>
                                     )}
-                                    <div className={activeCaseId ? (isMobile ? 'mt-3' : 'mt-5') : !isMobile && dictations.length ? 'mt-3' : 'mt-0'}>
-                                        <CaseTarget
-                                            caseId={activeCaseId}
-                                            onChange={selectCase}
-                                            disabled={isRecording || isGenerating}
-                                            bigClass={isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.75rem]'}
-                                        />
+                                    <div className={isMobile ? 'mt-3' : 'mt-5'}>
+                                        <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
                                     </div>
                                 </div>
                             )}

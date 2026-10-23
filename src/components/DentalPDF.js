@@ -75,7 +75,7 @@ const ChartSvg = ({ species, teeth, height }) => {
 };
 
 // Page 1: full chart with every charted tooth listed underneath. Page 2+: the record text.
-const DentalPDFDocument = ({ title, report, dental }) => {
+export const DentalPages = ({ title, report, dental }) => {
     const species = dental?.species === 'feline' ? 'feline' : 'canine';
     const teeth = dental?.teeth || {};
     const ids = Object.keys(teeth).sort();
@@ -92,7 +92,7 @@ const DentalPDFDocument = ({ title, report, dental }) => {
     );
 
     return (
-        <Document title={title}>
+        <>
             <Page size="A4" style={styles.page}>
                 <Text style={styles.eyebrow}>DENTAL CHART</Text>
                 <Text style={styles.title}>{title}</Text>
@@ -145,8 +145,14 @@ const DentalPDFDocument = ({ title, report, dental }) => {
                 ))}
                 <Footer />
             </Page>
-        </Document>
+        </>
     );
 };
+
+const DentalPDFDocument = ({ title, report, dental }) => (
+    <Document title={title}>
+        <DentalPages title={title} report={report} dental={dental} />
+    </Document>
+);
 
 export default DentalPDFDocument;
