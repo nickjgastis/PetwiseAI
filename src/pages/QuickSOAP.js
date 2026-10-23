@@ -6,7 +6,7 @@ import { FaMicrophone, FaStop, FaCopy, FaChevronDown, FaChevronUp, FaTimes, FaPa
 import ChunkedRecorder from '../utils/chunkedRecorder';
 import { pdf } from '@react-pdf/renderer';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiEdit3, FiCheck, FiX, FiArrowRight, FiHelpCircle, FiSmartphone } from 'react-icons/fi';
+import { FiMic, FiPause, FiPlay, FiSquare, FiRefreshCw, FiSave, FiCopy, FiPrinter, FiChevronDown, FiEdit3, FiCheck, FiX, FiArrowRight, FiHelpCircle, FiSmartphone, FiFolder } from 'react-icons/fi';
 import { useUsage, useTrialUpgradePrompt, notifyUsageUpdated, getBrowserTimezone } from '../hooks/useUsage';
 import UpgradeNudge from '../components/UpgradeNudge';
 import UpgradeModal from '../components/UpgradeModal';
@@ -1599,9 +1599,24 @@ const QuickSOAP = () => {
         else startFreshCase(action.caseId);
     };
 
+    // Phone: vets hop between tabs and come back to the visit they're on, so New case asks first.
+    const [promptCaseName, setPromptCaseName] = useState(null);
+    const openNewCasePrompt = (mode = 'new') => {
+        setShowStartNewModal(mode);
+        setPromptCaseName(null);
+        if (!activeCaseId) return;
+        supabase.from('cases').select('pet_name').eq('id', activeCaseId).maybeSingle()
+            .then(({ data }) => setPromptCaseName(data?.pet_name || null));
+    };
+
     const requestLeave = (action) => {
         if (isRecording || isTranscribing) {
             setError('Tap Done on your dictation first.');
+            return;
+        }
+        if (isMobile && action.kind === 'new' && !action.caseId) {
+            if (hasReport || dictations.length > 0 || input.trim() || activeCaseId) openNewCasePrompt();
+            else startFreshCase();
             return;
         }
         if (action.kind === 'new' && action.caseId && !hasReport) {
@@ -2254,8 +2269,8 @@ const QuickSOAP = () => {
     };
 
     // Send dictations to desktop (mobile only)
-    const sendToDesktop = async () => {
-        if (!isAuthenticated || !user || !isMobile) return;
+    const sendToDesktop = async ({ quiet = false } = {}) => {
+        if (!isAuthenticated || !user || !isMobile) return false;
 
         setIsSendingToDesktop(true);
         try {
@@ -2269,7 +2284,7 @@ const QuickSOAP = () => {
             if (userError || !userData) {
                 console.error('Error fetching user for send to desktop:', userError);
                 setIsSendingToDesktop(false);
-                return;
+                return false;
             }
 
             const userId = userData.id;
@@ -2309,6 +2324,7 @@ const QuickSOAP = () => {
             if (insertError) {
                 console.error('Error creating draft for desktop:', insertError);
                 setIsSendingToDesktop(false);
+                return false;
             } else if (newDraft) {
                 // Update draftRecordId to the new record so mobile knows about it
                 // But don't prevent future sends from creating new records
@@ -2317,14 +2333,17 @@ const QuickSOAP = () => {
                 localStorage.setItem('currentQuickSOAPReportId', newDraft.id);
                 setIsSendingToDesktop(false);
                 setHasBeenSentToDesktop(true);
-                setShowSendSuccessModal(true);
+                if (!quiet) setShowSendSuccessModal(true);
                 refreshQueuedSoaps();
                 // NOTE: Do NOT clear here - user may need to re-send if something fails
                 // Clearing happens when SOAP generation starts (on desktop)
+                return true;
             }
+            return false;
         } catch (err) {
             console.error('Error sending to desktop:', err);
             setIsSendingToDesktop(false);
+            return false;
         }
     };
 
@@ -2412,12 +2431,13 @@ const QuickSOAP = () => {
     };
 
     const startCard = !hasReport && !isLoadingFromSaved && dictations.length === 0 && !isRecording && !isTranscribing;
+    const phoneInDictation = isMobile && (isRecording || isTranscribing || dictations.length > 0);
     const dictCard = !hasReport && !isLoadingFromSaved && dictations.length > 0 && !isRecording && !isTranscribing;
     const CARD = `w-full ${isMobile ? 'max-w-[560px]' : 'max-w-[680px]'} mx-auto rounded-[28px] bg-white border border-[#e7ecf3] shadow-[0_30px_70px_-40px_rgba(19,35,63,0.35)]`;
     const MIC_BG = { background: 'linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%)' };
 
-    const noteTypeControl = (
-        <div className={`flex w-full gap-1 p-1 rounded-full ${isMobile ? 'bg-[#f3f6fa]' : 'bg-[#eef2f8] border border-[#e3e9f2]'}`}>
+    const noteTypeControl = isMobile ? (
+        <div className="grid grid-cols-2 gap-1.5 w-[188px] aspect-square mx-auto">
             {RECORD_TYPES.map((t) => {
                 const s = TYPE_STYLES[t];
                 const Icon = s.icon;
@@ -2427,7 +2447,33 @@ const QuickSOAP = () => {
                         key={t}
                         type="button"
                         onClick={() => setRecordType(t)}
-                        className={`relative flex-1 rounded-full font-semibold border-none cursor-pointer bg-transparent transition-colors ${isMobile ? 'h-9 text-[12.5px]' : 'h-10 text-[14.5px] font-display tracking-[-0.01em]'} ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
+                        className={`relative flex flex-col items-center justify-center gap-1 rounded-[16px] font-semibold cursor-pointer border transition-colors ${on ? 'text-white border-transparent' : 'text-[#1a2b4a]/65 bg-white border-[#e7ecf3]'}`}
+                    >
+                        {on && (
+                            <motion.span
+                                layoutId="start-note-type"
+                                className={`absolute inset-0 rounded-[16px] ${s.solid} shadow-sm`}
+                                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                            />
+                        )}
+                        <Icon className="relative text-[18px]" />
+                        <span className="relative text-[12px]">{s.label}</span>
+                    </button>
+                );
+            })}
+        </div>
+    ) : (
+        <div className="flex w-full gap-1 p-1 rounded-full bg-[#eef2f8] border border-[#e3e9f2]">
+            {RECORD_TYPES.map((t) => {
+                const s = TYPE_STYLES[t];
+                const Icon = s.icon;
+                const on = recordType === t;
+                return (
+                    <button
+                        key={t}
+                        type="button"
+                        onClick={() => setRecordType(t)}
+                        className={`relative flex-1 h-10 rounded-full text-[14.5px] font-display font-semibold tracking-[-0.01em] border-none cursor-pointer bg-transparent transition-colors ${on ? 'text-white' : 'text-[#1a2b4a]/60 hover:text-[#13233f]'}`}
                     >
                         {on && (
                             <motion.span
@@ -2711,35 +2757,84 @@ const QuickSOAP = () => {
                             onClick={(e) => e.stopPropagation()}
                             className="w-full max-w-md bg-white rounded-[28px] p-6 shadow-[0_30px_80px_-30px_rgba(19,35,63,0.45)]"
                         >
-                            <h3 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>
-                                {hasBeenSentToDesktop ? 'Start a new case?' : 'Discard this dictation?'}
-                            </h3>
-                            <p className="mt-2 mb-6 text-[14.5px] leading-relaxed text-[#1a2b4a]/60">
-                                {hasBeenSentToDesktop
-                                    ? 'This one is already on your desktop. Clear the screen and start the next visit.'
-                                    : 'It hasn’t been sent to your desktop yet, so starting new will delete it.'}
-                            </p>
-                            <div className="flex flex-col gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        clearAllQuickSOAPData();
-                                        setShowStartNewModal(false);
-                                    }}
-                                    className={`w-full h-12 rounded-full text-[15px] font-semibold border-none cursor-pointer transition-colors ${hasBeenSentToDesktop
-                                        ? 'text-white bg-[#2d5fb8] hover:bg-[#2350a3] shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)]'
-                                        : 'text-white bg-red-500 hover:bg-red-600'}`}
-                                >
-                                    {hasBeenSentToDesktop ? 'Start new case' : 'Discard and start new'}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowStartNewModal(false)}
-                                    className="w-full h-12 rounded-full text-[15px] font-semibold text-[#13233f] bg-[#f6f8fb] hover:bg-[#eef2f7] border-none cursor-pointer transition-colors"
-                                >
-                                    Keep it
-                                </button>
-                            </div>
+                            {showStartNewModal === 'discard' ? (
+                                <>
+                                    <h3 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>Discard this dictation?</h3>
+                                    <p className="mt-2 mb-6 text-[14.5px] leading-relaxed text-[#1a2b4a]/60">It hasn’t been sent to your desktop yet, so this will delete it.</p>
+                                    <div className="flex flex-col gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                startFreshCase();
+                                                setShowStartNewModal(false);
+                                            }}
+                                            className="w-full h-12 rounded-full text-[15px] font-semibold text-white bg-red-500 hover:bg-red-600 border-none cursor-pointer transition-colors"
+                                        >
+                                            Discard and start new
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowStartNewModal(false)}
+                                            className="w-full h-12 rounded-full text-[15px] font-semibold text-[#13233f] bg-[#f6f8fb] hover:bg-[#eef2f7] border-none cursor-pointer transition-colors"
+                                        >
+                                            Keep it
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (() => {
+                                const pending = dictations.length + (input.trim() ? 1 : 0);
+                                const unsent = pending > 0 && !hasBeenSentToDesktop;
+                                const name = promptCaseName || petName;
+                                return (
+                                    <>
+                                        <h3 className={`m-0 pb-0.5 text-[22px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>Start a new case?</h3>
+                                        <p className="mt-2 mb-5 text-[14.5px] leading-relaxed text-[#1a2b4a]/60">
+                                            {unsent
+                                                ? `You have ${pending} ${pending === 1 ? 'dictation' : 'dictations'} here that ${pending === 1 ? 'hasn’t' : 'haven’t'} been sent to your desktop yet.`
+                                                : hasBeenSentToDesktop
+                                                    ? 'What’s here is already on your desktop.'
+                                                    : `You’re working in ${name || 'a case'}. Pick up where you left off or start the next visit.`}
+                                        </p>
+                                        <div className="flex flex-col gap-2">
+                                            <button
+                                                type="button"
+                                                disabled={isSendingToDesktop}
+                                                onClick={async () => {
+                                                    if (unsent && !(await sendToDesktop({ quiet: true }))) return;
+                                                    startFreshCase();
+                                                    setShowStartNewModal(false);
+                                                }}
+                                                className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-white bg-[#2d5fb8] hover:bg-[#2350a3] border-none cursor-pointer shadow-[0_10px_30px_-12px_rgba(45,95,184,0.7)] transition-colors disabled:opacity-70"
+                                            >
+                                                {isSendingToDesktop ? <span className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" /> : <FiMic className="text-[15px]" />}
+                                                {unsent ? 'Send to desktop and start new' : 'Start new case'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={isSendingToDesktop}
+                                                onClick={() => setShowStartNewModal(false)}
+                                                className="w-full h-12 inline-flex items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-[#2d5fb8] bg-[#eef4fc] hover:bg-[#e3edfb] border-none cursor-pointer transition-colors disabled:opacity-60"
+                                            >
+                                                <FiFolder className="text-[15px]" />
+                                                <span className="truncate">{name ? `Continue ${name}` : 'Continue this case'}</span>
+                                            </button>
+                                            {unsent && (
+                                                <button
+                                                    type="button"
+                                                    disabled={isSendingToDesktop}
+                                                    onClick={() => {
+                                                        startFreshCase();
+                                                        setShowStartNewModal(false);
+                                                    }}
+                                                    className="w-full h-10 rounded-full text-[14px] font-semibold text-red-600 bg-transparent border-none cursor-pointer disabled:opacity-60"
+                                                >
+                                                    Discard and start new
+                                                </button>
+                                            )}
+                                        </div>
+                                    </>
+                                );
+                            })()}
                         </motion.div>
                     </motion.div>
                 )}
@@ -2791,33 +2886,35 @@ const QuickSOAP = () => {
                             : 'relative justify-start px-8 py-12 overflow-y-auto [&>*:first-child]:mt-auto [&>*:last-child]:mb-auto'
                             }`}>
                             {/* Header */}
-                            {(!isRecording || !isMobile) && (
+                            {(!phoneInDictation || activeCaseId) && (
                                 <div className={`${isMobile ? 'mb-5' : 'mb-8'} text-center relative flex-shrink-0 w-full flex flex-col items-center`}>
-                                    <div className="relative">
-                                        <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.75rem]'} leading-[1.1] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
-                                            {activeCaseId ? 'Add a record' : 'Start a new case'}
-                                        </h1>
-                                        {isMobile ? (
-                                            <button type="button" onClick={() => setShowTutorial(true)} title="How it works" className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 active:text-[#2d5fb8] bg-transparent border-none cursor-pointer">
-                                                <FiHelpCircle />
-                                            </button>
-                                        ) : (
-                                            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 flex items-center gap-1">
-                                                <button type="button" onClick={() => setShowTutorial(true)} title="How it works" className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 hover:text-[#2d5fb8] hover:bg-[#2d5fb8]/[0.07] bg-transparent border-none cursor-pointer transition-colors">
+                                    {!activeCaseId && !phoneInDictation && (
+                                        <div className="relative">
+                                            <h1 className={`m-0 ${isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.75rem]'} leading-[1.1] pb-1 font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>
+                                                Start New Case
+                                            </h1>
+                                            {isMobile ? (
+                                                <button type="button" onClick={() => setShowTutorial(true)} title="How it works" className="absolute left-full top-1/2 -translate-y-1/2 ml-1.5 w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 active:text-[#2d5fb8] bg-transparent border-none cursor-pointer">
                                                     <FiHelpCircle />
                                                 </button>
-                                                <button type="button" onClick={() => setShowQRModal(true)} title="Dictate from your phone" className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 hover:text-[#2d5fb8] hover:bg-[#2d5fb8]/[0.07] bg-transparent border-none cursor-pointer transition-colors">
-                                                    <FiSmartphone />
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {!isMobile && (dictations.length > 0 || activeCaseId) && (
+                                            ) : (
+                                                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 flex items-center gap-1">
+                                                    <button type="button" onClick={() => setShowTutorial(true)} title="How it works" className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 hover:text-[#2d5fb8] hover:bg-[#2d5fb8]/[0.07] bg-transparent border-none cursor-pointer transition-colors">
+                                                        <FiHelpCircle />
+                                                    </button>
+                                                    <button type="button" onClick={() => setShowQRModal(true)} title="Dictate from your phone" className="w-8 h-8 rounded-full flex items-center justify-center text-[16px] text-[#1a2b4a]/35 hover:text-[#2d5fb8] hover:bg-[#2d5fb8]/[0.07] bg-transparent border-none cursor-pointer transition-colors">
+                                                        <FiSmartphone />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                    {!isMobile && !activeCaseId && dictations.length > 0 && (
                                         <p className="mt-1.5 mb-0 text-[15px] text-[#1a2b4a]/55">
-                                            {dictations.length ? 'Add more, or generate when you’re ready.' : 'Dictate and it goes straight into this case.'}
+                                            Add more, or generate when you’re ready.
                                         </p>
                                     )}
-                                    <div className={isMobile ? 'mt-3' : 'mt-5'}>
+                                    <div className={`w-full min-w-0 flex justify-center ${activeCaseId ? '' : (isMobile ? 'mt-4' : 'mt-6')}`}>
                                         <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
                                     </div>
                                 </div>
@@ -3079,14 +3176,6 @@ const QuickSOAP = () => {
                                                         </>
                                                     )}
                                                 </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowStartNewModal(true)}
-                                                    disabled={isGenerating || isSendingToDesktop}
-                                                    className="w-full h-11 rounded-full text-[14px] font-semibold text-[#1a2b4a]/60 bg-transparent border-none cursor-pointer disabled:opacity-50"
-                                                >
-                                                    Start over
-                                                </button>
                                             </>
                                         )}
                                     </div>
@@ -3120,6 +3209,18 @@ const QuickSOAP = () => {
                                 <UpgradeNudge show={showNudge} feature="soap" remaining={soapRemaining} onDismiss={dismissNudge} />
 
                             </div>
+                            {isMobile && dictations.length > 0 && !isRecording && !isTranscribing && !hasReport && !hasBeenSentToDesktop && (
+                                <div className="mt-auto w-full max-w-[560px] pt-3 flex-shrink-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => openNewCasePrompt('discard')}
+                                        disabled={isGenerating || isSendingToDesktop}
+                                        className="w-full h-12 rounded-full text-[15px] font-semibold text-red-700 bg-red-50 active:bg-red-100 border border-red-100 cursor-pointer disabled:opacity-50"
+                                    >
+                                        Discard this record
+                                    </button>
+                                </div>
+                            )}
                         </motion.div>
                     ) : isMobile ? (
                         // Mobile sidebar layout when report is generated (unchanged)
@@ -3206,7 +3307,7 @@ const QuickSOAP = () => {
                                             )}
                                         </button>
                                         <button
-                                            onClick={() => setShowStartNewModal(true)}
+                                            onClick={() => openNewCasePrompt()}
                                             disabled={isTranscribing || isGenerating || isSendingToDesktop}
                                             className="w-full px-3 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium text-xs hover:bg-gray-300 transition-all shadow-sm disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
                                         >
