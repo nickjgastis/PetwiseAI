@@ -110,10 +110,10 @@ const FAQS = [
 ];
 
 const RECORD_TYPES = [
-    { label: 'SOAP', icon: FaClipboardList, className: 'bg-blue-50 text-blue-700 ring-blue-600/15' },
-    { label: 'Summary', icon: FaFileAlt, className: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15' },
-    { label: 'Callback', icon: FaPhoneAlt, className: 'bg-amber-50 text-amber-700 ring-amber-600/20' },
-    { label: 'Dental', icon: PiTooth, className: 'bg-violet-50 text-violet-700 ring-violet-600/15' }
+    { label: 'SOAP', icon: FaClipboardList, className: 'from-blue-500 to-blue-600 shadow-blue-600/25' },
+    { label: 'Summary', icon: FaFileAlt, className: 'from-emerald-500 to-emerald-600 shadow-emerald-600/25' },
+    { label: 'Callback', icon: FaPhoneAlt, className: 'from-amber-500 to-amber-600 shadow-amber-600/25' },
+    { label: 'Dental', icon: PiTooth, className: 'from-violet-500 to-violet-600 shadow-violet-600/25' }
 ];
 
 const Home = () => (
@@ -136,7 +136,7 @@ const Home = () => (
             afterBody={
                 <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                     {RECORD_TYPES.map(({ label, icon: Icon, className }) => (
-                        <span key={label} className={`inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13.5px] font-semibold ring-1 ${className}`}>
+                        <span key={label} className={`inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[13.5px] font-semibold text-white bg-gradient-to-b shadow-[0_6px_14px_-6px] ${className}`}>
                             <Icon className="text-[12px]" />
                             {label}
                         </span>
