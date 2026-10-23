@@ -132,7 +132,7 @@ const Home = () => (
                     Finish your notes <Highlight dark>before you leave.</Highlight>
                 </>
             }
-            body="PetWise listens to the appointment and writes the SOAP note for you."
+            body="AI dictation for every scenario in your practice."
             afterBody={
                 <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
                     {RECORD_TYPES.map(({ label, icon: Icon, className }) => (
