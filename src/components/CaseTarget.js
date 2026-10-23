@@ -123,7 +123,8 @@ const CasePicker = ({ onPick, onClose }) => {
 };
 
 // Pill above the recorder: start a new case (default) or file this note into an existing one.
-const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
+// `bigClass` turns the "add to existing case" link into a second heading line at that text size.
+const CaseTarget = ({ caseId, onChange, disabled = false, light = false, bigClass = '' }) => {
     const [open, setOpen] = useState(false);
     const [caseRow, setCaseRow] = useState(null);
     const onChangeRef = useRef(onChange);
@@ -186,11 +187,19 @@ const CaseTarget = ({ caseId, onChange, disabled = false, light = false }) => {
                         disabled={disabled}
                         onClick={() => setOpen(true)}
                         initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}
-                        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-colors disabled:opacity-50 ${base}`}
+                        className={bigClass
+                            ? `m-0 p-0 border-none bg-transparent font-bold tracking-[-0.03em] leading-[1.1] pb-1 text-[#1a2b4a]/30 hover:text-[#2d5fb8] cursor-pointer transition-colors disabled:opacity-50 disabled:hover:text-[#1a2b4a]/30 ${bigClass}`
+                            : `inline-flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-medium cursor-pointer transition-colors disabled:opacity-50 ${base}`}
                     >
-                        <FiFolder className="text-[14px] opacity-70" />
-                        or add to an existing case
-                        <FiPlus className="text-[13px] opacity-50" />
+                        {bigClass ? (
+                            'or add to existing case'
+                        ) : (
+                            <>
+                                <FiFolder className="text-[14px] opacity-70" />
+                                or add to an existing case
+                                <FiPlus className="text-[13px] opacity-50" />
+                            </>
+                        )}
                     </motion.button>
                 )}
             </AnimatePresence>

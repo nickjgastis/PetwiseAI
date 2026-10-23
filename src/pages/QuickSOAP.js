@@ -2888,8 +2888,13 @@ const QuickSOAP = () => {
                                             {dictations.length ? 'Add more, or generate when you’re ready.' : 'Dictate and it goes straight into this case.'}
                                         </p>
                                     )}
-                                    <div className={isMobile ? 'mt-3' : 'mt-5'}>
-                                        <CaseTarget caseId={activeCaseId} onChange={selectCase} disabled={isRecording || isGenerating} />
+                                    <div className={activeCaseId ? (isMobile ? 'mt-3' : 'mt-5') : !isMobile && dictations.length ? 'mt-3' : 'mt-0'}>
+                                        <CaseTarget
+                                            caseId={activeCaseId}
+                                            onChange={selectCase}
+                                            disabled={isRecording || isGenerating}
+                                            bigClass={isMobile ? (dictations.length ? 'text-[1.6rem]' : 'text-[2rem]') : 'text-[2.75rem]'}
+                                        />
                                     </div>
                                 </div>
                             )}
