@@ -92,7 +92,7 @@ export const toothLabel = (species, id) => teethFor(species).find((t) => t.id ==
 // Chart colors. `fill`/`stroke` are SVG colors; `chip` is the Tailwind class for legends and lists.
 export const STATUSES = {
     normal: { label: 'Normal', fill: '#ffffff', stroke: '#c9d3e1', chip: 'bg-white text-[#13233f] border border-[#d9e1ec]' },
-    missing: { label: 'Missing', fill: '#4a5260', stroke: '#3a414d', chip: 'bg-[#4a5260] text-white' },
+    missing: { label: 'Missing', fill: '#8a919c', stroke: '#16191f', chip: 'bg-[#8a919c] text-white' },
     extracted: { label: 'Extracted', fill: '#fde2e1', stroke: '#e05a52', cross: true, chip: 'bg-red-50 text-red-700' },
     fractured: { label: 'Fractured', fill: '#ffe6cc', stroke: '#ea8a2b', chip: 'bg-orange-50 text-orange-700' },
     resorption: { label: 'Resorption', fill: '#ece1fb', stroke: '#8b5cf6', chip: 'bg-violet-50 text-violet-700' },
