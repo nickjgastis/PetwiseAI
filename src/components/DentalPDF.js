@@ -42,7 +42,7 @@ const Swatch = ({ s }) => {
 const StatusLabel = ({ t, text, font, style }) => {
     const [x, y] = [t.label[0], t.label[1] + font * 0.35];
     const half = font * 0.834;
-    const gap = font * 0.278;
+    const gap = font * 0.278 * 3;
     if (x < 0) {
         return (
             <>

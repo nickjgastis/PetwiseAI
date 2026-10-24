@@ -28,6 +28,8 @@ export const ChartLegend = ({ teeth = {}, className = '' }) => {
 
 // With `statusLabels`, a charted tooth reads "Missing 108" on the left of the arch and "208 Missing" on the right.
 // The number stays put and the status grows outward, away from the arch.
+// Non-breaking, since svg text collapses runs of normal spaces.
+const GAP = '\u00a0\u00a0\u00a0';
 const labelAnchor = (t, st) => {
     if (st === STATUSES.normal) return { textAnchor: 'middle' };
     const left = t.label[0] < 0;
@@ -102,7 +104,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                                 dominantBaseline="middle"
                                 style={{ ...fs(), fontFeatureSettings: "'tnum'", transform: anchor.transform }}
                             >
-                                {anchor.left && <tspan fill="#16191f">{`${st.label} `}</tspan>}
+                                {anchor.left && <tspan fill="#16191f">{`${st.label}${GAP}`}</tspan>}
                                 <tspan
                                     fill={isSel || isHover ? '#2d5fb8' : labelled ? '#16191f' : '#1a2b4a'}
                                     fillOpacity={isSel || isHover || labelled ? 1 : 0.5}
@@ -110,7 +112,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                                 >
                                     {t.id}
                                 </tspan>
-                                {anchor.left === false && <tspan fill="#16191f">{` ${st.label}`}</tspan>}
+                                {anchor.left === false && <tspan fill="#16191f">{`${GAP}${st.label}`}</tspan>}
                             </text>
                         </g>
                     );
