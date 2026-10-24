@@ -96,9 +96,12 @@ export const STATUSES = {
     extracted: { label: 'Extracted', fill: '#ffffff', stroke: '#c9d3e1', cross: '#16191f', chip: 'bg-red-50 text-red-700' },
     fractured: { label: 'Fractured', fill: '#ffe6cc', stroke: '#ea8a2b', chip: 'bg-orange-50 text-orange-700' },
     resorption: { label: 'Resorption', fill: '#ece1fb', stroke: '#8b5cf6', chip: 'bg-violet-50 text-violet-700' },
+    caries: { label: 'Caries', fill: '#efe2d3', stroke: '#8b5a2b', chip: 'bg-[#f6ede3] text-[#7a4a1e]' },
     periodontal: { label: 'Periodontal', fill: '#fdf0c8', stroke: '#d8a316', chip: 'bg-amber-50 text-amber-700' },
+    mobility: { label: 'Mobility', fill: '#ccf3ec', stroke: '#14a08c', chip: 'bg-teal-50 text-teal-700' },
+    retained: { label: 'Retained deciduous', fill: '#fce4f1', stroke: '#d6338a', chip: 'bg-pink-50 text-pink-700' },
     treated: { label: 'Treated', fill: '#dbeafe', stroke: '#3b82f6', chip: 'bg-blue-50 text-blue-700' },
     watch: { label: 'Watch', fill: '#ffffff', stroke: '#2d5fb8', chip: 'bg-white text-[#2d5fb8] border border-[#2d5fb8]/40' }
 };
 
-export const STATUS_ORDER = ['normal', 'missing', 'extracted', 'fractured', 'resorption', 'periodontal', 'treated', 'watch'];
+export const STATUS_ORDER = ['normal', 'missing', 'extracted', 'fractured', 'caries', 'resorption', 'periodontal', 'mobility', 'retained', 'treated', 'watch'];

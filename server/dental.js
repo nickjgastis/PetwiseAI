@@ -14,7 +14,7 @@ const toothSet = (species) => {
     ]);
 };
 
-const STATUSES = ['missing', 'extracted', 'fractured', 'resorption', 'periodontal', 'treated', 'watch'];
+const STATUSES = ['missing', 'extracted', 'fractured', 'caries', 'resorption', 'periodontal', 'mobility', 'retained', 'treated', 'watch'];
 
 const PROMPT = `You are a veterinary dentistry scribe. Turn the dictation into a dental record and a tooth chart.
 
@@ -31,7 +31,7 @@ species: SPECIES_RULE
 teeth: one entry per tooth that has a finding. Use Modified Triadan numbers: quadrant 1 right maxilla, 2 left maxilla, 3 left mandible, 4 right mandible; 01-03 incisors, 04 canine, 05-08 premolars, 09-11 molars.
 Map spoken names to numbers, e.g. "upper right fourth premolar" = 108, "left mandibular first molar" = 309, "one-oh-eight" = 108. Expand ranges like "406 through 410" into each tooth.
 status, one of: ${STATUSES.join(', ')}.
-- missing: absent and not removed today. extracted: removed in this procedure. fractured: any fracture. resorption: tooth resorption. periodontal: pockets, mobility, bone loss, furcation or recession. treated: restored, root canal, bonded sealant or other treatment kept in place. watch: noted for monitoring.
+- missing: absent and not removed today. extracted: removed in this procedure. fractured: any fracture. caries: carious lesion or cavity. resorption: tooth resorption. periodontal: pockets, bone loss, furcation or recession. mobility: mobile tooth, put the grade in note (e.g. "mobility 2"). retained: retained (persistent) deciduous tooth left in place, charted on the permanent tooth's number (e.g. 504 is charted as 104). treated: restored, root canal, bonded sealant or other treatment kept in place. watch: noted for monitoring.
 - If a tooth has several findings, pick the most significant status and put the rest in note.
 - note: short clinical detail, e.g. "slab fracture, pulp exposed" or "PD3, mobility 1". Empty string if nothing to add.
 - Never include a tooth that was not mentioned. Teeth described as normal are left out.
@@ -78,7 +78,9 @@ async function generateDental(input, chosenSpecies) {
     const teeth = {};
     const unmatched = [];
     (Array.isArray(parsed.teeth) ? parsed.teeth : []).forEach((t) => {
-        const id = String(t?.id || '').replace(/\D/g, '');
+        const raw = String(t?.id || '').replace(/\D/g, '');
+        // Deciduous quadrants 5-8 sit on the permanent tooth's spot (504 -> 104).
+        const id = /^[5-8]\d\d$/.test(raw) ? `${Number(raw[0]) - 4}${raw.slice(1)}` : raw;
         const status = STATUSES.includes(t?.status) ? t.status : 'watch';
         if (!valid.has(id)) {
             unmatched.push({ id, status, note: t?.note || '' });
