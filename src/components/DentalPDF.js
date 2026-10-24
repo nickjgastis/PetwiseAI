@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, Svg, Path, Line, G, StyleSheet } from '@react-pdf/renderer';
 import { buildChart } from '../dental/geometry';
-import { STATUSES, STATUS_ORDER, toothLabel } from '../dental/teeth';
+import { STATUSES, STATUS_ORDER, toothLabel, stackedLabel, stackLines, stackOffset } from '../dental/teeth';
 import { parseSections } from '../dental/sections';
 
 const INK = '#000000';
@@ -39,10 +39,20 @@ const Swatch = ({ s }) => {
 
 // "Missing 108" on the left of the arch, "208 Missing" on the right. The number stays where a plain label
 // would be and the status grows away from the arch. Two texts, since react-pdf can't flow one Tspan after another.
-const StatusLabel = ({ t, text, font, style }) => {
+// Feline incisors stack the status on its own line instead, as on screen.
+const StatusLabel = ({ t, text, font, style, stack }) => {
     const [x, y] = [t.label[0], t.label[1] + font * 0.35];
     const half = font * 0.834;
     const gap = font * 0.278 * 3;
+    if (stack) {
+        const sy = stack.base[t.jaw] + font * 0.35 + (t.jaw === 'upper' ? -1 : 1) * stackOffset(stack.lines[t.id]) * font;
+        return (
+            <>
+                <Text x={x} y={y} textAnchor="middle" fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{t.id}</Text>
+                <Text x={x} y={sy} textAnchor="middle" fill={INK} style={{ ...style, fontSize: font * 0.85 }}>{text}</Text>
+            </>
+        );
+    }
     if (x < 0) {
         return (
             <>
@@ -65,7 +75,10 @@ const ChartSvg = ({ species, teeth, height }) => {
     const font = unit * 3.1;
     // Extra room either side for "Retained deciduous 108" style labels.
     const side = font * 7;
-    const bounds = { ...chart.bounds, minX: chart.bounds.minX - side, maxX: chart.bounds.maxX + side };
+    const stack = stackLines(species, chart.teeth, teeth, font * 0.85);
+    const deepest = Math.max(-1, ...Object.values(stack.lines));
+    const over = deepest < 0 ? 0 : font * (stackOffset(deepest) + 0.6);
+    const bounds = { minX: chart.bounds.minX - side, maxX: chart.bounds.maxX + side, minY: chart.bounds.minY - over, maxY: chart.bounds.maxY + over };
     const w = bounds.maxX - bounds.minX;
     const h = bounds.maxY - bounds.minY;
     const scale = Math.min(height / h, MAX_CHART_W / w);
@@ -96,7 +109,7 @@ const ChartSvg = ({ species, teeth, height }) => {
                                 {t.id}
                             </Text>
                         ) : (
-                            <StatusLabel t={t} text={st.label} font={font} style={label} />
+                            <StatusLabel t={t} text={st.label} font={font} style={label} stack={stackedLabel(species, t) ? stack : null} />
                         )}
                     </G>
                 );
