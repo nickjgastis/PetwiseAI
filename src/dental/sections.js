@@ -41,3 +41,35 @@ export function parseSections(text = '') {
 
 export const joinSections = (sections) =>
     sections.map((s) => (s.heading ? `${s.heading}\n${s.body}` : s.body)).join('\n\n');
+
+const FINDINGS = ['tooth findings', 'findings'];
+const SUMMARY = ['dental procedure summary', 'procedure summary'];
+const toothId = (l) => l.match(/^\s*[-•]?\s*(\d{3})\b/)?.[1];
+
+// Adds a tooth's chart status and note to its "Tooth Findings" line, creating the line or section if needed.
+// Only appends; text already in the record is never changed or removed.
+export function addToothFinding(report, id, { status, note } = {}, statusLabel) {
+    const sections = parseSections(report);
+    let idx = sections.findIndex((s) => FINDINGS.includes((s.heading || '').toLowerCase()));
+    if (idx === -1) {
+        const after = sections.findIndex((s) => SUMMARY.includes((s.heading || '').toLowerCase()));
+        idx = after === -1 ? sections.length : after + 1;
+        sections.splice(idx, 0, { heading: 'Tooth Findings', body: '' });
+    }
+    const lines = sections[idx].body ? sections[idx].body.split('\n') : [];
+    const at = lines.findIndex((l) => toothId(l) === id);
+    const existing = at === -1 ? '' : lines[at].toLowerCase();
+    const parts = [status && status !== 'normal' ? statusLabel : null, note?.trim()].filter(
+        (p) => p && !existing.includes(p.toLowerCase().slice(0, 6))
+    );
+    if (!parts.length) return report;
+
+    if (at === -1) {
+        const next = lines.findIndex((l) => toothId(l) && toothId(l) > id);
+        lines.splice(next === -1 ? lines.length : next, 0, `${id}: ${parts.join(', ')}.`);
+    } else {
+        lines[at] = `${lines[at].replace(/[\s.]+$/, '')}. ${parts.join(', ')}.`;
+    }
+    sections[idx] = { ...sections[idx], body: lines.join('\n') };
+    return joinSections(sections);
+}

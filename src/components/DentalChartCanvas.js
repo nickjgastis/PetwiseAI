@@ -32,9 +32,14 @@ const ICON_BTN = 'w-8 h-8 flex items-center justify-center border-none cursor-po
 const FLOAT_BTN = 'w-8 h-8 flex items-center justify-center border border-[#e7ecf3] cursor-pointer bg-white text-[#1a2b4a]/65 hover:text-[#13233f] shadow-[0_6px_16px_-10px_rgba(19,35,63,0.35)] transition-colors';
 
 // Zoomable, pannable chart with a per-tooth popover. `dental` is { species, teeth: { [id]: { status, note } } }.
-const DentalChartCanvas = ({ dental, onChange, height, onExpand }) => {
+// `onToothCommit(id, before, after)` fires once when a tooth's popover closes with changes.
+const DentalChartCanvas = ({ dental, onChange, height, onExpand, onToothCommit }) => {
     const species = dental?.species === 'feline' ? 'feline' : 'canine';
     const teeth = useMemo(() => dental?.teeth || {}, [dental]);
+    const teethRef = useRef(teeth);
+    const commitRef = useRef(onToothCommit);
+    teethRef.current = teeth;
+    commitRef.current = onToothCommit;
     const chart = useMemo(() => buildChart(species), [species]);
     const full = useMemo(() => {
         const b = chart.bounds;
@@ -279,6 +284,15 @@ const DentalChartCanvas = ({ dental, onChange, height, onExpand }) => {
         const { [id]: _, ...rest } = teeth;
         onChange({ ...dental, species, teeth: merged.status === 'normal' && !merged.note ? rest : { ...teeth, [id]: merged } });
     };
+
+    useEffect(() => {
+        if (!selected) return undefined;
+        const before = teethRef.current[selected] || {};
+        return () => {
+            const after = teethRef.current[selected] || {};
+            if (before.status !== after.status || (before.note || '') !== (after.note || '')) commitRef.current?.(selected, before, after);
+        };
+    }, [selected]);
 
     const current = selected ? teeth[selected] || { status: 'normal' } : null;
     const charted = Object.keys(teeth).sort();

@@ -5,7 +5,8 @@ import { PiTooth } from 'react-icons/pi';
 import { FiCopy, FiPrinter, FiX } from 'react-icons/fi';
 import DentalChartCanvas from './DentalChartCanvas';
 import RecordName from './RecordName';
-import { parseSections, joinSections } from '../dental/sections';
+import { parseSections, joinSections, addToothFinding } from '../dental/sections';
+import { STATUSES } from '../dental/teeth';
 
 const FONT = { fontFamily: 'var(--font-sans)' };
 const HEAD_BTN = 'inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full text-[12px] font-semibold border-none cursor-pointer transition-colors';
@@ -96,6 +97,15 @@ const DentalWorkspace = ({ name, onNameChange, report, onReportChange, dental, o
     const [expanded, setExpanded] = useState(false);
     const value = dental || { species: 'canine', teeth: {} };
 
+    const commitTooth = (id, before, after) => {
+        const status = after.status !== before.status ? after.status : null;
+        const oldNote = (before.note || '').trim();
+        const newNote = (after.note || '').trim();
+        const note = oldNote && newNote.startsWith(oldNote) ? newNote.slice(oldNote.length).replace(/^[\s,;.]+/, '') : newNote !== oldNote ? newNote : '';
+        const next = addToothFinding(report || '', id, { status, note }, STATUSES[status]?.label);
+        if (next !== (report || '')) onReportChange(next);
+    };
+
     useEffect(() => {
         if (!expanded) return undefined;
         const onKey = (e) => {
@@ -140,6 +150,7 @@ const DentalWorkspace = ({ name, onNameChange, report, onReportChange, dental, o
                     <DentalChartCanvas
                         dental={value}
                         onChange={onDentalChange}
+                        onToothCommit={commitTooth}
                         height="clamp(440px, calc(100vh - 270px), 760px)"
                         onExpand={() => setExpanded(true)}
                     />
@@ -175,7 +186,7 @@ const DentalWorkspace = ({ name, onNameChange, report, onReportChange, dental, o
                                         <FiX className="text-[15px]" />
                                     </button>
                                 </div>
-                                <DentalChartCanvas dental={value} onChange={onDentalChange} height="max(380px, calc(100vh - 290px))" />
+                                <DentalChartCanvas dental={value} onChange={onDentalChange} onToothCommit={commitTooth} height="max(380px, calc(100vh - 290px))" />
                             </motion.div>
                         </motion.div>
                     )}
