@@ -1,5 +1,7 @@
 import React from 'react';
-import { FiBookOpen, FiCopy, FiDownload } from 'react-icons/fi';
+import { FiBookOpen, FiCopy, FiDownload, FiPlus } from 'react-icons/fi';
+import { PiPawPrintFill } from 'react-icons/pi';
+import { TYPE_STYLES } from '../components/caseStyles';
 
 const SECTIONS = [
     {
@@ -117,6 +119,53 @@ export const PetQueryAnswer = () => (
                         ))}
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+);
+
+const CASE_RECORDS = [
+    { type: 'soap', title: 'Vomiting, 2 days', text: 'Acute gastroenteritis. Maropitant 1 mg/kg SQ, bland diet.', when: '9:12 AM' },
+    { type: 'summary', title: 'Discharge summary', text: 'Small bland meals for 3 days. Recheck Friday if not eating.', when: '9:40 AM' },
+    { type: 'callback', title: 'Day 2 check-in', text: 'Eating again, no vomiting since yesterday. Owner happy.', when: 'Tomorrow' },
+    { type: 'dental', title: 'Dental cleaning', text: '108 extracted, 309 periodontal Dz. Chart attached.', when: 'Next week' }
+];
+
+export const CaseCard = () => (
+    <div className="rounded-[28px] bg-gradient-to-br from-[#e9f6fd] to-[#f6f8fb] p-3 sm:p-5">
+        <div className="rounded-[18px] bg-white overflow-hidden shadow-[0_30px_60px_-30px_rgba(19,35,63,0.35)] ring-1 ring-black/5 p-4 sm:p-5">
+            <div className="flex items-center gap-3">
+                <span className="w-10 h-10 shrink-0 rounded-2xl bg-[#e9f6fd] text-[#2d5fb8] flex items-center justify-center text-[18px]">
+                    <PiPawPrintFill />
+                </span>
+                <div className="min-w-0 flex-1">
+                    <p className="text-[16px] font-semibold text-[#13233f] truncate">Bella</p>
+                    <p className="text-[12px] text-[#1a2b4a]/50">Labrador · 4 records</p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#2d5fb8] text-white text-[11px] font-semibold px-3 py-1.5" aria-hidden>
+                    <FiCopy /> Copy all
+                </span>
+            </div>
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+                {CASE_RECORDS.map((r) => {
+                    const t = TYPE_STYLES[r.type];
+                    const Icon = t.icon;
+                    return (
+                        <div key={r.type} className="rounded-[16px] border border-[#eef2f7] bg-[#fbfcfe] p-3.5">
+                            <div className="flex items-center justify-between gap-2">
+                                <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${t.soft}`}>
+                                    <Icon className="text-[11px]" /> {t.label}
+                                </span>
+                                <span className="text-[11px] text-[#1a2b4a]/40">{r.when}</span>
+                            </div>
+                            <p className="mt-2 text-[13.5px] font-semibold text-[#13233f]">{r.title}</p>
+                            <p className="mt-0.5 text-[12.5px] leading-snug text-[#1a2b4a]/55">{r.text}</p>
+                        </div>
+                    );
+                })}
+            </div>
+            <div className="mt-3 flex items-center justify-center gap-1.5 rounded-[14px] border border-dashed border-[#d6e2f2] py-2.5 text-[12.5px] font-semibold text-[#2d5fb8]" aria-hidden>
+                <FiPlus /> Add a record
             </div>
         </div>
     </div>
