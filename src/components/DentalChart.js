@@ -26,11 +26,12 @@ export const ChartLegend = ({ teeth = {}, className = '' }) => {
     );
 };
 
-// With `statusLabels`, a charted tooth reads "Missing 108". The number stays put and the status grows outward, away from the arch.
+// With `statusLabels`, a charted tooth reads "Missing 108" on the left of the arch and "208 Missing" on the right.
+// The number stays put and the status grows outward, away from the arch.
 const labelAnchor = (t, st) => {
     if (st === STATUSES.normal) return { textAnchor: 'middle' };
     const left = t.label[0] < 0;
-    return { textAnchor: left ? 'end' : 'start', transform: `translateX(calc(var(--tf) * ${left ? 0.9 : -0.9}))` };
+    return { left, textAnchor: left ? 'end' : 'start', transform: `translateX(calc(var(--tf) * ${left ? 0.9 : -0.9}))` };
 };
 
 // Top-down canine/feline chart. `teeth` maps Triadan id -> { status }; unlisted teeth are normal.
@@ -100,12 +101,11 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                                 dominantBaseline="middle"
                                 style={{ ...fs(), fontFeatureSettings: "'tnum'", transform: anchor.transform }}
                             >
-                                {statusLabels && st !== STATUSES.normal && (
-                                    <tspan fill="#16191f" fontWeight={600}>{`${st.label} `}</tspan>
-                                )}
+                                {anchor.left && <tspan fill="#16191f" fontWeight={600}>{`${st.label} `}</tspan>}
                                 <tspan fill={isSel || isHover ? '#2d5fb8' : '#1a2b4a'} fillOpacity={isSel || isHover ? 1 : 0.5} fontWeight={isSel ? 700 : 500}>
                                     {t.id}
                                 </tspan>
+                                {anchor.left === false && <tspan fill="#16191f" fontWeight={600}>{` ${st.label}`}</tspan>}
                             </text>
                         </g>
                     );

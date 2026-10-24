@@ -37,12 +37,8 @@ const Swatch = ({ s }) => {
     return <View style={[styles.swatch, { backgroundColor: st.fill === 'none' ? '#ffffff' : st.fill, borderColor: st.cross || st.stroke, borderStyle: st.dashed ? 'dashed' : 'solid' }]} />;
 };
 
-// Helvetica-Bold advance widths (per 1000 em) for the letters in status labels. react-pdf can't flow
-// one Tspan after another, so "Missing 108" is two texts placed with these.
-const BOLD_W = { ' ': 278, C: 722, D: 722, E: 667, F: 611, M: 833, N: 722, P: 667, R: 722, T: 611, W: 944, a: 556, c: 556, d: 611, e: 556, i: 278, l: 278, n: 611, o: 611, p: 611, r: 389, s: 556, t: 333, u: 611, y: 556, b: 611, g: 611, h: 611, m: 889, v: 556, x: 556 };
-const boldWidth = (s, size) => ([...s].reduce((w, c) => w + (BOLD_W[c] ?? 611), 0) * size) / 1000;
-
-// Number stays where a plain label would be; the status sits before it, growing away from the arch.
+// "Missing 108" on the left of the arch, "208 Missing" on the right. The number stays where a plain label
+// would be and the status grows away from the arch. Two texts, since react-pdf can't flow one Tspan after another.
 const StatusLabel = ({ t, text, font, style }) => {
     const [x, y] = [t.label[0], t.label[1] + font * 0.35];
     const half = font * 0.834;
@@ -57,8 +53,8 @@ const StatusLabel = ({ t, text, font, style }) => {
     }
     return (
         <>
-            <Text x={x - half} y={y} fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{text}</Text>
-            <Text x={x - half + boldWidth(text, font) + gap} y={y} fill={INK} style={style}>{t.id}</Text>
+            <Text x={x} y={y} textAnchor="middle" fill={INK} style={style}>{t.id}</Text>
+            <Text x={x + half + gap} y={y} fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{text}</Text>
         </>
     );
 };
