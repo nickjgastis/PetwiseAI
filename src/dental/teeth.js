@@ -104,39 +104,45 @@ export const STATUSES = {
     watch: { label: 'Watch', fill: '#ffffff', stroke: '#2d5fb8', chip: 'bg-white text-[#2d5fb8] border border-[#2d5fb8]/40' }
 };
 
-// Feline incisors are too tightly packed for a side-by-side "108 Missing" label, so the status goes on its own
-// line beyond the number.
-export const stackedLabel = (species, t) => species === 'feline' && t.kind.startsWith('incisor');
+// Feline incisors are too tightly packed for a side-by-side "108 Missing" label, so their statuses become callouts:
+// a short list beside the incisors with a leader line from each status to its tooth number.
+export const calloutTooth = (species, t) => species === 'feline' && t.kind.startsWith('incisor');
 
-// Line for each stacked status: walk across each jaw and put every label on the first line it fits without
-// overlapping. Lines are shared per jaw, measured out from `base` (the outermost incisor number's y), since the
-// numbers themselves sit at different heights around the arch. `chartTeeth` is buildChart().teeth, `font` the
-// label size in chart units. Returns { lines: { id: line }, base: { upper, lower } }.
-export function stackLines(species, chartTeeth, teeth, font) {
-    const lines = {};
-    const base = {};
+// Callout position for each charted feline incisor, in chart units. Per jaw and side of the arch, statuses list
+// outward from the outermost incisor number, one per row; the tooth nearest the midline gets the farthest row so
+// leader lines nest instead of crossing. `chartTeeth` is buildChart().teeth, `font` the label size in chart units.
+// Returns { [id]: { x, y, anchor, from: [x, y], to: [x, y] } } plus `reach`, how far the rows extend past the numbers.
+export function callouts(species, chartTeeth, teeth, font) {
+    const out = {};
+    let reach = 0;
+    const incisors = chartTeeth.filter((t) => calloutTooth(species, t));
     ['upper', 'lower'].forEach((jaw) => {
-        const ends = [];
-        const ys = chartTeeth.filter((t) => t.jaw === jaw && stackedLabel(species, t)).map((t) => t.label[1]);
-        if (ys.length) base[jaw] = jaw === 'upper' ? Math.min(...ys) : Math.max(...ys);
-        chartTeeth
-            .filter((t) => t.jaw === jaw && stackedLabel(species, t) && STATUSES[teeth[t.id]?.status] && teeth[t.id].status !== 'normal')
-            .map((t) => {
-                const half = (STATUSES[teeth[t.id].status].label.length * 0.6 * font) / 2;
-                return { id: t.id, l: t.label[0] - half, r: t.label[0] + half };
-            })
-            .sort((a, b) => a.l - b.l)
-            .forEach((it) => {
-                let k = ends.findIndex((end) => it.l > end + font);
-                if (k === -1) k = ends.length;
-                ends[k] = it.r;
-                lines[it.id] = k;
+        const dir = jaw === 'upper' ? -1 : 1;
+        const ys = incisors.filter((t) => t.jaw === jaw).map((t) => t.label[1]);
+        if (!ys.length) return;
+        const edgeY = jaw === 'upper' ? Math.min(...ys) : Math.max(...ys);
+        [true, false].forEach((left) => {
+            const side = incisors.filter((t) => t.jaw === jaw && (t.label[0] < 0) === left);
+            const charted = side.filter((t) => STATUSES[teeth[t.id]?.status] && teeth[t.id].status !== 'normal').sort((a, b) => a.pos - b.pos);
+            if (!charted.length) return;
+            const xs = side.map((t) => t.label[0]);
+            const colX = left ? Math.min(...xs) - font * 0.4 : Math.max(...xs) + font * 0.4;
+            charted.forEach((t, i) => {
+                const row = charted.length - 1 - i;
+                const off = font * (1.7 + row * 1.35);
+                const y = edgeY + dir * off;
+                reach = Math.max(reach, off + font);
+                out[t.id] = {
+                    x: colX,
+                    y,
+                    anchor: left ? 'end' : 'start',
+                    from: [colX + (left ? font * 0.35 : -font * 0.35), y],
+                    to: [t.label[0], t.label[1] + dir * font * 0.6]
+                };
             });
+        });
     });
-    return { lines, base };
+    return { spots: out, reach };
 }
-
-// Distance from the number to a stacked status on `line`, in label font sizes.
-export const stackOffset = (line = 0) => 1.15 + line * 1.1;
 
 export const STATUS_ORDER = ['normal', 'missing', 'extracted', 'fractured', 'caries', 'resorption', 'periodontal', 'mobility', 'retained', 'treated', 'watch'];

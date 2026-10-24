@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useState } from 'react';
 import { buildChart } from '../dental/geometry';
-import { STATUSES, STATUS_ORDER, stackedLabel, stackLines, stackOffset } from '../dental/teeth';
+import { STATUSES, STATUS_ORDER, calloutTooth, callouts } from '../dental/teeth';
 
 export const Swatch = ({ s, className = 'w-2.5 h-2.5' }) => {
     const st = STATUSES[s] || STATUSES.normal;
@@ -27,12 +27,11 @@ export const ChartLegend = ({ teeth = {}, className = '' }) => {
 };
 
 // With `statusLabels`, a charted tooth reads "Missing 108" on the left of the arch and "208 Missing" on the right.
-// The number stays put and the status grows outward, away from the arch. Feline incisors are too tightly packed
-// for that, so their status sits on its own line beyond the number instead.
+// The number stays put and the status grows outward, away from the arch. Feline incisors get callouts instead.
 // Non-breaking, since svg text collapses runs of normal spaces.
 const GAP = '\u00a0\u00a0\u00a0';
 const labelAnchor = (t, st, species) => {
-    if (st === STATUSES.normal || stackedLabel(species, t)) return { textAnchor: 'middle' };
+    if (st === STATUSES.normal || calloutTooth(species, t)) return { textAnchor: 'middle' };
     const left = t.label[0] < 0;
     return { left, textAnchor: left ? 'end' : 'start', transform: `translateX(calc(var(--tf) * ${left ? 0.9 : -0.9}))` };
 };
@@ -50,7 +49,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
     const w = bounds.maxX - bounds.minX;
     const h = bounds.maxY - bounds.minY;
     const font = unit * 3.4;
-    const stack = statusLabels ? stackLines(species, chart.teeth, teeth, font * 0.85) : { lines: {}, base: {} };
+    const { spots } = statusLabels ? callouts(species, chart.teeth, teeth, font) : { spots: {} };
     const midY = (chart.upperDepth + chart.lowerTop) / 2;
     const fs = (k = 1) => ({ fontSize: k === 1 ? 'var(--tf)' : `calc(var(--tf) * ${k})` });
 
@@ -76,7 +75,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                     const isHover = hover === t.id;
                     const labelled = statusLabels && st !== STATUSES.normal;
                     const anchor = labelAnchor(t, labelled ? st : STATUSES.normal, species);
-                    const stacked = labelled && stackedLabel(species, t);
+                    const callout = labelled ? spots[t.id] : null;
                     return (
                         <g
                             key={t.id}
@@ -117,17 +116,22 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                                 </tspan>
                                 {anchor.left === false && <tspan fill="#16191f">{`${GAP}${st.label}`}</tspan>}
                             </text>
-                            {stacked && (
-                                <text
-                                    x={t.label[0]}
-                                    y={stack.base[t.jaw]}
-                                    textAnchor="middle"
-                                    dominantBaseline="middle"
-                                    fill="#16191f"
-                                    style={{ ...fs(0.85), transform: `translateY(calc(var(--tf) * ${(t.jaw === 'upper' ? -1 : 1) * stackOffset(stack.lines[t.id])}))` }}
-                                >
-                                    {st.label}
-                                </text>
+                            {callout && (
+                                <>
+                                    <line
+                                        x1={callout.from[0]}
+                                        y1={callout.from[1]}
+                                        x2={callout.to[0]}
+                                        y2={callout.to[1]}
+                                        stroke="#1a2b4a"
+                                        strokeOpacity="0.35"
+                                        strokeWidth={1}
+                                        vectorEffect="non-scaling-stroke"
+                                    />
+                                    <text x={callout.x} y={callout.y} textAnchor={callout.anchor} dominantBaseline="middle" fill="#16191f" style={fs()}>
+                                        {st.label}
+                                    </text>
+                                </>
                             )}
                         </g>
                     );

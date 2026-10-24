@@ -43,8 +43,11 @@ const DentalChartCanvas = ({ dental, onChange, height, onExpand, onToothCommit }
     const chart = useMemo(() => buildChart(species), [species]);
     const full = useMemo(() => {
         const b = chart.bounds;
-        return { x: b.minX, y: b.minY, w: b.maxX - b.minX, h: b.maxY - b.minY, font: chart.unit * 3.4 };
-    }, [chart]);
+        const font = chart.unit * 3.4;
+        // Room above and below for up to three rows of feline incisor callouts, fixed so the view doesn't jump.
+        const pad = species === 'feline' ? font * 5.4 : 0;
+        return { x: b.minX, y: b.minY - pad, w: b.maxX - b.minX, h: b.maxY - b.minY + pad * 2, font };
+    }, [chart, species]);
 
     const [selected, setSelected] = useState(null);
     const [region, setRegion] = useState('full');
