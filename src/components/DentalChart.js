@@ -7,7 +7,7 @@ export const Swatch = ({ s, className = 'w-2.5 h-2.5' }) => {
     return (
         <span
             className={`shrink-0 rounded-[3px] ${className}`}
-            style={{ background: st.fill === 'none' ? 'transparent' : st.fill, border: `1.5px ${st.dashed ? 'dashed' : 'solid'} ${st.stroke}` }}
+            style={{ background: st.fill === 'none' ? 'transparent' : st.fill, border: `1.5px ${st.dashed ? 'dashed' : 'solid'} ${st.cross || st.stroke}` }}
         />
     );
 };
@@ -83,7 +83,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                                 style={{ transition: 'fill 160ms ease, stroke 160ms ease' }}
                             />
                             {st.cross && t.cross.map(([a, b], i) => (
-                                <line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.stroke} strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+                                <line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.cross} strokeWidth={1.6} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
                             ))}
                             <text
                                 x={t.label[0]}

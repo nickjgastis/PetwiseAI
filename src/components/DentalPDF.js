@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
 
 const Swatch = ({ s }) => {
     const st = STATUSES[s] || STATUSES.normal;
-    return <View style={[styles.swatch, { backgroundColor: st.fill === 'none' ? '#ffffff' : st.fill, borderColor: st.stroke, borderStyle: st.dashed ? 'dashed' : 'solid' }]} />;
+    return <View style={[styles.swatch, { backgroundColor: st.fill === 'none' ? '#ffffff' : st.fill, borderColor: st.cross || st.stroke, borderStyle: st.dashed ? 'dashed' : 'solid' }]} />;
 };
 
 const ChartSvg = ({ species, teeth, height }) => {
@@ -62,7 +62,7 @@ const ChartSvg = ({ species, teeth, height }) => {
                             {...(st.dashed ? { strokeDasharray: `${(stroke * 3).toFixed(3)}, ${(stroke * 2.5).toFixed(3)}` } : {})}
                         />
                         {st.cross && t.cross.map(([a, b], i) => (
-                            <Line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.stroke} strokeWidth={stroke * 1.6} strokeLinecap="round" />
+                            <Line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.cross} strokeWidth={stroke * 1.6} strokeLinecap="round" />
                         ))}
                         <Text x={t.label[0]} y={t.label[1] + font * 0.35} textAnchor="middle" fill={teeth[t.id] ? INK : '#8a94a6'} style={label}>
                             {t.id}
