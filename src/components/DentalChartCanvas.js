@@ -275,7 +275,7 @@ const DentalChartCanvas = ({ dental, onChange, height, onExpand }) => {
     }, [selected, placePop]);
 
     const setTooth = (id, patch) => {
-        const merged = { ...(teeth[id] || {}), ...patch };
+        const merged = { status: 'normal', ...(teeth[id] || {}), ...patch };
         const { [id]: _, ...rest } = teeth;
         onChange({ ...dental, species, teeth: merged.status === 'normal' && !merged.note ? rest : { ...teeth, [id]: merged } });
     };

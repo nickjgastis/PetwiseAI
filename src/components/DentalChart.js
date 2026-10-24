@@ -2,12 +2,15 @@ import React, { memo, useMemo, useState } from 'react';
 import { buildChart } from '../dental/geometry';
 import { STATUSES, STATUS_ORDER } from '../dental/teeth';
 
-export const Swatch = ({ s, className = 'w-2.5 h-2.5' }) => (
-    <span
-        className={`shrink-0 rounded-[3px] ${className}`}
-        style={{ background: STATUSES[s].fill === 'none' ? 'transparent' : STATUSES[s].fill, border: `1.5px ${STATUSES[s].dashed ? 'dashed' : 'solid'} ${STATUSES[s].stroke}` }}
-    />
-);
+export const Swatch = ({ s, className = 'w-2.5 h-2.5' }) => {
+    const st = STATUSES[s] || STATUSES.normal;
+    return (
+        <span
+            className={`shrink-0 rounded-[3px] ${className}`}
+            style={{ background: st.fill === 'none' ? 'transparent' : st.fill, border: `1.5px ${st.dashed ? 'dashed' : 'solid'} ${st.stroke}` }}
+        />
+    );
+};
 
 export const ChartLegend = ({ teeth = {}, className = '' }) => {
     const used = new Set(Object.values(teeth).map((t) => t?.status).filter(Boolean));
