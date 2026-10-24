@@ -77,7 +77,10 @@ const Features = () => (
                 <div className="max-w-3xl mb-10 sm:mb-14">
                     <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">Features</p>
                     <h1 className="mt-4 text-[2.5rem] sm:text-[3.5rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
-                        One dictation. <Highlight dark>Any record you need.</Highlight>
+                        One dictation.{' '}
+                        <span className="sm:block">
+                            <Highlight dark>Any record you need.</Highlight>
+                        </span>
                     </h1>
                     <p className="mt-5 text-lg sm:text-xl text-[#1a2b4a]/65 max-w-2xl">
                         SOAP, summary, callback or a fully charted dental. Pick the type, talk through the visit, and it’s written.
