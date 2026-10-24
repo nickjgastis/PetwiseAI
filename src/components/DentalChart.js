@@ -63,14 +63,15 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                 <text x={bounds.minX + unit * 1.5} y={midY} style={fs(1.05)} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" letterSpacing="0.08em">RIGHT</text>
                 <text x={bounds.maxX - unit * 1.5} y={midY} style={fs(1.05)} fontWeight="600" fill="#1a2b4a" fillOpacity="0.35" dominantBaseline="middle" textAnchor="end" letterSpacing="0.08em">LEFT</text>
                 <line x1={0} x2={0} y1={bounds.minY + unit * 4} y2={bounds.maxY - unit * 4} stroke="#1a2b4a" strokeOpacity="0.06" strokeDasharray={`${unit} ${unit}`} vectorEffect="non-scaling-stroke" />
-                <text x={0} y={chart.upperDepth * 0.42} style={fs()} fill="#1a2b4a" fillOpacity="0.3" textAnchor="middle" letterSpacing="0.08em">MAXILLA</text>
-                <text x={0} y={chart.lowerTop + (bounds.maxY - chart.lowerTop) * 0.58} style={fs()} fill="#1a2b4a" fillOpacity="0.3" textAnchor="middle" letterSpacing="0.08em">MANDIBLE</text>
+                <text x={0} y={chart.upperDepth * 0.42} style={fs()} fill="#1a2b4a" fillOpacity="0.6" textAnchor="middle" letterSpacing="0.08em">MAXILLA</text>
+                <text x={0} y={chart.lowerTop + (bounds.maxY - chart.lowerTop) * 0.58} style={fs()} fill="#1a2b4a" fillOpacity="0.6" textAnchor="middle" letterSpacing="0.08em">MANDIBLE</text>
 
                 {chart.teeth.map((t) => {
                     const st = STATUSES[teeth[t.id]?.status] || STATUSES.normal;
                     const isSel = selected === t.id;
                     const isHover = hover === t.id;
                     const anchor = labelAnchor(t, statusLabels ? st : STATUSES.normal);
+                    const labelled = anchor.left !== undefined;
                     return (
                         <g
                             key={t.id}
@@ -101,11 +102,15 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                                 dominantBaseline="middle"
                                 style={{ ...fs(), fontFeatureSettings: "'tnum'", transform: anchor.transform }}
                             >
-                                {anchor.left && <tspan fill="#16191f" fontWeight={600}>{`${st.label} `}</tspan>}
-                                <tspan fill={isSel || isHover ? '#2d5fb8' : '#1a2b4a'} fillOpacity={isSel || isHover ? 1 : 0.5} fontWeight={isSel ? 700 : 500}>
+                                {anchor.left && <tspan fill="#16191f">{`${st.label} `}</tspan>}
+                                <tspan
+                                    fill={isSel || isHover ? '#2d5fb8' : labelled ? '#16191f' : '#1a2b4a'}
+                                    fillOpacity={isSel || isHover || labelled ? 1 : 0.5}
+                                    fontWeight={isSel || labelled ? 700 : 500}
+                                >
                                     {t.id}
                                 </tspan>
-                                {anchor.left === false && <tspan fill="#16191f" fontWeight={600}>{` ${st.label}`}</tspan>}
+                                {anchor.left === false && <tspan fill="#16191f">{` ${st.label}`}</tspan>}
                             </text>
                         </g>
                     );

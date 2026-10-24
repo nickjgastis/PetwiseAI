@@ -46,15 +46,15 @@ const StatusLabel = ({ t, text, font, style }) => {
     if (x < 0) {
         return (
             <>
-                <Text x={x - half - gap} y={y} textAnchor="end" fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{text}</Text>
-                <Text x={x} y={y} textAnchor="middle" fill={INK} style={style}>{t.id}</Text>
+                <Text x={x - half - gap} y={y} textAnchor="end" fill={INK} style={style}>{text}</Text>
+                <Text x={x} y={y} textAnchor="middle" fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{t.id}</Text>
             </>
         );
     }
     return (
         <>
-            <Text x={x} y={y} textAnchor="middle" fill={INK} style={style}>{t.id}</Text>
-            <Text x={x + half + gap} y={y} fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{text}</Text>
+            <Text x={x} y={y} textAnchor="middle" fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{t.id}</Text>
+            <Text x={x + half + gap} y={y} fill={INK} style={style}>{text}</Text>
         </>
     );
 };
