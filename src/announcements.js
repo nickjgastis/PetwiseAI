@@ -3,12 +3,13 @@ import { PiTooth } from 'react-icons/pi';
 import UpgradeAnnouncement from './components/UpgradeAnnouncement';
 import { markAnnouncementSeen } from './supabaseClient';
 
-// Oldest first. Each one shows once per account, and only to accounts created before releasedAt.
+// Oldest first. The newest active one shows once to every account, new or old, after the app tour.
 // To ship a new one: add an entry with a new id. Never reuse or rename an id.
+// To stop the popup for one: set active: false. It stays on the Help page's What's new card.
 export const ANNOUNCEMENTS = [
     {
         id: 'cases-dental-2026-10',
-        releasedAt: '2026-10-24T12:00:00Z',
+        active: true,
         title: 'Cases and Dental Records',
         summary: 'Every visit is now a case, and you can dictate a full dental chart. See what changed.',
         icons: [FiFolder, PiTooth],
@@ -22,9 +23,8 @@ const localKey = (id, sub) => `petwise_announcement:${id}:${sub || 'anon'}`;
 
 const unseen = (userData, sub) => {
     if (!userData) return [];
-    const created = userData.created_at ? Date.parse(userData.created_at) : 0;
     const seen = userData.seen_announcements || {};
-    return ANNOUNCEMENTS.filter((a) => !seen[a.id] && !localStorage.getItem(localKey(a.id, sub)) && (!created || created < Date.parse(a.releasedAt)));
+    return ANNOUNCEMENTS.filter((a) => a.active && !seen[a.id] && !localStorage.getItem(localKey(a.id, sub)));
 };
 
 export const markSeen = (ids, sub) => {
@@ -36,7 +36,6 @@ export const markSeen = (ids, sub) => {
 
 // Someone back after missing several updates only gets the newest.
 export const nextAnnouncement = (userData, sub) => {
-    if (userData?.has_seen_app_tour === false) return null;
     const list = unseen(userData, sub);
     return list[list.length - 1] || null;
 };

@@ -1044,8 +1044,7 @@ const Dashboard = () => {
             setUserData(userData);
             // First-run tutorial for brand-new users (backfilled true for existing users)
             setShowAppTour(userData.has_seen_app_tour === false);
-            if (userData.has_seen_app_tour === false) dismissAnnouncements(userData, user.sub);
-            else setAnnouncement(nextAnnouncement(userData, user.sub));
+            setAnnouncement(nextAnnouncement(userData, user.sub));
 
             // Check new onboarding flow table (find or create for new users)
             try {
