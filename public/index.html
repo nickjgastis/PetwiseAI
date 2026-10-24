@@ -25,6 +25,17 @@
       font-style: normal;
       font-display: swap;
     }
+    #pw-rotate { display: none; }
+    .pw-sideways body { overflow: hidden; }
+    .pw-sideways #pw-rotate {
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+      position: fixed; inset: 0; z-index: 2147483647; padding: 24px; text-align: center;
+      background: linear-gradient(180deg, #f3f7fd, #ffffff); color: #13233f;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    #pw-rotate svg { width: 44px; height: 44px; color: #2d5fb8; }
+    #pw-rotate p { margin: 0; font-size: 18px; font-weight: 600; }
+    #pw-rotate span { font-size: 14px; color: rgba(26, 43, 74, 0.6); }
   </style>
   <meta name="description" content="PetWise is the veterinary AI scribe built by a veterinarian. Get finished SOAP notes in seconds." />
   
@@ -34,6 +45,22 @@
     if (/Android/i.test(navigator.userAgent)) {
       document.documentElement.classList.add('android');
     }
+    // Phones are portrait only. iOS ignores the manifest orientation, so cover the page when sideways.
+    // Uses the device orientation, not the viewport, so an Android keyboard shrinking the viewport doesn't trigger it.
+    (function () {
+      var html = document.documentElement;
+      function check() {
+        var phone = Math.min(screen.width, screen.height) < 500 && window.matchMedia('(pointer: coarse)').matches;
+        var type = screen.orientation && screen.orientation.type;
+        var sideways = type ? type.indexOf('landscape') === 0 : Math.abs(window.orientation || 0) === 90;
+        html.classList.toggle('pw-sideways', phone && sideways);
+      }
+      check();
+      if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', check);
+      window.addEventListener('orientationchange', check);
+      window.addEventListener('resize', check);
+      try { screen.orientation.lock('portrait').catch(function () {}); } catch (e) {}
+    })();
     // Capture beforeinstallprompt early - before React loads
     window.addEventListener('beforeinstallprompt', function(e) {
       e.preventDefault();
@@ -81,6 +108,11 @@
 
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="pw-rotate" aria-live="polite">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5" /><line x1="11" y1="18" x2="13" y2="18" /></svg>
+    <p>Turn your phone upright</p>
+    <span>PetWise works in portrait.</span>
+  </div>
   <div id="root"></div>
   <script>
     // Prerendered marketing HTML is also the SPA fallback for app routes, so
