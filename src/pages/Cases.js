@@ -881,17 +881,19 @@ const CaseDetail = ({ caseId }) => {
         setTimeout(() => setBulkDone(null), 1800);
     };
 
-    const copySelected = async () => {
-        const text = selectedNotes.length === 1
-            ? copyText(selectedNotes[0])
-            : selectedNotes.map((n) => `${recordHeading(n).toUpperCase()}\n\n${copyText(n).trim()}`).join('\n\n\n');
+    const copyNotes = async (list, kind) => {
+        const text = list.length === 1
+            ? copyText(list[0])
+            : list.map((n) => `${recordHeading(n).toUpperCase()}\n\n${copyText(n).trim()}`).join('\n\n\n');
         try {
             await navigator.clipboard.writeText(text);
-            flash('copy');
+            flash(kind);
         } catch (err) {
             console.error('Copy failed:', err);
         }
     };
+
+    const copySelected = () => copyNotes(selectedNotes, 'copy');
 
     const deleteSelected = async () => {
         const ids = [...selected];
@@ -1093,7 +1095,7 @@ const CaseDetail = ({ caseId }) => {
                     )
                 ) : (
                     <>
-                    <div className="mb-3 ml-1">
+                    <div className="mb-3 ml-1 flex items-center gap-5">
                         <button
                             type="button"
                             onClick={() => setSelected(selected.size === notes.length ? new Set() : new Set(notes.map((n) => n.id)))}
@@ -1103,6 +1105,14 @@ const CaseDetail = ({ caseId }) => {
                                 <FiCheck className="text-[11px]" strokeWidth={3} />
                             </span>
                             Select all
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => copyNotes(notes, 'copyAll')}
+                            className="inline-flex items-center gap-2 bg-transparent border-none cursor-pointer p-0 text-[13.5px] font-semibold text-[#1a2b4a]/70 hover:text-[#13233f]"
+                        >
+                            {bulkDone === 'copyAll' ? <FiCheck className="text-[15px] text-[#2d5fb8]" strokeWidth={3} /> : <FiCopy className="text-[15px]" />}
+                            {bulkDone === 'copyAll' ? 'Copied' : 'Copy all'}
                         </button>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
