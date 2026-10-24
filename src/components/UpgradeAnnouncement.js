@@ -178,7 +178,7 @@ const MOBILE_SLIDES = [
     }
 ];
 
-const UpgradeAnnouncement = ({ isMobile, onClose }) => {
+const UpgradeAnnouncement = ({ isMobile, onClose, onTour }) => {
     const navigate = useNavigate();
     const slides = isMobile ? MOBILE_SLIDES : DESKTOP_SLIDES;
     const [i, setI] = useState(0);
@@ -244,6 +244,15 @@ const UpgradeAnnouncement = ({ isMobile, onClose }) => {
             <button type="button" className={`${primary} w-full`} onClick={() => close(() => requestNewCase(navigate))}>
                 <FiMic /> Start dictating
             </button>
+        ) : onTour ? (
+            <>
+                <button type="button" className={secondary} onClick={() => close()}>
+                    I’m set!
+                </button>
+                <button type="button" className={primary} onClick={() => close(onTour)}>
+                    Take tutorial <FiArrowRight />
+                </button>
+            </>
         ) : (
             <>
                 <button type="button" className={secondary} onClick={() => setGuide(true)}>

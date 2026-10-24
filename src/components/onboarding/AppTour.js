@@ -61,16 +61,17 @@ const STEPS = [
 
 const CARD_WIDTH = 360;
 
-const AppTour = ({ dvmName, isMobile = false, onComplete }) => {
+const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete }) => {
     const { user } = useAuth0();
     const [stepIndex, setStepIndex] = useState(0);
     const [closing, setClosing] = useState(false);
     const [rect, setRect] = useState(null);
 
     // Drop desktop-only steps (the mobile QR) when the user is already on a phone.
+    // Existing accounts replaying the tour skip the trial welcome.
     const steps = useMemo(
-        () => STEPS.filter((s) => !(s.desktopOnly && isMobile)),
-        [isMobile]
+        () => STEPS.filter((s) => !(s.desktopOnly && isMobile) && !(skipWelcome && s.id === 'welcome')),
+        [isMobile, skipWelcome]
     );
 
     const step = steps[stepIndex];

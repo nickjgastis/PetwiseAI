@@ -1042,9 +1042,10 @@ const Dashboard = () => {
             setHasAcceptedTerms(userData.has_accepted_terms);
             setSubscriptionStatus(userData.subscription_status);
             setUserData(userData);
-            // First-run tutorial for brand-new users (backfilled true for existing users)
-            setShowAppTour(userData.has_seen_app_tour === false);
-            setAnnouncement(nextAnnouncement(userData, user.sub));
+            // A live announcement goes first and offers the tutorial itself; otherwise brand-new users get it straight away.
+            const pending = nextAnnouncement(userData, user.sub);
+            setAnnouncement(pending);
+            setShowAppTour(userData.has_seen_app_tour === false && !pending);
 
             // Check new onboarding flow table (find or create for new users)
             try {
@@ -1224,6 +1225,14 @@ const Dashboard = () => {
     // (Old PlanSelection / WelcomeToPetwise / TrialEnded gates removed — access
     // is no longer plan-gated; usage caps are enforced per-feature instead.)
 
+    const markAppTourSeen = async () => {
+        try {
+            await supabase.from('users').update({ has_seen_app_tour: true }).eq('auth0_user_id', user?.sub);
+        } catch (err) {
+            console.error('Failed to persist app tour completion:', err);
+        }
+    };
+
     const upgradeAnnouncement = (
         <AnimatePresence>
             {announcement && !showAppTour && (
@@ -1233,7 +1242,9 @@ const Dashboard = () => {
                     onClose={() => {
                         dismissAnnouncements(userData, user?.sub);
                         setAnnouncement(null);
+                        if (userData?.has_seen_app_tour === false) markAppTourSeen();
                     }}
+                    onTour={isMobile ? undefined : () => setShowAppTour(true)}
                 />
             )}
         </AnimatePresence>
@@ -1441,6 +1452,7 @@ const Dashboard = () => {
                 <AppTour
                     dvmName={userData?.dvm_name}
                     isMobile={isMobile}
+                    skipWelcome={userData?.has_seen_app_tour !== false}
                     onComplete={() => setShowAppTour(false)}
                 />
             )}
