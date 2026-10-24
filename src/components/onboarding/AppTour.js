@@ -1,7 +1,9 @@
 import React, { useState, useMemo, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth0 } from '@auth0/auth0-react';
-import { FaMicrophone, FaSearch, FaPaw, FaMobileAlt, FaFolderOpen } from 'react-icons/fa';
+import { FaPaw, FaMobileAlt } from 'react-icons/fa';
+import { FiPlus } from 'react-icons/fi';
+import { PiPawPrintFill, PiSparkleFill } from 'react-icons/pi';
 import { supabase } from '../../supabaseClient';
 
 // First-run tutorial shown once, right after a new signup lands in the app.
@@ -23,25 +25,25 @@ const STEPS = [
         id: 'quicksoap',
         placement: 'anchor',
         target: 'quicksoap',
-        icon: FaMicrophone,
+        icon: FiPlus,
         iconBg: 'from-blue-400 to-blue-600',
         title: () => 'New case',
-        body: () => "Start every patient visit here. Pick SOAP, Summary or Callback, say the patient's name, then talk through the visit. PetWise writes the record."
+        body: () => "Start every patient visit here. Pick SOAP, Summary, Callback or Dental, say the patient's name, then talk through the visit. PetWise writes the record, and for Dental it charts every tooth you mention."
     },
     {
         id: 'cases',
         placement: 'anchor',
         target: 'cases',
-        icon: FaFolderOpen,
+        icon: PiPawPrintFill,
         iconBg: 'from-sky-400 to-blue-600',
         title: () => 'Cases',
-        body: () => 'Every patient you see, with all their records together. Open one to add a callback or summary later.'
+        body: () => 'Every patient you see, with all their records together. Open one to add a summary, callback or dental record later, or copy everything at once.'
     },
     {
         id: 'petquery',
         placement: 'anchor',
         target: 'petquery',
-        icon: FaSearch,
+        icon: PiSparkleFill,
         iconBg: 'from-purple-400 to-purple-600',
         title: () => 'PetQuery',
         body: () => 'Your go-to for any veterinary question. Ask about drug dosages, differential diagnoses, treatment protocols, lab result interpretation, and more.'
