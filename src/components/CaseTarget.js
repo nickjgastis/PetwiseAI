@@ -17,8 +17,34 @@ const dayLabel = (d) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
+const isPhoneSheet = () => window.matchMedia('(max-width: 639px)').matches;
+
+// On phones the sheet sits on the bottom edge. The iOS keyboard doesn't resize the layout viewport, so
+// follow the visual viewport to keep the whole sheet above the keyboard instead of pushing its top off screen.
+const useKeyboardSheet = () => {
+    const [style, setStyle] = useState(undefined);
+    useEffect(() => {
+        const vv = window.visualViewport;
+        if (!vv || !isPhoneSheet()) return undefined;
+        const update = () => {
+            const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+            setStyle({ bottom: keyboard + 12, maxHeight: Math.min(window.innerHeight * 0.75, vv.height - 24) });
+        };
+        update();
+        vv.addEventListener('resize', update);
+        vv.addEventListener('scroll', update);
+        return () => {
+            vv.removeEventListener('resize', update);
+            vv.removeEventListener('scroll', update);
+        };
+    }, []);
+    return style;
+};
+
 const CasePicker = ({ onPick, onClose }) => {
     const [search, setSearch] = useState('');
+    const sheetStyle = useKeyboardSheet();
+    const autoFocus = useMemo(() => window.matchMedia('(pointer: fine)').matches, []);
     const { items, notes, loading, loadingMore, hasMore, loadMore, searching } = usePagedList('cases', { q: search.trim() });
     const cases = loading && !items.length ? null : items;
 
@@ -45,6 +71,7 @@ const CasePicker = ({ onPick, onClose }) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 24, scale: 0.98 }}
                 transition={{ type: 'spring', stiffness: 380, damping: 34 }}
+                style={sheetStyle}
             >
                 <div className="px-6 pt-6 pb-4">
                     <div className="flex items-center justify-between">
@@ -56,8 +83,9 @@ const CasePicker = ({ onPick, onClose }) => {
                     <div className="relative mt-4">
                         <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-[#1a2b4a]/40" />
                         <input
-                            autoFocus
+                            autoFocus={autoFocus}
                             value={search}
+                            enterKeyHint="search"
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search by patient"
                             className="w-full pl-10 pr-4 py-3 rounded-full bg-[#f6f8fb] border border-transparent text-[15px] focus:outline-none focus:border-[#2d5fb8]/30 focus:bg-white transition-colors"
