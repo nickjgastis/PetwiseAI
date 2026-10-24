@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiFolder, FiSearch, FiX, FiChevronRight, FiPlus } from 'react-icons/fi';
 import { PiPawPrintFill } from 'react-icons/pi';
@@ -17,33 +18,8 @@ const dayLabel = (d) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-const isPhoneSheet = () => window.matchMedia('(max-width: 639px)').matches;
-
-// On phones the sheet sits on the bottom edge. The iOS keyboard doesn't resize the layout viewport, so
-// follow the visual viewport to keep the whole sheet above the keyboard instead of pushing its top off screen.
-const useKeyboardSheet = () => {
-    const [style, setStyle] = useState(undefined);
-    useEffect(() => {
-        const vv = window.visualViewport;
-        if (!vv || !isPhoneSheet()) return undefined;
-        const update = () => {
-            const keyboard = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-            setStyle({ bottom: keyboard + 12, maxHeight: Math.min(window.innerHeight * 0.75, vv.height - 24) });
-        };
-        update();
-        vv.addEventListener('resize', update);
-        vv.addEventListener('scroll', update);
-        return () => {
-            vv.removeEventListener('resize', update);
-            vv.removeEventListener('scroll', update);
-        };
-    }, []);
-    return style;
-};
-
 const CasePicker = ({ onPick, onClose }) => {
     const [search, setSearch] = useState('');
-    const sheetStyle = useKeyboardSheet();
     const autoFocus = useMemo(() => window.matchMedia('(pointer: fine)').matches, []);
     const { items, notes, loading, loadingMore, hasMore, loadMore, searching } = usePagedList('cases', { q: search.trim() });
     const cases = loading && !items.length ? null : items;
@@ -58,7 +34,8 @@ const CasePicker = ({ onPick, onClose }) => {
         return { types: map, pending: pendingCaseIds(notes) };
     }, [notes]);
 
-    return (
+    // Portalled to body: the mobile shell pads itself by the keyboard height, and the sheet must not move with it.
+    return createPortal(
         <>
             <motion.div
                 className="fixed inset-0 z-[60] bg-[#13233f]/30 backdrop-blur-[2px]"
@@ -66,12 +43,11 @@ const CasePicker = ({ onPick, onClose }) => {
                 onClick={onClose}
             />
             <motion.div
-                className="fixed z-[61] inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-auto sm:top-[12vh] sm:left-1/2 sm:w-[480px] sm:-ml-[240px] max-h-[75vh] flex flex-col rounded-[28px] bg-white shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)] overflow-hidden"
+                className="fixed z-[61] inset-x-3 bottom-3 sm:inset-x-auto sm:bottom-auto sm:top-[12vh] sm:left-1/2 sm:w-[480px] sm:-ml-[240px] h-[75vh] sm:h-auto sm:max-h-[75vh] flex flex-col rounded-[28px] bg-white shadow-[0_40px_80px_-30px_rgba(19,35,63,0.45)] overflow-hidden"
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 24, scale: 0.98 }}
                 transition={{ type: 'spring', stiffness: 380, damping: 34 }}
-                style={sheetStyle}
             >
                 <div className="px-6 pt-6 pb-4">
                     <div className="flex items-center justify-between">
@@ -133,7 +109,8 @@ const CasePicker = ({ onPick, onClose }) => {
                     )}
                 </div>
             </motion.div>
-        </>
+        </>,
+        document.body
     );
 };
 
