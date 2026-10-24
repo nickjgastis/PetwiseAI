@@ -53,7 +53,7 @@ const ClinicalAssistant = () => (
         />
         <section className="relative bg-white overflow-hidden">
             <div aria-hidden className="absolute inset-0 bg-[radial-gradient(50%_45%_at_50%_0%,#e2edfc_0%,rgba(255,255,255,0)_70%)]" />
-            <Container className="relative pt-8 sm:pt-12 pb-16 sm:pb-24">
+            <Container className="relative pt-8 sm:pt-12">
                 <div className="max-w-3xl mx-auto text-center">
                     <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">Veterinary clinical assistant</p>
                     <h1 className="mt-3 text-[2.5rem] sm:text-[3.5rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
@@ -63,10 +63,10 @@ const ClinicalAssistant = () => (
                         Pick a real clinical question and see how PetQuery answers. No sign up needed.
                     </p>
                 </div>
-                <div className="site-hero-media mt-6 sm:mt-10 -mx-2 sm:mx-0">
-                    <PetQueryLive />
-                </div>
             </Container>
+            <div className="site-hero-media relative mx-auto max-w-[1440px] px-2 sm:px-6 lg:px-10 mt-6 sm:mt-10 pb-16 sm:pb-24">
+                <PetQueryLive />
+            </div>
         </section>
 
         <Section tone="wash">

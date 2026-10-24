@@ -136,7 +136,7 @@ const PetQueryLive = () => {
 
             <div ref={listRef} className="relative flex-1 min-h-0 overflow-y-auto px-3 sm:px-8 py-5 sm:py-8">
                 {messages.length === 0 && !loading && (
-                    <div className="min-h-full flex flex-col justify-center max-w-5xl mx-auto">
+                    <div className="min-h-full flex flex-col justify-center max-w-6xl mx-auto">
                         <div className="text-center mb-6 sm:mb-10">
                             <h3 className={`m-0 pb-1 text-[2rem] sm:text-[2.75rem] leading-[1.15] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>PetQuery</h3>
                             <p className="mt-1.5 mb-0 text-[14px] sm:text-[15px] text-[#1a2b4a]/55">Ask about differentials, dosages, treatment protocols or diagnostics.</p>
@@ -178,7 +178,7 @@ const PetQueryLive = () => {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className={`flex mb-5 sm:mb-6 max-w-6xl mx-auto w-full ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex mb-5 sm:mb-6 w-full ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             {m.role === 'user' ? (
                                 <div className="max-w-[86%] sm:max-w-[70%] bg-[#2d5fb8] text-white rounded-[20px] sm:rounded-[22px] rounded-br-md px-4 py-3 sm:px-5 sm:py-3.5 text-[14.5px] sm:text-[15px] shadow-[0_10px_30px_-16px_rgba(45,95,184,0.7)] whitespace-pre-wrap">
@@ -217,7 +217,7 @@ const PetQueryLive = () => {
                 })}
 
                 {loading && (
-                    <div className="flex justify-start mb-6 max-w-6xl mx-auto w-full">
+                    <div className="flex justify-start mb-6 w-full">
                         <div className="shimmer-loader">
                             <span className="loader-text">Thinking...</span>
                         </div>
@@ -226,7 +226,7 @@ const PetQueryLive = () => {
             </div>
 
             <div className="flex-shrink-0 bg-white/85 backdrop-blur-md border-t border-[#eef2f7]">
-                <div className="mx-auto max-w-3xl px-3 sm:px-4 pt-3 pb-4 sm:pb-5">
+                <div className="mx-auto max-w-4xl px-3 sm:px-4 pt-3 pb-4 sm:pb-5">
                     {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
                     {!loading && unasked.length === 0 ? (
                         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-[22px] bg-[#eef4fc] px-4 py-4 sm:px-5 text-center sm:text-left">
