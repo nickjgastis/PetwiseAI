@@ -81,6 +81,7 @@ const PetQueryLive = () => {
         setError('');
         setMessages((prev) => [...prev, { role: 'user', id: s.id, content: s.question }]);
         setLoading(true);
+        const thinking = new Promise((r) => setTimeout(r, 2500 + Math.random() * 1500));
 
         try {
             const res = await fetch(`${DEMO_API}/api/demo/site-petquery`, {
@@ -89,6 +90,7 @@ const PetQueryLive = () => {
                 body: JSON.stringify({ questionId: s.id })
             });
             const data = await res.json();
+            await thinking;
             if (!res.ok || !data.answer) throw new Error(data.error || 'Query failed');
             setMessages((prev) => [...prev, { role: 'assistant', content: data.answer }]);
             window.gtag?.('event', 'site_petquery_demo', { page_path: window.location.pathname, question: s.id });
