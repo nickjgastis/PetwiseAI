@@ -26,11 +26,18 @@ export const ChartLegend = ({ teeth = {}, className = '' }) => {
     );
 };
 
+// With `statusLabels`, a charted tooth reads "Missing 108". The number stays put and the status grows outward, away from the arch.
+const labelAnchor = (t, st) => {
+    if (st === STATUSES.normal) return { textAnchor: 'middle' };
+    const left = t.label[0] < 0;
+    return { textAnchor: left ? 'end' : 'start', transform: `translateX(calc(var(--tf) * ${left ? 0.9 : -0.9}))` };
+};
+
 // Top-down canine/feline chart. `teeth` maps Triadan id -> { status }; unlisted teeth are normal.
 // Label size reads `--tf` so a zooming parent can keep labels from growing with the zoom.
 // `maxHeight` caps the width by aspect ratio instead of letterboxing. `fill` stretches the svg over its parent
 // for a parent that drives the viewBox itself.
-const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, className = '', maxHeight, fill = false, svgRef }) => {
+const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothClick, showLegend = true, statusLabels = false, className = '', maxHeight, fill = false, svgRef }) => {
     const chart = useMemo(() => buildChart(species), [species]);
     const [hover, setHover] = useState(null);
     if (!chart) return null;
@@ -62,6 +69,7 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                     const st = STATUSES[teeth[t.id]?.status] || STATUSES.normal;
                     const isSel = selected === t.id;
                     const isHover = hover === t.id;
+                    const anchor = labelAnchor(t, statusLabels ? st : STATUSES.normal);
                     return (
                         <g
                             key={t.id}
@@ -88,14 +96,16 @@ const DentalChart = ({ species = 'canine', teeth = {}, selected = null, onToothC
                             <text
                                 x={t.label[0]}
                                 y={t.label[1]}
-                                textAnchor="middle"
+                                textAnchor={anchor.textAnchor}
                                 dominantBaseline="middle"
-                                fill={isSel || isHover ? '#2d5fb8' : '#1a2b4a'}
-                                fillOpacity={isSel || isHover ? 1 : 0.5}
-                                fontWeight={isSel ? 700 : 500}
-                                style={{ ...fs(), fontFeatureSettings: "'tnum'" }}
+                                style={{ ...fs(), fontFeatureSettings: "'tnum'", transform: anchor.transform }}
                             >
-                                {t.id}
+                                {statusLabels && st !== STATUSES.normal && (
+                                    <tspan fill="#16191f" fontWeight={600}>{`${st.label} `}</tspan>
+                                )}
+                                <tspan fill={isSel || isHover ? '#2d5fb8' : '#1a2b4a'} fillOpacity={isSel || isHover ? 1 : 0.5} fontWeight={isSel ? 700 : 500}>
+                                    {t.id}
+                                </tspan>
                             </text>
                         </g>
                     );

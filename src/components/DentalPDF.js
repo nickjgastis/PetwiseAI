@@ -6,6 +6,8 @@ import { parseSections } from '../dental/sections';
 
 const INK = '#000000';
 const MUTED = '#6b7689';
+// A4 width minus the page's side padding.
+const MAX_CHART_W = 595 - 80;
 
 const styles = StyleSheet.create({
     page: { paddingVertical: 34, paddingHorizontal: 40, fontFamily: 'Helvetica', fontSize: 10, color: INK },
@@ -35,21 +37,50 @@ const Swatch = ({ s }) => {
     return <View style={[styles.swatch, { backgroundColor: st.fill === 'none' ? '#ffffff' : st.fill, borderColor: st.cross || st.stroke, borderStyle: st.dashed ? 'dashed' : 'solid' }]} />;
 };
 
+// Helvetica-Bold advance widths (per 1000 em) for the letters in status labels. react-pdf can't flow
+// one Tspan after another, so "Missing 108" is two texts placed with these.
+const BOLD_W = { ' ': 278, C: 722, D: 722, E: 667, F: 611, M: 833, N: 722, P: 667, R: 722, T: 611, W: 944, a: 556, c: 556, d: 611, e: 556, i: 278, l: 278, n: 611, o: 611, p: 611, r: 389, s: 556, t: 333, u: 611, y: 556, b: 611, g: 611, h: 611, m: 889, v: 556, x: 556 };
+const boldWidth = (s, size) => ([...s].reduce((w, c) => w + (BOLD_W[c] ?? 611), 0) * size) / 1000;
+
+// Number stays where a plain label would be; the status sits before it, growing away from the arch.
+const StatusLabel = ({ t, text, font, style }) => {
+    const [x, y] = [t.label[0], t.label[1] + font * 0.35];
+    const half = font * 0.834;
+    const gap = font * 0.278;
+    if (x < 0) {
+        return (
+            <>
+                <Text x={x - half - gap} y={y} textAnchor="end" fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{text}</Text>
+                <Text x={x} y={y} textAnchor="middle" fill={INK} style={style}>{t.id}</Text>
+            </>
+        );
+    }
+    return (
+        <>
+            <Text x={x - half} y={y} fill={INK} style={{ ...style, fontFamily: 'Helvetica-Bold' }}>{text}</Text>
+            <Text x={x - half + boldWidth(text, font) + gap} y={y} fill={INK} style={style}>{t.id}</Text>
+        </>
+    );
+};
+
 const ChartSvg = ({ species, teeth, height }) => {
     const chart = buildChart(species);
-    const { bounds, unit } = chart;
+    const { unit } = chart;
+    const font = unit * 3.1;
+    // Extra room either side for "Retained deciduous 108" style labels.
+    const side = font * 7;
+    const bounds = { ...chart.bounds, minX: chart.bounds.minX - side, maxX: chart.bounds.maxX + side };
     const w = bounds.maxX - bounds.minX;
     const h = bounds.maxY - bounds.minY;
-    const scale = height / h;
-    const font = unit * 3.1;
+    const scale = Math.min(height / h, MAX_CHART_W / w);
     const stroke = 0.9 / scale;
     const midY = (chart.upperDepth + chart.lowerTop) / 2;
     const label = { fontSize: font, fontFamily: 'Helvetica' };
     return (
-        <Svg width={w * scale} height={height} viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`}>
+        <Svg width={w * scale} height={h * scale} viewBox={`${bounds.minX} ${bounds.minY} ${w} ${h}`}>
             <Line x1={0} x2={0} y1={bounds.minY + unit * 4} y2={bounds.maxY - unit * 4} stroke="#e3e8ef" strokeWidth={stroke} strokeDasharray={`${unit.toFixed(3)}, ${unit.toFixed(3)}`} />
-            <Text x={bounds.minX + unit} y={midY + font * 0.35} fill="#9aa3b2" style={{ ...label, fontSize: font * 0.95 }}>RIGHT</Text>
-            <Text x={bounds.maxX - unit} y={midY + font * 0.35} fill="#9aa3b2" textAnchor="end" style={{ ...label, fontSize: font * 0.95 }}>LEFT</Text>
+            <Text x={chart.bounds.minX + unit} y={midY + font * 0.35} fill="#9aa3b2" style={{ ...label, fontSize: font * 0.95 }}>RIGHT</Text>
+            <Text x={chart.bounds.maxX - unit} y={midY + font * 0.35} fill="#9aa3b2" textAnchor="end" style={{ ...label, fontSize: font * 0.95 }}>LEFT</Text>
             {chart.teeth.map((t) => {
                 const st = STATUSES[teeth[t.id]?.status] || STATUSES.normal;
                 return (
@@ -64,9 +95,13 @@ const ChartSvg = ({ species, teeth, height }) => {
                         {st.cross && t.cross.map(([a, b], i) => (
                             <Line key={i} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={st.cross} strokeWidth={stroke * 1.6} strokeLinecap="round" />
                         ))}
-                        <Text x={t.label[0]} y={t.label[1] + font * 0.35} textAnchor="middle" fill={teeth[t.id] ? INK : '#8a94a6'} style={label}>
-                            {t.id}
-                        </Text>
+                        {st === STATUSES.normal ? (
+                            <Text x={t.label[0]} y={t.label[1] + font * 0.35} textAnchor="middle" fill={teeth[t.id] ? INK : '#8a94a6'} style={label}>
+                                {t.id}
+                            </Text>
+                        ) : (
+                            <StatusLabel t={t} text={st.label} font={font} style={label} />
+                        )}
                     </G>
                 );
             })}

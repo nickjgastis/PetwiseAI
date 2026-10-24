@@ -332,7 +332,7 @@ const DentalChartCanvas = ({ dental, onChange, height, onExpand, onToothCommit }
                 className="relative mx-4 sm:mx-5 mt-3 rounded-[20px] bg-[#fbfcfe] border border-[#eef2f7] overflow-hidden"
                 style={{ height, cursor: panning ? 'grabbing' : zoom > 1.01 ? 'grab' : 'default', touchAction: zoom > 1.01 ? 'none' : 'auto' }}
             >
-                <DentalChart species={species} teeth={teeth} selected={selected} onToothClick={onToothClick} showLegend={false} fill svgRef={svgRef} className="absolute inset-0" />
+                <DentalChart species={species} teeth={teeth} selected={selected} onToothClick={onToothClick} showLegend={false} statusLabels fill svgRef={svgRef} className="absolute inset-0" />
 
                 <div data-chart-toolbar className="absolute top-3 right-3 z-10 flex flex-col gap-1.5" onPointerDown={(e) => e.stopPropagation()} onDoubleClick={(e) => e.stopPropagation()}>
                     {onExpand && (
