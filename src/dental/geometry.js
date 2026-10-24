@@ -130,7 +130,7 @@ function outline(tooth, frame, map, species, jaw) {
     const reach = Math.max(...local.map(([, v]) => v));
     const r = Math.min(tooth.len, tooth.dep) * 0.45;
     const crossAt = (a, b) => toWorld([a / (tooth.len / 2), b]);
-    const gapOut = species === 'canine' ? 3.2 : 1.6;
+    const gapOut = species === 'canine' ? 5.8 : 2.9;
     let label = toWorld([0, reach + gapOut]);
     if (tooth.kind.startsWith('incisor')) {
         const dx = frame.p[0];
