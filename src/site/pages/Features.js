@@ -77,10 +77,10 @@ const Features = () => (
                 <div className="max-w-3xl mb-10 sm:mb-14">
                     <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">Features</p>
                     <h1 className="mt-4 text-[2.5rem] sm:text-[3.5rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
-                        Every record you write, <Highlight dark>written for you.</Highlight>
+                        No more charting <Highlight dark>after close.</Highlight>
                     </h1>
                     <p className="mt-5 text-lg sm:text-xl text-[#1a2b4a]/65 max-w-2xl">
-                        Pick the record type, say the patient’s name and talk. PetWise writes it, files it in the patient’s case and has it ready to paste.
+                        SOAPs, summaries, callbacks and full dental charts, written from your voice while the patient is still in the building. Review, paste and go home.
                     </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{RECORD_TYPES.map((t, i) => <RecordTypeCard key={t.label} {...t} i={i} />)}</div>
