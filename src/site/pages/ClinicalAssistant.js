@@ -53,17 +53,17 @@ const ClinicalAssistant = () => (
         />
         <section className="relative bg-white overflow-hidden">
             <div aria-hidden className="absolute inset-0 bg-[radial-gradient(50%_45%_at_50%_0%,#e2edfc_0%,rgba(255,255,255,0)_70%)]" />
-            <Container className="relative pt-10 sm:pt-14 pb-16 sm:pb-24">
+            <Container className="relative pt-8 sm:pt-12 pb-16 sm:pb-24">
                 <div className="max-w-3xl mx-auto text-center">
                     <p className="text-[13px] font-semibold tracking-[0.14em] uppercase text-[#2d5fb8]">Veterinary clinical assistant</p>
-                    <h1 className="mt-4 text-[2.5rem] sm:text-[3.5rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
+                    <h1 className="mt-3 text-[2.5rem] sm:text-[3.5rem] leading-[1.03] font-semibold tracking-[-0.04em] text-[#13233f] text-balance">
                         Clinical answers <Highlight dark>in seconds.</Highlight>
                     </h1>
-                    <p className="mt-5 text-lg text-[#1a2b4a]/65 text-balance">
+                    <p className="mt-4 text-lg text-[#1a2b4a]/65 text-balance">
                         Pick a real clinical question and see how PetQuery answers. No sign up needed.
                     </p>
                 </div>
-                <div className="site-hero-media mt-8 sm:mt-12 max-w-5xl -mx-2 sm:mx-auto">
+                <div className="site-hero-media mt-6 sm:mt-10 -mx-2 sm:mx-0">
                     <PetQueryLive />
                 </div>
             </Container>

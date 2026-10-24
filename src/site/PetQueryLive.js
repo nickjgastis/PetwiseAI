@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { FiArrowRight, FiArrowUp, FiRotateCcw } from 'react-icons/fi';
 import FormattedMessage from '../components/FormattedQueryMessage';
+import { GRADIENT_TEXT } from '../components/caseStyles';
 import { DEMO_API } from '../pages/landing/campaign/demoClient';
 import { SignupButton } from './ui';
+
+const EASE = [0.2, 0.7, 0.2, 1];
 
 const SUGGESTIONS = [
     { id: 'toxicology', category: 'Toxicology', question: '100g of 70% dark chocolate ingested by a 12 kg dog. Toxic dose, decontamination and treatment.' },
     { id: 'maropitant', category: 'Medication Guidance', question: 'Maropitant dose for a vomiting 4 kg cat, including route and frequency.' },
-    { id: 'chf', category: 'Emergency Medicine', question: 'Emergency furosemide protocol for a dog in acute CHF with respiratory distress.' },
-    { id: 'pupd', category: 'Internal Medicine', question: 'Top differentials and first diagnostics for PU/PD in a 13 year old cat.' },
-    { id: 'premed', category: 'Anesthesia', question: 'Premedication options for a healthy 30 kg dog having a dental cleaning.' },
-    { id: 'derm', category: 'Dermatology', question: 'Seasonal paw licking in a 2 year old Labrador. Differentials and first-line treatment.' }
+    { id: 'pupd', category: 'Internal Medicine', question: 'Top differentials and first diagnostics for PU/PD in a 13 year old cat.' }
 ];
 
 const SOURCE_PATTERNS = [
@@ -30,12 +31,6 @@ const extractSources = (content) => {
 
 const withoutSources = (content) => SOURCE_PATTERNS.reduce((c, p) => c.replace(p, '').trim(), content);
 
-const SendIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-        <path d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
-    </svg>
-);
-
 const CopyIcon = ({ done }) =>
     done ? (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
@@ -54,7 +49,12 @@ const BookIcon = () => (
     </svg>
 );
 
-// Public PetQuery demo, styled like the in-app QuickQuery. Preset questions only; the API rejects
+const actionButton = (on) =>
+    `inline-flex items-center justify-center w-8 h-8 rounded-full cursor-pointer border transition-colors duration-200 ${
+        on ? 'bg-[#2d5fb8] text-white border-[#2d5fb8]' : 'bg-transparent text-[#1a2b4a]/50 border-[#2d5fb8]/15 hover:text-[#2d5fb8] hover:bg-white'
+    }`;
+
+// Public PetQuery demo, styled like the in-app PetQuery. Preset questions only; the API rejects
 // anything else and caches each answer, so there's no usage limit.
 const PetQueryLive = () => {
     const [messages, setMessages] = useState([]);
@@ -110,36 +110,63 @@ const PetQueryLive = () => {
         }
     };
 
-    return (
-        <div className="rounded-[20px] sm:rounded-[24px] bg-white ring-1 ring-[#13233f]/[0.08] shadow-[0_40px_80px_-40px_rgba(19,35,63,0.45)] overflow-hidden flex flex-col h-[min(76svh,640px)] min-h-[520px] sm:h-[620px] text-left">
-            <div className="flex justify-center items-center p-3 sm:p-4 border-b border-gray-200 bg-white">
-                <h2 className="text-xl sm:text-3xl font-bold text-primary-600">PetQuery</h2>
-            </div>
+    const reset = () => {
+        setMessages([]);
+        setSourcesOpen({});
+        setError('');
+    };
 
-            <div ref={listRef} className="relative flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 sm:py-6 space-y-4">
+    return (
+        <div className="rounded-[24px] sm:rounded-[32px] bg-gradient-to-b from-[#f6f8fb] to-white ring-1 ring-[#13233f]/[0.08] shadow-[0_40px_90px_-45px_rgba(19,35,63,0.5)] overflow-hidden flex flex-col h-[min(84svh,780px)] min-h-[560px] text-left">
+            {messages.length > 0 && (
+                <div className="flex-shrink-0 border-b border-[#eef2f7] bg-white/80 backdrop-blur-md">
+                    <div className="h-[56px] px-4 sm:px-6 flex items-center justify-between">
+                        <span className={`pb-0.5 text-[20px] font-bold tracking-[-0.02em] ${GRADIENT_TEXT}`}>PetQuery</span>
+                        <button
+                            type="button"
+                            onClick={reset}
+                            disabled={loading}
+                            className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#e7ecf3] hover:bg-[#f6f8fb] cursor-pointer transition-colors disabled:opacity-50"
+                        >
+                            <FiRotateCcw className="text-[13px]" /> Start over
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <div ref={listRef} className="relative flex-1 min-h-0 overflow-y-auto px-3 sm:px-8 py-5 sm:py-8">
                 {messages.length === 0 && !loading && (
-                    <>
-                        <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6 max-w-5xl mx-auto">
-                            <strong className="block mb-1 text-xs sm:text-sm font-semibold text-gray-700">Disclaimer:</strong>
-                            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                                PetQuery provides AI-generated responses for educational purposes only. These responses may contain inaccuracies and are not a substitute for
-                                professional veterinary judgment. Verify information before making any medical decisions.
-                            </p>
+                    <div className="min-h-full flex flex-col justify-center max-w-5xl mx-auto">
+                        <div className="text-center mb-6 sm:mb-10">
+                            <h3 className={`m-0 pb-1 text-[2rem] sm:text-[2.75rem] leading-[1.15] font-bold tracking-[-0.03em] ${GRADIENT_TEXT}`}>PetQuery</h3>
+                            <p className="mt-1.5 mb-0 text-[14px] sm:text-[15px] text-[#1a2b4a]/55">Ask about differentials, dosages, treatment protocols or diagnostics.</p>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4 max-w-6xl mx-auto">
-                            {SUGGESTIONS.map((s) => (
-                                <button
+                        <p className="mb-3 ml-1 text-[11px] font-semibold tracking-[0.12em] uppercase text-[#1a2b4a]/45">Try asking</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                            {SUGGESTIONS.map((s, i) => (
+                                <motion.button
                                     key={s.id}
                                     type="button"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    whileHover={{ y: -4 }}
+                                    whileTap={{ scale: 0.985 }}
+                                    transition={{ duration: 0.35, ease: EASE, delay: 0.05 + i * 0.05 }}
                                     onClick={() => ask(s)}
-                                    className="flex flex-col items-start text-left bg-white border border-gray-200 rounded-lg p-3.5 sm:p-4 cursor-pointer hover:border-primary-300 hover:shadow-md transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="group w-full h-full text-left rounded-[24px] border border-[#e7ecf3] bg-white p-5 cursor-pointer transition-[box-shadow,border-color] duration-300 hover:border-[#d6e3f7] hover:shadow-[0_24px_48px_-24px_rgba(19,35,63,0.25)] flex flex-col"
                                 >
-                                    <h4 className="text-primary-600 font-semibold mb-1 sm:mb-2 text-sm sm:text-base">{s.category}</h4>
-                                    <p className="text-gray-700 text-[13px] sm:text-sm leading-relaxed">{s.question}</p>
-                                </button>
+                                    <span className="text-[11.5px] font-semibold tracking-[0.06em] uppercase text-[#2d5fb8]">{s.category}</span>
+                                    <span className="mt-2 text-[14.5px] leading-relaxed text-[#13233f]/85 flex-1">{s.question}</span>
+                                    <span className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#2d5fb8] sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                        Ask this <FiArrowRight className="text-[12px]" />
+                                    </span>
+                                </motion.button>
                             ))}
                         </div>
-                    </>
+                        <p className="mt-6 sm:mt-8 mb-0 text-center text-[11.5px] sm:text-[12px] leading-relaxed text-[#1a2b4a]/40 max-w-2xl mx-auto">
+                            PetQuery gives AI-generated answers for educational use. They can contain mistakes and are not a substitute for professional judgment, so verify before making treatment decisions.
+                        </p>
+                    </div>
                 )}
 
                 {messages.map((m, i) => {
@@ -151,22 +178,17 @@ const PetQueryLive = () => {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className={`flex mb-4 sm:mb-6 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                            className={`flex mb-5 sm:mb-6 max-w-6xl mx-auto w-full ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             {m.role === 'user' ? (
-                                <div className="max-w-[88%] sm:max-w-[85%] bg-[#3468bd] text-white text-[15px] sm:text-base rounded-2xl rounded-br-md px-4 py-3 sm:px-5 sm:py-4 whitespace-pre-wrap">{m.content}</div>
+                                <div className="max-w-[86%] sm:max-w-[70%] bg-[#2d5fb8] text-white rounded-[20px] sm:rounded-[22px] rounded-br-md px-4 py-3 sm:px-5 sm:py-3.5 text-[14.5px] sm:text-[15px] shadow-[0_10px_30px_-16px_rgba(45,95,184,0.7)] whitespace-pre-wrap">
+                                    {m.content}
+                                </div>
                             ) : (
-                                <div className="max-w-4xl w-full bg-primary-50 text-gray-800 text-[15px] sm:text-base rounded-2xl rounded-bl-md px-4 py-4 sm:px-5 sm:py-5 border-l-4 border-primary-400 message-content">
+                                <div className="w-full bg-[#e8f0fc] text-[#13233f] rounded-[22px] sm:rounded-[28px] rounded-bl-md px-4 py-4 sm:px-10 sm:py-8 border border-[#2d5fb8]/[0.14] text-[14.5px] sm:text-[15px]">
                                     <FormattedMessage content={withoutSources(m.content)} />
-                                    <div className="flex items-center gap-1.5 mt-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => copy(withoutSources(m.content), i)}
-                                            aria-label="Copy message"
-                                            className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${
-                                                copied === i ? 'bg-primary-500 text-white border-primary-500' : 'bg-transparent text-gray-500 border-gray-200 hover:bg-gray-100'
-                                            }`}
-                                        >
+                                    <div className="flex items-center gap-1.5 mt-4 sm:mt-6">
+                                        <button type="button" onClick={() => copy(withoutSources(m.content), i)} aria-label="Copy answer" className={actionButton(copied === i)}>
                                             <CopyIcon done={copied === i} />
                                         </button>
                                         {sources && (
@@ -174,16 +196,17 @@ const PetQueryLive = () => {
                                                 type="button"
                                                 onClick={() => setSourcesOpen((s) => ({ ...s, [i]: !s[i] }))}
                                                 aria-label="Show sources"
-                                                className={`inline-flex items-center gap-1 px-2 py-1 text-xs border rounded transition-all duration-200 ${
-                                                    sourcesOpen[i] ? 'bg-primary-100 text-primary-700 border-primary-300' : 'bg-transparent text-gray-500 border-gray-200 hover:bg-gray-100'
+                                                className={`inline-flex items-center justify-center w-8 h-8 rounded-full cursor-pointer border transition-colors duration-200 ${
+                                                    sourcesOpen[i] ? 'bg-[#e9f1fc] text-[#2d5fb8] border-[#2d5fb8]/30' : 'bg-transparent text-[#1a2b4a]/50 border-[#2d5fb8]/15 hover:text-[#2d5fb8] hover:bg-white'
                                                 }`}
                                             >
                                                 <BookIcon />
                                             </button>
                                         )}
+                                        {sources && !sourcesOpen[i] && <span className="ml-1 text-[12px] text-[#1a2b4a]/45">See sources</span>}
                                     </div>
                                     {sources && sourcesOpen[i] && (
-                                        <div className="mt-3 pt-3 border-t border-gray-200 text-sm text-gray-600">
+                                        <div className="mt-5 pt-5 border-t border-[#2d5fb8]/10 text-sm text-[#1a2b4a]/70">
                                             <FormattedMessage content={sources} />
                                         </div>
                                     )}
@@ -194,7 +217,7 @@ const PetQueryLive = () => {
                 })}
 
                 {loading && (
-                    <div className="flex justify-start mb-4 sm:mb-6">
+                    <div className="flex justify-start mb-6 max-w-6xl mx-auto w-full">
                         <div className="shimmer-loader">
                             <span className="loader-text">Thinking...</span>
                         </div>
@@ -202,54 +225,48 @@ const PetQueryLive = () => {
                 )}
             </div>
 
-            <div className="bg-white border-t border-gray-200/80 shadow-[0_-8px_24px_rgba(15,23,42,0.05)] p-3 sm:p-4">
-                {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
-                {!loading && unasked.length === 0 ? (
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl bg-[#f5f8fd] px-4 py-4 sm:px-5 text-center sm:text-left">
-                        <p className="text-[15px] text-[#13233f]">
-                            <span className="font-semibold">Want to ask your own?</span>{' '}
-                            <span className="text-[#1a2b4a]/60">Unlimited PetQuery with a free 10 day trial.</span>
-                        </p>
-                        <SignupButton placement="petquery_demo_done" className="!py-2.5 shrink-0">
-                            Start free
-                        </SignupButton>
-                    </div>
-                ) : (
-                    <>
-                        {messages.length > 0 && unasked.length > 0 && (
-                            <div className="flex gap-2 mb-3 overflow-x-auto pb-1 [scrollbar-width:none]">
-                                {unasked.map((s) => (
-                                    <button
-                                        key={s.id}
-                                        type="button"
-                                        title={s.question}
-                                        disabled={loading}
-                                        onClick={() => ask(s)}
-                                        className="shrink-0 px-3.5 py-1.5 text-sm font-medium text-primary-600 bg-white border border-gray-200 rounded-full hover:border-primary-300 hover:bg-primary-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {s.category}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        <div className="flex gap-3 items-start">
-                            <textarea
-                                disabled
-                                rows={1}
-                                placeholder={messages.length ? 'Pick another question above' : 'Pick a question above to try it'}
-                                className="flex-1 min-w-0 h-12 sm:h-[52px] px-4 py-2.5 sm:py-3 text-[15px] sm:text-base border-2 border-gray-300 rounded-2xl bg-gray-50 shadow-sm resize-none cursor-not-allowed"
-                            />
-                            <button
-                                type="button"
-                                disabled
-                                aria-label="Send message"
-                                className="w-12 h-12 sm:w-[52px] sm:h-[52px] bg-gray-300 text-white rounded-full cursor-not-allowed flex items-center justify-center flex-shrink-0"
-                            >
-                                <SendIcon />
-                            </button>
+            <div className="flex-shrink-0 bg-white/85 backdrop-blur-md border-t border-[#eef2f7]">
+                <div className="mx-auto max-w-3xl px-3 sm:px-4 pt-3 pb-4 sm:pb-5">
+                    {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+                    {!loading && unasked.length === 0 ? (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-[22px] bg-[#eef4fc] px-4 py-4 sm:px-5 text-center sm:text-left">
+                            <p className="m-0 text-[15px] text-[#13233f]">
+                                <span className="font-semibold">Want to ask your own?</span>{' '}
+                                <span className="text-[#1a2b4a]/60">Unlimited PetQuery with a free 10 day trial.</span>
+                            </p>
+                            <SignupButton placement="petquery_demo_done" className="!py-2.5 shrink-0">
+                                Start free
+                            </SignupButton>
                         </div>
-                    </>
-                )}
+                    ) : (
+                        <>
+                            {messages.length > 0 && (
+                                <div className="flex justify-center gap-2 mb-3 overflow-x-auto pb-1 [scrollbar-width:none]">
+                                    {unasked.map((s) => (
+                                        <button
+                                            key={s.id}
+                                            type="button"
+                                            title={s.question}
+                                            disabled={loading}
+                                            onClick={() => ask(s)}
+                                            className="shrink-0 inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-[13px] font-semibold text-[#2d5fb8] bg-white border border-[#e7ecf3] hover:border-[#2d5fb8]/30 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {s.category} <FiArrowRight className="text-[12px]" />
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <div className="relative">
+                                <div className="flex items-center w-full min-h-[52px] pl-5 pr-14 text-[15px] text-[#1a2b4a]/40 border border-[#e7ecf3] rounded-[26px] bg-white shadow-[0_10px_30px_-20px_rgba(19,35,63,0.35)] select-none">
+                                    {messages.length ? 'Pick another question above' : 'Pick a question above to try it'}
+                                </div>
+                                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#e7ecf3] text-[#1a2b4a]/35 flex items-center justify-center" aria-hidden>
+                                    <FiArrowUp className="text-[16px]" strokeWidth={2.5} />
+                                </span>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );
