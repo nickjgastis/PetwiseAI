@@ -280,8 +280,6 @@ const TermsContent = () => (
         <p>
             {LEGAL.operator}
             <br />
-            {LEGAL.address}
-            <br />
             <a href={`mailto:${LEGAL.email}`}>{LEGAL.email}</a>
         </p>
     </>

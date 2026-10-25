@@ -4,6 +4,5 @@ export const LEGAL = {
     operator: 'PetWise Technologies',
     jurisdiction: 'the Province of Ontario',
     seat: 'Toronto, Ontario',
-    address: '[MAILING ADDRESS]',
     email: 'support@petwise.vet'
 };
