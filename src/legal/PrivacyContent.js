@@ -1,18 +1,6 @@
 import React from 'react';
 import { LEGAL } from './meta';
 
-const PROVIDERS = [
-    ['OpenAI', 'AI transcription, record writing and PetQuery answers'],
-    ['Supabase', 'Database that stores your account and records'],
-    ['Vercel', 'Hosting for the website, app and servers'],
-    ['Auth0 (Okta)', 'Sign in and account security'],
-    ['Stripe', 'Payments and subscriptions'],
-    ['Resend', 'Account and product emails'],
-    ['HubSpot', 'Customer records for support and sales follow up'],
-    ['Google Analytics', 'Website and app usage measurement'],
-    ['Meta (Facebook) Pixel', 'Measuring and targeting our ads']
-];
-
 const PrivacyContent = () => (
     <>
         <p><strong>Last updated:</strong> {LEGAL.updated}</p>
@@ -88,18 +76,12 @@ const PrivacyContent = () => (
         </p>
 
         <h3>6. Who we share it with</h3>
-        <p>We share information only with the service providers that help us run PetWise:</p>
-        <ul>
-            {PROVIDERS.map(([name, use]) => (
-                <li key={name}>
-                    <strong>{name}:</strong> {use}
-                </li>
-            ))}
-        </ul>
         <p>
-            We may also share information when the law requires it, to protect the rights or safety of PetWise,
-            our users or others, or as part of a business transfer such as forming a company or selling the
-            Service, in which case this policy continues to apply.
+            We share information with service providers that help us run PetWise, including OpenAI for AI
+            processing, and providers for hosting, databases, sign in, payments, email, customer support,
+            analytics and advertising. We may also share information when the law requires it, to protect the
+            rights or safety of PetWise, our users or others, or as part of a business transfer such as forming
+            a company or selling the Service.
         </p>
         <p>
             We do not sell your information for money. Google Analytics and the Meta Pixel collect device and
@@ -123,23 +105,15 @@ const PrivacyContent = () => (
         </p>
 
         <h3>8. How long we keep it</h3>
-        <ul>
-            <li>Records, cases and templates are kept until you delete them or delete your account.</li>
-            <li>
-                When you delete your account in the app, we cancel any subscription and delete your account,
-                records and templates from our database, and your login from Auth0.
-            </li>
-            <li>
-                Some information is kept longer: billing and tax records as the law requires, copies in backups
-                and logs until they expire, data held by our service providers under their own retention terms,
-                and support, sales and email records. You can ask us to delete those too.
-            </li>
-        </ul>
+        <p>
+            We keep your records until you delete them or your account. When you delete your account, we delete
+            your account and records from our systems. Some information may be kept longer where the law
+            requires it, in backups until they expire, or in our service providers' and support records.
+        </p>
 
         <h3>9. Security</h3>
         <p>
-            We use reasonable safeguards, including encryption in transit, access controls and providers with
-            strong security programs. No system is completely secure, and we cannot guarantee the security of
+            We use reasonable safeguards, including encryption in transit and access controls. No system is completely secure, and we cannot guarantee the security of
             information. If a breach affects your personal information, we will notify you as the law requires.
             Keep your login private and tell us at {LEGAL.email} if you suspect a problem.
         </p>
@@ -161,8 +135,7 @@ const PrivacyContent = () => (
         <p>
             PetWise is offered in the United States and Canada. Your information is stored and processed in the
             United States and other countries where our providers operate, where privacy laws may differ from
-            those where you live. Canadian users' information is handled in line with PIPEDA, and may be
-            accessible to authorities in the countries where it is stored.
+            those where you live, and it may be accessible to authorities in those countries.
         </p>
 
         <h3>12. Children</h3>
