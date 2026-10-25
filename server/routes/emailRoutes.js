@@ -15,7 +15,7 @@ const hubspot = require('../utils/hubspot');
  * Called from client after user creation in Supabase
  */
 router.post('/welcome', async (req, res) => {
-    console.log('Welcome email endpoint hit:', req.body);
+    console.log('Welcome email endpoint hit:', req.body?.auth0_user_id);
     const { supabase } = req.app.locals;
     const { auth0_user_id, email, nickname } = req.body;
 

@@ -334,8 +334,7 @@ app.post('/api/quickquery', async (req, res) => {
         if (!Array.isArray(messages) || messages.length === 0) {
             console.error('Invalid messages array:', {
                 isArray: Array.isArray(messages),
-                length: messages?.length,
-                messages: JSON.stringify(messages).slice(0, 500)
+                length: messages?.length
             });
             return res.status(400).json({ error: 'Messages array is required' });
         }
@@ -344,16 +343,16 @@ app.post('/api/quickquery', async (req, res) => {
         for (let i = 0; i < messages.length; i++) {
             const msg = messages[i];
             if (!msg || typeof msg !== 'object') {
-                console.error(`Invalid message at index ${i}:`, msg);
+                console.error(`Invalid message at index ${i}:`, typeof msg);
                 return res.status(400).json({ error: `Invalid message at index ${i}` });
             }
             if (!msg.role || msg.content === undefined || msg.content === null) {
-                console.error(`Message at index ${i} missing role or content:`, msg);
+                console.error(`Message at index ${i} missing role or content`);
                 return res.status(400).json({ error: `Message at index ${i} must have role and content` });
             }
             // Ensure content is a string
             if (typeof msg.content !== 'string') {
-                console.error(`Message at index ${i} content is not a string:`, typeof msg.content, msg.content);
+                console.error(`Message at index ${i} content is not a string:`, typeof msg.content);
                 // Try to convert to string if it's not
                 messages[i].content = String(msg.content);
             }
@@ -366,12 +365,11 @@ app.post('/api/quickquery', async (req, res) => {
             messages[i].content = trimmedContent;
         }
 
-        // Log the last user message for debugging (first 200 chars)
         const lastUserMessage = messages.filter(m => m.role === 'user').pop();
         if (lastUserMessage) {
             console.log('Processing QuickQuery request:', {
                 messageCount: messages.length,
-                lastUserMessagePreview: lastUserMessage.content.substring(0, 200),
+                lastUserMessageLength: lastUserMessage.content.length,
                 model,
                 max_tokens
             });
@@ -782,7 +780,6 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
             const firstChunkBoostedPrompt = buildBoostedPrompt(basePrompt);
             const firstChunkTranscript = await transcribeChunk(chunkFiles[0], 0, firstChunkBoostedPrompt);
             console.log(`[Transcribe] Chunk 1/${chunkFiles.length}: ${firstChunkTranscript.length} chars`);
-            console.log(`[Transcribe] Chunk 1 preview: ${firstChunkTranscript.substring(0, 100)}...`);
             combinedTranscript = firstChunkTranscript;
 
             // Transcribe remaining chunks in parallel (with first chunk context for continuity)
@@ -801,7 +798,6 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
                 remainingTranscripts.forEach((transcript, idx) => {
                     const chunkNum = idx + 2;
                     console.log(`[Transcribe] Chunk ${chunkNum}/${chunkFiles.length}: ${transcript.length} chars`);
-                    console.log(`[Transcribe] Chunk ${chunkNum} preview: ${transcript.substring(0, 100)}...`);
                     if (transcript && transcript.trim().length > 0) {
                         combinedTranscript += ' ' + transcript.trim();
                     } else {
@@ -849,16 +845,12 @@ Rewrite the output as clean clinical dictation with no extra words, maintaining 
         // Wrap in try-catch to ensure we never fail the entire request if cleanup fails
         let cleanedTranscript = cleanTranscription;
         console.log(`[Transcribe] Clean transcript length: ${cleanTranscription.length} chars`);
-        console.log(`[Transcribe] Clean transcript preview: ${cleanTranscription.substring(0, 200)}...`);
-        console.log(`[Transcribe] Clean transcript end: ...${cleanTranscription.substring(Math.max(0, cleanTranscription.length - 200))}`);
         try {
             const cleanupStart = Date.now();
             cleanedTranscript = await runMedicalCleanup(cleanTranscription);
             const cleanupTime = Date.now() - cleanupStart;
             console.log(`[Transcribe] GPT cleanup completed in ${cleanupTime}ms`);
             console.log(`[Transcribe] GPT cleaned length: ${cleanedTranscript.length} chars (was ${cleanTranscription.length})`);
-            console.log(`[Transcribe] GPT cleaned preview: ${cleanedTranscript.substring(0, 200)}...`);
-            console.log(`[Transcribe] GPT cleaned end: ...${cleanedTranscript.substring(Math.max(0, cleanedTranscript.length - 200))}`);
             if (cleanedTranscript.length < cleanTranscription.length * 0.8) {
                 console.warn(`[Transcribe] WARNING: GPT cleanup reduced transcript by ${cleanTranscription.length - cleanedTranscript.length} chars - possible truncation!`);
             }
@@ -1087,12 +1079,6 @@ app.post('/api/whisper-proxy', uploadMemory.single('audio'), async (req, res) =>
         console.log(`[Transcribe] Input size: ${fileSizeKB.toFixed(2)}KB`);
         console.log(`[Transcribe] Output length: ${transcript.length} chars`);
         console.log(`[Transcribe] Chars/sec: ${(transcript.length / (apiTime / 1000)).toFixed(1)}`);
-        console.log(`[Transcribe] Preview (first 200 chars):`);
-        console.log(`[Transcribe] >>> ${transcript.substring(0, 200)}`);
-        if (transcript.length > 200) {
-            console.log(`[Transcribe] Preview (last 100 chars):`);
-            console.log(`[Transcribe] >>> ...${transcript.substring(transcript.length - 100)}`);
-        }
         console.log(`[Transcribe] ================================`);
 
         res.json({ text: transcript, model: TRANSCRIPTION_MODEL, latencyMs: apiTime });

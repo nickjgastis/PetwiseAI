@@ -50,7 +50,7 @@ const endOfDayUTC = (d) => {
 
 studentRouter.post("/redeem", async (req, res) => {
     try {
-        console.log("Student redemption request:", req.body);
+        console.log("Student redemption request");
         const { access_code, student_email, grad_year } = req.body || {};
         if (!access_code || !grad_year || !student_email) {
             console.log("Missing required fields:", { access_code: !!access_code, grad_year: !!grad_year, student_email: !!student_email });

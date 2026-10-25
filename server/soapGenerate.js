@@ -439,7 +439,7 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
         if (!extractorResult.finalOutput) {
             throw new Error("Transcription extraction failed - no output");
         }
-        console.log('[SOAP Agent] Extractor output:', extractorResult.finalOutput);
+        console.log('[SOAP Agent] Extractor output length:', String(extractorResult.finalOutput).length);
 
         // Check if agent refused to process (common phrases in refusals)
         const refusalPhrases = [
