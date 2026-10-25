@@ -218,8 +218,8 @@ const TermsContent = () => (
         <h3>15. Disputes and arbitration</h3>
         <ul>
             <li>
-                <strong>Governing law.</strong> These Terms are governed by the laws of the State of{' '}
-                {LEGAL.state} and applicable US federal law, without regard to conflict of laws rules.
+                <strong>Governing law.</strong> These Terms are governed by the laws of {LEGAL.jurisdiction} and
+                the federal laws of Canada that apply there, without regard to conflict of laws rules.
             </li>
             <li>
                 <strong>Talk to us first.</strong> Before filing any claim, email {LEGAL.email} with a description
@@ -227,9 +227,9 @@ const TermsContent = () => (
             </li>
             <li>
                 <strong>Arbitration.</strong> If it is not resolved, any dispute arising from these Terms or the
-                Service will be decided by binding individual arbitration administered by the American
-                Arbitration Association under its applicable rules, held in {LEGAL.state} or by video, and judgment
-                on the award may be entered in any court with jurisdiction. Either of us may instead bring an
+                Service will be decided by binding individual arbitration before a single arbitrator under the
+                Arbitration Rules of the ADR Institute of Canada, seated in {LEGAL.seat} and held there or by
+                video, and judgment on the award may be entered in any court with jurisdiction. Either of us may instead bring an
                 individual claim in small claims court, or seek a court order to stop infringement or misuse of
                 intellectual property.
             </li>
@@ -250,8 +250,8 @@ const TermsContent = () => (
                 year after it arises.
             </li>
             <li>
-                Any claim not subject to arbitration will be heard only in the state or federal courts located
-                in {LEGAL.state}, and we both consent to their jurisdiction.
+                Any claim not subject to arbitration will be heard only in the courts of {LEGAL.jurisdiction},
+                and we both consent to their jurisdiction.
             </li>
         </ul>
 

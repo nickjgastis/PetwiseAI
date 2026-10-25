@@ -2,7 +2,8 @@
 export const LEGAL = {
     updated: 'October 25, 2026',
     operator: 'PetWise Technologies',
-    state: '[STATE]',
+    jurisdiction: 'the Province of Ontario',
+    seat: 'Toronto, Ontario',
     address: '[MAILING ADDRESS]',
     email: 'support@petwise.vet'
 };
