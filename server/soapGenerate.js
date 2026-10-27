@@ -1,4 +1,4 @@
-const generateSoapFromInput = async (input) => {
+const generateSoapFromInput = async (input, { formatterModel = 'gpt-5.4-mini' } = {}) => {
     if (!input || !String(input).trim()) {
         throw new Error('Input text is required');
     }
@@ -448,7 +448,7 @@ FINAL CHECK BEFORE OUTPUTTING (fix anything that fails):
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,
-            model: "gpt-5.4-mini"
+            model: formatterModel
         });
 
         // Run Agent 1: Extract information
