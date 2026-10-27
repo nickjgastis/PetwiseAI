@@ -1,4 +1,4 @@
-const generateSoapFromInput = async (input, { formatterModel = 'gpt-5.4-mini' } = {}) => {
+const generateSoapFromInput = async (input, { formatterModel = 'gpt-5.4-mini', formatterReasoning } = {}) => {
     if (!input || !String(input).trim()) {
         throw new Error('Input text is required');
     }
@@ -445,10 +445,16 @@ FINAL CHECK BEFORE OUTPUTTING (fix anything that fails):
 3. Client Communication and Recommended Diagnostics never mention a recheck.
 4. No two lines in a row start with the same words (e.g. "Possible...", "No current...", "Chemistry demonstrated..."). Merge them into one line.
 5. Owner worries and suspected causes are combined into one line, e.g. "Owner concerns included parasitism, gastrointestinal obstruction and neoplasia."
+6. The response starts with **Subjective**. Nothing (no signalment or intro sentence) comes before it.
+7. Assessment has 2 to 6 lines, each linking findings to their clinical significance. Never a single vague line like "etiology undetermined".
+8. EVERY diagnosis has its own DDx line directly underneath it.
+9. Never write "unit not specified", "route not specified" or similar. If a detail was not dictated, leave it out.
+10. Treatment lines are short entries ("Drug dose route frequency duration"), not sentences like "X was administered".
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,
-            model: formatterModel
+            model: formatterModel,
+            ...(formatterReasoning ? { modelSettings: { reasoning: { effort: formatterReasoning } } } : {})
         });
 
         // Run Agent 1: Extract information
