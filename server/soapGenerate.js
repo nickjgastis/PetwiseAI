@@ -182,7 +182,7 @@ STRICT RULES ABOUT ACCURACY AND CERTAINTY:
 - Do NOT convert owner words into vet suspicions.
 - Preserve uncertainty exactly as spoken: "maybe", "probably", "I think" must be preserved.
 - When a value is said twice differently ("heart rate's 160? 140, okay"), extract both in order. But if a value is explicitly rejected ("Seven-year-old? Nope."), drop it.
-- Keep dose and weight numbers exactly as spoken. Never add a unit (mg, mL, lb, kg) that was not said: "Zenalpha 0.9" stays "Zenalpha 0.9".
+- Keep dose, weight and duration numbers exactly as spoken. Never add a unit (mg, mL, lb, kg, days, tablets) that was not said: "Zenalpha 0.9" stays "Zenalpha 0.9", "for a total of 10" stays "total of 10".
 - Ignore asides about other patients, staff members' own pets, or other people's stories. Extract only facts about this patient. A different animal's name (e.g. "Recheck Barrett" at the end of Emmy's dictation) belongs to another record; leave it out.
 - Whenever species, breed, coat color, or age seems ambiguous or distorted, mark as "unclear" or "not specified."
 
@@ -482,8 +482,9 @@ FINAL CHECK BEFORE OUTPUTTING (fix anything that fails):
 9. Never write "unit not specified", "route not specified" or similar. If a detail was not dictated, leave it out. The only flag allowed is "(verify)" after a garbled drug name.
 10. Treatment lines are short entries ("Drug dose route frequency duration"), not sentences like "X was administered".
 11. No default contradicts a dictated finding, and nothing is marked administered, dispensed or performed unless the dictation says it was done.
-12. Every dose and weight unit (mg, mL, lb, kg) was actually dictated. If the vet said only a number, write only the number. Vitals always have units (°F, bpm, breaths/min).
-13. Use the terms vets actually write: brand names as dictated, and plain clinical wording over obscure terms (e.g. "tail chewing", not "caudal self-mastication").
+12. Every unit attached to a dictated number (mg, mL, lb, kg, days, tablets) was actually dictated. If the vet said only a number ("for a total of 10"), write only the number. Vitals always have units (°F, bpm, breaths/min).
+13. Every food, drug, toxin and product named in the note was named in the dictation. Never swap in a different one (e.g. "chicken marrow" must not become "cherry pits").
+14. Use the terms vets actually write: brand names as dictated, and plain clinical wording over obscure terms (e.g. "tail chewing", not "caudal self-mastication").
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,
