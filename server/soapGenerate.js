@@ -230,8 +230,9 @@ CRITICAL RULES:
 Be THOROUGH - every single piece of information from the extraction MUST be included
 NOTHING should be left out - if it was extracted, it goes in the SOAP
 DO NOT use dashes or bullet points - each line should start from the left margin
-ONE point per line - never combine multiple findings into a single line
+ONE point per line - never combine unrelated findings into a single line (exception: Diagnostics Performed groups all results of one test or panel on one line)
 Each line should be a complete, descriptive sentence
+NO REPETITIVE SENTENCE OPENINGS: never start two or more lines in a row with the same lead-in phrase (e.g. "Chemistry demonstrated...", "Urinalysis demonstrated...", "Possible X was questioned by the owner..."). Merge related findings into one line instead of repeating the same stem.
 All section headers must be bolded using **Header** markdown syntax
 Use the defaults shown below ONLY if that system/vital was not mentioned
 DO NOT include Weight in Physical Exam unless weight was specifically mentioned in the transcript
@@ -294,6 +295,7 @@ Include food type, appetite changes, water intake details as extracted.
 Past-tense owner-reported episodes only. What the owner witnessed at home.
 Structure with explicit labels: "Vomiting: [details]", "Diarrhea: [details]", "Coughing: [details]", "Sneezing: [details]"
 Only include the specific sub-items that were extracted. Do not add labels for items not mentioned.
+V/D/C/S owns every detail of vomiting, diarrhea, coughing and sneezing (onset, frequency, appearance). Put each sign on ONE line, and never mention those details in History or any other subheading.
 
 **Current Medication:** (if SUBJECTIVE_CURRENT_MEDICATION exists)
 Medications the pet was already on BEFORE the visit, or that the owner administered at home before arriving.
@@ -326,7 +328,7 @@ NOTE: This section is ONLY for what the VET observed/found during examination - 
 DO NOT repeat anything already mentioned in any Subjective subheading.
 For each body system: if the vet mentioned a specific finding for that system, REPLACE the default with the actual finding. If the vet did NOT mention that system, KEEP the default value exactly as shown.
 EVERY system below must appear in the final output - either with the vet's finding or with the default.
-[ONLY include Weight if it was mentioned in the transcript - otherwise skip this line]
+Weight: [the Weight from PATIENT_IDENTIFICATION, e.g. "71.8 lb". Skip this line ONLY if it is "not mentioned"]
 General: Bright, alert, responsive
 Body Condition Score: 5/9
 Hydration: Euhydrated
@@ -347,7 +349,15 @@ Throat: No abnormal findings
 Urogenital: Normal
 
 **Diagnostics Performed:**
-[Each test and its results on its own line, or "None performed"]
+[ONE line per test or panel, starting with the test name and a colon, with ALL of that test's results on that same line, comma-separated. Or "None performed"]
+Each test appears ONCE. If a test was performed but none of its results were dictated anywhere, write "[Test]: Performed". Never add a "Performed" line for a test whose results are already listed.
+Never split one test's results across several lines, and never start lines with "CBC demonstrated", "Chemistry demonstrated", etc.
+Example:
+CBC: Hypochromic anemia (HCT 32%), leukocytosis (WBC 36.5) with neutrophilia and monocytosis, no band neutrophils
+Chemistry: Hyperglobulinemia, ALP 1200, increased GGT, increased amylase, lipase >5,000, electrolytes WNL
+cPL: >2,000
+Urinalysis: USG 1.041, pyuria, hematuria, proteinuria, urobilinogen 8, bilirubin 6
+Abdominal ultrasound: Multiple hepatic and pancreatic masses, possible vertebral extension
 USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman language
 
 **Assessment**
@@ -418,6 +428,8 @@ Then, ONLY if the doctor dictated specific nuanced considerations, warnings, or 
 
 Do NOT re-list or re-state any medication already listed in the Treatment section. The blanket statement covers all medications in Treatment. Client Communication should only contain information that is NOT already in Treatment — nuanced discussion points, warnings, owner decisions, prognosis, etc.
 If the doctor did not dictate any specific nuanced discussion points beyond the medications, just include the blanket medication statement and nothing else.
+Rechecks (timing, reasons, or what will be reassessed) go ONLY in Follow-up. Never mention a recheck in Client Communication or Recommended Diagnostics.
+Never restate diagnostic results in Client Communication; they are already in Diagnostics Performed.
 
 **Recommended Diagnostics:**
 [Each recommended test on its own line, or "None recommended"]
@@ -426,6 +438,13 @@ USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY - avoid common/layman langu
 **Follow-up:**
 If the doctor dictated specific follow-up plans, recheck timing, or future steps, write those.
 If nothing was dictated about follow-up, provide a brief suggested follow-up based on the case — keep it to 1 concise line appropriate for the diagnosis and treatment plan.
+
+FINAL CHECK BEFORE OUTPUTTING (fix anything that fails):
+1. Diagnostics Performed: each test or panel appears on exactly one line.
+2. Vomiting, diarrhea, coughing and sneezing details appear only in V/D/C/S, not in History.
+3. Client Communication and Recommended Diagnostics never mention a recheck.
+4. No two lines in a row start with the same words (e.g. "Possible...", "No current...", "Chemistry demonstrated..."). Merge them into one line.
+5. Owner worries and suspected causes are combined into one line, e.g. "Owner concerns included parasitism, gastrointestinal obstruction and neoplasia."
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,
