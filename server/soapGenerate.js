@@ -180,7 +180,7 @@ STRICT RULES ABOUT ACCURACY AND CERTAINTY:
   - If it is not absolutely clear that the veterinarian is the speaker, place it in the appropriate SUBJECTIVE heading tagged as owner language.
 - Do NOT convert owner words into vet suspicions.
 - Preserve uncertainty exactly as spoken: "maybe", "probably", "I think" must be preserved.
-- When a speaker corrects themselves ("heart rate's 160? 140, okay"), extract only the corrected value.
+- When a value is said twice differently ("heart rate's 160? 140, okay"), extract both in order.
 - Keep numbers exactly as spoken. Never add a unit (mg, mL, lb, kg) that was not said: "Zenalpha 0.9" stays "Zenalpha 0.9".
 - Ignore asides about other patients, staff members' own pets, or other people's stories. Extract only facts about this patient.
 - Whenever species, breed, coat color, or age seems ambiguous or distorted, mark as "unclear" or "not specified."
@@ -227,7 +227,7 @@ Go through every SUBJECTIVE heading you have written. For each bullet point, ask
 
 SOURCES:
 The extraction is your main source. The ORIGINAL DICTATION follows it for reference only. Use the dictation to check facts in the extraction and fix them when they are wrong:
-- Corrections: when the speaker corrects a value ("160? 140, okay"), use only the corrected value. Never present it as a trend.
+- Repeated readings: when a value is said twice differently ("heart rate's 160? 140, okay"), keep both in order ("160 bpm initially, then 140 bpm").
 - Done vs planned: write that something was administered, given, dispensed or performed ONLY if the dictation says it was done. Offered, recommended or planned items stay recommended or planned. Declined items go in Client Communication as declined.
 - Final decision wins: when options were discussed and then replaced (e.g. "we could do an enema" followed by referral), document only the final plan, plus the referral reason.
 - Asides: ignore details about other patients, staff members' pets, or other people's stories. Only this patient's facts go in the note.
@@ -267,10 +267,10 @@ If the vet mentioned ANY finding for a body system, COMPLETELY REPLACE the defau
 NEVER keep the default AND add the actual finding - it's one or the other
 Example: If vet says "eyes are red", write "Eyes: Erythema observed" - NOT "Eyes: Clear, no discharge. Erythema observed."
 A default must never contradict anything dictated ANYWHERE (Subjective, exam, assessment). Check before using each one:
-- Fever, tachycardia, arrhythmia, tachypnea or hyperventilation: no WNL for that vital; write the finding
+- Fever, tachycardia, arrhythmia, tachypnea or hyperventilation: no WNL for that vital; label it, then the value (e.g. "Temperature: Pyrexia, 103.5 °F", "Pulse: Tachycardia, 160 bpm initially, then 140 bpm"). Tachycardia or arrhythmia also replaces the Cardiovascular default.
 - Seizures, recumbency, collapse or obtundation: replace the General, Neurologic and Musculoskeletal defaults
 - Thin, emaciated or overweight with no score: write the description (e.g. "Body Condition Score: Overweight"), never 5/9
-- Hair loss, pruritus, wounds or masses: replace the Integumentary default
+- Hair loss, pruritus, wounds or masses that are present now or are the reason for the visit: replace the Integumentary default. Past or owner-reported skin issues (e.g. fleas that were mostly eliminated) stay in Skin & Coat and the default stays.
 - Nasal or ocular discharge: replace the Nose or Eyes default
 For birds, reptiles and other exotics, use "No abnormal findings" for any default that does not fit the species (e.g. Oral, CRT).
 
@@ -318,7 +318,7 @@ Include food type, appetite changes, water intake details as extracted.
 **V/D/C/S:** (if SUBJECTIVE_VDCS exists)
 Past-tense owner-reported episodes only. What the owner witnessed at home.
 Structure with explicit labels: "Vomiting: [details]", "Diarrhea: [details]", "Coughing: [details]", "Sneezing: [details]"
-Only include the specific sub-items that were extracted. Do not add labels for items not mentioned.
+Only include the specific sub-items that were extracted. Do not add labels for items not mentioned, and never write lines for absent signs (no "Coughing: None reported").
 V/D/C/S owns every detail of vomiting, diarrhea, coughing and sneezing (onset, frequency, appearance). Put each sign on ONE line, and never mention those details in History or any other subheading.
 
 **Current Medication:** (if SUBJECTIVE_CURRENT_MEDICATION exists)
@@ -335,6 +335,7 @@ Past-tense owner-reported observations only. No vet commentary, no future-tense 
 Each additional observation on its own line.
 
 ALL Subjective subheadings are extensions of the patient history — strictly past-tense, owner-reported, pre-visit information. No present-tense exam findings, no vet recommendations, no vet explanations, no treatments prescribed today, no future-tense statements. USE PROFESSIONAL VETERINARY MEDICAL TERMINOLOGY ONLY.
+KEEP SUBJECTIVE CLINICAL: leave out details with no bearing on this visit's medicine, such as how long the owner has had the pet, who they phoned before the visit, temperament at past visits, grooming dislikes, samples brought in, incidental wildlife, and that the owner saw the pet urinate or defecate normally. When unsure whether a detail matters clinically, keep it.
 BEFORE OUTPUTTING: Scan all Subjective subheadings. If the same fact appears in two or more subheadings (even if worded differently), keep it ONLY in the most specific subheading and delete it from the others. A fact about medication stays only in Current Medication. A fact about skin stays only in Skin & Coat. History should contain only timeline/context not covered elsewhere.
 
 **Objective**
@@ -375,6 +376,7 @@ Urogenital: Normal
 **Diagnostics Performed:**
 [ONE line per test or panel, starting with the test name and a colon, with ALL of that test's results on that same line, comma-separated. Or "None performed"]
 Each test appears ONCE. If a test was performed but none of its results were dictated anywhere, write "[Test]: Performed". Never add a "Performed" line for a test whose results are already listed.
+A diagnosis the vet bases on a test counts as that test's result: if a 4DX was run and the vet treats ehrlichiosis, write "4DX: Positive for Ehrlichia".
 Never split one test's results across several lines, and never start lines with "CBC demonstrated", "Chemistry demonstrated", etc.
 Example:
 CBC: Hypochromic anemia (HCT 32%), leukocytosis (WBC 36.5) with neutrophilia and monocytosis, no band neutrophils
@@ -398,6 +400,7 @@ Do NOT write long paragraphs - keep each point as a single concise line.
 
 **Diagnosis:**
 [Each diagnosis on its own line with DDx directly underneath]
+[List the main clinical problems, usually 1 to 4, led by what the vet diagnosed or suspected. Supporting abnormalities (anemia, dehydration, urinary changes, single lab values) belong in Assessment, not as separate diagnoses, unless the vet named them as a problem]
 [Format: Diagnosis name, then DDx: comma-separated differentials for that specific diagnosis]
 [Use formal veterinary medical terminology only]
 Example format:
