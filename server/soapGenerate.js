@@ -1,4 +1,4 @@
-const generateSoapFromInput = async (input, { formatterModel = 'gpt-5.4-mini', formatterReasoning } = {}) => {
+const generateSoapFromInput = async (input, { formatterModel = 'gpt-6.1-terra', formatterReasoning = 'low' } = {}) => {
     if (!input || !String(input).trim()) {
         throw new Error('Input text is required');
     }
