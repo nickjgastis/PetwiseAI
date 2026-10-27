@@ -147,6 +147,8 @@ VET_COMMENTS_AND_EXAM:
 TREATMENTS_AND_PLAN_MEDICATIONS:
 - Medications, treatments, procedures the vet is prescribing or administering DURING THIS VISIT.
 - This is different from SUBJECTIVE_CURRENT_MEDICATION which is what the pet was already taking before the visit.
+- Tag each item with its status as spoken: (given today), (prescribed), (planned), (offered), or (declined). If an option was discussed and then replaced by a different plan, tag it (superseded).
+- Keep drug names exactly as spoken (brand names stay brand names). Never guess a drug from a dose alone.
 
 DIAGNOSTIC_TESTS_AND_RESULTS:
 - Any diagnostics performed or ordered and their results.
@@ -158,6 +160,7 @@ DIAGNOSTIC_IMPRESSIONS_AND_DIAGNOSES:
 
 RECOMMENDATIONS_AND_PLAN:
 - Only include recommendations or plans that were clearly spoken.
+- Include specific risks, warnings and limits the vet explained to the client, prefixed "Vet counseled:" (e.g. "Vet counseled: cyclosporine may allow herpesvirus to flare", "Vet counseled: surgery will not reverse existing arthritis").
 - Do NOT add your own suggestions unless those words or very close equivalents were spoken in the transcript.
 
 Within each heading:
@@ -177,6 +180,9 @@ STRICT RULES ABOUT ACCURACY AND CERTAINTY:
   - If it is not absolutely clear that the veterinarian is the speaker, place it in the appropriate SUBJECTIVE heading tagged as owner language.
 - Do NOT convert owner words into vet suspicions.
 - Preserve uncertainty exactly as spoken: "maybe", "probably", "I think" must be preserved.
+- When a speaker corrects themselves ("heart rate's 160? 140, okay"), extract only the corrected value.
+- Keep numbers exactly as spoken. Never add a unit (mg, mL, lb, kg) that was not said: "Zenalpha 0.9" stays "Zenalpha 0.9".
+- Ignore asides about other patients, staff members' own pets, or other people's stories. Extract only facts about this patient.
 - Whenever species, breed, coat color, or age seems ambiguous or distorted, mark as "unclear" or "not specified."
 
 MASSES AND FINDINGS:
@@ -219,6 +225,17 @@ Go through every SUBJECTIVE heading you have written. For each bullet point, ask
             name: "SOAP Formatter",
             instructions: `Take the extracted SOAP information and format it into a properly structured SOAP note.
 
+SOURCES:
+The extraction is your main source. The ORIGINAL DICTATION follows it for reference only. Use the dictation to check facts in the extraction and fix them when they are wrong:
+- Corrections: when the speaker corrects a value ("160? 140, okay"), use only the corrected value. Never present it as a trend.
+- Done vs planned: write that something was administered, given, dispensed or performed ONLY if the dictation says it was done. Offered, recommended or planned items stay recommended or planned. Declined items go in Client Communication as declined.
+- Final decision wins: when options were discussed and then replaced (e.g. "we could do an enema" followed by referral), document only the final plan, plus the referral reason.
+- Asides: ignore details about other patients, staff members' pets, or other people's stories. Only this patient's facts go in the note.
+- Drug names: use the name as dictated (brand stays brand, e.g. Librela, Zenalpha). Never infer a drug from a dose volume, and never add units that were not dictated. If a drug name is garbled, write it as heard followed by "(verify)".
+- Do not add conversational details from the dictation that the extraction left out unless they are clinically relevant (findings, values, doses, decisions, warnings).
+- Treatment status tags in the extraction ((given today), (prescribed), (planned), (offered), (declined), (superseded)) guide your wording but never appear in the note. Prescribed and planned items go in Treatment as normal entries. Offered or declined items go in Client Communication. Drop superseded items.
+- "Vet counseled:" items go in Client Communication without the prefix.
+
 CRITICAL - PET NAME EXTRACTION (DO THIS FIRST):
 Look for "Pet Name:" in the PATIENT_IDENTIFICATION section
 At the VERY END of your output, you MUST include: PET_NAME: [the pet's name]
@@ -249,6 +266,13 @@ The defaults shown (e.g., "Eyes: Clear, no discharge") are ONLY used when that b
 If the vet mentioned ANY finding for a body system, COMPLETELY REPLACE the default with the actual finding
 NEVER keep the default AND add the actual finding - it's one or the other
 Example: If vet says "eyes are red", write "Eyes: Erythema observed" - NOT "Eyes: Clear, no discharge. Erythema observed."
+A default must never contradict anything dictated ANYWHERE (Subjective, exam, assessment). Check before using each one:
+- Fever, tachycardia, arrhythmia, tachypnea or hyperventilation: no WNL for that vital; write the finding
+- Seizures, recumbency, collapse or obtundation: replace the General, Neurologic and Musculoskeletal defaults
+- Thin, emaciated or overweight with no score: write the description (e.g. "Body Condition Score: Overweight"), never 5/9
+- Hair loss, pruritus, wounds or masses: replace the Integumentary default
+- Nasal or ocular discharge: replace the Nose or Eyes default
+For birds, reptiles and other exotics, use "No abnormal findings" for any default that does not fit the species (e.g. Oral, CRT).
 
 Here is the output format:
 
@@ -420,6 +444,7 @@ The client was informed of the benefits, potential adverse reactions and side ef
 
 Then, ONLY if the doctor dictated specific nuanced considerations, warnings, or notable discussion points, include those below. Examples of nuanced considerations worth including:
 - Specific side effects the vet warned about (e.g., sedation at higher doses of diphenhydramine)
+- Limits the vet explained (e.g., "Surgical repair will not reverse existing arthritis", "Lysine efficacy is uncertain")
 - Prognosis discussions with specific details
 - Owner declined a recommended treatment or diagnostic
 - Special administration instructions the vet emphasized
@@ -448,8 +473,11 @@ FINAL CHECK BEFORE OUTPUTTING (fix anything that fails):
 6. The response starts with **Subjective**. Nothing (no signalment or intro sentence) comes before it.
 7. Assessment has 2 to 6 lines, each linking findings to their clinical significance. Never a single vague line like "etiology undetermined".
 8. EVERY diagnosis has its own DDx line directly underneath it.
-9. Never write "unit not specified", "route not specified" or similar. If a detail was not dictated, leave it out.
+9. Never write "unit not specified", "route not specified" or similar. If a detail was not dictated, leave it out. The only flag allowed is "(verify)" after a garbled drug name.
 10. Treatment lines are short entries ("Drug dose route frequency duration"), not sentences like "X was administered".
+11. No default contradicts a dictated finding, and nothing is marked administered, dispensed or performed unless the dictation says it was done.
+12. Every dose and weight unit (mg, mL, lb, kg) was actually dictated. If the vet said only a number, write only the number.
+13. Use the terms vets actually write: brand names as dictated, and plain clinical wording over obscure terms (e.g. "tail chewing", not "caudal self-mastication").
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
 PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if not mentioned]`,
@@ -493,7 +521,7 @@ PET_NAME: [the pet's name from PATIENT_IDENTIFICATION, or "no name provided" if 
         console.log('[SOAP Agent] Extraction complete, running formatter...');
 
         // Run Agent 2: Format SOAP - pass the extracted info directly
-        const formatterInput = extractorResult.finalOutput + "\n\nNow format this into the SOAP template.";
+        const formatterInput = `${extractorResult.finalOutput}\n\n=== ORIGINAL DICTATION (reference only) ===\n${input.trim()}\n\nNow format the extraction into the SOAP template.`;
         const formatterResult = await runner.run(soapFormatter, formatterInput);
 
         if (!formatterResult.finalOutput) {
