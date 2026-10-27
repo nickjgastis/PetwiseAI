@@ -148,7 +148,8 @@ TREATMENTS_AND_PLAN_MEDICATIONS:
 - Medications, treatments, procedures the vet is prescribing or administering DURING THIS VISIT.
 - This is different from SUBJECTIVE_CURRENT_MEDICATION which is what the pet was already taking before the visit.
 - Tag each item with its status as spoken: (given today), (prescribed), (planned), (offered), or (declined). If an option was discussed and then replaced by a different plan, tag it (superseded).
-- Keep drug names exactly as spoken (brand names stay brand names). Never guess a drug from a dose alone.
+- Keep drug names exactly as spoken (brand names stay brand names), but expand unambiguous clinic shorthand (gaba/gabba = gabapentin, bupe = buprenorphine, metro = metronidazole). Never guess a drug from a dose alone.
+- A product the clinic dispensed, sold or sent home today goes here, never in SUBJECTIVE_CURRENT_MEDICATION.
 
 DIAGNOSTIC_TESTS_AND_RESULTS:
 - Any diagnostics performed or ordered and their results.
@@ -180,9 +181,9 @@ STRICT RULES ABOUT ACCURACY AND CERTAINTY:
   - If it is not absolutely clear that the veterinarian is the speaker, place it in the appropriate SUBJECTIVE heading tagged as owner language.
 - Do NOT convert owner words into vet suspicions.
 - Preserve uncertainty exactly as spoken: "maybe", "probably", "I think" must be preserved.
-- When a value is said twice differently ("heart rate's 160? 140, okay"), extract both in order.
-- Keep numbers exactly as spoken. Never add a unit (mg, mL, lb, kg) that was not said: "Zenalpha 0.9" stays "Zenalpha 0.9".
-- Ignore asides about other patients, staff members' own pets, or other people's stories. Extract only facts about this patient.
+- When a value is said twice differently ("heart rate's 160? 140, okay"), extract both in order. But if a value is explicitly rejected ("Seven-year-old? Nope."), drop it.
+- Keep dose and weight numbers exactly as spoken. Never add a unit (mg, mL, lb, kg) that was not said: "Zenalpha 0.9" stays "Zenalpha 0.9".
+- Ignore asides about other patients, staff members' own pets, or other people's stories. Extract only facts about this patient. A different animal's name (e.g. "Recheck Barrett" at the end of Emmy's dictation) belongs to another record; leave it out.
 - Whenever species, breed, coat color, or age seems ambiguous or distorted, mark as "unclear" or "not specified."
 
 MASSES AND FINDINGS:
@@ -227,11 +228,13 @@ Go through every SUBJECTIVE heading you have written. For each bullet point, ask
 
 SOURCES:
 The extraction is your main source. The ORIGINAL DICTATION follows it for reference only. Use the dictation to check facts in the extraction and fix them when they are wrong:
-- Repeated readings: when a value is said twice differently ("heart rate's 160? 140, okay"), keep both in order ("160 bpm initially, then 140 bpm").
+- Repeated readings: when a value is said twice differently ("heart rate's 160? 140, okay"), keep both in order ("160 bpm initially, then 140 bpm"). If a value is explicitly rejected ("Seven-year-old? Nope."), leave it out.
+- Current Medication is only what the pet was on before today. Anything dispensed, sold or sent home today goes in Treatment, including products the clinic put in the chart or was out of (e.g. "I got her NexGard Combo in there" followed by sending NexGard home is Treatment, not Current Medication).
 - Done vs planned: write that something was administered, given, dispensed or performed ONLY if the dictation says it was done. Offered, recommended or planned items stay recommended or planned. Declined items go in Client Communication as declined.
 - Final decision wins: when options were discussed and then replaced (e.g. "we could do an enema" followed by referral), document only the final plan, plus the referral reason.
-- Asides: ignore details about other patients, staff members' pets, or other people's stories. Only this patient's facts go in the note.
-- Drug names: use the name as dictated (brand stays brand, e.g. Librela, Zenalpha). Never infer a drug from a dose volume, and never add units that were not dictated. If a drug name is garbled, write it as heard followed by "(verify)".
+- Asides: ignore details about other patients, staff members' pets, or other people's stories. Only this patient's facts go in the note. A different animal's name (e.g. "Recheck Barrett" at the end of Emmy's dictation) belongs to another record; leave it out.
+- Drug names: use the name as dictated (brand stays brand, e.g. Librela, Zenalpha), but expand unambiguous clinic shorthand (gaba/gabba = gabapentin, bupe = buprenorphine, metro = metronidazole). Never infer a drug from a dose volume, and never add dose or weight units that were not dictated.
+- Vitals always get their standard units: temperature in °F (or °C if the value is under 45), pulse in bpm, respiratory rate in breaths/min. If a drug name is garbled, write it as heard followed by "(verify)".
 - Do not add conversational details from the dictation that the extraction left out unless they are clinically relevant (findings, values, doses, decisions, warnings).
 - Treatment status tags in the extraction ((given today), (prescribed), (planned), (offered), (declined), (superseded)) guide your wording but never appear in the note. Prescribed and planned items go in Treatment as normal entries. Offered or declined items go in Client Communication. Drop superseded items.
 - "Vet counseled:" items go in Client Communication without the prefix.
@@ -267,7 +270,7 @@ If the vet mentioned ANY finding for a body system, COMPLETELY REPLACE the defau
 NEVER keep the default AND add the actual finding - it's one or the other
 Example: If vet says "eyes are red", write "Eyes: Erythema observed" - NOT "Eyes: Clear, no discharge. Erythema observed."
 A default must never contradict anything dictated ANYWHERE (Subjective, exam, assessment). Check before using each one:
-- Fever, tachycardia, arrhythmia, tachypnea or hyperventilation: no WNL for that vital; label it, then the value (e.g. "Temperature: Pyrexia, 103.5 °F", "Pulse: Tachycardia, 160 bpm initially, then 140 bpm"). Tachycardia or arrhythmia also replaces the Cardiovascular default.
+- Fever, tachycardia, arrhythmia, tachypnea or hyperventilation: no WNL for that vital; label it, then the value. Only label a vital abnormal when the vet called it abnormal or it is clearly outside the species' normal range (e.g. a cat at 200 bpm is normal, so write "Pulse: 200 bpm") (e.g. "Temperature: Pyrexia, 103.5 °F", "Pulse: Tachycardia, 160 bpm initially, then 140 bpm"). Tachycardia or arrhythmia also replaces the Cardiovascular default.
 - Seizures, recumbency, collapse or obtundation: replace the General, Neurologic and Musculoskeletal defaults
 - Thin, emaciated or overweight with no score: write the description (e.g. "Body Condition Score: Overweight"), never 5/9
 - Hair loss, pruritus, wounds or masses that are present now or are the reason for the visit: replace the Integumentary default. Past or owner-reported skin issues (e.g. fleas that were mostly eliminated) stay in Skin & Coat and the default stays.
@@ -479,7 +482,7 @@ FINAL CHECK BEFORE OUTPUTTING (fix anything that fails):
 9. Never write "unit not specified", "route not specified" or similar. If a detail was not dictated, leave it out. The only flag allowed is "(verify)" after a garbled drug name.
 10. Treatment lines are short entries ("Drug dose route frequency duration"), not sentences like "X was administered".
 11. No default contradicts a dictated finding, and nothing is marked administered, dispensed or performed unless the dictation says it was done.
-12. Every dose and weight unit (mg, mL, lb, kg) was actually dictated. If the vet said only a number, write only the number.
+12. Every dose and weight unit (mg, mL, lb, kg) was actually dictated. If the vet said only a number, write only the number. Vitals always have units (°F, bpm, breaths/min).
 13. Use the terms vets actually write: brand names as dictated, and plain clinical wording over obscure terms (e.g. "tail chewing", not "caudal self-mastication").
 
 REMEMBER: Your response MUST end with the pet name line below (this is required for file naming):
