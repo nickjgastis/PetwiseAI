@@ -10,13 +10,18 @@ const DEV_KEY =
 const PETWISE_ORIGINS = ['https://petwise.vet/*', 'https://www.petwise.vet/*', 'https://app.petwise.vet/*', 'http://localhost:3000/*'];
 const TEST_PETWISE_ORIGINS = process.env.SMARTPASTE_E2E ? ['http://127.0.0.1:4174/*'] : [];
 
+// `npm run zip:store`: the Chrome Web Store upload. No dev key (the store assigns the id), no local PetWise dev
+// server, and no built-in mock PIMS.
+const STORE = !!process.env.SMARTPASTE_STORE;
+const isLocal = (pattern) => /^https?:\/\/(localhost|127\.0\.0\.1)[:/]/.test(pattern);
+
 export default defineConfig({
     modules: ['@wxt-dev/module-react'],
     imports: false,
     manifest: {
         name: 'PetWise SmartPaste',
         description: 'Paste PetWise records into the field you choose in your practice management software.',
-        version: '0.2.0',
+        version: '1.0.0',
         // activeTab lets the popup see which site it was opened on; sites are only added one at a time when the vet
         // enables them, so the install prompt asks for nothing beyond the local mock PIMS.
         permissions: ['storage', 'activeTab', 'scripting'],
@@ -33,7 +38,16 @@ export default defineConfig({
     webExt: {
         startUrls: ['http://127.0.0.1:4173/'],
     },
+    hooks: {
+        'build:manifestGenerated': (_wxt, manifest) => {
+            if (!STORE) return;
+            delete manifest.key;
+            delete manifest.content_scripts;
+            manifest.externally_connectable.matches = manifest.externally_connectable.matches.filter((m) => !isLocal(m));
+        },
+    },
     vite: () => ({
+        define: { __SMARTPASTE_STORE__: JSON.stringify(STORE) },
         server: {
             // Lets the content script import the PetWise Copy all formatter from ../src.
             fs: { allow: ['..'] },

@@ -1557,8 +1557,27 @@ const QuickSOAP = () => {
         if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
     }, [hasReport, report]);
 
-    // Desktop only: the SmartPaste extension pastes the open record into the vet's PIMS.
-    useSmartPasteBridge({ enabled: hasReport && !isMobile, report, recordType, petName, reportName, caseId: activeCaseId });
+    // Desktop only: the SmartPaste extension pastes the open record into the vet's PIMS, listed under the case name.
+    const [smartPasteCaseName, setSmartPasteCaseName] = useState('');
+    useEffect(() => {
+        if (!activeCaseId || isMobile || !hasReport) return undefined;
+        let live = true;
+        setSmartPasteCaseName('');
+        supabase.from('cases').select('pet_name').eq('id', activeCaseId).maybeSingle()
+            .then(({ data }) => live && setSmartPasteCaseName(data?.pet_name || ''));
+        return () => {
+            live = false;
+        };
+    }, [activeCaseId, isMobile, hasReport, caseBarKey]);
+    useSmartPasteBridge({
+        enabled: hasReport && !isMobile,
+        report,
+        recordType,
+        caseName: activeCaseId ? smartPasteCaseName : '',
+        petName,
+        reportName,
+        caseId: activeCaseId,
+    });
 
     // Chart edits save straight to the open note, debounced so a run of taps is one write.
     const dentalSaveRef = useRef(null);

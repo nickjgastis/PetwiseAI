@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 // Hands the record open in the editor to the PetWise SmartPaste Chrome extension so a vet can paste it into their
 // PIMS. Stays inside the browser: no network request, and nothing happens unless the extension is installed
@@ -24,6 +24,48 @@ const send = (message) => {
 // Sign-out and user switch: the extension forgets every record it was sent.
 export const clearSmartPaste = () => send({ type: 'petwise:clear' });
 
+// Chrome Web Store listing. Empty until the extension is published; the get-SmartPaste page says so.
+export const SMARTPASTE_STORE_URL = process.env.REACT_APP_SMARTPASTE_STORE_URL || '';
+
+// Chrome and Edge on a computer: the browsers that can install it from the Chrome Web Store.
+export const canInstallSmartPaste = () =>
+    typeof window !== 'undefined' && !!window.chrome && !/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+const ping = () =>
+    new Promise((resolve) => {
+        const runtime = window.chrome?.runtime;
+        if (!runtime?.sendMessage) return resolve(false);
+        try {
+            runtime.sendMessage(EXTENSION_ID, { type: 'petwise:ping' }, (res) => {
+                void runtime.lastError;
+                resolve(!!res?.ok);
+            });
+        } catch {
+            resolve(false);
+        }
+    });
+
+// null while checking, then true or false. With pollMs it keeps checking until the extension shows up.
+export function useSmartPasteInstalled({ pollMs = 0 } = {}) {
+    const [installed, setInstalled] = useState(null);
+    useEffect(() => {
+        let live = true;
+        let timer;
+        const check = async () => {
+            const ok = await ping();
+            if (!live) return;
+            setInstalled(ok);
+            if (!ok && pollMs) timer = setTimeout(check, pollMs);
+        };
+        check();
+        return () => {
+            live = false;
+            clearTimeout(timer);
+        };
+    }, [pollMs]);
+    return installed;
+}
+
 const TYPE_ONLY = /^(quicksoap|soap|summary|callback|dental)( mobile)?$/i;
 
 // Same as normalizeType in ./cases, kept local so sign-out code does not pull in the Supabase client.
@@ -37,7 +79,7 @@ const nameFromReportName = (reportName) => {
 
 // Sends the open record when it is opened ('open': the extension selects it) and again when its text changes
 // ('update': the extension refreshes it but keeps whatever the vet picked there).
-export function useSmartPasteBridge({ enabled, report, recordType, petName, reportName, caseId }) {
+export function useSmartPasteBridge({ enabled, report, recordType, caseName, petName, reportName, caseId }) {
     const lastId = useRef(null);
     const lastSent = useRef('');
 
@@ -46,7 +88,7 @@ export function useSmartPasteBridge({ enabled, report, recordType, petName, repo
         const sync = () => {
             const id = localStorage.getItem('currentQuickSOAPReportId');
             if (!id || !report?.trim()) return;
-            const patientName = petName || nameFromReportName(reportName);
+            const patientName = caseName || petName || nameFromReportName(reportName);
             const signature = [id, recordType, patientName, caseId, report].join('\u0000');
             if (signature === lastSent.current) return;
             const reason = id === lastId.current ? 'update' : 'open';
@@ -71,5 +113,5 @@ export function useSmartPasteBridge({ enabled, report, recordType, petName, repo
             clearTimeout(debounce);
             clearInterval(poll);
         };
-    }, [enabled, report, recordType, petName, reportName, caseId]);
+    }, [enabled, report, recordType, caseName, petName, reportName, caseId]);
 }

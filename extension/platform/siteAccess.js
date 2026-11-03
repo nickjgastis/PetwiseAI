@@ -5,7 +5,10 @@ import { browser } from 'wxt/browser';
 
 export const SCRIPT_ID = 'smartpaste-granted-sites';
 export const CONTENT_SCRIPT = 'content-scripts/smartpaste.js';
-export const BUILT_IN_PATTERNS = ['http://127.0.0.1:4173/*', 'http://localhost:4173/*'];
+// The mock PIMS used in development and tests. The store build ships without it.
+// eslint-disable-next-line no-undef
+const STORE_BUILD = typeof __SMARTPASTE_STORE__ !== 'undefined' && __SMARTPASTE_STORE__;
+export const BUILT_IN_PATTERNS = STORE_BUILD ? [] : ['http://127.0.0.1:4173/*', 'http://localhost:4173/*'];
 
 // "https://pims.example.com:8443/visit/1" -> "https://pims.example.com/*". Chrome host patterns ignore ports, and
 // only http(s) pages can be enabled.

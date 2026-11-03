@@ -2,7 +2,7 @@
     "name": "petwise-smartpaste",
     "description": "Paste PetWise SOAP records into veterinary practice management software.",
     "private": true,
-    "version": "0.1.0",
+    "version": "1.0.0",
     "type": "module",
     "scripts": {
         "dev": "wxt",
@@ -10,6 +10,7 @@
         "build": "wxt build",
         "build:firefox": "wxt build -b firefox",
         "zip": "wxt zip",
+        "zip:store": "SMARTPASTE_STORE=1 wxt zip",
         "dev:fixture": "vite fixture --host 127.0.0.1 --port 4173 --strictPort",
         "test": "vitest",
         "test:run": "vitest run",
