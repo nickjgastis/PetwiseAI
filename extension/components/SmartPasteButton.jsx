@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import PetWiseLogo from './PetWiseLogo.jsx';
 import SmartPasteMenu from './SmartPasteMenu.jsx';
 import { fitPopover } from './fitPopover.js';
 import { usePresence } from './usePresence.js';
@@ -120,8 +121,9 @@ export default function SmartPasteButton({ controller }) {
     return (
         <div ref={rootRef} className="sp-root" data-testid="smartpaste">
             <div className="sp-chip" role="toolbar" aria-label="PetWise SmartPaste">
+                <PetWiseLogo />
                 <span className="sp-patient" title="Active PetWise record">
-                    <span aria-hidden="true">{'\ud83d\udc3e'}</span> {snap.patientName}
+                    <span className="sp-patient-name">{snap.patientName}</span>
                     <span className={`sp-type is-${snap.recordType}`}>{snap.typeLabel}</span>
                 </span>
                 <span className="sp-divider" aria-hidden="true" />

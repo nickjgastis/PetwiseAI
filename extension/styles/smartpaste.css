@@ -59,35 +59,47 @@
     display: inline-flex;
     align-items: center;
     gap: 2px;
-    height: 32px;
-    padding: 0 3px 0 10px;
+    height: 40px;
+    padding: 0 4px 0 6px;
     background: #ffffff;
-    border: 1px solid var(--sp-border);
+    border: 1px solid var(--sp-accent-line);
     border-radius: 999px;
-    box-shadow: 0 4px 14px rgba(19, 35, 63, 0.14), 0 1px 2px rgba(19, 35, 63, 0.08);
+    box-shadow: 0 0 0 3px rgba(63, 141, 219, 0.12), 0 8px 24px rgba(19, 35, 63, 0.18), 0 1px 3px rgba(19, 35, 63, 0.1);
+    font-size: 14px;
     white-space: nowrap;
+}
+
+.sp-logo {
+    flex: none;
+    display: block;
+    margin-right: 6px;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(19, 35, 63, 0.18);
 }
 
 .sp-patient {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    max-width: 120px;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.sp-patient-name {
+    max-width: 140px;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-weight: 600;
 }
 
 .sp-divider {
     width: 1px;
-    height: 16px;
-    margin: 0 6px;
+    height: 20px;
+    margin: 0 8px;
     background: var(--sp-border);
 }
 
 .sp-primary {
-    height: 24px;
-    padding: 0 12px;
+    height: 30px;
+    padding: 0 16px;
     border: 0;
     border-radius: 999px;
     background: var(--sp-accent);
@@ -117,8 +129,8 @@
 }
 
 .sp-again {
-    height: 24px;
-    padding: 0 10px;
+    height: 30px;
+    padding: 0 14px;
     border: 1px solid var(--sp-border);
     border-radius: 999px;
     background: #ffffff;
@@ -131,14 +143,14 @@
 }
 
 .sp-icon {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
     border: 0;
     border-radius: 999px;
     background: transparent;
     color: var(--sp-muted) !important;
-    font-size: 15px;
-    line-height: 26px;
+    font-size: 17px;
+    line-height: 30px;
     text-align: center;
     padding: 0;
 }
@@ -149,7 +161,7 @@
 }
 
 .sp-close {
-    font-size: 17px;
+    font-size: 20px;
 }
 
 .sp-feedback {
@@ -472,7 +484,7 @@
     border-radius: 999px;
     background: var(--sp-type-bg);
     color: var(--sp-type);
-    font-size: 10.5px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.02em;
 }
@@ -539,7 +551,11 @@
 }
 
 .sp-chip {
-    animation: sp-chip-in 160ms var(--sp-ease-out);
+    animation: sp-chip-in 180ms var(--sp-ease-out);
+}
+
+.sp-logo {
+    animation: sp-pop 280ms 60ms var(--sp-ease-out) both;
 }
 
 .sp-done {
