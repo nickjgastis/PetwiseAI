@@ -8,7 +8,9 @@ function PasteAll({ plan, typeLabel, onPasteAll }) {
         <div className="sp-menu-section">
             <button type="button" className="sp-action is-primary" disabled={!plan.fill.length} onClick={onPasteAll}>
                 Paste all sections
-                <span className="sp-action-detail">{plan.fill.length ? `Fills ${plan.fill.join(', ')}` : `No empty ${typeLabel} fields here`}</span>
+                <span className="sp-action-detail">
+                    {plan.fill.length ? `Fills ${plan.fill.join(', ')}` : `No empty ${typeLabel} fields here`}
+                </span>
             </button>
             {plan.skipped.length > 0 && (
                 <ul className="sp-skipped">
@@ -76,36 +78,38 @@ export default function SmartPasteMenu({ snap, controller, closing = false }) {
                 />
             </div>
 
-            <div className="sp-menu-section">
-                <div className="sp-menu-title">Paste section</div>
-                <div className="sp-sections" role="radiogroup" aria-label="Paste section">
-                    <button
-                        type="button"
-                        role="radio"
-                        aria-checked={!snap.override}
-                        className={`sp-section-option${!snap.override ? ' is-active' : ''}`}
-                        onClick={() => controller.setOverride(null)}
-                    >
-                        Auto-detect{snap.autoLabel ? ` (${snap.autoLabel})` : ''}
-                    </button>
-                    {snap.sectionOptions.map((o) => {
-                        const active = snap.override === o.key;
-                        return (
-                            <button
-                                key={o.key}
-                                type="button"
-                                role="radio"
-                                aria-checked={active}
-                                disabled={!o.available}
-                                className={`sp-section-option${active ? ' is-active' : ''}`}
-                                onClick={() => controller.setOverride(o.key)}
-                            >
-                                {o.label}
-                            </button>
-                        );
-                    })}
+            {snap.sectionOptions.length > 0 && (
+                <div className="sp-menu-section">
+                    <div className="sp-menu-title">Paste section</div>
+                    <div className="sp-sections" role="radiogroup" aria-label="Paste section">
+                        <button
+                            type="button"
+                            role="radio"
+                            aria-checked={!snap.override}
+                            className={`sp-section-option${!snap.override ? ' is-active' : ''}`}
+                            onClick={() => controller.setOverride(null)}
+                        >
+                            Auto-detect{snap.autoLabel ? ` (${snap.autoLabel})` : ''}
+                        </button>
+                        {snap.sectionOptions.map((o) => {
+                            const active = snap.override === o.key;
+                            return (
+                                <button
+                                    key={o.key}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={active}
+                                    disabled={!o.available}
+                                    className={`sp-section-option${active ? ' is-active' : ''}`}
+                                    onClick={() => controller.setOverride(o.key)}
+                                >
+                                    {o.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
 
             <div className="sp-menu-section sp-meta">
                 <div>

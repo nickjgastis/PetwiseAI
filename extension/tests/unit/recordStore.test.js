@@ -25,7 +25,7 @@ describe('recordStore', () => {
         await store.selectCase('case-luna');
         expect(store.getActiveRecord().id).toBe('mock-luna-dental');
         expect(store.getActiveType()).toBe('dental');
-        expect(store.getActiveContent().teeth).toMatch(/^108: Slab fracture/);
+        expect(store.getActiveContent().full).toContain('108: Slab fracture');
         await store.selectRecord('mock-luna');
         expect(store.getActiveCase().id).toBe('case-luna');
         expect(store.getActiveType()).toBe('soap');

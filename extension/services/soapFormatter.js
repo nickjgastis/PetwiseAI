@@ -1,14 +1,16 @@
 import { toPlainText } from './petwiseText.js';
-import { FULL, normalizeType, splitRecord, typeLabel, typeSectionKeys } from './recordTypes.js';
+import { FULL, normalizeType, typeLabel } from './recordTypes.js';
+import { SECTION_KEYS, splitSoap } from './soapSections.js';
 
-// Full is exactly what the PetWise editor's Copy all produces for that record type; single sections go through the
-// same formatter.
+// Full is exactly what the PetWise editor's Copy all produces for that record type. Only SOAP has sections, and
+// they go through the same formatter.
 export const formatRecord = (record) => {
     const text = record?.reportText || '';
     const type = normalizeType(record?.recordType);
-    const sections = splitRecord(text, type);
     const out = { [FULL]: toPlainText(text, type) };
-    typeSectionKeys(type).forEach((key) => {
+    if (type !== 'soap') return out;
+    const { sections } = splitSoap(text);
+    SECTION_KEYS.forEach((key) => {
         out[key] = sections[key] ? toPlainText(sections[key], type) : '';
     });
     return out;

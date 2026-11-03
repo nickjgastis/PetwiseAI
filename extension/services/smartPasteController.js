@@ -3,7 +3,7 @@ import { describeField, editorKind, fieldDisplayName, isEligible, isOwnUi, resol
 import { containsText, insertText, readValue } from './fieldInserter.js';
 import { fieldKey } from './fieldMemory.js';
 import { rectInViewport } from './positioner.js';
-import { FULL, resolveSection, sectionLabel, typeLabel, typeSectionKeys } from './recordTypes.js';
+import { FULL, isSingleBlock, resolveSection, sectionLabel, typeLabel, typeSectionKeys } from './recordTypes.js';
 import { recordLabel } from './soapFormatter.js';
 
 // Owns everything that touches the host page: focus tracking (in this document and same-origin child frames),
@@ -57,12 +57,13 @@ export const createController = ({ win, store, memory = null, copy }) => {
     const activeType = () => store.getActiveType();
     const labelOf = (section) => sectionLabel(activeType(), section);
 
-    // What the field asks for, as a section key or 'full'. A field nobody could name gets the whole record when the
-    // record is not a SOAP (Summary and Callback usually go into one communication box), and a choice for SOAP.
-    const fieldSection = (classification = state.classification, descriptor = state.descriptor) => {
-        if (classification?.kind === 'section') return classification.section;
-        if (classification?.kind === 'full') return FULL;
-        if (classification?.kind === 'ambiguous' && descriptor?.multiline && activeType() !== 'soap') return FULL;
+    // What the field asks for, as a section key or 'full'. Summary, Callback and Dental are one block of text, so any
+    // field SmartPaste would offer to fill gets the whole record; only a SOAP needs the field to name a section.
+    const fieldSection = (classification = state.classification) => {
+        if (!classification || classification.kind === 'ignore') return null;
+        if (isSingleBlock(activeType())) return FULL;
+        if (classification.kind === 'section') return classification.section;
+        if (classification.kind === 'full') return FULL;
         return null;
     };
 
@@ -74,8 +75,8 @@ export const createController = ({ win, store, memory = null, copy }) => {
         const c = state.classification;
         const section = fieldSection();
         if (!c) return 'Not recognized';
+        if (isSingleBlock(activeType())) return `Any field (the whole ${typeLabel(activeType())})`;
         if (!section) return 'Not sure, choose a section';
-        if (c.kind === 'ambiguous') return `Not sure, using ${labelOf(FULL)}`;
         return `${labelOf(section)}${c.source === 'remembered' ? ' (remembered)' : ''}`;
     };
 
@@ -88,7 +89,8 @@ export const createController = ({ win, store, memory = null, copy }) => {
         const section = effectiveSection();
         const text = section && content ? content[section] : '';
         const el = state.target;
-        const remembered = state.classification?.source === 'remembered' ? fieldSection() : null;
+        const single = isSingleBlock(type);
+        const remembered = state.classification?.source === 'remembered' && !single ? fieldSection() : null;
         const autoSection = fieldSection();
         return {
             visible: !!(store_.enabled && el && !state.dismissed && state.anchor),
@@ -107,7 +109,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
             remembered,
             rememberedLabel: remembered ? labelOf(remembered) : '',
             bulkPlan: state.bulkPlan,
-            sectionOptions: [...typeSectionKeys(type), FULL].map((key) => ({ key, label: labelOf(key), available: !!content?.[key] })),
+            sectionOptions: single ? [] : [...typeSectionKeys(type), FULL].map((key) => ({ key, label: labelOf(key), available: !!content?.[key] })),
             fieldName: state.descriptor ? fieldDisplayName(state.descriptor) : '',
             detected: state.classification,
             detectedLabel: detectedLabel(),

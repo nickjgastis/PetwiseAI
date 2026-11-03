@@ -1,59 +1,34 @@
 import { describe, expect, it } from 'vitest';
-import { MOCK_OTHER_RECORDS } from '../../services/mockRecords.js';
+import { MOCK_OTHER_RECORDS, MOCK_RECORDS } from '../../services/mockRecords.js';
 import { toPlainText } from '../../services/petwiseText.js';
-import { resolveSection, sectionLabel, splitRecord } from '../../services/recordTypes.js';
+import { resolveSection, sectionLabel } from '../../services/recordTypes.js';
 import { formatRecord } from '../../services/soapFormatter.js';
 
-const byId = (id) => MOCK_OTHER_RECORDS.find((r) => r.id === id);
-
-describe('splitRecord for non-SOAP types', () => {
-    it('splits a Callback into call summary, instructions and next steps, without the title and sign-off', () => {
-        const s = splitRecord(byId('mock-bella-callback').reportText, 'callback');
-        expect(s.callSummary).toMatch(/^The clinician called the owner/);
-        expect(s.callSummary).toContain('2. Appetite and Hydration:');
-        expect(s.callSummary).not.toMatch(/Client Communication Report|Patient:/);
-        expect(s.instructions).toMatch(/^1\. Continue the low-fat/);
-        expect(s.nextSteps).toMatch(/^No recheck needed/);
-        expect(s.nextSteps).not.toMatch(/End of Report|serves as documentation/);
-        expect(s.recommendations).toBe('');
+describe('record types', () => {
+    it('only SOAP is split; Summary, Callback and Dental are one block, exactly the PetWise Copy all text', () => {
+        expect(Object.keys(formatRecord(MOCK_RECORDS[0]))).toEqual(['full', 'subjective', 'objective', 'assessment', 'plan']);
+        MOCK_OTHER_RECORDS.forEach((r) => expect(formatRecord(r)).toEqual({ full: toPlainText(r.reportText, r.recordType) }));
     });
 
-    it('puts the opening paragraph and numbered findings of a Summary under Overview', () => {
-        const s = splitRecord(byId('mock-max-summary').reportText, 'summary');
-        expect(s.overview).toMatch(/^Max was examined/);
-        expect(s.overview).toContain('2. Diagnosis:');
-        expect(s.treatment).toMatch(/^- Carprofen/);
-        expect(s.recommendations).toMatch(/^Strict leash-only/);
+    it('a single-block record pastes whole whatever the field asks for', () => {
+        ['summary', 'callback', 'dental'].forEach((type) => {
+            expect(resolveSection(type, 'subjective')).toBe('full');
+            expect(resolveSection(type, 'plan')).toBe('full');
+            expect(resolveSection(type, 'full')).toBe('full');
+        });
     });
 
-    it('splits a Dental record on the headings server/dental.js writes', () => {
-        const s = splitRecord(byId('mock-luna-dental').reportText, 'dental');
-        expect(s.procedure).toMatch(/^General anesthesia/);
-        expect(s.teeth.split('\n')).toEqual(['108: Slab fracture with pulp exposure. Extracted.', '307: Type 1 tooth resorption. Extracted.', '409: PD3 on the distal root.']);
-        expect(s.radiographs).toMatch(/^108: Periapical/);
-        expect(s.treatment).toMatch(/^Infraorbital/);
-        expect(s.homeCare).toMatch(/^Soft food/);
-    });
-
-    it('Full is exactly the PetWise Copy all text for that type', () => {
-        MOCK_OTHER_RECORDS.forEach((r) => expect(formatRecord(r).full).toBe(toPlainText(r.reportText, r.recordType)));
-    });
-});
-
-describe('resolveSection', () => {
-    it('maps a field section onto what the record type has', () => {
+    it('maps SOAP fields, including Plan-like ones', () => {
         expect(resolveSection('soap', 'plan')).toBe('plan');
         expect(resolveSection('soap', 'treatment')).toBe('plan');
-        expect(resolveSection('dental', 'instructions')).toBe('homeCare');
-        expect(resolveSection('summary', 'nextSteps')).toBe('recommendations');
-        expect(resolveSection('callback', 'subjective')).toBeNull();
-        expect(resolveSection('callback', 'full')).toBe('full');
+        expect(resolveSection('soap', 'instructions')).toBe('plan');
+        expect(resolveSection('soap', null)).toBeNull();
     });
 
-    it('labels sections for the record type, and missing ones by their usual name', () => {
+    it('labels: "Full SOAP" for a whole SOAP, just the type for the others', () => {
         expect(sectionLabel('soap', 'full')).toBe('Full SOAP');
-        expect(sectionLabel('callback', 'full')).toBe('Full Callback');
-        expect(sectionLabel('dental', 'instructions')).toBe('Home care');
-        expect(sectionLabel('callback', 'subjective')).toBe('Subjective');
+        expect(sectionLabel('soap', 'treatment')).toBe('Plan');
+        expect(sectionLabel('callback', 'subjective')).toBe('Callback');
+        expect(sectionLabel('dental', 'full')).toBe('Dental');
     });
 });

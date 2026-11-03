@@ -181,10 +181,11 @@ test.describe('cases and records', () => {
         await expect(menu.getByRole('radio')).toHaveCount(5 + 2 + 6);
         await expect(menu.getByRole('radiogroup', { name: 'Active PetWise case' })).toContainText('BellaVomiting');
 
-        // Opening Max's case selects its newest record, the Summary, which has no Subjective.
+        // Opening Max's case selects its newest record, the Summary: one block, so no section choices.
         await menu.getByRole('radio', { name: /Max\s*Lameness/ }).click();
         await expect(chipIn(page).locator('.sp-type')).toHaveText('Summary');
-        await expect(chipIn(page).getByRole('button', { name: 'No Subjective in Summary' })).toBeDisabled();
+        await expect(pasteButton(page, 'Summary')).toBeVisible();
+        await expect(menu.getByRole('radiogroup', { name: 'Paste section' })).toHaveCount(0);
         await menu.getByRole('radiogroup', { name: "Records in Max's case" }).getByRole('radio', { name: 'SOAP' }).click();
 
         await expect(chipIn(page).locator('.sp-patient')).toHaveText(/Max/);
@@ -243,25 +244,31 @@ test.describe('cases and records', () => {
         await expect(page.locator('#plan')).toHaveValue(MILO.plan);
     });
 
-    test('a Callback goes whole into a communication field, and section by section where the PIMS has them', async ({ page }) => {
+    test('a Callback pastes whole into whichever field the vet is in', async ({ page }) => {
         await page.goto(`${FIXTURE}/records.html`);
         await page.locator('#client-communication').click();
         await settingsButton(page).click();
         await menuIn(page).getByRole('radiogroup', { name: "Records in Bella's case" }).getByRole('radio', { name: 'Callback' }).click();
         await expect(menuIn(page)).toHaveCount(0);
-        await pasteButton(page, 'Full Callback').click();
+        await pasteButton(page, 'Callback').click();
         await expect(page.locator('#client-communication')).toHaveValue(BELLA_CALLBACK.full);
+        await expect(chipIn(page)).toContainText("Pasted Bella's Callback.");
 
-        await page.locator('#discharge-instructions').click();
-        await pasteButton(page, 'Instructions').click();
-        await expect(page.locator('#discharge-instructions')).toHaveValue(BELLA_CALLBACK.instructions);
-
-        // An unlabelled notes box gets the whole record for non-SOAP types instead of asking.
-        await page.locator('#misc-notes').click();
-        await expect(pasteButton(page, 'Full Callback')).toBeVisible();
+        // Labelled, unlabelled or SOAP-named: always the whole record, never "No Subjective in Callback".
+        for (const id of ['#discharge-instructions', '#misc-notes']) {
+            await page.locator(id).click();
+            await expect(pasteButton(page, 'Callback')).toBeVisible();
+        }
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#subjective').click();
+        await pasteButton(page, 'Callback').click();
+        await expect(page.locator('#subjective')).toHaveValue(BELLA_CALLBACK.full);
+        await settingsButton(page).click();
+        await expect(menuIn(page).getByRole('button', { name: /^Paste all sections/ })).toHaveCount(0);
+        await expect(menuIn(page).getByRole('radiogroup', { name: 'Paste section' })).toHaveCount(0);
     });
 
-    test('a Dental record fills tooth findings and home care fields', async ({ page }) => {
+    test('a Dental record pastes whole', async ({ page }) => {
         await page.goto(`${FIXTURE}/records.html`);
         await page.locator('#tooth-findings').click();
         await settingsButton(page).click();
@@ -269,12 +276,8 @@ test.describe('cases and records', () => {
         await expect(chipIn(page).locator('.sp-type')).toHaveText('Dental');
         await settingsButton(page).click();
         await expect(menuIn(page)).toHaveCount(0);
-        await pasteButton(page, 'Tooth findings').click();
-        await expect(page.locator('#tooth-findings')).toHaveValue(LUNA_DENTAL.teeth);
-
-        await page.locator('#discharge-instructions').click();
-        await pasteButton(page, 'Home care').click();
-        await expect(page.locator('#discharge-instructions')).toHaveValue(LUNA_DENTAL.homeCare);
+        await pasteButton(page, 'Dental').click();
+        await expect(page.locator('#tooth-findings')).toHaveValue(LUNA_DENTAL.full);
     });
 });
 

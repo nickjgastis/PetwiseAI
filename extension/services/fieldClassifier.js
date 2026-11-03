@@ -23,7 +23,7 @@ const EXACT = {
     'clinical impressions': 'assessment',
     plan: 'plan',
     'treatment plan': 'plan',
-    // Summary, Callback and Dental sections. Record types without one map it onward (see recordTypes.js aliases).
+    // Fields a SOAP fills from its Plan (recordTypes.js aliases).
     treatment: 'treatment',
     treatments: 'treatment',
     'treatment protocol': 'treatment',
@@ -41,21 +41,6 @@ const EXACT = {
     'follow up': 'nextSteps',
     followup: 'nextSteps',
     'follow up plan': 'nextSteps',
-    'summary of call': 'callSummary',
-    'call summary': 'callSummary',
-    'dental procedure': 'procedure',
-    'dental procedure summary': 'procedure',
-    'procedure summary': 'procedure',
-    'oral exam': 'procedure',
-    'oral examination': 'procedure',
-    'tooth findings': 'teeth',
-    'dental findings': 'teeth',
-    'dental chart notes': 'teeth',
-    'charting notes': 'teeth',
-    radiographs: 'radiographs',
-    'dental radiographs': 'radiographs',
-    'x rays': 'radiographs',
-    xrays: 'radiographs',
 };
 
 const FULL = new Set([
@@ -63,7 +48,7 @@ const FULL = new Set([
     'communication', 'communications', 'client communication', 'client communications', 'callback', 'callback notes',
     'phone notes', 'call notes', 'phone call notes', 'client contact', 'contact notes',
     'summary', 'clinical summary', 'visit summary', 'discharge summary',
-    'dental record', 'dental notes', 'dental report',
+    'dental record', 'dental notes', 'dental report', 'dental chart notes',
 ]);
 
 // Words that add nothing to a label ("Assessment notes", "S Subjective", "soap_plan").

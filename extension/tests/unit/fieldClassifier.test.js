@@ -47,10 +47,7 @@ describe('classifyLabel', () => {
         ['Next steps', 'nextSteps'],
         ['Recommendations', 'recommendations'],
         ['Treatment', 'treatment'],
-        ['Tooth findings', 'teeth'],
-        ['Dental radiographs', 'radiographs'],
-        ['Oral exam', 'procedure'],
-    ])('%s -> %s (Summary, Callback and Dental sections)', (label, section) => expect(classifyLabel(label)).toEqual({ kind: 'section', section }));
+    ])('%s -> %s (filled from a SOAP Plan)', (label, section) => expect(classifyLabel(label)).toEqual({ kind: 'section', section }));
 
     it.each(['Client communication', 'Phone notes', 'Callback notes', 'Visit summary', 'Dental notes'])('%s -> whole record', (label) => {
         expect(classifyLabel(label)).toEqual({ kind: 'full' });
