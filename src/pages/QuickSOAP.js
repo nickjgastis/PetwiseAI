@@ -36,7 +36,7 @@ import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
 import { QuickSOAPPDFDocument } from '../components/RecordPDF';
 import { toPlainText } from '../utils/recordText';
-import { useSmartPasteBridge } from '../utils/smartPasteBridge';
+import { useSmartPasteBridge, useSmartPasteInstalled } from '../utils/smartPasteBridge';
 import CountBadge from '../components/CountBadge';
 import DentalSpeciesPicker, { SPECIES_LABEL } from '../components/DentalSpeciesPicker';
 
@@ -1559,6 +1559,7 @@ const QuickSOAP = () => {
 
     // Desktop only: the SmartPaste extension pastes the open record into the vet's PIMS, listed under the case name.
     const [smartPasteCaseName, setSmartPasteCaseName] = useState('');
+    const smartPasteInstalled = useSmartPasteInstalled();
     useEffect(() => {
         if (!activeCaseId || isMobile || !hasReport) return undefined;
         let live = true;
@@ -3632,6 +3633,18 @@ const QuickSOAP = () => {
                                 )}
                                 <span className="flex-1" />
                                 <div className="flex items-center gap-2 shrink-0">
+                                    {!isMobile && smartPasteInstalled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/dashboard/smartpaste')}
+                                            title="Click a notes field in your practice software to paste this record"
+                                            className="hidden lg:inline-flex items-center gap-2 h-10 pl-1.5 pr-3.5 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#c3ddf5] hover:border-[#3f8ddb] cursor-pointer transition-colors shrink-0"
+                                        >
+                                            <img src="/favicon-96x96.png" alt="" className="w-7 h-7 rounded-full" />
+                                            SmartPaste ready
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 ring-[3px] ring-emerald-500/20" />
+                                        </button>
+                                    )}
                                     {isAuthenticated && (
                                         <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold cursor-pointer transition-colors shrink-0 border disabled:opacity-40 disabled:cursor-not-allowed ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-[#e9f6fd] text-[#2d5fb8] border-[#cde6f8] hover:bg-[#d8effb]'}`}>
                                             {saveMessageVisible ? <FiCheck className="text-[15px]" /> : <FiSave className="text-[15px]" />}

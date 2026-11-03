@@ -10,6 +10,7 @@ const STEPS = [
     {
         title: 'Open a record in PetWise',
         body: 'Generate or open a SOAP, summary, callback or dental record in PetWise, in this Chrome. SmartPaste picks it up on its own. There is nothing to sign in to.',
+        tip: 'Already had PetWise open? Refresh that tab once so it connects.',
     },
     {
         title: 'Turn it on for your practice software',

@@ -45,22 +45,27 @@ const ping = () =>
         }
     });
 
-// null while checking, then true or false. With pollMs it keeps checking until the extension shows up.
-export function useSmartPasteInstalled({ pollMs = 0 } = {}) {
+// null while checking, then true or false. Checks again whenever the vet comes back to this tab (they install it in
+// the Web Store tab) and every pollMs. Chrome may only connect a page to a newly installed extension after a
+// reload, so the get-SmartPaste page also offers a refresh.
+export function useSmartPasteInstalled({ pollMs = 5000 } = {}) {
     const [installed, setInstalled] = useState(null);
     useEffect(() => {
         let live = true;
-        let timer;
         const check = async () => {
+            if (document.hidden) return;
             const ok = await ping();
-            if (!live) return;
-            setInstalled(ok);
-            if (!ok && pollMs) timer = setTimeout(check, pollMs);
+            if (live) setInstalled(ok);
         };
         check();
+        const timer = pollMs ? setInterval(check, pollMs) : null;
+        window.addEventListener('focus', check);
+        document.addEventListener('visibilitychange', check);
         return () => {
             live = false;
-            clearTimeout(timer);
+            clearInterval(timer);
+            window.removeEventListener('focus', check);
+            document.removeEventListener('visibilitychange', check);
         };
     }, [pollMs]);
     return installed;
