@@ -108,7 +108,7 @@ export default function SmartPasteButton({ controller }) {
         const root = rootRef.current;
         if (!root || !snap.visible || !snap.anchor) return;
         const chip = root.querySelector('.sp-chip');
-        const pos = placeChip(snap.anchor, { width: chip.offsetWidth, height: chip.offsetHeight }, snap.viewport);
+        const pos = placeChip(snap.anchor, { width: chip.offsetWidth, height: chip.offsetHeight }, snap.viewport, 6, root.dataset.placement);
         root.style.top = `${Math.round(pos.top)}px`;
         root.style.left = `${Math.round(pos.left)}px`;
         root.dataset.placement = pos.placement;
