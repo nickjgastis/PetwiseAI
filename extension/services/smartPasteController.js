@@ -1,8 +1,10 @@
 import { classifyField } from './fieldClassifier.js';
 import { describeField, editorKind, fieldDisplayName, isEligible, isOwnUi, resolveEditable } from './fieldDetector.js';
-import { containsText, insertText } from './fieldInserter.js';
+import { containsText, insertText, readValue } from './fieldInserter.js';
+import { fieldKey } from './fieldMemory.js';
 import { rectInViewport } from './positioner.js';
-import { SECTION_LABELS } from './soapSections.js';
+import { SECTION_KEYS, SECTION_LABELS } from './soapSections.js';
+import { recordLabel } from './soapFormatter.js';
 
 // Owns everything that touches the host page: focus tracking (in this document and same-origin child frames),
 // the target field, positioning, and paste/copy actions. The React UI only renders `getSnapshot()` and calls actions.
@@ -11,12 +13,16 @@ const UI_GRACE_MS = 600;
 const SUCCESS_TOAST_MS = 3500;
 const CARET_IGNORED_KEYS = new Set(['Tab', 'Shift', 'Escape', 'Meta', 'Control', 'Alt', 'CapsLock']);
 
+const EDITABLE_SELECTOR = 'textarea, input, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]';
+
 const eventNode = (e) => (typeof e.composedPath === 'function' ? e.composedPath()[0] : e.target) || e.target;
 
-export const createController = ({ win, store, copy }) => {
+// window.origin is right for about:blank and srcdoc frames too, where location.origin is not.
+const originOf = (el) => el.ownerDocument.defaultView?.origin || el.ownerDocument.location?.origin || '';
+
+export const createController = ({ win, store, memory = null, copy }) => {
     const listeners = new Set();
     const attached = new Map();
-    let target = null;
     let uiHost = null;
     let uiContainer = null;
     let lastUiPointer = 0;
@@ -36,8 +42,17 @@ export const createController = ({ win, store, copy }) => {
         busy: false,
         feedback: null,
         anchor: null,
+        bulkPlan: null,
     };
     let snapshot = null;
+
+    // A section the vet told us to always use for this field on this site wins over automatic detection.
+    const classify = (el, descriptor) => {
+        const remembered = memory?.get(originOf(el), fieldKey(descriptor));
+        if (remembered === 'full') return { kind: 'full', source: 'remembered' };
+        if (remembered) return { kind: 'section', section: remembered, source: 'remembered' };
+        return classifyField(descriptor, { location: el.ownerDocument.location });
+    };
 
     const effectiveSection = () => {
         if (state.override) return state.override;
@@ -61,6 +76,11 @@ export const createController = ({ win, store, copy }) => {
             viewport: { width: win.innerWidth, height: win.innerHeight },
             activeRecordId: store_.activeRecordId,
             patientName: record?.patientName || '',
+            recordLabel: recordLabel(record),
+            sectionText: text,
+            canRemember: !!(state.descriptor && fieldKey(state.descriptor)),
+            remembered: state.classification?.source === 'remembered' ? (state.classification.section || 'full') : null,
+            bulkPlan: state.bulkPlan,
             records: store.listRecords(),
             availableSections: content ? Object.keys(SECTION_LABELS).filter((k) => content[k]) : [],
             fieldName: state.descriptor ? fieldDisplayName(state.descriptor) : '',
@@ -114,7 +134,7 @@ export const createController = ({ win, store, copy }) => {
             return;
         }
         const descriptor = describeField(el);
-        const classification = classifyField(descriptor, { location: el.ownerDocument.location });
+        const classification = classify(el, descriptor);
         if (classification.kind === 'ignore') {
             clearTarget();
             return;
@@ -350,6 +370,100 @@ export const createController = ({ win, store, copy }) => {
         return { ...result, recordId, section };
     };
 
+    // Paste All works on the smallest part of the page around the focused field that holds fields for at least
+    // two different sections (e.g. the "Clinical notes" panel). Within it, each section needs exactly one field
+    // and that field must be empty; anything else is skipped with a reason rather than guessed.
+    const planBulk = () => {
+        const el = state.target;
+        if (!el) return null;
+        const seen = new Set();
+        const fields = [];
+        el.ownerDocument.querySelectorAll(EDITABLE_SELECTOR).forEach((node) => {
+            const field = resolveEditable(node);
+            if (!field || seen.has(field) || !isEligible(field)) return;
+            seen.add(field);
+            const c = field === el && state.override ? { kind: 'section', section: state.override } : classify(field, describeField(field));
+            if (c.kind === 'section') fields.push({ el: field, section: c.section });
+        });
+
+        let scope = el.parentElement;
+        let inScope = [];
+        while (scope) {
+            inScope = fields.filter((f) => scope.contains(f.el));
+            if (new Set(inScope.map((f) => f.section)).size >= 2) break;
+            scope = scope.parentElement;
+        }
+        if (!scope) return { fill: [], skipped: [], fields: [] };
+
+        const fill = [];
+        const skipped = [];
+        SECTION_KEYS.forEach((section) => {
+            const matches = inScope.filter((f) => f.section === section);
+            if (!matches.length) return;
+            if (matches.length > 1) skipped.push({ section, reason: `${matches.length} fields look like ${SECTION_LABELS[section]}` });
+            else if (!sectionText(section)) skipped.push({ section, reason: 'not in this record' });
+            else if (readValue(matches[0].el).trim()) skipped.push({ section, reason: 'field already has text' });
+            else fill.push(matches[0]);
+        });
+        return { fill: fill.map((f) => f.section), skipped, fields: fill };
+    };
+
+    const pasteAll = async () => {
+        if (state.busy) return null;
+        const plan = planBulk();
+        if (!plan?.fields.length) {
+            showFeedback({ type: 'error', message: 'No empty SOAP fields to fill here.' });
+            return plan;
+        }
+        const origin = state.target;
+        setState({ busy: true, menuOpen: false, feedback: null, bulkPlan: null });
+        const results = [];
+        for (const f of plan.fields) {
+            let status;
+            try {
+                status = (await insertText(f.el, sectionText(f.section), { mode: 'insert' })).status;
+            } catch {
+                status = 'uncertain';
+            }
+            results.push({ section: f.section, status });
+        }
+        state = { ...state, busy: false };
+        if (origin?.isConnected) origin.focus({ preventScroll: true });
+
+        const done = results.filter((r) => r.status === 'inserted').map((r) => SECTION_LABELS[r.section]);
+        const failed = results.filter((r) => r.status !== 'inserted').map((r) => SECTION_LABELS[r.section]);
+        const name = store.getActiveRecord()?.patientName;
+        const parts = [];
+        if (done.length) parts.push(`Pasted ${name}'s ${done.join(', ')}.`);
+        if (failed.length) parts.push(`Check ${failed.join(', ')}: the field did not take the text.`);
+        if (plan.skipped.length) parts.push(`Skipped ${plan.skipped.map((s) => `${SECTION_LABELS[s.section]} (${s.reason})`).join(', ')}.`);
+        showFeedback({ type: failed.length ? 'warning' : plan.skipped.length ? 'info' : 'success', message: parts.join(' ') });
+        return { results, skipped: plan.skipped };
+    };
+
+    const rememberSection = async (section) => {
+        const el = state.target;
+        const key = state.descriptor && fieldKey(state.descriptor);
+        if (!el || !key || !memory) return;
+        await memory.remember(originOf(el), key, section);
+        setState({ override: null, menuOpen: false, feedback: { type: 'success', message: `${SECTION_LABELS[section]} will be used for this field on this site.` } });
+        refocusTarget();
+    };
+
+    const forgetField = async () => {
+        const el = state.target;
+        const key = state.descriptor && fieldKey(state.descriptor);
+        if (!el || !key || !memory) return;
+        await memory.forget(originOf(el), key);
+        setState({ menuOpen: false, feedback: null });
+        refocusTarget();
+    };
+
+    // Re-detect the focused field when remembered mappings change (here, in another tab, or after loading).
+    const unsubscribeMemory = memory?.subscribe(() => {
+        if (state.target && state.descriptor) setState({ classification: classify(state.target, state.descriptor) });
+    });
+
     const unsubscribeStore = store.subscribe(() => emit());
 
     snapshot = buildSnapshot();
@@ -373,11 +487,15 @@ export const createController = ({ win, store, copy }) => {
         },
         destroy: () => {
             unsubscribeStore();
+            unsubscribeMemory?.();
             resizeObserver?.disconnect();
             attached.forEach((a) => a.detach());
             attached.clear();
         },
         paste,
+        pasteAll,
+        rememberSection,
+        forgetField,
         copySection,
         replaceAll: () => paste({ mode: 'replace' }),
         selectRecord: async (id) => {
@@ -389,7 +507,11 @@ export const createController = ({ win, store, copy }) => {
             setState({ override: section, menuOpen: false, feedback: null });
             refocusTarget();
         },
-        toggleMenu: () => setState({ menuOpen: !state.menuOpen }),
+        toggleMenu: () => {
+            const opening = !state.menuOpen;
+            const plan = opening ? planBulk() : null;
+            setState({ menuOpen: opening, bulkPlan: plan ? { fill: plan.fill, skipped: plan.skipped } : null });
+        },
         closeMenu: (refocus = true) => {
             setState({ menuOpen: false });
             if (refocus) refocusTarget();

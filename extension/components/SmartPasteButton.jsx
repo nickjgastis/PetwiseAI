@@ -1,11 +1,49 @@
-import { useLayoutEffect, useRef, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import SmartPasteMenu from './SmartPasteMenu.jsx';
+import { fitPopover } from './fitPopover.js';
 import { placeChip } from '../services/positioner.js';
+
+const PREVIEW_DELAY_MS = 250;
+const PREVIEW_LINES = 6;
+const PREVIEW_LINE_CHARS = 90;
 
 // Keeps focus (and the caret) in the PIMS field when a chip button is clicked with the mouse.
 const keepFieldFocus = (e) => e.preventDefault();
 
-function PrimaryAction({ snap, controller }) {
+function Preview({ snap }) {
+    const ref = useRef(null);
+    useLayoutEffect(() => fitPopover(ref.current));
+    const lines = snap.sectionText.split('\n');
+    const shown = lines.slice(0, PREVIEW_LINES).map((l) => (l.length > PREVIEW_LINE_CHARS ? `${l.slice(0, PREVIEW_LINE_CHARS - 1)}\u2026` : l));
+    const more = lines.length - shown.length;
+    return (
+        <div ref={ref} className="sp-preview" role="tooltip" data-testid="smartpaste-preview">
+            <div className="sp-preview-title">
+                {snap.recordLabel} {'\u00b7'} {snap.sectionLabel}
+            </div>
+            <pre className="sp-preview-text">{shown.join('\n')}</pre>
+            {more > 0 && <div className="sp-preview-more">+{more} more lines</div>}
+        </div>
+    );
+}
+
+// Hover (or keyboard focus) on a paste button shows what will be pasted; it never pastes by itself.
+const usePreview = () => {
+    const [open, setOpen] = useState(false);
+    const timer = useRef(0);
+    useEffect(() => () => clearTimeout(timer.current), []);
+    const show = () => {
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => setOpen(true), PREVIEW_DELAY_MS);
+    };
+    const hide = () => {
+        clearTimeout(timer.current);
+        setOpen(false);
+    };
+    return { open, hide, bind: { onMouseEnter: show, onMouseLeave: hide, onFocus: show, onBlur: hide } };
+};
+
+function PrimaryAction({ snap, controller, previewBind }) {
     if (snap.busy) {
         return (
             <button type="button" className="sp-primary" disabled>
@@ -33,14 +71,14 @@ function PrimaryAction({ snap, controller }) {
                 <span className="sp-done" role="status">
                     Pasted {'\u2713'}
                 </span>
-                <button type="button" className="sp-again" onMouseDown={keepFieldFocus} onClick={() => controller.paste({ again: true })}>
+                <button type="button" className="sp-again" onMouseDown={keepFieldFocus} onClick={() => controller.paste({ again: true })} {...previewBind}>
                     Paste again
                 </button>
             </>
         );
     }
     return (
-        <button type="button" className="sp-primary" onMouseDown={keepFieldFocus} onClick={() => controller.paste()}>
+        <button type="button" className="sp-primary" onMouseDown={keepFieldFocus} onClick={() => controller.paste()} {...previewBind}>
             Paste {snap.sectionLabel}
         </button>
     );
@@ -49,6 +87,11 @@ function PrimaryAction({ snap, controller }) {
 export default function SmartPasteButton({ controller }) {
     const snap = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
     const rootRef = useRef(null);
+    const preview = usePreview();
+    const previewTarget = snap.visible && snap.section && snap.sectionText ? `${snap.activeRecordId}:${snap.section}` : null;
+
+    // Close the preview whenever what it would show changes (field, record, section) or a paste starts.
+    useEffect(() => preview.hide(), [previewTarget, snap.busy, snap.menuOpen]);
 
     useLayoutEffect(() => {
         const root = rootRef.current;
@@ -71,7 +114,7 @@ export default function SmartPasteButton({ controller }) {
                     <span aria-hidden="true">{'\ud83d\udc3e'}</span> {snap.patientName}
                 </span>
                 <span className="sp-divider" aria-hidden="true" />
-                <PrimaryAction snap={snap} controller={controller} />
+                <PrimaryAction snap={snap} controller={controller} previewBind={preview.bind} />
                 <span className="sp-divider" aria-hidden="true" />
                 <button
                     type="button"
@@ -100,6 +143,7 @@ export default function SmartPasteButton({ controller }) {
             )}
 
             {snap.menuOpen && <SmartPasteMenu snap={snap} controller={controller} />}
+            {preview.open && previewTarget && !snap.menuOpen && !snap.busy && <Preview snap={snap} />}
         </div>
     );
 }

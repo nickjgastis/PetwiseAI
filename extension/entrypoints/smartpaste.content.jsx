@@ -3,6 +3,7 @@ import { defineContentScript } from 'wxt/utils/define-content-script';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import SmartPasteButton from '../components/SmartPasteButton.jsx';
 import { copyToClipboard, extensionStorage } from '../platform/browser.js';
+import { createFieldMemory } from '../services/fieldMemory.js';
 import { createRecordStore } from '../services/recordStore.js';
 import { createController } from '../services/smartPasteController.js';
 import '../styles/smartpaste.css';
@@ -36,8 +37,9 @@ export default defineContentScript({
         if (window !== window.top && reachableFromTop()) return;
 
         const store = createRecordStore({ storage: extensionStorage });
-        await store.ready;
-        const controller = createController({ win: window, store, copy: copyToClipboard });
+        const memory = createFieldMemory({ storage: extensionStorage });
+        await Promise.all([store.ready, memory.ready]);
+        const controller = createController({ win: window, store, memory, copy: copyToClipboard });
 
         const ui = await createShadowRootUi(ctx, {
             name: 'petwise-smartpaste',

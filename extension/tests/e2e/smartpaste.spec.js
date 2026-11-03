@@ -410,3 +410,82 @@ test.describe('UI behaviour', () => {
         await expect(page.locator('petwise-smartpaste')).toHaveCount(0);
     });
 });
+
+test.describe('paste all', () => {
+    const pasteAllButton = (page) => menuIn(page).getByRole('button', { name: /^Paste all sections/ });
+
+    test('fills the empty S/O/A/P fields in the same panel and leaves typed text alone', async ({ page }) => {
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#plan').fill('Typed by vet.');
+        await page.locator('#subjective').click();
+        await settingsButton(page).click();
+        await expect(pasteAllButton(page)).toContainText('Fills Subjective, Objective, Assessment');
+        await expect(menuIn(page)).toContainText('Skips Plan: field already has text');
+        await pasteAllButton(page).click();
+
+        for (const key of ['subjective', 'objective', 'assessment']) await expect(page.locator(`#${key}`)).toHaveValue(BELLA[key]);
+        await expect(page.locator('#plan')).toHaveValue('Typed by vet.');
+        await expect(page.locator('#history')).toHaveValue('');
+        await expect(chipIn(page)).toContainText("Pasted Bella's Subjective, Objective, Assessment.");
+        await expect(page.locator('#subjective')).toBeFocused();
+    });
+
+    test('skips a section when more than one field looks like it', async ({ page }) => {
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#history').click();
+        await settingsButton(page).click();
+        await expect(menuIn(page)).toContainText('Skips Subjective: 2 fields look like Subjective');
+        await pasteAllButton(page).click();
+        await expect(page.locator('#history')).toHaveValue('');
+        await expect(page.locator('#hpi')).toHaveValue('');
+        expect(normalize(await page.locator('#physical-exam').innerText())).toBe(normalize(BELLA.objective));
+        await expect(page.locator('#impression')).toHaveValue(BELLA.assessment);
+        await expect(page.locator('#treatment-plan')).toHaveValue(BELLA.plan);
+        await expect(page.locator('#notes')).toHaveValue('');
+    });
+
+    test('is not offered for a field that stands alone', async ({ page }) => {
+        await page.goto(`${FIXTURE}/full.html`);
+        await page.locator('#medical-record').click();
+        await settingsButton(page).click();
+        await expect(menuIn(page)).toBeVisible();
+        await expect(pasteAllButton(page)).toHaveCount(0);
+    });
+});
+
+test.describe('remembered sections', () => {
+    test('remembers a manual choice for this field on this site until forgotten', async ({ page }) => {
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#notes').click();
+        await chipIn(page).getByRole('button', { name: 'Choose section' }).click();
+        await menuIn(page).getByRole('radio', { name: 'Plan', exact: true }).click();
+        await settingsButton(page).click();
+        await menuIn(page).getByRole('button', { name: 'Always use Plan for this field on this site' }).click();
+        await expect(chipIn(page)).toContainText('Plan will be used for this field on this site.');
+
+        await page.reload();
+        await page.locator('#notes').click();
+        await expect(pasteButton(page, 'Plan')).toBeVisible();
+        await settingsButton(page).click();
+        await expect(menuIn(page)).toContainText('Plan (remembered)');
+        await menuIn(page).getByRole('button', { name: 'Forget Plan for this field' }).click();
+        await expect(chipIn(page).getByRole('button', { name: 'Choose section' })).toBeVisible();
+        await expect(page.locator('#notes')).toHaveValue('');
+    });
+});
+
+test.describe('hover preview', () => {
+    test('shows what will be pasted without pasting it', async ({ page }) => {
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#subjective').click();
+        await pasteButton(page, 'Subjective').hover();
+        const preview = chipIn(page).getByTestId('smartpaste-preview');
+        await expect(preview).toBeVisible();
+        await expect(preview).toContainText('Bella \u00b7 Vomiting \u00b7 Subjective');
+        await expect(preview).toContainText(BELLA.subjective.split('\n')[0].slice(0, 40));
+        await expect(page.locator('#subjective')).toHaveValue('');
+
+        await page.mouse.move(5, 5);
+        await expect(preview).toHaveCount(0);
+    });
+});
