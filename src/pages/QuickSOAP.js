@@ -36,6 +36,7 @@ import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
 import { QuickSOAPPDFDocument } from '../components/RecordPDF';
 import { toPlainText } from '../utils/recordText';
+import { useSmartPasteBridge } from '../utils/smartPasteBridge';
 import CountBadge from '../components/CountBadge';
 import DentalSpeciesPicker, { SPECIES_LABEL } from '../components/DentalSpeciesPicker';
 
@@ -1555,6 +1556,9 @@ const QuickSOAP = () => {
         const snap = readSavedSnapshot();
         if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
     }, [hasReport, report]);
+
+    // Desktop only: the SmartPaste extension pastes the open record into the vet's PIMS.
+    useSmartPasteBridge({ enabled: hasReport && !isMobile, report, recordType, petName, reportName, caseId: activeCaseId });
 
     // Chart edits save straight to the open note, debounced so a run of taps is one write.
     const dentalSaveRef = useRef(null);

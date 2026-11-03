@@ -1,13 +1,13 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
 import CasePicker from '../../components/CasePicker.jsx';
-import { extensionStorage } from '../../platform/browser.js';
+import { extensionStorage, sessionRecordStorage } from '../../platform/browser.js';
 import { activeTabSite, disableSite, enableSite } from '../../platform/siteAccess.js';
 import { createRecordStore } from '../../services/recordStore.js';
 import '../../styles/smartpaste.css';
 import './popup.css';
 
-const store = createRecordStore({ storage: extensionStorage });
+const store = createRecordStore({ storage: extensionStorage, liveStorage: sessionRecordStorage });
 
 function SiteAccess() {
     const [site, setSite] = useState(null);
@@ -69,7 +69,17 @@ function Popup() {
                 onSelectCase={store.selectCase}
                 onSelectRecord={store.selectRecord}
             />
-            <p className="sp-popup-note">Local prototype. Fictional records only.</p>
+            {state.live ? (
+                <div className="sp-popup-note">
+                    Records you opened in PetWise in this browser session. They are kept in memory only and cleared when
+                    Chrome closes.
+                    <button type="button" className="sp-link" onClick={store.clearLive}>
+                        Clear PetWise records now
+                    </button>
+                </div>
+            ) : (
+                <p className="sp-popup-note">Demo records (fictional). Open a record in PetWise to use it here.</p>
+            )}
         </div>
     );
 }

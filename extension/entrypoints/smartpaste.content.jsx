@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { defineContentScript } from 'wxt/utils/define-content-script';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import SmartPasteButton from '../components/SmartPasteButton.jsx';
-import { copyToClipboard, extensionStorage } from '../platform/browser.js';
+import { copyToClipboard, extensionStorage, sessionRecordStorage } from '../platform/browser.js';
 import { createFieldMemory } from '../services/fieldMemory.js';
 import { createRecordStore } from '../services/recordStore.js';
 import { createController } from '../services/smartPasteController.js';
@@ -39,7 +39,7 @@ export default defineContentScript({
     async main(ctx) {
         if (window !== window.top && reachableFromTop()) return;
 
-        const store = createRecordStore({ storage: extensionStorage });
+        const store = createRecordStore({ storage: extensionStorage, liveStorage: sessionRecordStorage });
         const memory = createFieldMemory({ storage: extensionStorage });
         await Promise.all([store.ready, memory.ready]);
         const controller = createController({ win: window, store, memory, copy: copyToClipboard });

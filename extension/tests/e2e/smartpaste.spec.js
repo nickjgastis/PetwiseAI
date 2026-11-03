@@ -1,6 +1,6 @@
 import { MOCK_OTHER_RECORDS, MOCK_RECORDS } from '../../services/mockRecords.js';
 import { formatRecord } from '../../services/soapFormatter.js';
-import { chipIn, expect, extensionId, FIXTURE, menuIn, normalize, pasteButton, settingsButton, test } from './extension.js';
+import { chipIn, expect, extensionId, FIXTURE, menuIn, normalize, pasteButton, PETWISE_ORIGIN, settingsButton, test } from './extension.js';
 
 const BELLA = formatRecord(MOCK_RECORDS[0]);
 const MAX = formatRecord(MOCK_RECORDS[1]);
@@ -538,5 +538,62 @@ test.describe('hover preview', () => {
 
         await page.mouse.move(5, 5);
         await expect(preview).toHaveCount(0);
+    });
+});
+
+test.describe('records sent from PetWise', () => {
+    const NOVA_SOAP = `**Subjective**\nNova is scratching her ears for 1 week.\n\n**Objective**\nOtitis externa AU, brown discharge.\n\n**Assessment**\nYeast otitis externa.\n\n**Plan**\nEar cleaning q24h x 14 days.`;
+    const NOVA_CALLBACK = `Client Communication Report\nPatient: Nova\n\nSummary of Call\nOwner reports less scratching after 3 days.\n\nEnd of Report.`;
+    const record = (id, recordType, reportText) => ({ id, caseId: 'case-nova', patientName: 'Nova', recordType, reportText });
+    const fromPetWise = (page, message) =>
+        page.evaluate(([id, m]) => new Promise((resolve) => chrome.runtime.sendMessage(id, m, resolve)), [extensionId(), message]);
+
+    test('opening a record in PetWise selects it, edits refresh it, a manual pick sticks, and sign-out clears it', async ({ page, context }) => {
+        const petwise = await context.newPage();
+        await petwise.goto(`${PETWISE_ORIGIN}/`);
+        expect(await fromPetWise(petwise, { type: 'petwise:ping' })).toMatchObject({ ok: true, version: expect.any(String) });
+        expect(await fromPetWise(petwise, { type: 'petwise:record', reason: 'open', record: record('rec-soap', 'soap', NOVA_SOAP) })).toEqual({ ok: true });
+
+        await page.bringToFront();
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#subjective').click();
+        await expect(chipIn(page).locator('.sp-patient')).toHaveText(/Nova/);
+        await pasteButton(page, 'Subjective').click();
+        await expect(page.locator('#subjective')).toHaveValue('Nova is scratching her ears for 1 week.');
+
+        // Real records replace the fictional ones in the picker.
+        await settingsButton(page).click();
+        await expect(menuIn(page).locator('.sp-record-option')).toHaveText([/Nova/]);
+        await settingsButton(page).click();
+
+        // An edit in PetWise updates what is pasted.
+        await fromPetWise(petwise, { type: 'petwise:record', reason: 'update', record: record('rec-soap', 'soap', NOVA_SOAP.replace('14 days', '21 days')) });
+        await page.locator('#plan').click();
+        await pasteButton(page, 'Plan').click();
+        await expect(page.locator('#plan')).toHaveValue('Ear cleaning q24h x 21 days.');
+
+        // Opening the Callback in PetWise selects it; the vet switches back to the SOAP here, and later edits to the
+        // Callback do not take that away.
+        await fromPetWise(petwise, { type: 'petwise:record', reason: 'open', record: record('rec-callback', 'callback', NOVA_CALLBACK) });
+        await expect(chipIn(page).locator('.sp-type')).toHaveText('Callback');
+        await settingsButton(page).click();
+        await menuIn(page).getByRole('radiogroup', { name: "Records in Nova's case" }).getByRole('radio', { name: 'SOAP' }).click();
+        await expect(chipIn(page).locator('.sp-type')).toHaveText('SOAP');
+        await fromPetWise(petwise, { type: 'petwise:record', reason: 'update', record: record('rec-callback', 'callback', `${NOVA_CALLBACK}\nEdited.`) });
+        await page.waitForTimeout(300);
+        await expect(chipIn(page).locator('.sp-type')).toHaveText('SOAP');
+
+        await fromPetWise(petwise, { type: 'petwise:clear' });
+        await expect(chipIn(page).locator('.sp-patient')).toHaveText(/Bella/);
+    });
+
+    test('rejects malformed records, and the PIMS page itself cannot message the extension', async ({ page, context }) => {
+        const petwise = await context.newPage();
+        await petwise.goto(`${PETWISE_ORIGIN}/`);
+        expect(await fromPetWise(petwise, { type: 'petwise:record', reason: 'open', record: { id: 'x' } })).toEqual({ ok: false, error: 'invalid record' });
+        expect(await fromPetWise(petwise, { type: 'something-else' })).toEqual({ ok: false, error: 'unknown message' });
+
+        await page.goto(`${FIXTURE}/`);
+        expect(await page.evaluate(() => typeof window.chrome?.runtime?.sendMessage)).toBe('undefined');
     });
 });

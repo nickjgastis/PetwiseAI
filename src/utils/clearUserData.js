@@ -1,7 +1,10 @@
+import { clearSmartPaste } from './smartPasteBridge';
+
 // Clears all app-specific localStorage data
 // Used on logout and when a different user logs in
 
 export const clearAppLocalStorage = () => {
+    clearSmartPaste();
     const keysToPreserve = [
         // Auth0 keys - let Auth0 handle these
         'auth0.is.authenticated',
