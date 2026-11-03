@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
+import { HELP_PAGE, OPEN_HELP_MESSAGE } from '../platform/browser.js';
 import { grantedPatterns, injectIntoOpenTabs, syncRegistration } from '../platform/siteAccess.js';
 import { handleBridgeMessage, LIVE_RECORDS_KEY } from '../services/petwiseBridge.js';
 import { STORAGE_KEYS } from '../services/recordStore.js';
@@ -9,7 +10,15 @@ import { STORAGE_KEYS } from '../services/recordStore.js';
 export default defineBackground(() => {
     const sync = () => syncRegistration().catch(() => {});
 
-    browser.runtime.onInstalled.addListener(sync);
+    browser.runtime.onInstalled.addListener(({ reason }) => {
+        sync();
+        if (reason === 'install') browser.tabs.create({ url: browser.runtime.getURL(`${HELP_PAGE}?welcome`) }).catch(() => {});
+    });
+    browser.runtime.onMessage.addListener((message, sender) => {
+        if (message?.type === OPEN_HELP_MESSAGE && sender.id === browser.runtime.id) {
+            browser.tabs.create({ url: browser.runtime.getURL(HELP_PAGE) }).catch(() => {});
+        }
+    });
     browser.runtime.onStartup.addListener(sync);
     browser.permissions.onRemoved.addListener(sync);
     browser.permissions.onAdded.addListener(async ({ origins = [] }) => {

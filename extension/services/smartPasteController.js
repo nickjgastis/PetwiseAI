@@ -58,17 +58,24 @@ export const createController = ({ win, store, memory = null, copy }) => {
     const labelOf = (section) => sectionLabel(activeType(), section);
 
     // What the field asks for, as a section key or 'full'. Summary, Callback and Dental are one block of text, so any
-    // field SmartPaste would offer to fill gets the whole record; only a SOAP needs the field to name a section.
+    // field SmartPaste would offer to fill gets the whole record. A SOAP field that names no section gets the whole
+    // SOAP, so there is always a one-click paste; the menu narrows it.
     const fieldSection = (classification = state.classification) => {
         if (!classification || classification.kind === 'ignore') return null;
         if (isSingleBlock(activeType())) return FULL;
         if (classification.kind === 'section') return classification.section;
-        if (classification.kind === 'full') return FULL;
-        return null;
+        return FULL;
     };
 
-    // The section of the active record to paste: the field's section mapped onto this record type, or null.
-    const requestedSection = () => state.override || fieldSection();
+    // The section of the active record to paste. A section the vet picked is kept even if empty; a detected section
+    // the record lacks falls back to the whole record.
+    const requestedSection = () => {
+        if (state.override) return state.override;
+        const section = fieldSection();
+        if (!section || section === FULL) return section;
+        const resolved = resolveSection(activeType(), section);
+        return resolved && store.getActiveContent()?.[resolved] ? section : FULL;
+    };
     const effectiveSection = () => resolveSection(activeType(), requestedSection());
 
     const detectedLabel = () => {
@@ -76,7 +83,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
         const section = fieldSection();
         if (!c) return 'Not recognized';
         if (isSingleBlock(activeType())) return `Any field (the whole ${typeLabel(activeType())})`;
-        if (!section) return 'Not sure, choose a section';
+        if (c.kind === 'ambiguous') return `Not sure, using ${labelOf(FULL)}`;
         return `${labelOf(section)}${c.source === 'remembered' ? ' (remembered)' : ''}`;
     };
 

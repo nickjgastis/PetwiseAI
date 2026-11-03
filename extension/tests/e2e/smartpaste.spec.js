@@ -134,12 +134,15 @@ test.describe('field recognition', () => {
         await expect.poll(async () => normalize(await page.locator('#physical-exam').innerText())).toBe(normalize(BELLA.objective));
     });
 
-    test('offers manual selection for an unrecognized field and never guesses', async ({ page }) => {
+    test('an unrecognized field pastes the full SOAP in one click, and can be narrowed to a section', async ({ page }) => {
         await page.goto(`${FIXTURE}/`);
         await page.locator('#notes').click();
-        const choose = chipIn(page).getByRole('button', { name: 'Choose section' });
-        await expect(choose).toBeVisible();
-        await choose.click();
+        await pasteButton(page, 'Full SOAP').click();
+        await expect(page.locator('#notes')).toHaveValue(BELLA.full);
+        await page.locator('#notes').fill('');
+
+        await settingsButton(page).click();
+        await expect(menuIn(page).getByRole('radio', { name: 'Auto-detect (Full SOAP)' })).toHaveAttribute('aria-checked', 'true');
         await menuIn(page).getByRole('radio', { name: 'Plan', exact: true }).click();
         await expect(page.locator('#notes')).toHaveValue('');
         await pasteButton(page, 'Plan').click();
@@ -231,7 +234,9 @@ test.describe('cases and records', () => {
 
         const popup = await context.newPage();
         await popup.goto(`chrome-extension://${extensionId()}/popup.html`);
-        await popup.getByRole('checkbox').check();
+        await expect(popup.getByText('SmartPaste is paused')).toBeVisible();
+        await popup.getByRole('switch', { name: 'SmartPaste' }).check();
+        await expect(popup.getByText('SmartPaste is paused')).toHaveCount(0);
         await popup.getByRole('radio', { name: /Milo/ }).click();
         await expect(popup.getByRole('radio', { name: 'Callback' })).toHaveAttribute('aria-checked', 'true');
         await popup.getByRole('radio', { name: 'SOAP' }).click();
@@ -508,7 +513,7 @@ test.describe('remembered sections', () => {
     test('remembers a manual choice for this field on this site until forgotten', async ({ page }) => {
         await page.goto(`${FIXTURE}/`);
         await page.locator('#notes').click();
-        await chipIn(page).getByRole('button', { name: 'Choose section' }).click();
+        await settingsButton(page).click();
         await menuIn(page).getByRole('radio', { name: 'Plan', exact: true }).click();
         await settingsButton(page).click();
         await menuIn(page).getByRole('button', { name: 'Always use Plan for this field on this site' }).click();
@@ -518,9 +523,9 @@ test.describe('remembered sections', () => {
         await page.locator('#notes').click();
         await expect(pasteButton(page, 'Plan')).toBeVisible();
         await settingsButton(page).click();
-        await expect(menuIn(page)).toContainText('Plan (remembered)');
+        await expect(menuIn(page).getByRole('radio', { name: 'Remembered (Plan)' })).toHaveAttribute('aria-checked', 'true');
         await menuIn(page).getByRole('button', { name: 'Forget Plan for this field' }).click();
-        await expect(chipIn(page).getByRole('button', { name: 'Choose section' })).toBeVisible();
+        await expect(pasteButton(page, 'Full SOAP')).toBeVisible();
         await expect(page.locator('#notes')).toHaveValue('');
     });
 });
@@ -595,5 +600,33 @@ test.describe('records sent from PetWise', () => {
 
         await page.goto(`${FIXTURE}/`);
         expect(await page.evaluate(() => typeof window.chrome?.runtime?.sendMessage)).toBe('undefined');
+    });
+});
+
+test.describe('How it works guide', () => {
+    const helpPage = (context) =>
+        context.waitForEvent('page', {
+            predicate: async (p) => {
+                await p.waitForLoadState();
+                return p.url().endsWith('/help.html');
+            },
+        });
+
+    test('opens once on install, and from the popup and the paste menu', async ({ page, context }) => {
+        await expect.poll(() => context.pages().some((p) => p.url().endsWith('/help.html?welcome'))).toBe(true);
+
+        const popup = await context.newPage();
+        await popup.goto(`chrome-extension://${extensionId()}/popup.html`);
+        const fromPopup = helpPage(context);
+        await popup.getByRole('button', { name: 'How it works' }).click();
+        await expect((await fromPopup).getByRole('heading', { name: 'How SmartPaste works' })).toBeVisible();
+
+        await page.bringToFront();
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#subjective').click();
+        await settingsButton(page).click();
+        const fromMenu = helpPage(context);
+        await menuIn(page).getByRole('button', { name: 'How it works' }).click();
+        await expect((await fromMenu).getByRole('heading', { name: 'How SmartPaste works' })).toBeVisible();
     });
 });

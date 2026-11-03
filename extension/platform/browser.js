@@ -21,6 +21,18 @@ export const extensionStorage = storageArea('local');
 // never written to disk. The background script opens it to content scripts.
 export const sessionRecordStorage = storageArea('session');
 
+export const PETWISE_APP_URL = 'https://petwise.vet/dashboard/quicksoap';
+export const HELP_PAGE = '/help.html';
+export const OPEN_HELP_MESSAGE = 'smartpaste:open-help';
+
+// Content scripts have no tabs API, so they ask the background to open the guide.
+export const openHelp = () =>
+    browser.tabs
+        ? browser.tabs.create({ url: browser.runtime.getURL(HELP_PAGE) })
+        : browser.runtime.sendMessage({ type: OPEN_HELP_MESSAGE }).catch(() => {});
+
+export const openTab = (url) => browser.tabs.create({ url });
+
 // `container` should be inside the SmartPaste shadow root so the temporary textarea is never mistaken for a PIMS field.
 export const copyToClipboard = async (text, container) => {
     try {
