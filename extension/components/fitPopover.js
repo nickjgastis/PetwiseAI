@@ -13,6 +13,7 @@ export const fitPopover = (el) => {
     el.style.maxHeight = 'none';
     const natural = el.scrollHeight;
     const up = natural > below && above > below;
-    el.classList.toggle('is-up', up);
+    // A data attribute rather than a class: React rewrites className on re-render, which would restart the animation.
+    el.dataset.side = up ? 'up' : 'down';
     el.style.maxHeight = `${Math.max(MIN_HEIGHT, Math.floor(up ? above : below))}px`;
 };

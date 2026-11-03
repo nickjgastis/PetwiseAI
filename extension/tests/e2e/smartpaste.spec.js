@@ -1,9 +1,12 @@
-import { MOCK_RECORDS } from '../../services/mockRecords.js';
+import { MOCK_OTHER_RECORDS, MOCK_RECORDS } from '../../services/mockRecords.js';
 import { formatRecord } from '../../services/soapFormatter.js';
 import { chipIn, expect, extensionId, FIXTURE, menuIn, normalize, pasteButton, settingsButton, test } from './extension.js';
 
 const BELLA = formatRecord(MOCK_RECORDS[0]);
 const MAX = formatRecord(MOCK_RECORDS[1]);
+const MILO = formatRecord(MOCK_RECORDS[4]);
+const BELLA_CALLBACK = formatRecord(MOCK_OTHER_RECORDS.find((r) => r.id === 'mock-bella-callback'));
+const LUNA_DENTAL = formatRecord(MOCK_OTHER_RECORDS.find((r) => r.id === 'mock-luna-dental'));
 const UNDO = process.platform === 'darwin' ? 'Meta+z' : 'Control+z';
 const DOC_END = process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End';
 
@@ -168,17 +171,24 @@ test.describe('field recognition', () => {
     });
 });
 
-test.describe('records', () => {
+test.describe('cases and records', () => {
     test('switching to Max changes what is pasted, does not paste by itself, and survives field changes and reloads', async ({ page }) => {
         await page.goto(`${FIXTURE}/`);
         await page.locator('#subjective').click();
         await settingsButton(page).click();
         const menu = menuIn(page);
-        await expect(menu.getByRole('radio')).toHaveCount(5 + 6);
-        await expect(menu.getByRole('radiogroup', { name: 'Active PetWise record' })).toContainText('BellaVomiting');
+        // 5 cases, Bella's 2 records, Auto-detect + 4 sections + Full SOAP.
+        await expect(menu.getByRole('radio')).toHaveCount(5 + 2 + 6);
+        await expect(menu.getByRole('radiogroup', { name: 'Active PetWise case' })).toContainText('BellaVomiting');
+
+        // Opening Max's case selects its newest record, the Summary, which has no Subjective.
         await menu.getByRole('radio', { name: /Max\s*Lameness/ }).click();
+        await expect(chipIn(page).locator('.sp-type')).toHaveText('Summary');
+        await expect(chipIn(page).getByRole('button', { name: 'No Subjective in Summary' })).toBeDisabled();
+        await menu.getByRole('radiogroup', { name: "Records in Max's case" }).getByRole('radio', { name: 'SOAP' }).click();
 
         await expect(chipIn(page).locator('.sp-patient')).toHaveText(/Max/);
+        await expect(chipIn(page).locator('.sp-type')).toHaveText('SOAP');
         await expect(page.locator('#subjective')).toHaveValue('');
         await expect(page.locator('#subjective')).toBeFocused();
 
@@ -222,11 +232,49 @@ test.describe('records', () => {
         await popup.goto(`chrome-extension://${extensionId()}/popup.html`);
         await popup.getByRole('checkbox').check();
         await popup.getByRole('radio', { name: /Milo/ }).click();
+        await expect(popup.getByRole('radio', { name: 'Callback' })).toHaveAttribute('aria-checked', 'true');
+        await popup.getByRole('radio', { name: 'SOAP' }).click();
         await popup.close();
 
         await page.bringToFront();
         await page.locator('#plan').click();
         await expect(chipIn(page).locator('.sp-patient')).toHaveText(/Milo/);
+        await pasteButton(page, 'Plan').click();
+        await expect(page.locator('#plan')).toHaveValue(MILO.plan);
+    });
+
+    test('a Callback goes whole into a communication field, and section by section where the PIMS has them', async ({ page }) => {
+        await page.goto(`${FIXTURE}/records.html`);
+        await page.locator('#client-communication').click();
+        await settingsButton(page).click();
+        await menuIn(page).getByRole('radiogroup', { name: "Records in Bella's case" }).getByRole('radio', { name: 'Callback' }).click();
+        await expect(menuIn(page)).toHaveCount(0);
+        await pasteButton(page, 'Full Callback').click();
+        await expect(page.locator('#client-communication')).toHaveValue(BELLA_CALLBACK.full);
+
+        await page.locator('#discharge-instructions').click();
+        await pasteButton(page, 'Instructions').click();
+        await expect(page.locator('#discharge-instructions')).toHaveValue(BELLA_CALLBACK.instructions);
+
+        // An unlabelled notes box gets the whole record for non-SOAP types instead of asking.
+        await page.locator('#misc-notes').click();
+        await expect(pasteButton(page, 'Full Callback')).toBeVisible();
+    });
+
+    test('a Dental record fills tooth findings and home care fields', async ({ page }) => {
+        await page.goto(`${FIXTURE}/records.html`);
+        await page.locator('#tooth-findings').click();
+        await settingsButton(page).click();
+        await menuIn(page).getByRole('radio', { name: /Luna\s*Inappetence/ }).click();
+        await expect(chipIn(page).locator('.sp-type')).toHaveText('Dental');
+        await settingsButton(page).click();
+        await expect(menuIn(page)).toHaveCount(0);
+        await pasteButton(page, 'Tooth findings').click();
+        await expect(page.locator('#tooth-findings')).toHaveValue(LUNA_DENTAL.teeth);
+
+        await page.locator('#discharge-instructions').click();
+        await pasteButton(page, 'Home care').click();
+        await expect(page.locator('#discharge-instructions')).toHaveValue(LUNA_DENTAL.homeCare);
     });
 });
 
@@ -481,7 +529,7 @@ test.describe('hover preview', () => {
         await pasteButton(page, 'Subjective').hover();
         const preview = chipIn(page).getByTestId('smartpaste-preview');
         await expect(preview).toBeVisible();
-        await expect(preview).toContainText('Bella \u00b7 Vomiting \u00b7 Subjective');
+        await expect(preview).toContainText('Bella \u00b7 SOAP \u00b7 Subjective');
         await expect(preview).toContainText(BELLA.subjective.split('\n')[0].slice(0, 40));
         await expect(page.locator('#subjective')).toHaveValue('');
 

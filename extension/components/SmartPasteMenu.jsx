@@ -1,33 +1,20 @@
 import { useLayoutEffect, useRef, useState } from 'react';
-import RecordSelector from './RecordSelector.jsx';
+import CasePicker from './CasePicker.jsx';
 import { fitPopover } from './fitPopover.js';
-import { SECTION_LABELS } from '../services/soapSections.js';
 
-const SECTION_OPTIONS = ['subjective', 'objective', 'assessment', 'plan', 'full'];
-
-const detectedText = (detected) => {
-    if (!detected) return 'Not recognized';
-    if (detected.source === 'remembered') return `${SECTION_LABELS[detected.section || 'full']} (remembered)`;
-    if (detected.kind === 'section') return SECTION_LABELS[detected.section];
-    if (detected.kind === 'full') return 'Full SOAP';
-    return 'Not sure, choose a section';
-};
-
-function PasteAll({ plan, onPasteAll }) {
+function PasteAll({ plan, typeLabel, onPasteAll }) {
     if (!plan || plan.fill.length + plan.skipped.length < 2) return null;
     return (
         <div className="sp-menu-section">
             <button type="button" className="sp-action is-primary" disabled={!plan.fill.length} onClick={onPasteAll}>
                 Paste all sections
-                <span className="sp-action-detail">
-                    {plan.fill.length ? `Fills ${plan.fill.map((s) => SECTION_LABELS[s]).join(', ')}` : 'No empty SOAP fields here'}
-                </span>
+                <span className="sp-action-detail">{plan.fill.length ? `Fills ${plan.fill.join(', ')}` : `No empty ${typeLabel} fields here`}</span>
             </button>
             {plan.skipped.length > 0 && (
                 <ul className="sp-skipped">
                     {plan.skipped.map((s) => (
                         <li key={s.section}>
-                            Skips {SECTION_LABELS[s.section]}: {s.reason}
+                            Skips {s.label}: {s.reason}
                         </li>
                     ))}
                 </ul>
@@ -40,24 +27,23 @@ function FieldMemory({ snap, controller }) {
     if (snap.remembered) {
         return (
             <button type="button" className="sp-link" onClick={controller.forgetField}>
-                Forget {SECTION_LABELS[snap.remembered]} for this field
+                Forget {snap.rememberedLabel} for this field
             </button>
         );
     }
     if (snap.override && snap.canRemember) {
         return (
             <button type="button" className="sp-link" onClick={() => controller.rememberSection(snap.override)}>
-                Always use {SECTION_LABELS[snap.override]} for this field on this site
+                Always use {snap.overrideLabel} for this field on this site
             </button>
         );
     }
     return null;
 }
 
-export default function SmartPasteMenu({ snap, controller }) {
+export default function SmartPasteMenu({ snap, controller, closing = false }) {
     const [confirmReplace, setConfirmReplace] = useState(false);
     const menuRef = useRef(null);
-    const autoSection = snap.detected?.kind === 'section' ? snap.detected.section : snap.detected?.kind === 'full' ? 'full' : null;
 
     useLayoutEffect(() => fitPopover(menuRef.current));
 
@@ -69,12 +55,25 @@ export default function SmartPasteMenu({ snap, controller }) {
     };
 
     return (
-        <div ref={menuRef} className="sp-menu" role="dialog" aria-label="SmartPaste settings" onKeyDown={onKeyDown}>
-            <PasteAll plan={snap.bulkPlan} onPasteAll={controller.pasteAll} />
+        <div
+            ref={menuRef}
+            className={`sp-menu${closing ? ' is-closing' : ''}`}
+            role="dialog"
+            aria-label="SmartPaste settings"
+            aria-hidden={closing || undefined}
+            onKeyDown={onKeyDown}
+        >
+            <PasteAll plan={snap.bulkPlan} typeLabel={snap.typeLabel} onPasteAll={controller.pasteAll} />
 
             <div className="sp-menu-section">
-                <div className="sp-menu-title">Active PetWise record</div>
-                <RecordSelector records={snap.records} activeId={snap.activeRecordId} onSelect={controller.selectRecord} />
+                <div className="sp-menu-title">Active PetWise case</div>
+                <CasePicker
+                    cases={snap.cases}
+                    activeCaseId={snap.activeCaseId}
+                    activeRecordId={snap.activeRecordId}
+                    onSelectCase={controller.selectCase}
+                    onSelectRecord={controller.selectRecord}
+                />
             </div>
 
             <div className="sp-menu-section">
@@ -87,22 +86,21 @@ export default function SmartPasteMenu({ snap, controller }) {
                         className={`sp-section-option${!snap.override ? ' is-active' : ''}`}
                         onClick={() => controller.setOverride(null)}
                     >
-                        Auto-detect{autoSection ? ` (${SECTION_LABELS[autoSection]})` : ''}
+                        Auto-detect{snap.autoLabel ? ` (${snap.autoLabel})` : ''}
                     </button>
-                    {SECTION_OPTIONS.map((key) => {
-                        const available = snap.availableSections.includes(key);
-                        const active = snap.override === key;
+                    {snap.sectionOptions.map((o) => {
+                        const active = snap.override === o.key;
                         return (
                             <button
-                                key={key}
+                                key={o.key}
                                 type="button"
                                 role="radio"
                                 aria-checked={active}
-                                disabled={!available}
+                                disabled={!o.available}
                                 className={`sp-section-option${active ? ' is-active' : ''}`}
-                                onClick={() => controller.setOverride(key)}
+                                onClick={() => controller.setOverride(o.key)}
                             >
-                                {SECTION_LABELS[key]}
+                                {o.label}
                             </button>
                         );
                     })}
@@ -114,7 +112,7 @@ export default function SmartPasteMenu({ snap, controller }) {
                     <span className="sp-meta-key">Field</span> {snap.fieldName}
                 </div>
                 <div>
-                    <span className="sp-meta-key">Detected</span> {detectedText(snap.detected)}
+                    <span className="sp-meta-key">Detected</span> {snap.detectedLabel}
                 </div>
                 <FieldMemory snap={snap} controller={controller} />
             </div>

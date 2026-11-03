@@ -1,12 +1,13 @@
 import { normalizeLabel } from './fieldClassifier.js';
+import { ALL_SECTION_KEYS, FULL } from './recordTypes.js';
 
 // Sections the vet chose for fields SmartPaste could not recognize, remembered per site.
-// Stored shape: { [origin]: { [fieldKey]: 'subjective' | 'objective' | 'assessment' | 'plan' | 'full' } }.
+// Stored shape: { [origin]: { [fieldKey]: section key from recordTypes.js | 'full' } }.
 // Keys are built from field labels and identifiers only, never from field contents or record text.
 
 export const MEMORY_KEY = 'smartpaste.fieldMappings';
 
-const VALID = new Set(['subjective', 'objective', 'assessment', 'plan', 'full']);
+const VALID = new Set([...ALL_SECTION_KEYS, FULL]);
 const KEY_SOURCES = ['label', 'aria-label', 'aria-labelledby', 'placeholder', 'name', 'id'];
 
 // A stable name for a field: its strongest label-like source. Null when the field has nothing to go on.

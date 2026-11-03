@@ -6,7 +6,9 @@ import { copyToClipboard, extensionStorage } from '../platform/browser.js';
 import { createFieldMemory } from '../services/fieldMemory.js';
 import { createRecordStore } from '../services/recordStore.js';
 import { createController } from '../services/smartPasteController.js';
-import '../styles/smartpaste.css';
+// Bundled into the script rather than fetched: a fetched stylesheet must be web-accessible to the page's origin,
+// which would mean listing every site a vet enables.
+import styles from '../styles/smartpaste.css?inline';
 
 // A same-origin child frame is handled by the topmost frame it can reach, so the control is drawn in the top
 // document and never clipped by a small editor iframe. Only frames that cannot reach the top (cross-origin)
@@ -25,13 +27,14 @@ const reachableFromTop = () => {
 };
 
 export default defineContentScript({
-    // Local mock PIMS only. localhost:4173 is a second origin used to test cross-origin editor frames.
+    // Always on for the local mock PIMS (localhost:4173 is a second origin for cross-origin editor frames). Other
+    // sites are registered at runtime once the vet enables them (platform/siteAccess.js).
     matches: ['http://127.0.0.1:4173/*', 'http://localhost:4173/*'],
     allFrames: true,
     matchAboutBlank: true,
     matchOriginAsFallback: true,
     runAt: 'document_idle',
-    cssInjectionMode: 'ui',
+    cssInjectionMode: 'manual',
 
     async main(ctx) {
         if (window !== window.top && reachableFromTop()) return;
@@ -43,6 +46,7 @@ export default defineContentScript({
 
         const ui = await createShadowRootUi(ctx, {
             name: 'petwise-smartpaste',
+            css: styles,
             position: 'inline',
             anchor: 'body',
             append: 'last',

@@ -228,12 +228,111 @@ Home sleeping respiratory rate monitoring, target below 30 brpm
 **Follow-up:**
 Plan to recheck thoracic radiographs and renal values in 7 days.`;
 
+// Summary and Callback follow the plain-text layout their generators are given in server/server.js; Dental follows
+// server/dental.js.
+const bellaCallback = `Client Communication Report
+Patient: Bella
+
+Summary of Call
+The clinician called the owner 48 hours after Bella's visit for acute gastroenteritis to check on her progress.
+
+1. Clinical Progress:
+No further vomiting since the day of the visit. One soft stool yesterday, normal stool this morning.
+
+2. Appetite and Hydration:
+Eating small frequent meals of the low-fat gastrointestinal diet with a good appetite. Drinking normally.
+
+Instructions Provided:
+1. Continue the low-fat gastrointestinal diet for 3 more days.
+2. Transition back to Hill's i/d over 5 days.
+3. No treats or table food until fully recovered.
+
+Next Steps:
+No recheck needed if improvement continues. Owner to call if vomiting recurs or appetite drops.
+
+This report serves as documentation of communication and recommended actions regarding Bella's care.
+
+End of Report.`;
+
+const maxSummary = `Clinical Summary Report
+Patient: Max
+
+Max was examined for acute right pelvic limb lameness of 3 days duration following exercise at the dog park.
+
+1. Orthopedic Findings:
+Grade 3/5 weight-bearing lameness of the right pelvic limb with positive cranial drawer and tibial thrust. Stifle radiographs showed joint effusion without osteophytosis.
+
+2. Diagnosis:
+Findings are consistent with right cranial cruciate ligament rupture.
+
+Treatment Protocol:
+- Carprofen 4.4 mg/kg PO q24h x 14 days with food
+- Gabapentin 10 mg/kg PO q8-12h x 14 days
+
+Recommendations:
+Strict leash-only exercise for 6 weeks. Surgical stabilization (TPLO) was discussed and the owner will consider referral. Recheck in 2 weeks.
+
+This report serves as documentation of Max's orthopedic examination and initial management.
+
+End of Report.`;
+
+const lunaDental = `Dental Procedure Summary
+General anesthesia with isoflurane after pre-anesthetic bloodwork within normal limits. Generalized grade 2 gingivitis, periodontal stage 2.
+
+Tooth Findings
+108: Slab fracture with pulp exposure. Extracted.
+307: Type 1 tooth resorption. Extracted.
+409: PD3 on the distal root.
+
+Radiographs
+108: Periapical lucency at the mesial root.
+307: Type 1 resorption with intact root outline.
+
+Treatment
+Infraorbital and inferior alveolar nerve blocks with bupivacaine. Surgical extraction of 108 and 307 with mucogingival flaps, closed with 5-0 absorbable suture. Scaling and polishing of the remaining teeth.
+
+Home Care and Follow-up
+Soft food for 10 days. Buprenorphine 0.02 mg/kg OTM q8-12h x 3 days. Recheck oral surgery sites in 10 to 14 days.`;
+
+const miloCallback = `Client Communication Report
+Patient: Milo
+
+Summary of Call
+The owner called to report Milo's sleeping respiratory rate 3 days after starting furosemide and pimobendan.
+
+1. Home Monitoring:
+Sleeping respiratory rate has dropped from 38 to 26 breaths per minute. Coughing at night has reduced.
+
+2. Medications:
+Both medications given as directed. Mild increase in thirst and urination noted.
+
+Instructions Provided:
+1. Continue furosemide and pimobendan at the current doses.
+2. Keep recording the sleeping respiratory rate daily.
+
+Recommendation:
+Keep the 7-day recheck for thoracic radiographs and renal values.
+
+End of Report.`;
+
+const soap = (id, caseId, patientName, species, recordTitle, updatedAt, reportText) => ({ id, caseId, patientName, species, recordTitle, recordType: 'soap', updatedAt, reportText });
+
+// The SOAP records, kept in their original order for tests that index into them.
 export const MOCK_RECORDS = [
-    { id: 'mock-bella', patientName: 'Bella', species: 'Canine', recordTitle: 'Vomiting', recordType: 'soap', updatedAt: '2026-11-03T09:12:00.000Z', reportText: bella },
-    { id: 'mock-max', patientName: 'Max', species: 'Canine', recordTitle: 'Lameness', recordType: 'soap', updatedAt: '2026-11-03T10:05:00.000Z', reportText: max },
-    { id: 'mock-luna', patientName: 'Luna', species: 'Feline', recordTitle: 'Inappetence', recordType: 'soap', updatedAt: '2026-11-03T10:48:00.000Z', reportText: luna },
-    { id: 'mock-charlie', patientName: 'Charlie', species: 'Canine', recordTitle: 'Diarrhea', recordType: 'soap', updatedAt: '2026-11-03T11:30:00.000Z', reportText: charlie },
-    { id: 'mock-milo', patientName: 'Milo', species: 'Canine', recordTitle: 'Coughing', recordType: 'soap', updatedAt: '2026-11-03T12:15:00.000Z', reportText: milo },
+    soap('mock-bella', 'case-bella', 'Bella', 'Canine', 'Vomiting', '2026-11-03T09:12:00.000Z', bella),
+    soap('mock-max', 'case-max', 'Max', 'Canine', 'Lameness', '2026-11-03T10:05:00.000Z', max),
+    soap('mock-luna', 'case-luna', 'Luna', 'Feline', 'Inappetence', '2026-11-03T10:48:00.000Z', luna),
+    soap('mock-charlie', 'case-charlie', 'Charlie', 'Canine', 'Diarrhea', '2026-11-03T11:30:00.000Z', charlie),
+    soap('mock-milo', 'case-milo', 'Milo', 'Canine', 'Coughing', '2026-11-03T12:15:00.000Z', milo),
 ];
+
+export const MOCK_OTHER_RECORDS = [
+    { ...MOCK_RECORDS[0], id: 'mock-bella-callback', recordType: 'callback', updatedAt: '2026-11-05T16:20:00.000Z', reportText: bellaCallback },
+    { ...MOCK_RECORDS[1], id: 'mock-max-summary', recordType: 'summary', updatedAt: '2026-11-03T10:40:00.000Z', reportText: maxSummary },
+    { ...MOCK_RECORDS[2], id: 'mock-luna-dental', recordType: 'dental', updatedAt: '2026-11-06T13:05:00.000Z', reportText: lunaDental },
+    { ...MOCK_RECORDS[4], id: 'mock-milo-callback', recordType: 'callback', updatedAt: '2026-11-06T09:30:00.000Z', reportText: miloCallback },
+];
+
+export const MOCK_ALL_RECORDS = [...MOCK_RECORDS, ...MOCK_OTHER_RECORDS];
 
 export const DEFAULT_RECORD_ID = 'mock-bella';

@@ -1,19 +1,40 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MOCK_RECORDS } from '../../services/mockRecords.js';
-import { createMemoryStorage, createRecordStore, STORAGE_KEYS } from '../../services/recordStore.js';
+import { createMemoryStorage, createRecordStore, groupCases, STORAGE_KEYS } from '../../services/recordStore.js';
 
 describe('recordStore', () => {
-    it('selects Bella by default and lists all five records', async () => {
+    it('selects Bella by default and lists five cases, newest first, each with its records newest first', async () => {
         const store = createRecordStore({ storage: createMemoryStorage() });
         await store.ready;
         expect(store.getActiveRecord().patientName).toBe('Bella');
-        expect(store.listRecords().map((r) => r.label)).toEqual([
-            'Bella \u00b7 Vomiting',
-            'Max \u00b7 Lameness',
+        expect(store.getActiveType()).toBe('soap');
+        const cases = store.listCases();
+        expect(cases.map((c) => c.label)).toEqual([
             'Luna \u00b7 Inappetence',
-            'Charlie \u00b7 Diarrhea',
             'Milo \u00b7 Coughing',
+            'Bella \u00b7 Vomiting',
+            'Charlie \u00b7 Diarrhea',
+            'Max \u00b7 Lameness',
         ]);
+        expect(cases.find((c) => c.patientName === 'Bella').records.map((r) => r.typeLabel)).toEqual(['Callback', 'SOAP']);
+        expect(cases.find((c) => c.patientName === 'Max').records.map((r) => r.typeLabel)).toEqual(['Summary', 'SOAP']);
+    });
+
+    it('opening a case selects its most recent record; a record can then be picked by type', async () => {
+        const store = createRecordStore({ storage: createMemoryStorage() });
+        await store.selectCase('case-luna');
+        expect(store.getActiveRecord().id).toBe('mock-luna-dental');
+        expect(store.getActiveType()).toBe('dental');
+        expect(store.getActiveContent().teeth).toMatch(/^108: Slab fracture/);
+        await store.selectRecord('mock-luna');
+        expect(store.getActiveCase().id).toBe('case-luna');
+        expect(store.getActiveType()).toBe('soap');
+    });
+
+    it('treats a record without a case as a case of its own', () => {
+        const cases = groupCases([{ id: 'r1', patientName: 'Nova', recordTitle: 'Itch', recordType: 'quicksoap', updatedAt: '2026-01-01' }]);
+        expect(cases).toHaveLength(1);
+        expect(cases[0]).toMatchObject({ id: 'record:r1', label: 'Nova \u00b7 Itch', records: [{ id: 'r1', recordType: 'soap', typeLabel: 'SOAP' }] });
     });
 
     it('switches the active record, notifies, and serves that record\'s content', async () => {

@@ -3,7 +3,7 @@ import { describeField, editorKind, fieldDisplayName, isEligible, isOwnUi, resol
 import { containsText, insertText, readValue } from './fieldInserter.js';
 import { fieldKey } from './fieldMemory.js';
 import { rectInViewport } from './positioner.js';
-import { SECTION_KEYS, SECTION_LABELS } from './soapSections.js';
+import { FULL, resolveSection, sectionLabel, typeLabel, typeSectionKeys } from './recordTypes.js';
 import { recordLabel } from './soapFormatter.js';
 
 // Owns everything that touches the host page: focus tracking (in this document and same-origin child frames),
@@ -54,40 +54,68 @@ export const createController = ({ win, store, memory = null, copy }) => {
         return classifyField(descriptor, { location: el.ownerDocument.location });
     };
 
-    const effectiveSection = () => {
-        if (state.override) return state.override;
-        const c = state.classification;
-        if (c?.kind === 'section') return c.section;
-        if (c?.kind === 'full') return 'full';
+    const activeType = () => store.getActiveType();
+    const labelOf = (section) => sectionLabel(activeType(), section);
+
+    // What the field asks for, as a section key or 'full'. A field nobody could name gets the whole record when the
+    // record is not a SOAP (Summary and Callback usually go into one communication box), and a choice for SOAP.
+    const fieldSection = (classification = state.classification, descriptor = state.descriptor) => {
+        if (classification?.kind === 'section') return classification.section;
+        if (classification?.kind === 'full') return FULL;
+        if (classification?.kind === 'ambiguous' && descriptor?.multiline && activeType() !== 'soap') return FULL;
         return null;
+    };
+
+    // The section of the active record to paste: the field's section mapped onto this record type, or null.
+    const requestedSection = () => state.override || fieldSection();
+    const effectiveSection = () => resolveSection(activeType(), requestedSection());
+
+    const detectedLabel = () => {
+        const c = state.classification;
+        const section = fieldSection();
+        if (!c) return 'Not recognized';
+        if (!section) return 'Not sure, choose a section';
+        if (c.kind === 'ambiguous') return `Not sure, using ${labelOf(FULL)}`;
+        return `${labelOf(section)}${c.source === 'remembered' ? ' (remembered)' : ''}`;
     };
 
     const buildSnapshot = () => {
         const store_ = store.getState();
         const record = store.getActiveRecord();
         const content = store.getActiveContent();
+        const type = activeType();
+        const requested = requestedSection();
         const section = effectiveSection();
         const text = section && content ? content[section] : '';
         const el = state.target;
+        const remembered = state.classification?.source === 'remembered' ? fieldSection() : null;
+        const autoSection = fieldSection();
         return {
             visible: !!(store_.enabled && el && !state.dismissed && state.anchor),
             enabled: store_.enabled,
             anchor: state.anchor,
             viewport: { width: win.innerWidth, height: win.innerHeight },
             activeRecordId: store_.activeRecordId,
+            activeCaseId: store.getActiveCase()?.id || null,
+            cases: store.listCases(),
             patientName: record?.patientName || '',
+            recordType: type,
+            typeLabel: typeLabel(type),
             recordLabel: recordLabel(record),
             sectionText: text,
             canRemember: !!(state.descriptor && fieldKey(state.descriptor)),
-            remembered: state.classification?.source === 'remembered' ? (state.classification.section || 'full') : null,
+            remembered,
+            rememberedLabel: remembered ? labelOf(remembered) : '',
             bulkPlan: state.bulkPlan,
-            records: store.listRecords(),
-            availableSections: content ? Object.keys(SECTION_LABELS).filter((k) => content[k]) : [],
+            sectionOptions: [...typeSectionKeys(type), FULL].map((key) => ({ key, label: labelOf(key), available: !!content?.[key] })),
             fieldName: state.descriptor ? fieldDisplayName(state.descriptor) : '',
             detected: state.classification,
+            detectedLabel: detectedLabel(),
+            autoLabel: autoSection && resolveSection(type, autoSection) ? labelOf(autoSection) : '',
             override: state.override,
-            section,
-            sectionLabel: section ? SECTION_LABELS[section] : '',
+            overrideLabel: state.override ? labelOf(state.override) : '',
+            section: requested,
+            sectionLabel: requested ? labelOf(requested) : '',
             sectionAvailable: !!text,
             duplicate: !!(el && text && containsText(el, text)),
             menuOpen: state.menuOpen,
@@ -319,14 +347,15 @@ export const createController = ({ win, store, memory = null, copy }) => {
 
     const sectionText = (section) => {
         const content = store.getActiveContent();
-        return section && content ? content[section] : '';
+        const key = resolveSection(activeType(), section);
+        return key && content ? content[key] || '' : '';
     };
 
     const copySection = async (section = effectiveSection()) => {
         const text = sectionText(section);
         if (!text) return false;
         const ok = await copy(text, uiContainer);
-        const label = SECTION_LABELS[section];
+        const label = labelOf(section);
         showFeedback(ok ? { type: 'success', message: `Copied ${label}. Paste it with Ctrl+V or \u2318V.` } : { type: 'error', message: `Couldn't copy ${label}.` });
         return ok;
     };
@@ -336,9 +365,10 @@ export const createController = ({ win, store, memory = null, copy }) => {
         const section = effectiveSection();
         const text = sectionText(section);
         if (!el || state.busy) return null;
-        const label = SECTION_LABELS[section] || 'section';
+        const label = section ? labelOf(section) : 'section';
         if (!text) {
-            showFeedback({ type: 'error', message: `${store.getActiveRecord()?.patientName || 'This'} record has no ${label} section.` });
+            const name = store.getActiveRecord()?.patientName;
+            showFeedback({ type: 'error', message: `${name ? `${name}'s` : 'This'} ${typeLabel(activeType())} has no ${labelOf(requestedSection()) || 'such'} section.` });
             return null;
         }
         if (mode === 'insert' && !again && containsText(el, text)) {
@@ -377,13 +407,15 @@ export const createController = ({ win, store, memory = null, copy }) => {
         const el = state.target;
         if (!el) return null;
         const seen = new Set();
+        const type = activeType();
         const fields = [];
         el.ownerDocument.querySelectorAll(EDITABLE_SELECTOR).forEach((node) => {
             const field = resolveEditable(node);
             if (!field || seen.has(field) || !isEligible(field)) return;
             seen.add(field);
             const c = field === el && state.override ? { kind: 'section', section: state.override } : classify(field, describeField(field));
-            if (c.kind === 'section') fields.push({ el: field, section: c.section });
+            const section = c.kind === 'section' ? resolveSection(type, c.section) : null;
+            if (section && section !== FULL) fields.push({ el: field, section });
         });
 
         let scope = el.parentElement;
@@ -397,22 +429,23 @@ export const createController = ({ win, store, memory = null, copy }) => {
 
         const fill = [];
         const skipped = [];
-        SECTION_KEYS.forEach((section) => {
+        typeSectionKeys(type).forEach((section) => {
             const matches = inScope.filter((f) => f.section === section);
             if (!matches.length) return;
-            if (matches.length > 1) skipped.push({ section, reason: `${matches.length} fields look like ${SECTION_LABELS[section]}` });
+            if (matches.length > 1) skipped.push({ section, reason: `${matches.length} fields look like ${labelOf(section)}` });
             else if (!sectionText(section)) skipped.push({ section, reason: 'not in this record' });
             else if (readValue(matches[0].el).trim()) skipped.push({ section, reason: 'field already has text' });
             else fill.push(matches[0]);
         });
-        return { fill: fill.map((f) => f.section), skipped, fields: fill };
+        const labelled = (s) => ({ ...s, label: labelOf(s.section) });
+        return { fill: fill.map((f) => labelOf(f.section)), skipped: skipped.map(labelled), fields: fill };
     };
 
     const pasteAll = async () => {
         if (state.busy) return null;
         const plan = planBulk();
         if (!plan?.fields.length) {
-            showFeedback({ type: 'error', message: 'No empty SOAP fields to fill here.' });
+            showFeedback({ type: 'error', message: `No empty ${typeLabel(activeType())} fields to fill here.` });
             return plan;
         }
         const origin = state.target;
@@ -430,13 +463,13 @@ export const createController = ({ win, store, memory = null, copy }) => {
         state = { ...state, busy: false };
         if (origin?.isConnected) origin.focus({ preventScroll: true });
 
-        const done = results.filter((r) => r.status === 'inserted').map((r) => SECTION_LABELS[r.section]);
-        const failed = results.filter((r) => r.status !== 'inserted').map((r) => SECTION_LABELS[r.section]);
+        const done = results.filter((r) => r.status === 'inserted').map((r) => labelOf(r.section));
+        const failed = results.filter((r) => r.status !== 'inserted').map((r) => labelOf(r.section));
         const name = store.getActiveRecord()?.patientName;
         const parts = [];
         if (done.length) parts.push(`Pasted ${name}'s ${done.join(', ')}.`);
         if (failed.length) parts.push(`Check ${failed.join(', ')}: the field did not take the text.`);
-        if (plan.skipped.length) parts.push(`Skipped ${plan.skipped.map((s) => `${SECTION_LABELS[s.section]} (${s.reason})`).join(', ')}.`);
+        if (plan.skipped.length) parts.push(`Skipped ${plan.skipped.map((s) => `${s.label} (${s.reason})`).join(', ')}.`);
         showFeedback({ type: failed.length ? 'warning' : plan.skipped.length ? 'info' : 'success', message: parts.join(' ') });
         return { results, skipped: plan.skipped };
     };
@@ -446,7 +479,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
         const key = state.descriptor && fieldKey(state.descriptor);
         if (!el || !key || !memory) return;
         await memory.remember(originOf(el), key, section);
-        setState({ override: null, menuOpen: false, feedback: { type: 'success', message: `${SECTION_LABELS[section]} will be used for this field on this site.` } });
+        setState({ override: null, menuOpen: false, feedback: { type: 'success', message: `${labelOf(section)} will be used for this field on this site.` } });
         refocusTarget();
     };
 
@@ -500,8 +533,14 @@ export const createController = ({ win, store, memory = null, copy }) => {
         replaceAll: () => paste({ mode: 'replace' }),
         selectRecord: async (id) => {
             await store.selectRecord(id);
-            setState({ menuOpen: false, feedback: null });
+            setState({ override: null, menuOpen: false, feedback: null });
             refocusTarget();
+        },
+        // Picking a case keeps the menu open so a different record type in it can be chosen next.
+        selectCase: async (id) => {
+            await store.selectCase(id);
+            const plan = state.menuOpen ? planBulk() : null;
+            setState({ override: null, feedback: null, bulkPlan: plan ? { fill: plan.fill, skipped: plan.skipped } : null });
         },
         setOverride: (section) => {
             setState({ override: section, menuOpen: false, feedback: null });

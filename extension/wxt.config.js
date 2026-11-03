@@ -5,9 +5,12 @@ export default defineConfig({
     imports: false,
     manifest: {
         name: 'PetWise SmartPaste',
-        description: 'Paste PetWise SOAP records into the field you choose in your practice management software.',
-        version: '0.1.0',
-        permissions: ['storage'],
+        description: 'Paste PetWise records into the field you choose in your practice management software.',
+        version: '0.2.0',
+        // activeTab lets the popup see which site it was opened on; sites are only added one at a time when the vet
+        // enables them, so the install prompt asks for nothing beyond the local mock PIMS.
+        permissions: ['storage', 'activeTab', 'scripting'],
+        optional_host_permissions: ['http://*/*', 'https://*/*'],
         icons: { 16: 'icon-16.png', 48: 'icon-48.png', 128: 'icon-128.png' },
         action: { default_title: 'PetWise SmartPaste' },
     },

@@ -5,12 +5,17 @@
 }
 
 .sp-root {
-    --sp-accent: #2d5fb8;
-    --sp-accent-hover: #244d97;
+    /* PetWise app primary (--primary-color / --primary-hover in src/index.css). */
+    --sp-accent: #3f8ddb;
+    --sp-accent-hover: #2980b9;
+    --sp-accent-soft: #e7f2fc;
+    --sp-accent-line: #c3ddf5;
     --sp-ink: #13233f;
     --sp-muted: #5b6b85;
     --sp-border: #dfe6f0;
-    --sp-wash: #f3f7fd;
+    --sp-wash: #f2f8fd;
+    --sp-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --sp-ease-in: cubic-bezier(0.4, 0, 1, 1);
     --sp-success: #047857;
     --sp-success-bg: #ecfdf5;
     --sp-warning: #92400e;
@@ -102,7 +107,7 @@
 .sp-primary.is-choose {
     background: var(--sp-wash);
     color: var(--sp-accent) !important;
-    border: 1px solid #c9d8f0;
+    border: 1px solid var(--sp-accent-line);
 }
 
 .sp-done {
@@ -202,7 +207,7 @@
     padding: 6px;
 }
 
-.sp-menu.is-up {
+.sp-menu[data-side='up'] {
     top: auto;
     bottom: calc(100% + 6px);
 }
@@ -251,7 +256,7 @@
 
 .sp-record-option.is-active,
 .sp-section-option.is-active {
-    background: #e8f0fc;
+    background: var(--sp-accent-soft);
     color: var(--sp-accent) !important;
     font-weight: 600;
 }
@@ -412,7 +417,7 @@
     pointer-events: none;
 }
 
-.sp-preview.is-up {
+.sp-preview[data-side='up'] {
     top: auto;
     bottom: calc(100% + 6px);
 }
@@ -438,4 +443,189 @@
     margin-top: 4px;
     font-size: 11px;
     color: var(--sp-muted);
+}
+
+/* Record type colors are fixed across PetWise: SOAP blue, Summary emerald, Callback amber, Dental violet. */
+.sp-root .is-soap {
+    --sp-type: #2f7bc8;
+    --sp-type-bg: #e7f2fc;
+}
+
+.sp-root .is-summary {
+    --sp-type: #047857;
+    --sp-type-bg: #e6f7ef;
+}
+
+.sp-root .is-callback {
+    --sp-type: #b45309;
+    --sp-type-bg: #fdf3e2;
+}
+
+.sp-root .is-dental {
+    --sp-type: #6d28d9;
+    --sp-type-bg: #f1ebfd;
+}
+
+.sp-type {
+    margin-left: 2px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--sp-type-bg);
+    color: var(--sp-type);
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.sp-record-when {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--sp-muted);
+    font-weight: 400;
+}
+
+.sp-case.is-active {
+    border-radius: 8px;
+    background: var(--sp-accent-soft);
+}
+
+.sp-case.is-active > .sp-record-option {
+    background: transparent;
+}
+
+.sp-types {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 0 8px 8px 28px;
+    animation: sp-fade-down 160ms var(--sp-ease-out);
+}
+
+.sp-type-option {
+    height: 22px;
+    padding: 0 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--sp-type) !important;
+    font-size: 11.5px !important;
+    font-weight: 600;
+    transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.sp-type-option:hover {
+    border-color: var(--sp-type);
+}
+
+.sp-type-option.is-active {
+    background: var(--sp-type);
+    color: #ffffff !important;
+}
+
+/* Motion: short and decelerating, so the control never feels slower than the PIMS it sits on. */
+.sp-primary,
+.sp-again,
+.sp-icon,
+.sp-action,
+.sp-record-option,
+.sp-section-option {
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.sp-primary:active:not(:disabled),
+.sp-again:active,
+.sp-action:active:not(:disabled) {
+    transform: scale(0.97);
+}
+
+.sp-chip {
+    animation: sp-chip-in 160ms var(--sp-ease-out);
+}
+
+.sp-done {
+    animation: sp-pop 220ms var(--sp-ease-out);
+}
+
+.sp-menu {
+    transform-origin: top right;
+    animation: sp-pop-in 160ms var(--sp-ease-out);
+}
+
+.sp-menu[data-side='up'] {
+    transform-origin: bottom right;
+    animation-name: sp-pop-in-up;
+}
+
+.sp-preview {
+    transform-origin: top left;
+    animation: sp-pop-in 140ms var(--sp-ease-out);
+}
+
+.sp-preview[data-side='up'] {
+    transform-origin: bottom left;
+    animation-name: sp-pop-in-up;
+}
+
+.sp-menu.is-closing,
+.sp-preview.is-closing {
+    pointer-events: none;
+    animation: sp-pop-out 120ms var(--sp-ease-in) forwards;
+}
+
+.sp-feedback {
+    animation: sp-fade-down 180ms var(--sp-ease-out);
+}
+
+@keyframes sp-chip-in {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.96);
+    }
+}
+
+@keyframes sp-pop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.96);
+    }
+}
+
+@keyframes sp-pop-in-up {
+    from {
+        opacity: 0;
+        transform: translateY(4px) scale(0.96);
+    }
+}
+
+@keyframes sp-pop-out {
+    to {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.97);
+    }
+}
+
+@keyframes sp-fade-down {
+    from {
+        opacity: 0;
+        transform: translateY(-3px);
+    }
+}
+
+@keyframes sp-pop {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    60% {
+        transform: scale(1.06);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sp-root *,
+    .sp-root *::before,
+    .sp-root *::after {
+        animation: none !important;
+        transition: none !important;
+    }
 }

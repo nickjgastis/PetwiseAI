@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Mock PIMS: Communications and dental</title>
+        <link rel="stylesheet" href="./fixture.css" />
+    </head>
+    <body>
+        <header class="pims-top">
+            <strong>MockVet PIMS</strong>
+            <nav>
+                <a href="/">Consultation</a>
+                <a href="/full.html">Single field</a>
+                <a href="/records.html" class="is-current">Comms &amp; dental</a>
+                <a href="/rich.html">Rich text</a>
+                <a href="/frames.html">Frames</a>
+                <a href="/react.html">React</a>
+            </nav>
+        </header>
+        <section class="pims-patient">
+            <h1>Bella</h1>
+            <span>Canine · Labrador Retriever · 6y FS</span>
+            <span>Client communications</span>
+        </section>
+
+        <main>
+            <section class="panel">
+                <h2>Communications</h2>
+                <div class="field">
+                    <label for="client-communication">Client Communication</label>
+                    <textarea id="client-communication" style="min-height: 220px"></textarea>
+                </div>
+                <div class="field">
+                    <label for="discharge-instructions">Discharge Instructions</label>
+                    <textarea id="discharge-instructions"></textarea>
+                </div>
+            </section>
+            <section class="panel">
+                <h2>Dental</h2>
+                <div class="field">
+                    <label for="tooth-findings">Tooth Findings</label>
+                    <textarea id="tooth-findings"></textarea>
+                </div>
+            </section>
+            <section class="panel">
+                <h2>Other</h2>
+                <div class="field">
+                    <label for="misc-notes">Notes</label>
+                    <textarea id="misc-notes"></textarea>
+                </div>
+            </section>
+            <div class="actions">
+                <button type="button" id="save">Save</button>
+                <span class="saved-note" id="saved-note" hidden>Saved (mock, nothing leaves this page)</span>
+            </div>
+        </main>
+        <script type="module" src="./main.js"></script>
+    </body>
+</html>

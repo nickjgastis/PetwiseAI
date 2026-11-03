@@ -5,8 +5,44 @@ body {
 
 .sp-root.sp-popup {
     position: static;
-    width: 260px;
+    width: 300px;
     padding: 12px;
+}
+
+.sp-site {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid var(--sp-border);
+    border-radius: 10px;
+    background: var(--sp-wash);
+    font-size: 12px;
+    color: var(--sp-muted);
+}
+
+.sp-site strong {
+    color: var(--sp-ink);
+    font-size: 13px;
+}
+
+.sp-site.is-on {
+    border-color: var(--sp-accent-line);
+    background: var(--sp-accent-soft);
+}
+
+.sp-site-state {
+    margin-top: 2px;
+}
+
+.sp-site-note {
+    margin-top: 2px;
+    font-size: 11px;
+}
+
+.sp-site-error {
+    color: var(--sp-error);
 }
 
 .sp-popup-header {

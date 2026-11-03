@@ -40,6 +40,24 @@ describe('classifyLabel', () => {
         expect(classifyLabel(label).kind).toBe('ignore');
     });
 
+    it.each([
+        ['Discharge Instructions', 'instructions'],
+        ['Home care', 'instructions'],
+        ['Follow-up', 'nextSteps'],
+        ['Next steps', 'nextSteps'],
+        ['Recommendations', 'recommendations'],
+        ['Treatment', 'treatment'],
+        ['Tooth findings', 'teeth'],
+        ['Dental radiographs', 'radiographs'],
+        ['Oral exam', 'procedure'],
+    ])('%s -> %s (Summary, Callback and Dental sections)', (label, section) => expect(classifyLabel(label)).toEqual({ kind: 'section', section }));
+
+    it.each(['Client communication', 'Phone notes', 'Callback notes', 'Visit summary', 'Dental notes'])('%s -> whole record', (label) => {
+        expect(classifyLabel(label)).toEqual({ kind: 'full' });
+    });
+
+    it.each(['Phone', 'Phone number', 'Billing notes'])('%s is still ignored', (label) => expect(classifyLabel(label).kind).toBe('ignore'));
+
     it.each(['Pain assessment', 'Medical history', 'Vaccine history', 'Notes', 'Internal comments', 'Medical record number', 'Plan B'])(
         '%s gives no definite answer',
         (label) => expect(classifyLabel(label)).toBeNull()

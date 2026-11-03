@@ -23,9 +23,48 @@ const EXACT = {
     'clinical impressions': 'assessment',
     plan: 'plan',
     'treatment plan': 'plan',
+    // Summary, Callback and Dental sections. Record types without one map it onward (see recordTypes.js aliases).
+    treatment: 'treatment',
+    treatments: 'treatment',
+    'treatment protocol': 'treatment',
+    'treatment performed': 'treatment',
+    recommendations: 'recommendations',
+    recommendation: 'recommendations',
+    instructions: 'instructions',
+    'client instructions': 'instructions',
+    'discharge instructions': 'instructions',
+    'home care': 'instructions',
+    'home care instructions': 'instructions',
+    aftercare: 'instructions',
+    'aftercare instructions': 'instructions',
+    'next steps': 'nextSteps',
+    'follow up': 'nextSteps',
+    followup: 'nextSteps',
+    'follow up plan': 'nextSteps',
+    'summary of call': 'callSummary',
+    'call summary': 'callSummary',
+    'dental procedure': 'procedure',
+    'dental procedure summary': 'procedure',
+    'procedure summary': 'procedure',
+    'oral exam': 'procedure',
+    'oral examination': 'procedure',
+    'tooth findings': 'teeth',
+    'dental findings': 'teeth',
+    'dental chart notes': 'teeth',
+    'charting notes': 'teeth',
+    radiographs: 'radiographs',
+    'dental radiographs': 'radiographs',
+    'x rays': 'radiographs',
+    xrays: 'radiographs',
 };
 
-const FULL = new Set(['medical record', 'medical records', 'soap', 'soap note', 'soap notes', 'soap record']);
+const FULL = new Set([
+    'medical record', 'medical records', 'soap', 'soap note', 'soap notes', 'soap record',
+    'communication', 'communications', 'client communication', 'client communications', 'callback', 'callback notes',
+    'phone notes', 'call notes', 'phone call notes', 'client contact', 'contact notes',
+    'summary', 'clinical summary', 'visit summary', 'discharge summary',
+    'dental record', 'dental notes', 'dental report',
+]);
 
 // Words that add nothing to a label ("Assessment notes", "S Subjective", "soap_plan").
 const FILLER = new Set(['notes', 'note', 'section', 'field', 'text', 'findings', 'soap', 'the', 's', 'o', 'a', 'p']);
@@ -37,7 +76,7 @@ const NEGATIVE = [
     'login', 'coupon', 'discount', 'quantity', 'postal', 'zip',
 ];
 
-const SECTION_WORDS = ['subjective', 'objective', 'assessment', 'plan', 'history', 'exam', 'soap', 'record', 'notes'];
+const SECTION_WORDS = ['subjective', 'objective', 'assessment', 'plan', 'history', 'exam', 'soap', 'record', 'notes', 'dental', 'treatment', 'summary'];
 
 export const normalizeLabel = (text) =>
     String(text || '')
@@ -54,10 +93,11 @@ const hasPhrase = (normalized, phrase) => ` ${normalized} `.includes(` ${phrase}
 export const classifyLabel = (text) => {
     const n = normalizeLabel(text);
     if (!n) return null;
-    const negative = NEGATIVE.find((w) => hasPhrase(n, w));
-    if (negative) return { kind: 'ignore', reason: `label mentions "${negative}"` };
+    // An exact clinical label wins over a negative word inside it ("Phone notes" is a callback field, "Phone" is not).
     if (FULL.has(n)) return { kind: 'full' };
     if (EXACT[n]) return { kind: 'section', section: EXACT[n] };
+    const negative = NEGATIVE.find((w) => hasPhrase(n, w));
+    if (negative) return { kind: 'ignore', reason: `label mentions "${negative}"` };
     const stripped = n
         .split(' ')
         .filter((w) => !FILLER.has(w))
