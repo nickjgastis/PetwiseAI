@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Mock PIMS: Single field record</title>
+        <link rel="stylesheet" href="./fixture.css" />
+    </head>
+    <body>
+        <header class="pims-top">
+            <strong>MockVet PIMS</strong>
+            <nav>
+                <a href="/">Consultation</a>
+                <a href="/full.html" class="is-current">Single field</a>
+                <a href="/rich.html">Rich text</a>
+                <a href="/frames.html">Frames</a>
+                <a href="/react.html">React</a>
+            </nav>
+        </header>
+        <section class="pims-patient">
+            <h1>Bella</h1>
+            <span>Canine · Labrador Retriever · 6y FS</span>
+            <span>Medical Consultation</span>
+        </section>
+
+        <main>
+            <section class="panel">
+                <h2>One field for the whole record</h2>
+                <div class="field">
+                    <label for="medical-record">Medical Record</label>
+                    <textarea id="medical-record" style="min-height: 320px"></textarea>
+                </div>
+            </section>
+            <section class="panel">
+                <h2>Contenteditable record</h2>
+                <div class="field">
+                    <span class="field-label" id="soap-notes-label">SOAP Notes</span>
+                    <div id="soap-notes" class="editable" contenteditable="true" aria-labelledby="soap-notes-label" style="min-height: 200px"></div>
+                </div>
+            </section>
+            <div class="actions">
+                <button type="button" id="save">Save consultation</button>
+                <span class="saved-note" id="saved-note" hidden>Saved (mock, nothing leaves this page)</span>
+            </div>
+        </main>
+        <script type="module" src="./main.js"></script>
+    </body>
+</html>

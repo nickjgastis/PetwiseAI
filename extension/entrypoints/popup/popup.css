@@ -1,0 +1,35 @@
+body {
+    margin: 0;
+    background: #ffffff;
+}
+
+.sp-root.sp-popup {
+    position: static;
+    width: 260px;
+    padding: 12px;
+}
+
+.sp-popup-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.sp-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px;
+    border: 1px solid var(--sp-border);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.sp-popup-note {
+    margin: 10px 0 0;
+    font-size: 11px;
+    color: var(--sp-muted);
+}

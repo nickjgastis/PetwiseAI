@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Mock PIMS: Consultation</title>
+        <link rel="stylesheet" href="./fixture.css" />
+    </head>
+    <body>
+        <header class="pims-top">
+            <strong>MockVet PIMS</strong>
+            <nav>
+                <a href="/" class="is-current">Consultation</a>
+                <a href="/full.html">Single field</a>
+                <a href="/rich.html">Rich text</a>
+                <a href="/frames.html">Frames</a>
+                <a href="/react.html">React</a>
+            </nav>
+        </header>
+        <section class="pims-patient">
+            <h1>Bella</h1>
+            <span>Canine · Labrador Retriever · 6y FS</span>
+            <span>Medical Consultation</span>
+        </section>
+
+        <main>
+            <section class="panel" id="soap-panel">
+                <h2>Clinical notes</h2>
+                <div class="field">
+                    <label for="subjective">Subjective</label>
+                    <textarea id="subjective" name="consult_subjective"></textarea>
+                </div>
+                <div class="field">
+                    <label for="objective">Objective</label>
+                    <textarea id="objective" name="consult_objective"></textarea>
+                </div>
+                <div class="field">
+                    <label for="assessment">Assessment</label>
+                    <textarea id="assessment" name="consult_assessment"></textarea>
+                </div>
+                <div class="field">
+                    <label for="plan">Plan</label>
+                    <textarea id="plan" name="consult_plan"></textarea>
+                </div>
+            </section>
+
+            <section class="panel" id="alt-panel">
+                <h2>Alternative labels</h2>
+                <p class="hint">Same sections under the names other PIMS use, on different editor types.</p>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="history">History</label>
+                        <textarea id="history"></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="hpi">HPI</label>
+                        <input id="hpi" type="text" />
+                    </div>
+                    <div class="field">
+                        <span class="field-label" id="pe-label">Physical Examination</span>
+                        <div id="physical-exam" class="editable" contenteditable="true" aria-labelledby="pe-label"></div>
+                    </div>
+                    <div class="field">
+                        <textarea id="impression" placeholder="Clinical Impression"></textarea>
+                    </div>
+                    <div class="field">
+                        <textarea id="treatment-plan" aria-label="Treatment Plan"></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="notes">Notes</label>
+                        <textarea id="notes"></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" id="existing-panel">
+                <h2>Existing text</h2>
+                <div class="field">
+                    <label for="existing-subjective">Subjective</label>
+                    <textarea id="existing-subjective">Owner called at 08:10, reports vomiting overnight.
+Brought in by husband.</textarea>
+                </div>
+                <div class="field">
+                    <span class="field-label" id="existing-objective-label">Objective</span>
+                    <div id="existing-objective" class="editable" contenteditable="true" aria-labelledby="existing-objective-label">Triage: BAR, ambulatory.</div>
+                </div>
+            </section>
+
+            <section class="panel" id="other-panel">
+                <h2>Fields SmartPaste should leave alone</h2>
+                <div class="grid-2">
+                    <div class="field">
+                        <label for="owner-name">Owner name</label>
+                        <input id="owner-name" type="text" value="Jordan Smith" />
+                    </div>
+                    <div class="field">
+                        <label for="patient-search">Search patients</label>
+                        <input id="patient-search" type="search" />
+                    </div>
+                    <div class="field">
+                        <label for="portal-password">Portal password</label>
+                        <input id="portal-password" type="password" />
+                    </div>
+                    <div class="field">
+                        <label for="billing-plan">Billing plan</label>
+                        <textarea id="billing-plan"></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="payment-plan">Payment plan</label>
+                        <input id="payment-plan" type="text" />
+                    </div>
+                    <div class="field">
+                        <label for="readonly-assessment">Assessment (previous visit, read-only)</label>
+                        <textarea id="readonly-assessment" readonly>Otitis externa AD, resolved.</textarea>
+                    </div>
+                    <div class="field">
+                        <label for="disabled-plan">Plan (locked)</label>
+                        <textarea id="disabled-plan" disabled></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="weight">Weight (kg)</label>
+                        <input id="weight" type="number" />
+                    </div>
+                </div>
+            </section>
+
+            <div class="actions">
+                <button type="button" id="save">Save consultation</button>
+                <span class="saved-note" id="saved-note" hidden>Saved (mock, nothing leaves this page)</span>
+            </div>
+            <div class="spacer"></div>
+        </main>
+        <script type="module" src="./main.js"></script>
+    </body>
+</html>

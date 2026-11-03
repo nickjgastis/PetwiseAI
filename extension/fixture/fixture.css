@@ -1,0 +1,162 @@
+/* Mock PIMS styling. Deliberately aggressive global rules so leaks into or out of the SmartPaste shadow root show up. */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px;
+    color: #1f2933;
+    background: #eef1f4;
+}
+
+button {
+    font-family: 'Courier New', monospace;
+    text-transform: uppercase;
+    color: #c2410c;
+    background: #fde68a;
+}
+
+.pims-top {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 10px 20px;
+    background: #24313f;
+    color: #e5e9ef;
+}
+
+.pims-top strong {
+    font-size: 16px;
+}
+
+.pims-top nav a {
+    color: #b9c6d6;
+    margin-right: 14px;
+    text-decoration: none;
+}
+
+.pims-top nav a.is-current {
+    color: #ffffff;
+    border-bottom: 2px solid #60a5fa;
+}
+
+.pims-patient {
+    display: flex;
+    gap: 18px;
+    align-items: baseline;
+    padding: 12px 20px;
+    background: #ffffff;
+    border-bottom: 1px solid #d6dce3;
+}
+
+.pims-patient h1 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.pims-patient span {
+    color: #52606d;
+}
+
+main {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.panel {
+    background: #ffffff;
+    border: 1px solid #d6dce3;
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+}
+
+.panel h2 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #3e4c59;
+}
+
+.panel p.hint {
+    margin: -6px 0 12px;
+    color: #7b8794;
+    font-size: 12px;
+}
+
+.field {
+    margin-bottom: 14px;
+}
+
+.field > label,
+.field > .field-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+textarea,
+input[type='text'],
+input[type='search'],
+input[type='password'],
+input:not([type]) {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #9aa5b1;
+    border-radius: 3px;
+    font: 14px/1.4 Georgia, serif;
+    background: #fffef7;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+textarea[readonly],
+textarea:disabled {
+    background: #e4e7eb;
+}
+
+.editable {
+    min-height: 90px;
+    padding: 8px;
+    border: 1px solid #9aa5b1;
+    border-radius: 3px;
+    background: #fffef7;
+    white-space: pre-wrap;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.saved-note {
+    color: #2f8132;
+}
+
+iframe {
+    width: 100%;
+    height: 230px;
+    border: 1px solid #9aa5b1;
+    border-radius: 3px;
+    background: #ffffff;
+}
+
+.spacer {
+    height: 600px;
+}
