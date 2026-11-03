@@ -40,7 +40,7 @@ Requires a PetWise account (https://petwise.vet).
 - **scripting:** Registers the paste button on the sites the user has turned on, and starts it in their already-open tabs.
 - **Optional host permissions (http/https):** Requested for one site at a time, only when the user clicks Turn on for this site. SmartPaste needs access to the practice software page to show the paste button and write into the field the user clicks. Nothing is requested at install.
 - **Remote code:** No, all code is in the package.
-- **Data usage:** Health information (veterinary records the user opens in PetWise) and website content (the label of the field the user clicks) are handled on the device only, to perform the single purpose. Nothing is sold, transferred, or used for anything else, and nothing leaves the device.
+- **Data usage:** Tick **Website content** only (the label of the field the user clicks). Leave Health information and Personally identifiable information unticked: the records are veterinary notes about animal patients, identified by the pet's name, and SmartPaste receives no client or owner information. If the reviewer asks, use this: "SmartPaste handles veterinary medical notes about animals. It receives no client, owner or human health information. Everything stays on the device; nothing is sold, transferred, or sent over the network."
 - **Certify:** compliance with the Developer Program Policies, including Limited Use.
 - **Privacy policy URL:** https://petwise.vet/privacy#smartpaste
 

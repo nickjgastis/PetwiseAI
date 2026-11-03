@@ -112,7 +112,8 @@ const PrivacyContent = () => (
         <ul>
             <li>
                 <strong>What it receives:</strong> when you open a record in the PetWise web app, that tab sends the
-                extension the record's text, record type, case and patient name, and record ID. Only PetWise pages
+                extension the record's text, record type, case and patient name, and record ID. These are notes
+                about the animal patient; the extension receives no client or owner details. Only PetWise pages
                 can send it records.
             </li>
             <li>
