@@ -27,7 +27,9 @@ Open a record in PetWise, click a notes field in your practice software, and a P
 Private by design:
 - Records go straight from your PetWise tab to the extension. They never pass through another server.
 - They are kept in memory only, and cleared when you sign out of PetWise or quit Chrome.
-- SmartPaste only runs on practice software: ezyVet, Vetspire, Provet Cloud, Shepherd, Digitail, Covetrus Pulse, IDEXX Neo and Instinct, plus any other site you turn on yourself.
+- SmartPaste only runs on veterinary practice software, plus any other site you turn on yourself.
+
+(No product names in the description: the store rejected v1.0.0 for listing them as "excessive keywords". They belong in the host permission justification only.)
 - No analytics, no tracking, no network requests.
 
 Requires a PetWise account (https://petwise.vet) open in the same Chrome as your practice software.
