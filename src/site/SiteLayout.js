@@ -155,7 +155,12 @@ const SiteLayout = ({ children }) => {
     const { pathname, hash } = useLocation();
 
     useEffect(() => {
-        if (!hash) window.scrollTo(0, 0);
+        if (!hash) {
+            window.scrollTo(0, 0);
+            return;
+        }
+        // The page renders after the browser looks for the anchor, so links like /privacy#smartpaste land at the top.
+        document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
     }, [pathname, hash]);
 
     return (
