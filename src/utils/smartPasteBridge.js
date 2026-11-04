@@ -5,7 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 // (Chrome only exposes chrome.runtime.sendMessage to sites an installed extension lists in externally_connectable).
 // The extension keeps what it receives in memory for the browser session only. See extension/services/petwiseBridge.js.
 
-const EXTENSION_ID = process.env.REACT_APP_SMARTPASTE_EXTENSION_ID || 'fdaakcanieiagjadphmnblgicldefcfd';
+// Production talks to the Chrome Web Store copy; local dev to the unpacked build (its id is fixed by the manifest key).
+const STORE_EXTENSION_ID = 'cfeodmjhbjndbcbghakbfpinmjhogibd';
+const DEV_EXTENSION_ID = 'fdaakcanieiagjadphmnblgicldefcfd';
+const EXTENSION_ID =
+    process.env.REACT_APP_SMARTPASTE_EXTENSION_ID || (process.env.NODE_ENV === 'production' ? STORE_EXTENSION_ID : DEV_EXTENSION_ID);
 const EDIT_DEBOUNCE_MS = 600;
 // The open record's id lives in localStorage and can change (first save, switching records) without a render.
 const ID_POLL_MS = 2000;

@@ -78,6 +78,29 @@ const frame = async (browser, { title, sub, image, points, layout = 'below', wid
     return buf;
 };
 
+// Small promo tile (440x280) and marquee (1400x560). The marquee reuses the first screenshot's capture.
+const promo = async (browser, { width, height, image }) => {
+    const logo = dataUrl(fs.readFileSync(path.join(root, 'public/icon-128.png')));
+    const big = width > 1000;
+    const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 1 });
+    await page.setContent(`<!doctype html><html><body style="margin:0">
+        <div style="width:${width}px;height:${height}px;overflow:hidden;position:relative;box-sizing:border-box;
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#fff;
+            background:linear-gradient(160deg,#3f7ad6 0%,#2d5fb8 45%,#2350a3 100%);
+            display:flex;align-items:center;gap:56px;padding:0 ${big ? 90 : 34}px">
+            <div style="position:absolute;top:-140px;right:-120px;width:${big ? 560 : 300}px;height:${big ? 560 : 300}px;border-radius:50%;background:radial-gradient(circle,rgba(101,208,242,.35),rgba(101,208,242,0) 70%)"></div>
+            <div style="position:relative;flex:1;min-width:0">
+                <img src="${logo}" style="width:${big ? 72 : 52}px;height:${big ? 72 : 52}px;border-radius:50%;display:block">
+                <div style="margin-top:${big ? 22 : 14}px;font-size:${big ? 60 : 34}px;font-weight:700;letter-spacing:-.03em;line-height:1.05">SmartPaste</div>
+                <div style="margin-top:${big ? 14 : 8}px;font-size:${big ? 24 : 16}px;line-height:1.35;opacity:.85">Paste PetWise records into your practice software in one click.</div>
+            </div>
+            ${big ? `<img src="${image}" style="position:relative;flex-shrink:0;width:720px;margin-top:150px;border-radius:16px 16px 0 0;box-shadow:0 30px 70px -20px rgba(8,20,50,.65)">` : ''}
+        </div></body></html>`);
+    const buf = await page.screenshot();
+    await page.close();
+    return buf;
+};
+
 const main = async () => {
     fs.mkdirSync(OUT, { recursive: true });
     const fixture = await startFixture();
@@ -184,6 +207,11 @@ const main = async () => {
             for (const shot of shots) {
                 const file = path.join(OUT, `${shot.name}.png`);
                 fs.writeFileSync(file, await frame(plain, shot));
+                console.log(file);
+            }
+            for (const [name, size] of [['promo-small-440x280', [440, 280]], ['promo-marquee-1400x560', [1400, 560]]]) {
+                const file = path.join(OUT, `${name}.png`);
+                fs.writeFileSync(file, await promo(plain, { width: size[0], height: size[1], image: shots[0].image }));
                 console.log(file);
             }
         } finally {

@@ -45,10 +45,10 @@ Requires a PetWise account (https://petwise.vet) open in the same Chrome as your
 - **Certify:** compliance with the Developer Program Policies, including Limited Use.
 - **Privacy policy URL:** https://petwise.vet/privacy#smartpaste
 
-## After it is approved
+## Store id
 
-1. Copy the extension id from the store dashboard.
-2. Set these in the web app's production environment, then redeploy:
-   - `REACT_APP_SMARTPASTE_EXTENSION_ID=<store id>`
-   - `REACT_APP_SMARTPASTE_STORE_URL=https://chromewebstore.google.com/detail/<store id>`
-3. Edge users can install from the same listing.
+`cfeodmjhbjndbcbghakbfpinmjhogibd`. Production builds of the web app talk to it by default (`src/utils/smartPasteBridge.js`); local dev talks to the unpacked build.
+
+## Going public
+
+Set `REACT_APP_SMARTPASTE_STORE_URL=https://chromewebstore.google.com/detail/cfeodmjhbjndbcbghakbfpinmjhogibd` in the web app's production environment and redeploy. That shows the Get SmartPaste sidebar entry and the Add to Chrome button. Edge users can install from the same listing.
