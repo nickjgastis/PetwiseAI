@@ -17,7 +17,9 @@ import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
 import { FaUser, FaSignOutAlt, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { FiPlus } from 'react-icons/fi';
-import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill, PiUser } from 'react-icons/pi';
+import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiPuzzlePieceFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill, PiUser } from 'react-icons/pi';
+import SmartPaste from './SmartPaste';
+import { SMARTPASTE_STORE_URL, useSmartPasteInstalled } from '../utils/smartPasteBridge';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
@@ -252,6 +254,7 @@ const Dashboard = () => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [needsWelcome, setNeedsWelcome] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const smartPasteInstalled = useSmartPasteInstalled();
     const [showMobileProfile, setShowMobileProfile] = useState(false);
     const [hasPendingDictation, setHasPendingDictation] = useState(false);
     const [mobileAppVisible, setMobileAppVisible] = useState(false); // For PWA fade-in animation
@@ -1591,6 +1594,27 @@ const Dashboard = () => {
                                 <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
                         </li>
+                        {SMARTPASTE_STORE_URL && !isMobile && smartPasteInstalled === false && (
+                            <li className="mx-3 mt-2 mb-1.5 relative">
+                                <Link
+                                    to="/dashboard/smartpaste"
+                                    onClick={closeMobileMenu}
+                                    data-tooltip="Get SmartPaste"
+                                    className={`group relative flex items-center no-underline rounded-[12px] border font-display tracking-[-0.01em] text-[13px] font-semibold h-10 whitespace-nowrap transition-all duration-200 bg-gradient-to-r from-[#e6f6fd] via-[#eef6fe] to-[#e9f1fd] text-[#2d5fb8] hover:shadow-[0_8px_18px_-12px_rgba(45,95,184,0.55)] ${location.pathname === '/dashboard/smartpaste' ? 'border-[#5cccf0]' : 'border-[#5cccf0]/45 hover:border-[#5cccf0]'} ${isSidebarCollapsed ? 'justify-center' : 'px-3 gap-3'}`}
+                                >
+                                    <span className="relative flex items-center justify-center w-5 text-[16px] text-[#2d9fd6]">
+                                        <PiPuzzlePieceFill />
+                                        {isSidebarCollapsed && <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#5cccf0] ring-2 ring-[#eef4fc] animate-pulse" />}
+                                    </span>
+                                    {!isSidebarCollapsed && (
+                                        <>
+                                            <span>Get SmartPaste</span>
+                                            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#5cccf0]/25 text-[#1e86b8] tracking-[0.06em]">NEW</span>
+                                        </>
+                                    )}
+                                </Link>
+                            </li>
+                        )}
                         <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={PiArchive} activeIcon={PiArchiveFill} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                         <SideLink secondary to="/dashboard/report-form" active={location.pathname === '/dashboard/report-form' || location.pathname === '/dashboard'} icon={PiFileText} activeIcon={PiFileTextFill} label="PetSOAP" tooltip="Report Generator" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
                         <SideLink secondary to="/dashboard/help" active={location.pathname === '/dashboard/help'} icon={PiQuestion} activeIcon={PiQuestionFill} label="Help" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />
@@ -1826,6 +1850,7 @@ const Dashboard = () => {
                         <Route path="templates" element={<Templates />} />
                         <Route path="profile" element={<Profile />} />
                         <Route path="help" element={<Help />} />
+                        <Route path="smartpaste" element={<SmartPaste />} />
                     </Routes>
                 </main>
             </div>

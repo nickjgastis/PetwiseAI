@@ -71,7 +71,7 @@ export const toPlainText = (text, type) => {
         } else if (b.kind === 'gap') {
             blank();
         } else {
-            out.push(b.text.replace(/\*\*/g, '').replace(/^#{1,6}\s*/gm, ''));
+            out.push(b.text.replace(/\*\*/g, '').replace(/^#{1,6}\s+/gm, ''));
         }
     });
     return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Mock PIMS: Rich text editors</title>
+        <link rel="stylesheet" href="./fixture.css" />
+    </head>
+    <body>
+        <header class="pims-top">
+            <strong>MockVet PIMS</strong>
+            <nav>
+                <a href="/">Consultation</a>
+                <a href="/full.html">Single field</a>
+                <a href="/records.html">Comms &amp; dental</a>
+                <a href="/rich.html" class="is-current">Rich text</a>
+                <a href="/frames.html">Frames</a>
+                <a href="/react.html">React</a>
+            </nav>
+        </header>
+        <section class="pims-patient">
+            <h1>Bella</h1>
+            <span>Canine · Labrador Retriever · 6y FS</span>
+            <span>Medical Consultation</span>
+        </section>
+
+        <main>
+            <section class="panel">
+                <h2>Quill editors</h2>
+                <p class="hint">The text below each editor is Quill's own model (quill.getText()), not the DOM.</p>
+                <div class="field">
+                    <span class="field-label" id="quill-assessment-label">Assessment</span>
+                    <div id="quill-assessment" style="height: 180px"></div>
+                    <pre id="quill-assessment-model" data-testid="quill-assessment-model"></pre>
+                </div>
+                <div class="field">
+                    <span class="field-label" id="quill-record-label">Medical Record</span>
+                    <div id="quill-record" style="height: 260px"></div>
+                    <pre id="quill-record-model" data-testid="quill-record-model"></pre>
+                </div>
+            </section>
+        </main>
+        <script type="module" src="./rich.js"></script>
+    </body>
+</html>

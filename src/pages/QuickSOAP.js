@@ -36,6 +36,8 @@ import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
 import { QuickSOAPPDFDocument } from '../components/RecordPDF';
 import { toPlainText } from '../utils/recordText';
+import { useSmartPasteBridge } from '../utils/smartPasteBridge';
+import SmartPastePill from '../components/SmartPastePill';
 import CountBadge from '../components/CountBadge';
 import DentalSpeciesPicker, { SPECIES_LABEL } from '../components/DentalSpeciesPicker';
 
@@ -1555,6 +1557,28 @@ const QuickSOAP = () => {
         const snap = readSavedSnapshot();
         if (!snap || snap.id !== localStorage.getItem('currentQuickSOAPReportId')) markSaved(report);
     }, [hasReport, report]);
+
+    // Desktop only: the SmartPaste extension pastes the open record into the vet's PIMS, listed under the case name.
+    const [smartPasteCaseName, setSmartPasteCaseName] = useState('');
+    useEffect(() => {
+        if (!activeCaseId || isMobile || !hasReport) return undefined;
+        let live = true;
+        setSmartPasteCaseName('');
+        supabase.from('cases').select('pet_name').eq('id', activeCaseId).maybeSingle()
+            .then(({ data }) => live && setSmartPasteCaseName(data?.pet_name || ''));
+        return () => {
+            live = false;
+        };
+    }, [activeCaseId, isMobile, hasReport, caseBarKey]);
+    useSmartPasteBridge({
+        enabled: hasReport && !isMobile,
+        report,
+        recordType,
+        caseName: activeCaseId ? smartPasteCaseName : '',
+        petName,
+        reportName,
+        caseId: activeCaseId,
+    });
 
     // Chart edits save straight to the open note, debounced so a run of taps is one write.
     const dentalSaveRef = useRef(null);
@@ -3562,7 +3586,13 @@ const QuickSOAP = () => {
                         }}>
                         {/* Sticky header: the case you're in, then the tools for this note */}
                         <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-[#e7ecf3] shadow-[0_10px_30px_-24px_rgba(19,35,63,0.35)]">
-                            <CaseBar caseId={activeCaseId} recordType={recordType} onBack={() => requestLeave({ kind: 'back' })} refreshKey={caseBarKey} />
+                            <CaseBar
+                                caseId={activeCaseId}
+                                recordType={recordType}
+                                onBack={() => requestLeave({ kind: 'back' })}
+                                refreshKey={caseBarKey}
+                                extra={!isMobile && hasReport && <SmartPastePill />}
+                            />
                             <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "var(--font-sans)" }}>
                                 <AnimatePresence mode="wait" initial={false}>
                                     {isRecording ? (

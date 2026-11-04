@@ -1,0 +1,85 @@
+// Per-site access. Known cloud practice software (pimsSites.js) is covered from install; any other site is granted
+// one at a time from the popup (Chrome shows its own permission prompt), and SmartPaste is registered for exactly the
+// sites granted. Removing a site in the popup or in chrome://extensions removes the registration.
+import { browser } from 'wxt/browser';
+import { knownPimsFor } from './pimsSites.js';
+
+export const SCRIPT_ID = 'smartpaste-granted-sites';
+export const CONTENT_SCRIPT = 'content-scripts/smartpaste.js';
+// The mock PIMS used in development and tests. The store build ships without it.
+// eslint-disable-next-line no-undef
+const STORE_BUILD = typeof __SMARTPASTE_STORE__ !== 'undefined' && __SMARTPASTE_STORE__;
+export const BUILT_IN_PATTERNS = STORE_BUILD ? [] : ['http://127.0.0.1:4173/*', 'http://localhost:4173/*'];
+
+// "https://pims.example.com:8443/visit/1" -> "https://pims.example.com/*". Chrome host patterns ignore ports, and
+// only http(s) pages can be enabled.
+export const sitePattern = (url) => {
+    try {
+        const u = new URL(url);
+        return /^https?:$/.test(u.protocol) && u.hostname ? `${u.protocol}//${u.hostname}/*` : null;
+    } catch {
+        return null;
+    }
+};
+
+const isBuiltIn = (url) => BUILT_IN_PATTERNS.some((p) => url.startsWith(p.slice(0, -1)));
+
+// Sites the vet granted, excluding the built-in mock PIMS, known practice software (already in the manifest's
+// content script) and any broad pattern.
+export const grantedPatterns = (origins = []) =>
+    origins.filter((o) => {
+        const host = /^https?:\/\/([^*/]+)\/\*$/.exec(o)?.[1];
+        return host && !BUILT_IN_PATTERNS.includes(o) && !knownPimsFor(host);
+    });
+
+export const registrationFor = (patterns) => ({
+    id: SCRIPT_ID,
+    matches: patterns,
+    js: [CONTENT_SCRIPT],
+    allFrames: true,
+    matchOriginAsFallback: true,
+    runAt: 'document_idle',
+    persistAcrossSessions: true,
+});
+
+// Brings the dynamic registration in line with the granted sites. Safe to call any number of times.
+export const syncRegistration = async (api = browser) => {
+    const { origins = [] } = await api.permissions.getAll();
+    const patterns = grantedPatterns(origins);
+    const existing = await api.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
+    if (!patterns.length) {
+        if (existing.length) await api.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] });
+        return [];
+    }
+    const script = registrationFor(patterns);
+    if (existing.length) await api.scripting.updateContentScripts([script]);
+    else await api.scripting.registerContentScripts([script]);
+    return patterns;
+};
+
+// Registered scripts only run on pages loaded afterwards, so start SmartPaste in open tabs of a newly granted site.
+export const injectIntoOpenTabs = async (patterns, api = browser) => {
+    if (!patterns.length) return;
+    const tabs = await api.tabs.query({ url: patterns });
+    await Promise.all(
+        tabs.map((tab) => api.scripting.executeScript({ target: { tabId: tab.id, allFrames: true }, files: [CONTENT_SCRIPT] }).catch(() => {}))
+    );
+};
+
+// For the popup: what SmartPaste can do on the active tab.
+export const activeTabSite = async (api = browser) => {
+    const [tab] = await api.tabs.query({ active: true, currentWindow: true });
+    const url = tab?.url || '';
+    if (isBuiltIn(url)) return { status: 'built-in', host: new URL(url).host };
+    const pattern = sitePattern(url);
+    if (!pattern) return { status: 'unsupported' };
+    const pims = url.startsWith('https:') && knownPimsFor(new URL(url).hostname);
+    if (pims) return { status: 'built-in', host: pims };
+    const granted = await api.permissions.contains({ origins: [pattern] });
+    return { status: granted ? 'enabled' : 'disabled', pattern, host: new URL(url).hostname, tabId: tab.id };
+};
+
+// Must be called straight from a click: Chrome only shows the permission prompt for a user gesture.
+export const enableSite = (pattern, api = browser) => api.permissions.request({ origins: [pattern] });
+
+export const disableSite = (pattern, api = browser) => api.permissions.remove({ origins: [pattern] });

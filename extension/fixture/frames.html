@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Mock PIMS: Embedded editors</title>
+        <link rel="stylesheet" href="./fixture.css" />
+    </head>
+    <body>
+        <header class="pims-top">
+            <strong>MockVet PIMS</strong>
+            <nav>
+                <a href="/">Consultation</a>
+                <a href="/full.html">Single field</a>
+                <a href="/records.html">Comms &amp; dental</a>
+                <a href="/rich.html">Rich text</a>
+                <a href="/frames.html" class="is-current">Frames</a>
+                <a href="/react.html">React</a>
+            </nav>
+        </header>
+        <section class="pims-patient">
+            <h1>Bella</h1>
+            <span>Canine · Labrador Retriever · 6y FS</span>
+            <span>Medical Consultation</span>
+        </section>
+
+        <main>
+            <section class="panel">
+                <h2>srcdoc iframe (same origin)</h2>
+                <iframe
+                    id="frame-srcdoc"
+                    title="srcdoc editor"
+                    srcdoc="<!doctype html><body style='margin:0;padding:10px;font:14px Georgia,serif'><label for='srcdoc-objective' style='display:block;font-weight:bold'>Objective</label><textarea id='srcdoc-objective' style='width:100%;height:120px;box-sizing:border-box'></textarea></body>"
+                ></iframe>
+            </section>
+
+            <section class="panel">
+                <h2>about:blank iframe built with DOM APIs</h2>
+                <div id="blank-dom-slot"></div>
+            </section>
+
+            <section class="panel">
+                <h2>about:blank iframe written with document.write (contenteditable)</h2>
+                <div id="blank-write-slot"></div>
+            </section>
+
+            <section class="panel">
+                <h2>Cross-origin iframe the extension may access (localhost:4173)</h2>
+                <p class="hint">Different origin from this page, but listed in the extension's matches. Runs its own SmartPaste.</p>
+                <iframe id="frame-cross-allowed" title="cross-origin allowed editor" src="http://localhost:4173/frame-editor.html"></iframe>
+            </section>
+
+            <section class="panel">
+                <h2>Cross-origin iframe without permission (127.0.0.1:4174)</h2>
+                <p class="hint">Not in the extension's matches. SmartPaste must not appear here.</p>
+                <iframe id="frame-cross-denied" title="cross-origin denied editor" src="http://127.0.0.1:4174/frame-editor.html"></iframe>
+            </section>
+            <div class="spacer"></div>
+        </main>
+        <script type="module" src="./frames.js"></script>
+    </body>
+</html>
