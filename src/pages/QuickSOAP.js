@@ -3586,7 +3586,26 @@ const QuickSOAP = () => {
                         }}>
                         {/* Sticky header: the case you're in, then the tools for this note */}
                         <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-xl border-b border-[#e7ecf3] shadow-[0_10px_30px_-24px_rgba(19,35,63,0.35)]">
-                            <CaseBar caseId={activeCaseId} recordType={recordType} onBack={() => requestLeave({ kind: 'back' })} refreshKey={caseBarKey} />
+                            <CaseBar
+                                caseId={activeCaseId}
+                                recordType={recordType}
+                                onBack={() => requestLeave({ kind: 'back' })}
+                                refreshKey={caseBarKey}
+                                extra={
+                                    !isMobile && smartPasteInstalled && (
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate('/dashboard/smartpaste')}
+                                            title="Click a notes field in your practice software to paste this record"
+                                            className="hidden lg:inline-flex shrink-0 items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[12px] font-semibold text-[#13233f] bg-white border border-[#c3ddf5] hover:border-[#3f8ddb] cursor-pointer transition-colors"
+                                        >
+                                            <img src="/favicon-96x96.png" alt="" className="w-5 h-5 rounded-full" />
+                                            SmartPaste ready
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+                                        </button>
+                                    )
+                                }
+                            />
                             <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "var(--font-sans)" }}>
                                 <AnimatePresence mode="wait" initial={false}>
                                     {isRecording ? (
@@ -3633,18 +3652,6 @@ const QuickSOAP = () => {
                                 )}
                                 <span className="flex-1" />
                                 <div className="flex items-center gap-2 shrink-0">
-                                    {!isMobile && smartPasteInstalled && (
-                                        <button
-                                            type="button"
-                                            onClick={() => navigate('/dashboard/smartpaste')}
-                                            title="Click a notes field in your practice software to paste this record"
-                                            className="hidden lg:inline-flex items-center gap-2 h-10 pl-1.5 pr-3.5 rounded-full text-[13px] font-semibold text-[#13233f] bg-white border border-[#c3ddf5] hover:border-[#3f8ddb] cursor-pointer transition-colors shrink-0"
-                                        >
-                                            <img src="/favicon-96x96.png" alt="" className="w-7 h-7 rounded-full" />
-                                            SmartPaste ready
-                                            <span className="w-2 h-2 rounded-full bg-emerald-500 ring-[3px] ring-emerald-500/20" />
-                                        </button>
-                                    )}
                                     {isAuthenticated && (
                                         <button type="button" onClick={handleSaveRecord} disabled={isSaving || !hasReport} title="Save" className={`inline-flex items-center gap-2 h-10 px-4 rounded-full text-[13.5px] font-semibold cursor-pointer transition-colors shrink-0 border disabled:opacity-40 disabled:cursor-not-allowed ${saveMessageVisible ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-[#e9f6fd] text-[#2d5fb8] border-[#cde6f8] hover:bg-[#d8effb]'}`}>
                                             {saveMessageVisible ? <FiCheck className="text-[15px]" /> : <FiSave className="text-[15px]" />}

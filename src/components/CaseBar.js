@@ -9,7 +9,7 @@ const FONT = { fontFamily: "var(--font-sans)" };
 const shortDate = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
 // Top row of the editor: which case you're in and which note you're editing.
-export const CaseBar = ({ caseId, recordType, onBack, refreshKey }) => {
+export const CaseBar = ({ caseId, recordType, onBack, refreshKey, extra }) => {
     const [info, setInfo] = useState(null);
 
     useEffect(() => {
@@ -76,6 +76,7 @@ export const CaseBar = ({ caseId, recordType, onBack, refreshKey }) => {
                     </motion.div>
                 )}
             </AnimatePresence>
+            {extra}
             <span className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] font-semibold ${type.soft}`}>
                 <Icon className="text-[11px]" /> Editing {type.label}
             </span>
