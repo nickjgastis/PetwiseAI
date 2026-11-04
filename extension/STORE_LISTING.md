@@ -27,7 +27,7 @@ Open a record in PetWise, click a notes field in your practice software, and a P
 Private by design:
 - Records go straight from your PetWise tab to the extension. They never pass through another server.
 - They are kept in memory only, and cleared when you sign out of PetWise or quit Chrome.
-- SmartPaste only runs on sites you turn on, one at a time.
+- SmartPaste only runs on practice software: ezyVet, Vetspire, Provet Cloud, Shepherd, Digitail, Covetrus Pulse, IDEXX Neo and Instinct, plus any other site you turn on yourself.
 - No analytics, no tracking, no network requests.
 
 Requires a PetWise account (https://petwise.vet).
@@ -38,7 +38,8 @@ Requires a PetWise account (https://petwise.vet).
 - **storage:** Saves the user's settings, the selected record, and per-field section choices; holds records sent from the PetWise tab in session (memory-only) storage until the browser closes or the user signs out.
 - **activeTab:** Lets the toolbar popup see which site the user is on, so it can offer to turn SmartPaste on for that site.
 - **scripting:** Registers the paste button on the sites the user has turned on, and starts it in their already-open tabs.
-- **Optional host permissions (http/https):** Requested for one site at a time, only when the user clicks Turn on for this site. SmartPaste needs access to the practice software page to show the paste button and write into the field the user clicks. Nothing is requested at install.
+- **Host permissions (ezyvet.com, vetspire.com, provetcloud.com, shepherd.vet, digitail.io, evetpractice.com, idexxneo.com, instinctvet.cloud, instinctvet.com):** These are the cloud veterinary practice management systems SmartPaste pastes into. It needs access to those pages to show the paste button beside the field the user clicks and write the record into it. It reads only that field and its label.
+- **Optional host permissions (http/https):** For practice software not on that list. Requested for one site at a time, only when the user clicks Turn on for this site.
 - **Remote code:** No, all code is in the package.
 - **Data usage:** Tick **Website content** only (the label of the field the user clicks). Leave Health information and Personally identifiable information unticked: the records are veterinary notes about animal patients, identified by the pet's name, and SmartPaste receives no client or owner information. If the reviewer asks, use this: "SmartPaste handles veterinary medical notes about animals. It receives no client, owner or human health information. Everything stays on the device; nothing is sold, transferred, or sent over the network."
 - **Certify:** compliance with the Developer Program Policies, including Limited Use.

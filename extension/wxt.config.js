@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt';
+import { KNOWN_PIMS_PATTERNS } from './platform/pimsSites.js';
 
 // Fixes the unpacked extension id to fdaakcanieiagjadphmnblgicldefcfd on every machine, so the PetWise web app
 // knows where to send records (REACT_APP_SMARTPASTE_EXTENSION_ID). Public key only; the Web Store assigns its own.
@@ -22,9 +23,10 @@ export default defineConfig({
         name: 'PetWise SmartPaste',
         description: 'Paste PetWise records into the field you choose in your practice management software.',
         version: '1.0.0',
-        // activeTab lets the popup see which site it was opened on; sites are only added one at a time when the vet
-        // enables them, so the install prompt asks for nothing beyond the local mock PIMS.
+        // activeTab lets the popup see which site it was opened on. The install prompt names only the known cloud
+        // practice software; any other site is added one at a time when the vet enables it.
         permissions: ['storage', 'activeTab', 'scripting'],
+        host_permissions: KNOWN_PIMS_PATTERNS,
         optional_host_permissions: ['http://*/*', 'https://*/*'],
         key: DEV_KEY,
         externally_connectable: { matches: [...PETWISE_ORIGINS, ...TEST_PETWISE_ORIGINS] },
@@ -42,7 +44,7 @@ export default defineConfig({
         'build:manifestGenerated': (_wxt, manifest) => {
             if (!STORE) return;
             delete manifest.key;
-            delete manifest.content_scripts;
+            for (const script of manifest.content_scripts || []) script.matches = script.matches.filter((m) => !isLocal(m));
             manifest.externally_connectable.matches = manifest.externally_connectable.matches.filter((m) => !isLocal(m));
         },
     },

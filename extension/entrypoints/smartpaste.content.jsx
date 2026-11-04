@@ -3,6 +3,7 @@ import { defineContentScript } from 'wxt/utils/define-content-script';
 import { createShadowRootUi } from 'wxt/utils/content-script-ui/shadow-root';
 import SmartPasteButton from '../components/SmartPasteButton.jsx';
 import { copyToClipboard, extensionStorage, sessionRecordStorage } from '../platform/browser.js';
+import { KNOWN_PIMS_PATTERNS } from '../platform/pimsSites.js';
 import { createFieldMemory } from '../services/fieldMemory.js';
 import { createRecordStore } from '../services/recordStore.js';
 import { createController } from '../services/smartPasteController.js';
@@ -27,9 +28,10 @@ const reachableFromTop = () => {
 };
 
 export default defineContentScript({
-    // Always on for the local mock PIMS (localhost:4173 is a second origin for cross-origin editor frames). Other
-    // sites are registered at runtime once the vet enables them (platform/siteAccess.js).
-    matches: ['http://127.0.0.1:4173/*', 'http://localhost:4173/*'],
+    // Always on for known cloud practice software and the local mock PIMS (localhost:4173 is a second origin for
+    // cross-origin editor frames; the store build drops both). Other sites are registered at runtime once the vet
+    // enables them (platform/siteAccess.js).
+    matches: ['http://127.0.0.1:4173/*', 'http://localhost:4173/*', ...KNOWN_PIMS_PATTERNS],
     allFrames: true,
     matchAboutBlank: true,
     matchOriginAsFallback: true,

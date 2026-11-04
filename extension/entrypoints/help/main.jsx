@@ -1,9 +1,12 @@
 import { createRoot } from 'react-dom/client';
 import PetWiseLogo from '../../components/PetWiseLogo.jsx';
 import { PETWISE_APP_URL } from '../../platform/browser.js';
+import { KNOWN_PIMS } from '../../platform/pimsSites.js';
 import './help.css';
 
 const SUPPORT_EMAIL = 'support@petwise.vet';
+const names = KNOWN_PIMS.map((p) => p.name);
+const PIMS_NAMES = `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 const welcome = new URLSearchParams(location.search).has('welcome');
 
 const STEPS = [
@@ -13,8 +16,8 @@ const STEPS = [
         tip: 'Already had PetWise open? Refresh that tab once so it connects.',
     },
     {
-        title: 'Turn it on for your practice software',
-        body: 'On your practice software tab, click the PetWise icon in the Chrome toolbar, then Turn on for this site. Chrome asks once.',
+        title: 'Open your practice software',
+        body: `${PIMS_NAMES} work straight away. Using something else? Click the PetWise icon in the Chrome toolbar there, then Turn on for this site.`,
         tip: 'Can\u2019t see the icon? Click the puzzle piece in the toolbar and pin PetWise SmartPaste.',
     },
     {
@@ -49,7 +52,7 @@ const TIPS = [
 const PRIVACY = [
     'Records go straight from your PetWise tab to the extension. They never pass through another server.',
     'They are kept in memory only and cleared when you sign out of PetWise or quit Chrome. Only your 25 most recent are kept.',
-    'SmartPaste only runs on sites you turn on, and only looks at the field you click and its label.',
+    'SmartPaste only runs on practice software, and only looks at the field you click and its label.',
 ];
 
 const FAQ = [
@@ -64,6 +67,10 @@ const FAQ = [
     {
         q: 'It has the wrong patient',
         a: 'Open the right record in PetWise, or choose it from the gear menu or the toolbar icon.',
+    },
+    {
+        q: 'Does it work with Cornerstone, AVImark or ImproMed?',
+        a: 'Not yet. SmartPaste works inside Chrome, and those run as desktop programs. Use Copy all in PetWise and paste as usual.',
     },
 ];
 

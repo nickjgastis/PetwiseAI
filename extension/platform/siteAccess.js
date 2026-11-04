@@ -1,7 +1,8 @@
-// Per-site access. The extension ships with no host access beyond the local mock PIMS; a vet grants one site at a
-// time from the popup (Chrome shows its own permission prompt), and SmartPaste is registered for exactly the sites
-// granted. Removing a site in the popup or in chrome://extensions removes the registration.
+// Per-site access. Known cloud practice software (pimsSites.js) is covered from install; any other site is granted
+// one at a time from the popup (Chrome shows its own permission prompt), and SmartPaste is registered for exactly the
+// sites granted. Removing a site in the popup or in chrome://extensions removes the registration.
 import { browser } from 'wxt/browser';
+import { knownPimsFor } from './pimsSites.js';
 
 export const SCRIPT_ID = 'smartpaste-granted-sites';
 export const CONTENT_SCRIPT = 'content-scripts/smartpaste.js';
@@ -23,8 +24,13 @@ export const sitePattern = (url) => {
 
 const isBuiltIn = (url) => BUILT_IN_PATTERNS.some((p) => url.startsWith(p.slice(0, -1)));
 
-// Sites the vet granted, excluding the built-in mock PIMS and any broad pattern.
-export const grantedPatterns = (origins = []) => origins.filter((o) => !BUILT_IN_PATTERNS.includes(o) && /^https?:\/\/[^*/]+\/\*$/.test(o));
+// Sites the vet granted, excluding the built-in mock PIMS, known practice software (already in the manifest's
+// content script) and any broad pattern.
+export const grantedPatterns = (origins = []) =>
+    origins.filter((o) => {
+        const host = /^https?:\/\/([^*/]+)\/\*$/.exec(o)?.[1];
+        return host && !BUILT_IN_PATTERNS.includes(o) && !knownPimsFor(host);
+    });
 
 export const registrationFor = (patterns) => ({
     id: SCRIPT_ID,
@@ -67,6 +73,8 @@ export const activeTabSite = async (api = browser) => {
     if (isBuiltIn(url)) return { status: 'built-in', host: new URL(url).host };
     const pattern = sitePattern(url);
     if (!pattern) return { status: 'unsupported' };
+    const pims = url.startsWith('https:') && knownPimsFor(new URL(url).hostname);
+    if (pims) return { status: 'built-in', host: pims };
     const granted = await api.permissions.contains({ origins: [pattern] });
     return { status: granted ? 'enabled' : 'disabled', pattern, host: new URL(url).hostname, tabId: tab.id };
 };

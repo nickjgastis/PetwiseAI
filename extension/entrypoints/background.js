@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 import { HELP_PAGE, OPEN_HELP_MESSAGE } from '../platform/browser.js';
+import { KNOWN_PIMS_PATTERNS } from '../platform/pimsSites.js';
 import { grantedPatterns, injectIntoOpenTabs, syncRegistration } from '../platform/siteAccess.js';
 import { handleBridgeMessage, LIVE_RECORDS_KEY } from '../services/petwiseBridge.js';
 import { STORAGE_KEYS } from '../services/recordStore.js';
@@ -12,6 +13,8 @@ export default defineBackground(() => {
 
     browser.runtime.onInstalled.addListener(({ reason }) => {
         sync();
+        // Manifest content scripts only reach pages loaded after install, so start in practice software already open.
+        injectIntoOpenTabs(KNOWN_PIMS_PATTERNS).catch(() => {});
         if (reason === 'install') browser.tabs.create({ url: browser.runtime.getURL(`${HELP_PAGE}?welcome`) }).catch(() => {});
     });
     browser.runtime.onMessage.addListener((message, sender) => {

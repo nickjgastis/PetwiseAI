@@ -23,7 +23,7 @@ const STEPS = [
     {
         icon: FiMousePointer,
         title: 'Click a field in your PIMS, then Paste',
-        text: 'The first time, click the PetWise icon in Chrome\u2019s toolbar on your practice software and choose Turn on for this site. After that, a Paste button appears beside any notes field.',
+        text: 'In ezyVet, Vetspire, Provet Cloud, Shepherd, Digitail, Covetrus Pulse, IDEXX Neo or Instinct, a Paste button appears beside any notes field. Using something else? Click the PetWise icon in Chrome\u2019s toolbar there and choose Turn on for this site.',
     },
 ];
 
@@ -31,7 +31,7 @@ const GOOD_TO_KNOW = [
     { icon: FiZap, title: 'SOAPs go section by section', text: 'Click the Subjective field and it pastes the Subjective. A general notes field gets the whole SOAP. Paste all sections fills them all at once.' },
     { icon: FiClipboard, title: 'Summaries, callbacks and dental', text: 'These paste whole, into whichever field you click.' },
     { icon: FiSettings, title: 'Always your choice', text: 'There is always a one-click paste. Use the gear on the button to pick a different section or patient.' },
-    { icon: FiLock, title: 'Private by design', text: 'Records go straight from this tab to the extension and are cleared when you sign out or quit Chrome. SmartPaste only runs on sites you turn on.' },
+    { icon: FiLock, title: 'Private by design', text: 'Records go straight from this tab to the extension and are cleared when you sign out or quit Chrome. SmartPaste only runs on practice software.' },
 ];
 
 // A static replica of the in-page SmartPaste button, so vets know what to look for.

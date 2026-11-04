@@ -122,8 +122,8 @@ const PrivacyContent = () => (
                 sign out of PetWise, click Clear records, or quit the browser.
             </li>
             <li>
-                <strong>Websites:</strong> it runs only on sites you turn on, one at a time, and you can turn any
-                of them off. On those sites it reads the field you click and the label around it, to choose what to
+                <strong>Websites:</strong> it runs only on veterinary practice software: the cloud systems it
+                supports (such as ezyVet and Vetspire) and any other site you turn on yourself. On those sites it reads the field you click and the label around it, to choose what to
                 paste, and writes the text you choose into that field. It does not read or collect other page
                 content.
             </li>
