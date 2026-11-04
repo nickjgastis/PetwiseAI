@@ -72,7 +72,7 @@ function InstallPanel({ installed }) {
     if (!canInstallSmartPaste()) {
         return (
             <p className="m-0 text-[16px] text-white/85 leading-relaxed max-w-[420px]">
-                SmartPaste runs in Google Chrome or Microsoft Edge on a computer. Open PetWise there to add it.
+                SmartPaste works in Google Chrome on a computer. Open PetWise in Chrome to add it, and use your practice software in Chrome too.
             </p>
         );
     }
@@ -99,6 +99,7 @@ function InstallPanel({ installed }) {
                 <FiChrome className="text-[18px]" /> Add to Chrome, it&rsquo;s free
             </a>
             <p className="m-0 mt-3 text-[13.5px] text-white/75">Opens the Chrome Web Store. Click Add to Chrome, then Add extension.</p>
+            <p className="m-0 mt-1 text-[12.5px] text-white/60">Using Microsoft Edge? It works there too. Choose Allow extensions from other stores when Edge asks.</p>
             <button
                 type="button"
                 onClick={() => window.location.reload()}

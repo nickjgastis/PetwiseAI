@@ -99,17 +99,25 @@ const isoFrom = (d) => (typeof d === 'string' && /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$
 // Case page: hands SmartPaste every record in the case and selects pickCaseRecord. Selects again only when that pick
 // changes (a SOAP lands while the page is open), so a record the vet chose in the extension is left alone otherwise.
 // Opening a record afterwards selects that record instead (useSmartPasteBridge).
+// Coming back to this tab selects the case's pick again, like opening it.
 export function useSmartPasteCase({ enabled, caseId, petName, notes }) {
     const lastPick = useRef(null);
     const lastSent = useRef('');
+    const [shown, setShown] = useState(0);
+
+    useEffect(() => {
+        const onVisibility = () => !document.hidden && setShown((n) => n + 1);
+        document.addEventListener('visibilitychange', onVisibility);
+        return () => document.removeEventListener('visibilitychange', onVisibility);
+    }, []);
 
     useEffect(() => {
         lastPick.current = null;
         lastSent.current = '';
-    }, [caseId]);
+    }, [caseId, shown]);
 
     useEffect(() => {
-        if (!enabled || !caseId) return;
+        if (!enabled || !caseId || document.hidden) return;
         const usable = (notes || []).filter((n) => n.report_text?.trim());
         if (!usable.length) return;
         const pick = pickCaseRecord(usable);
@@ -127,19 +135,31 @@ export function useSmartPasteCase({ enabled, caseId, petName, notes }) {
         const selectId = String(pick.id) !== lastPick.current ? String(pick.id) : null;
         lastPick.current = String(pick.id);
         send({ type: 'petwise:case', records, selectId });
-    }, [enabled, caseId, petName, notes]);
+    }, [enabled, caseId, petName, notes, shown]);
 }
 
 // Sends the open record when it is opened ('open': the extension selects it) and again when its text changes
 // ('update': the extension refreshes it but keeps whatever the vet picked there).
+// With several PetWise tabs open, the one the vet last looked at wins: coming back to this tab selects its record
+// again. Hidden tabs send nothing.
 export function useSmartPasteBridge({ enabled, report, recordType, caseName, petName, reportName, caseId }) {
     const lastId = useRef(null);
     const lastSent = useRef('');
+    // localStorage is shared by every tab. ownId is the record this tab has open; seenId is the stored id as this
+    // tab last saw it while visible, so a change another tab made while this one was hidden is not taken as ours.
+    const ownId = useRef(null);
+    const seenId = useRef(null);
 
     useEffect(() => {
         if (!enabled) return undefined;
         const sync = () => {
-            const id = localStorage.getItem('currentQuickSOAPReportId');
+            if (document.hidden) return;
+            const stored = localStorage.getItem('currentQuickSOAPReportId');
+            if (stored !== seenId.current) {
+                seenId.current = stored;
+                ownId.current = stored;
+            }
+            const id = ownId.current;
             if (!id || !report?.trim()) return;
             const patientName = caseName || petName || nameFromReportName(reportName);
             const signature = [id, recordType, patientName, caseId, report].join('\u0000');
@@ -160,11 +180,20 @@ export function useSmartPasteBridge({ enabled, report, recordType, caseName, pet
                 },
             });
         };
+        const onVisibility = () => {
+            if (document.hidden) return;
+            if (ownId.current) seenId.current = localStorage.getItem('currentQuickSOAPReportId');
+            lastId.current = null;
+            lastSent.current = '';
+            sync();
+        };
         const debounce = setTimeout(sync, EDIT_DEBOUNCE_MS);
         const poll = setInterval(sync, ID_POLL_MS);
+        document.addEventListener('visibilitychange', onVisibility);
         return () => {
             clearTimeout(debounce);
             clearInterval(poll);
+            document.removeEventListener('visibilitychange', onVisibility);
         };
     }, [enabled, report, recordType, caseName, petName, reportName, caseId]);
 }

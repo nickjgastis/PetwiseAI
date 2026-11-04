@@ -30,7 +30,7 @@ Private by design:
 - SmartPaste only runs on practice software: ezyVet, Vetspire, Provet Cloud, Shepherd, Digitail, Covetrus Pulse, IDEXX Neo and Instinct, plus any other site you turn on yourself.
 - No analytics, no tracking, no network requests.
 
-Requires a PetWise account (https://petwise.vet).
+Requires a PetWise account (https://petwise.vet) open in the same Chrome as your practice software.
 
 ## Privacy practices tab
 
