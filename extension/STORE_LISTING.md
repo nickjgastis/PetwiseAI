@@ -9,7 +9,7 @@ Upload `.output/petwise-smartpaste-<version>-chrome.zip` from `npm run zip:store
 - **Category:** Productivity (Workflow & Planning)
 - **Language:** English
 - **Icon:** `public/icon-128.png`
-- **Screenshots (1280x800):** the Paste button on a notes field; the gear menu with Paste all sections; the toolbar popup; the How it works page.
+- **Screenshots (1280x800):** upload `store-assets/1-…` to `5-…` in order. Regenerate after UI changes with `npm run screenshots` (real extension on the neutral demo page `fixture/store.html`).
 - **Homepage:** https://petwise.vet
 - **Support:** support@petwise.vet
 
