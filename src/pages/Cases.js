@@ -26,6 +26,7 @@ import {
 import { CaseCreatedOverlay } from '../components/CaseBar';
 import { toPlainText } from '../utils/recordText';
 import { useSmartPasteCase } from '../utils/smartPasteBridge';
+import SmartPastePill from '../components/SmartPastePill';
 import GeneratingLoader from '../components/GeneratingLoader';
 import usePagedList from '../hooks/usePagedList';
 import { createPortal } from 'react-dom';
@@ -990,13 +991,16 @@ const CaseDetail = ({ caseId }) => {
     return (
         <div style={FONT}>
             <div className="max-w-5xl mx-auto px-4 sm:px-8 pt-6 sm:pt-10 pb-16">
-                <button
-                    type="button"
-                    onClick={() => navigate('/dashboard/cases')}
-                    className="group mb-5 inline-flex items-center gap-1.5 text-[14px] font-medium text-[#1a2b4a]/55 hover:text-[#2d5fb8] bg-transparent border-none cursor-pointer p-0 transition-colors"
-                >
-                    <FiArrowLeft className="group-hover:-translate-x-0.5 transition-transform" /> All cases
-                </button>
+                <div className="mb-5 flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => navigate('/dashboard/cases')}
+                        className="group inline-flex items-center gap-1.5 text-[14px] font-medium text-[#1a2b4a]/55 hover:text-[#2d5fb8] bg-transparent border-none cursor-pointer p-0 transition-colors"
+                    >
+                        <FiArrowLeft className="group-hover:-translate-x-0.5 transition-transform" /> All cases
+                    </button>
+                    {notes.length > 0 && <SmartPastePill title="This case is ready to paste. Click a notes field in your practice software." />}
+                </div>
 
                 <FadeIn className={`relative overflow-hidden rounded-[28px] border border-[#e7ecf3] bg-white p-6 sm:p-8 ${notes.length ? 'mb-4' : 'mb-8'}`}>
                     <div aria-hidden className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full" style={{ background: 'radial-gradient(circle, rgba(92,204,240,0.18) 0%, rgba(92,204,240,0) 70%)' }} />

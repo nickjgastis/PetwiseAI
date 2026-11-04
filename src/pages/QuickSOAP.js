@@ -36,7 +36,8 @@ import RecordName from '../components/RecordName';
 import DentalPDFDocument from '../components/DentalPDF';
 import { QuickSOAPPDFDocument } from '../components/RecordPDF';
 import { toPlainText } from '../utils/recordText';
-import { useSmartPasteBridge, useSmartPasteInstalled } from '../utils/smartPasteBridge';
+import { useSmartPasteBridge } from '../utils/smartPasteBridge';
+import SmartPastePill from '../components/SmartPastePill';
 import CountBadge from '../components/CountBadge';
 import DentalSpeciesPicker, { SPECIES_LABEL } from '../components/DentalSpeciesPicker';
 
@@ -1559,7 +1560,6 @@ const QuickSOAP = () => {
 
     // Desktop only: the SmartPaste extension pastes the open record into the vet's PIMS, listed under the case name.
     const [smartPasteCaseName, setSmartPasteCaseName] = useState('');
-    const smartPasteInstalled = useSmartPasteInstalled();
     useEffect(() => {
         if (!activeCaseId || isMobile || !hasReport) return undefined;
         let live = true;
@@ -3591,20 +3591,7 @@ const QuickSOAP = () => {
                                 recordType={recordType}
                                 onBack={() => requestLeave({ kind: 'back' })}
                                 refreshKey={caseBarKey}
-                                extra={
-                                    !isMobile && smartPasteInstalled && (
-                                        <button
-                                            type="button"
-                                            onClick={() => navigate('/dashboard/smartpaste')}
-                                            title="Click a notes field in your practice software to paste this record"
-                                            className="hidden lg:inline-flex shrink-0 items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full text-[12px] font-semibold text-[#13233f] bg-white border border-[#c3ddf5] hover:border-[#3f8ddb] cursor-pointer transition-colors"
-                                        >
-                                            <img src="/favicon-96x96.png" alt="" className="w-5 h-5 rounded-full" />
-                                            SmartPaste ready
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
-                                        </button>
-                                    )
-                                }
+                                extra={!isMobile && hasReport && <SmartPastePill />}
                             />
                             <div className="flex flex-wrap items-center gap-2 px-5 sm:px-6 py-2.5 border-t border-[#eef2f7]" style={{ fontFamily: "var(--font-sans)" }}>
                                 <AnimatePresence mode="wait" initial={false}>
