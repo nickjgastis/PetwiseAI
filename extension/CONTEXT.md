@@ -20,10 +20,11 @@ SOAP, the matching section: Subjective field gets the Subjective).
 | | |
 |---|---|
 | Version | **1.0.0** (first store submission) |
-| Branch | `feature/smartpaste-m1` (merged to local `main` for testing; not pushed as of this writing) |
+| Branch | `feature/smartpaste-m1`, merged into `main` and pushed Nov 3, 2026 (web app side live, invisible without the extension) |
 | Store item id | `cfeodmjhbjndbcbghakbfpinmjhogibd` |
+| Store listing | https://chromewebstore.google.com/detail/petwise-smartpaste/cfeodmjhbjndbcbghakbfpinmjhogibd |
 | Dev (unpacked) id | `fdaakcanieiagjadphmnblgicldefcfd` (fixed by the manifest `key` in `wxt.config.js`) |
-| Store status | Submitted Nov 3, 2026. Rejected once for "excessive keywords" (PIMS names in the description); description fixed and resubmitted |
+| Store status | **Published Nov 4, 2026.** Rejected once on Nov 3 for "excessive keywords" (PIMS names in the description); fixed and resubmitted |
 | Visibility plan | Unlisted for the beta; Public when ready to advertise |
 | First real tester | Nick's mom, a vet on ezyVet. Nothing has been tested on a real PIMS yet |
 | Privacy policy | Live at https://petwise.vet/privacy#smartpaste (section 8), already on `main` |
@@ -234,9 +235,8 @@ Build flags live in `wxt.config.js` (`STORE`, `SMARTPASTE_E2E`) and reach code t
 
 ## Next up
 
-1. Store approval → publish (Unlisted) → mom tests on ezyVet over a screen share; add any missing field labels.
-2. Merge `feature/smartpaste-m1` to `main` and push so production sends records (invisible without the extension).
-3. Onboarding: in-app first-run nudge, refresh-after-install inside PetWise, maybe a short GIF.
-4. Optional "Copy diagnostics" in the gear (field type, label, frame, decision; no record text) for remote debugging.
-5. Verify petwise.vet in Google Search Console and set it as the item's Official URL (verified publisher badge).
-6. Going public: set `REACT_APP_SMARTPASTE_STORE_URL`, switch visibility, announce. Later: Edge Add-ons listing.
+1. Mom tests on ezyVet over a screen share; add any missing field labels.
+2. Onboarding: in-app first-run nudge, refresh-after-install inside PetWise, maybe a short GIF.
+3. Optional "Copy diagnostics" in the gear (field type, label, frame, decision; no record text) for remote debugging.
+4. Verify petwise.vet in Google Search Console and set it as the item's Official URL (verified publisher badge).
+5. Going public: set `REACT_APP_SMARTPASTE_STORE_URL`, switch visibility, announce. Later: Edge Add-ons listing.
