@@ -19,7 +19,7 @@ import { FaUser, FaSignOutAlt, FaTimes, FaMobile, FaChevronUp, FaChevronDown, Fa
 import { FiPlus } from 'react-icons/fi';
 import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiPuzzlePieceFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill, PiUser } from 'react-icons/pi';
 import SmartPaste from './SmartPaste';
-import { useSmartPasteInstalled } from '../utils/smartPasteBridge';
+import { SMARTPASTE_STORE_URL, useSmartPasteInstalled } from '../utils/smartPasteBridge';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clearAppLocalStorage, checkAndClearForUserChange } from '../utils/clearUserData';
 import OnboardingFlow from '../components/onboarding/OnboardingFlow';
@@ -1594,7 +1594,7 @@ const Dashboard = () => {
                                 <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
                         </li>
-                        {!isMobile && smartPasteInstalled === false && (
+                        {SMARTPASTE_STORE_URL && !isMobile && smartPasteInstalled === false && (
                             <li className="mx-3 mt-2 mb-1.5 relative">
                                 <Link
                                     to="/dashboard/smartpaste"
