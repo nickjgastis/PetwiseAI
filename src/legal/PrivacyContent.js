@@ -3,10 +3,10 @@ import { LEGAL } from './meta';
 
 const PrivacyContent = () => (
     <>
-        <p><strong>Last updated:</strong> {LEGAL.updated}</p>
+        <p><strong>Last updated:</strong> {LEGAL.privacyUpdated}</p>
         <p>
             This policy explains what {LEGAL.operator} ("PetWise", "we", "us") collects when you use the PetWise
-            website, web app and mobile app (the "Service"), how we use it, who we share it with, and the choices
+            website, web app, mobile app and SmartPaste browser extension (the "Service"), how we use it, who we share it with, and the choices
             you have.
         </p>
 
@@ -104,21 +104,55 @@ const PrivacyContent = () => (
             . Blocking essential cookies or storage may stop the app working.
         </p>
 
-        <h3>8. How long we keep it</h3>
+        <h3 id="smartpaste">8. SmartPaste browser extension</h3>
+        <p>
+            SmartPaste is an optional Chrome extension that pastes your PetWise records into your practice
+            management software.
+        </p>
+        <ul>
+            <li>
+                <strong>What it receives:</strong> when you open a record in the PetWise web app, that tab sends the
+                extension the record's text, record type, case and patient name, and record ID. These are notes
+                about the animal patient; the extension receives no client or owner details. Only PetWise pages
+                can send it records.
+            </li>
+            <li>
+                <strong>Where it is kept:</strong> in your browser's memory only, never on disk and never on our
+                servers or anyone else's. It keeps your 25 most recently opened records and clears them when you
+                sign out of PetWise, click Clear records, or quit the browser.
+            </li>
+            <li>
+                <strong>Websites:</strong> it runs only on veterinary practice software: the cloud systems it
+                supports (such as ezyVet and Vetspire) and any other site you turn on yourself. On those sites it reads the field you click and the label around it, to choose what to
+                paste, and writes the text you choose into that field. It does not read or collect other page
+                content.
+            </li>
+            <li>
+                <strong>What it stores:</strong> your settings, the record you last selected, and the sections you
+                told it to always use for particular fields, in your browser's extension storage.
+            </li>
+            <li>
+                <strong>What it never does:</strong> it makes no network requests, sends nothing to PetWise or
+                third parties, has no analytics or advertising, and does not sell or transfer data. Its use of
+                data follows the Chrome Web Store User Data Policy, including the Limited Use requirements.
+            </li>
+        </ul>
+
+        <h3>9. How long we keep it</h3>
         <p>
             We keep your records until you delete them or your account. When you delete your account, we delete
             your account and records from our systems. Some information may be kept longer where the law
             requires it, in backups until they expire, or in our service providers' and support records.
         </p>
 
-        <h3>9. Security</h3>
+        <h3>10. Security</h3>
         <p>
             We use reasonable safeguards, including encryption in transit and access controls. No system is completely secure, and we cannot guarantee the security of
             information. If a breach affects your personal information, we will notify you as the law requires.
             Keep your login private and tell us at {LEGAL.email} if you suspect a problem.
         </p>
 
-        <h3>10. Your choices and rights</h3>
+        <h3>11. Your choices and rights</h3>
         <ul>
             <li>See and edit your profile in the app, and delete records at any time.</li>
             <li>Delete your account in the app under Profile, Account.</li>
@@ -131,26 +165,26 @@ const PrivacyContent = () => (
             </li>
         </ul>
 
-        <h3>11. Where we process data</h3>
+        <h3>12. Where we process data</h3>
         <p>
             PetWise is offered in the United States and Canada. Your information is stored and processed in the
             United States and other countries where our providers operate, where privacy laws may differ from
             those where you live, and it may be accessible to authorities in those countries.
         </p>
 
-        <h3>12. Children</h3>
+        <h3>13. Children</h3>
         <p>
             The Service is for adult professionals and is not directed to anyone under 18. We do not knowingly
             collect information from children.
         </p>
 
-        <h3>13. Changes to this policy</h3>
+        <h3>14. Changes to this policy</h3>
         <p>
             We may update this policy and will change the date at the top when we do. For material changes we
             will email you or notify you in the app before they take effect.
         </p>
 
-        <h3>14. Contact</h3>
+        <h3>15. Contact</h3>
         <p>
             {LEGAL.operator}
             <br />
