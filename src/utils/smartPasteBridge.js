@@ -82,6 +82,54 @@ const nameFromReportName = (reportName) => {
     return first && !TYPE_ONLY.test(first) ? first : '';
 };
 
+const CASE_PRIORITY = ['soap', 'summary', 'callback', 'dental'];
+const rank = (note) => {
+    const i = CASE_PRIORITY.indexOf(normalizeType(note.record_type || note.form_data?.record_type));
+    return i === -1 ? CASE_PRIORITY.length : i;
+};
+const stamp = (note) => String(note.updated_at || note.created_at || '');
+
+// The record a case opens on in SmartPaste: its SOAP, else summary, callback, dental; the newest of that type.
+export const pickCaseRecord = (notes = []) =>
+    notes.filter((n) => n.report_text?.trim()).sort((a, b) => rank(a) - rank(b) || stamp(b).localeCompare(stamp(a)))[0] || null;
+
+// saved_reports timestamps come back without a zone but are UTC.
+const isoFrom = (d) => (typeof d === 'string' && /T\d{2}:\d{2}(:\d{2}(\.\d+)?)?$/.test(d) ? `${d}Z` : d);
+
+// Case page: hands SmartPaste every record in the case and selects pickCaseRecord. Selects again only when that pick
+// changes (a SOAP lands while the page is open), so a record the vet chose in the extension is left alone otherwise.
+// Opening a record afterwards selects that record instead (useSmartPasteBridge).
+export function useSmartPasteCase({ enabled, caseId, petName, notes }) {
+    const lastPick = useRef(null);
+    const lastSent = useRef('');
+
+    useEffect(() => {
+        lastPick.current = null;
+        lastSent.current = '';
+    }, [caseId]);
+
+    useEffect(() => {
+        if (!enabled || !caseId) return;
+        const usable = (notes || []).filter((n) => n.report_text?.trim());
+        if (!usable.length) return;
+        const pick = pickCaseRecord(usable);
+        const records = usable.map((n) => ({
+            id: String(n.id),
+            caseId,
+            patientName: petName || nameFromReportName(n.report_name),
+            recordType: normalizeType(n.record_type || n.form_data?.record_type),
+            updatedAt: isoFrom(n.updated_at || n.created_at),
+            reportText: n.report_text,
+        }));
+        const signature = JSON.stringify([pick.id, records]);
+        if (signature === lastSent.current) return;
+        lastSent.current = signature;
+        const selectId = String(pick.id) !== lastPick.current ? String(pick.id) : null;
+        lastPick.current = String(pick.id);
+        send({ type: 'petwise:case', records, selectId });
+    }, [enabled, caseId, petName, notes]);
+}
+
 // Sends the open record when it is opened ('open': the extension selects it) and again when its text changes
 // ('update': the extension refreshes it but keeps whatever the vet picked there).
 export function useSmartPasteBridge({ enabled, report, recordType, caseName, petName, reportName, caseId }) {

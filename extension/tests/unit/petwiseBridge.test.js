@@ -53,6 +53,26 @@ describe('handleBridgeMessage', () => {
         expect(io.live().r1).toMatchObject({ reportText: '**Plan**\nRecheck in 3 days.', openedAt });
     });
 
+    it('case stores every record in one write, selects the chosen one and puts it first', async () => {
+        const io = makeIo({ old: { ...soap('old'), caseId: 'c0', openedAt: '2026-11-03T08:00:00.000Z' } });
+        const summary = { ...soap('s1', 'Nova did great.'), recordType: 'summary' };
+        await handleBridgeMessage({ type: 'petwise:case', records: [summary, soap('p1'), { id: 'bad' }], selectId: 'p1' }, SENDER, io);
+        expect(io.setLive).toHaveBeenCalledTimes(1);
+        expect(io.selectRecord).toHaveBeenCalledWith('p1');
+        expect(Object.keys(io.live()).sort()).toEqual(['old', 'p1', 's1']);
+        expect(io.live().p1.openedAt > io.live().s1.openedAt).toBe(true);
+        expect(io.live().s1.openedAt > io.live().old.openedAt).toBe(true);
+    });
+
+    it('case without a valid selectId refreshes without touching the selection', async () => {
+        const io = makeIo();
+        await handleBridgeMessage({ type: 'petwise:case', records: [soap('p1')], selectId: null }, SENDER, io);
+        await handleBridgeMessage({ type: 'petwise:case', records: [soap('p1')], selectId: 'elsewhere' }, SENDER, io);
+        expect(io.selectRecord).not.toHaveBeenCalled();
+        expect(io.live().p1).toBeDefined();
+        expect(await handleBridgeMessage({ type: 'petwise:case', records: [] }, SENDER, io)).toEqual({ ok: false, error: 'invalid record' });
+    });
+
     it('keeps only the most recently opened records and clears on sign-out', async () => {
         const io = makeIo();
         for (let i = 0; i < MAX_LIVE_RECORDS + 3; i++) await handleBridgeMessage({ type: 'petwise:record', reason: 'open', record: soap(`r${i}`) }, SENDER, io);

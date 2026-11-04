@@ -25,6 +25,7 @@ import {
 } from '../utils/cases';
 import { CaseCreatedOverlay } from '../components/CaseBar';
 import { toPlainText } from '../utils/recordText';
+import { useSmartPasteCase } from '../utils/smartPasteBridge';
 import GeneratingLoader from '../components/GeneratingLoader';
 import usePagedList from '../hooks/usePagedList';
 import { createPortal } from 'react-dom';
@@ -814,6 +815,8 @@ const CaseDetail = ({ caseId }) => {
         window.addEventListener('newMobileSOAPGenerated', load);
         return () => window.removeEventListener('newMobileSOAPGenerated', load);
     }, [load]);
+
+    useSmartPasteCase({ enabled: !loading && String(caseRow?.id) === String(caseId), caseId, petName: caseRow?.pet_name || '', notes });
 
     const [pendingPreviews, setPendingPreviews] = useState(() => new Set());
     const requestedPreviews = useRef(new Set());

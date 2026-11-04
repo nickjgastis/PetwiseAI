@@ -7,6 +7,7 @@ import { normalizeType } from './recordTypes.js';
 // Messages (chrome.runtime.sendMessage from an externally_connectable PetWise page):
 //   { type: 'petwise:ping' }                                      -> { ok, version }
 //   { type: 'petwise:record', reason: 'open' | 'update', record }  -> { ok }
+//   { type: 'petwise:case', records, selectId }                   -> { ok }   (case page: all its records at once)
 //   { type: 'petwise:clear' }                                     -> { ok }   (sign-out)
 // record: { id, caseId, patientName, recordType, title, updatedAt, reportText }
 
@@ -68,6 +69,28 @@ export const handleBridgeMessage = async (message, sender, io) => {
         await io.setLive(next);
         // Opening a record in PetWise selects it; edits to it never take the selection away from a manual pick.
         if (opened) await io.selectRecord(record.id);
+        return { ok: true };
+    }
+
+    // One write for the whole case, so records sent together never race each other. The selected record counts as
+    // the most recently opened; the rest keep their place, or slot in just behind it.
+    if (type === 'petwise:case') {
+        const now = io.now ? io.now() : new Date();
+        const records = (Array.isArray(message.records) ? message.records : [])
+            .slice(0, MAX_LIVE_RECORDS)
+            .map((r) => sanitizeRecord(r, now))
+            .filter(Boolean);
+        if (!records.length) return { ok: false, error: 'invalid record' };
+        const select = records.some((r) => r.id === message.selectId) ? message.selectId : null;
+        const behind = new Date(now.getTime() - 1).toISOString();
+        const live = await io.getLive();
+        const next = { ...live };
+        for (const record of records) {
+            const openedAt = record.id === select ? now.toISOString() : live[record.id]?.openedAt || behind;
+            next[record.id] = { ...record, openedAt };
+        }
+        await io.setLive(prune(next));
+        if (select) await io.selectRecord(select);
         return { ok: true };
     }
 
