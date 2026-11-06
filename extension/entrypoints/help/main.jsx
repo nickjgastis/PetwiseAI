@@ -6,7 +6,9 @@ import './help.css';
 
 const SUPPORT_EMAIL = 'support@petwise.vet';
 const names = KNOWN_PIMS.map((p) => p.name);
-const PIMS_NAMES = `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
+const VERIFIED = ['ezyVet'];
+const others = names.filter((n) => !VERIFIED.includes(n));
+const OTHER_NAMES = `${others.slice(0, -1).join(', ')} and ${others.at(-1)}`;
 const welcome = new URLSearchParams(location.search).has('welcome');
 
 const STEPS = [
@@ -17,7 +19,7 @@ const STEPS = [
     },
     {
         title: 'Open your practice software',
-        body: `${PIMS_NAMES} work straight away. Using something else? Click the PetWise icon in the Chrome toolbar there, then Turn on for this site.`,
+        body: `Verified in ${VERIFIED.join(', ')}. ${OTHER_NAMES} are switched on too, though your experience may vary. Using something else? Click the PetWise icon in the Chrome toolbar there, then Turn on for this site.`,
         tip: 'Can\u2019t see the icon? Click the puzzle piece in the toolbar and pin PetWise SmartPaste.',
     },
     {
@@ -67,6 +69,10 @@ const FAQ = [
     {
         q: 'It has the wrong patient',
         a: 'Open the right record in PetWise, or choose it from the gear menu or the toolbar icon.',
+    },
+    {
+        q: 'It doesn\u2019t work right in my practice software',
+        a: `SmartPaste is verified in ${VERIFIED.join(', ')}, and every system is built a little differently. Email ${SUPPORT_EMAIL} with the name of your practice software and what happened, and we\u2019ll fix it.`,
     },
     {
         q: 'Does it work with Cornerstone, AVImark or ImproMed?',
@@ -139,7 +145,7 @@ function Help() {
             </section>
 
             <footer className="hp-foot">
-                Still stuck? Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
+                Something not working in your practice software? Email <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> and we&rsquo;ll fix it.
             </footer>
         </main>
     );
