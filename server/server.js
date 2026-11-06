@@ -2939,13 +2939,83 @@ app.post('/manual-reset', async (req, res) => {
     }
 });
 
+// Completed notes only. Drafts keep report_text null until a record is generated.
+const RECORD_TYPES = ['soap', 'summary', 'callback', 'dental'];
+
+function recordBucket(type) {
+    if (!type || type === 'quicksoap' || type === 'soap') return 'soap';
+    return type;
+}
+
+function emptyUsageWindow() {
+    return { total: 0, last30d: 0, last7d: 0, last24h: 0 };
+}
+
+function addRecordWindow(bucket, createdAt, now) {
+    bucket.total += 1;
+    const t = new Date(createdAt).getTime();
+    if (Number.isNaN(t)) return;
+    if (t >= now - 24 * 60 * 60 * 1000) bucket.last24h += 1;
+    if (t >= now - 7 * 24 * 60 * 60 * 1000) bucket.last7d += 1;
+    if (t >= now - 30 * 24 * 60 * 60 * 1000) bucket.last30d += 1;
+}
+
+async function pageCompletedReports(select, filter, onRows) {
+    const pageSize = 1000;
+    let from = 0;
+    for (;;) {
+        let query = supabase
+            .from('saved_reports')
+            .select(select)
+            .not('report_text', 'is', null)
+            .order('id', { ascending: true });
+        if (filter) query = filter(query);
+        const { data, error } = await query.range(from, from + pageSize - 1);
+        if (error) throw error;
+        const rows = data || [];
+        onRows(rows);
+        if (rows.length < pageSize) return;
+        from += pageSize;
+    }
+}
+
+async function countSavedRecordsByUser() {
+    const counts = new Map();
+    await pageCompletedReports('user_id', null, (rows) => {
+        rows.forEach((row) => {
+            if (!row.user_id) return;
+            counts.set(row.user_id, (counts.get(row.user_id) || 0) + 1);
+        });
+    });
+    return counts;
+}
+
+async function recordsForUser(userId) {
+    const now = Date.now();
+    const records = {};
+    RECORD_TYPES.forEach((key) => { records[key] = emptyUsageWindow(); });
+    if (!userId) return records;
+    await pageCompletedReports('record_type, created_at', (query) => query.eq('user_id', userId), (rows) => {
+        rows.forEach((row) => {
+            const key = recordBucket(row.record_type);
+            if (!records[key]) records[key] = emptyUsageWindow();
+            addRecordWindow(records[key], row.created_at, now);
+        });
+    });
+    return records;
+}
+
 // ================ ADMIN ENDPOINTS (Auth0 protected) ================
 app.get('/admin/users', requireAdmin, async (req, res) => {
     try {
-        const [usersRes, onboardingRes, usageRes] = await Promise.all([
+        const [usersRes, onboardingRes, usageRes, recordCounts] = await Promise.all([
             supabase.from('users').select('*').order('created_at', { ascending: false }),
             supabase.from('onboarding').select('auth0_user_id, status, current_step'),
             supabase.rpc('admin_usage_by_user'),
+            countSavedRecordsByUser().catch((err) => {
+                console.error('saved_reports count failed (defaulting to 0):', err.message);
+                return new Map();
+            }),
         ]);
 
         if (usersRes.error) throw usersRes.error;
@@ -2995,6 +3065,8 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
                 quicksoap_count: Math.max(u.quicksoap_count || 0, Number(usage.quicksoap || 0)),
                 petsoap_count: Number(usage.petsoap || 0),
                 petquery_count: Number(usage.petquery || 0),
+                // Saved notes still in the database, every record type. Drafts excluded.
+                record_count: recordCounts.get(u.id) || 0,
                 onboarding_status: obMap[u.auth0_user_id]?.status || null,
                 onboarding_step: obMap[u.auth0_user_id]?.current_step || null,
             };
@@ -3050,9 +3122,10 @@ app.get('/admin/user-usage', requireAdmin, async (req, res) => {
         if (!sub) return res.status(400).json({ error: 'Missing sub' });
 
         const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const [{ data, error }, recent] = await Promise.all([
+        const [{ data, error }, recent, userLookup] = await Promise.all([
             supabase.rpc('admin_user_usage', { p_auth0_user_id: sub }),
-            supabase.from('usage_events').select('event_type').eq('auth0_user_id', sub).gte('created_at', since24h)
+            supabase.from('usage_events').select('event_type').eq('auth0_user_id', sub).gte('created_at', since24h),
+            supabase.from('users').select('id').eq('auth0_user_id', sub).maybeSingle(),
         ]);
         if (error) throw error;
 
@@ -3070,7 +3143,19 @@ app.get('/admin/user-usage', requireAdmin, async (req, res) => {
             if (usage[r.event_type]) usage[r.event_type].last24h++;
         });
 
-        res.json({ sub, usage });
+        let records = {};
+        RECORD_TYPES.forEach((key) => { records[key] = emptyUsageWindow(); });
+        if (userLookup.error) {
+            console.error('admin user lookup failed:', userLookup.error.message);
+        } else {
+            try {
+                records = await recordsForUser(userLookup.data?.id);
+            } catch (err) {
+                console.error('admin user records failed:', err.message);
+            }
+        }
+
+        res.json({ sub, usage, records });
     } catch (error) {
         console.error('User usage error:', error);
         res.status(500).json({ error: error.message });

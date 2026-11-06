@@ -34,7 +34,7 @@ function planOf(u) {
 }
 
 const isPaying = (u) => ['Monthly', 'Yearly'].includes(planOf(u));
-const soapsOf = (u) => (u.quicksoap_count || 0) + (u.petsoap_count || 0);
+const recordsOf = (u) => u.record_count || 0;
 
 const PLAN_STYLES = {
     Monthly: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
@@ -56,7 +56,7 @@ const FILTERS = [
 
 const SORTS = {
     newest: (a, b) => new Date(b.created_at) - new Date(a.created_at),
-    soaps: (a, b) => soapsOf(b) - soapsOf(a),
+    records: (a, b) => recordsOf(b) - recordsOf(a),
     queries: (a, b) => (b.petquery_count || 0) - (a.petquery_count || 0)
 };
 
@@ -279,7 +279,7 @@ const AdminDashboard = () => {
                         <select value={sort} onChange={(e) => setSort(e.target.value)}
                             className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-700 focus:outline-none">
                             <option value="newest">Newest</option>
-                            <option value="soaps">Most SOAPs</option>
+                            <option value="records">Most records</option>
                             <option value="queries">Most queries</option>
                         </select>
                     </div>
@@ -291,7 +291,7 @@ const AdminDashboard = () => {
                             <tr className="text-left text-[11px] uppercase tracking-wide text-gray-400 border-b border-gray-100">
                                 <th className="px-4 py-3 font-semibold">User</th>
                                 <th className="px-4 py-3 font-semibold">Plan</th>
-                                <th className="px-4 py-3 font-semibold text-right">SOAPs</th>
+                                <th className="px-4 py-3 font-semibold text-right">Records</th>
                                 <th className="px-4 py-3 font-semibold text-right">Queries</th>
                                 <th className="px-4 py-3 font-semibold text-right hidden sm:table-cell">Joined</th>
                             </tr>
@@ -304,7 +304,7 @@ const AdminDashboard = () => {
                                         <p className="text-[12px] text-gray-400 truncate">{u.email}</p>
                                     </td>
                                     <td className="px-4 py-3"><PlanBadge user={u} /></td>
-                                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-gray-900">{soapsOf(u)}</td>
+                                    <td className="px-4 py-3 text-right tabular-nums font-semibold text-gray-900">{recordsOf(u)}</td>
                                     <td className="px-4 py-3 text-right tabular-nums text-gray-600">{u.petquery_count || 0}</td>
                                     <td className="px-4 py-3 text-right text-[12px] text-gray-400 tabular-nums hidden sm:table-cell">{formatDate(u.created_at)}</td>
                                 </tr>
@@ -337,11 +337,28 @@ const AdminDashboard = () => {
 };
 
 const PERIODS = [
-    { key: 'last24h', label: 'Day' },
-    { key: 'last7d', label: 'Week' },
+    { key: 'last24h', label: 'Today' },
+    { key: 'last7d', label: '7 days' },
     { key: 'last30d', label: 'Month' },
     { key: 'total', label: 'Total' }
 ];
+
+const RECORD_ORDER = ['soap', 'summary', 'callback', 'dental'];
+const RECORD_LABELS = {
+    soap: 'SOAP',
+    summary: 'Summary',
+    callback: 'Callback',
+    dental: 'Dental',
+    generator: 'Legacy report'
+};
+const RECORD_DOTS = {
+    soap: 'bg-blue-500',
+    summary: 'bg-emerald-500',
+    callback: 'bg-amber-500',
+    dental: 'bg-violet-500',
+    generator: 'bg-gray-400'
+};
+const recordLabel = (key) => RECORD_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1);
 
 const UserDrawer = ({ user, refreshedAt, onClose, getAuthHeaders }) => {
     const [usage, setUsage] = useState(null);
@@ -353,7 +370,7 @@ const UserDrawer = ({ user, refreshedAt, onClose, getAuthHeaders }) => {
             try {
                 const headers = await getAuthHeaders();
                 const res = await axios.get(`${API_URL}/admin/user-usage`, { headers, params: { sub: user.auth0_user_id } });
-                if (alive) setUsage(res.data.usage);
+                if (alive) setUsage({ ...(res.data.usage || {}), records: res.data.records || {} });
             } catch {
                 if (alive) setUsage((u) => u || {});
             }
@@ -367,16 +384,12 @@ const UserDrawer = ({ user, refreshedAt, onClose, getAuthHeaders }) => {
         setTimeout(() => setCopied(null), 1500);
     };
 
-    const val = (type, period) => {
-        const n = usage?.[type]?.[period] || 0;
-        // QuickSOAP lifetime also includes the counter from before event logging existed.
-        return type === 'quicksoap' && period === 'total' ? Math.max(n, user.quicksoap_count || 0) : n;
-    };
-
-    const rows = [
-        { label: 'SOAP notes', types: ['quicksoap', 'petsoap'] },
-        { label: 'PetQuery questions', types: ['petquery'] }
-    ];
+    const queryVal = (period) => usage?.petquery?.[period] || 0;
+    const recordVal = (key, period) => usage?.records?.[key]?.[period] || 0;
+    const recordKeys = RECORD_ORDER.concat(
+        Object.keys(usage?.records || {}).filter((key) => !RECORD_ORDER.includes(key) && recordVal(key, 'total') > 0)
+    );
+    const recordSum = (period) => recordKeys.reduce((sum, key) => sum + recordVal(key, period), 0);
 
     const plan = planOf(user);
     const planLine = isPaying(user)
@@ -415,22 +428,38 @@ const UserDrawer = ({ user, refreshedAt, onClose, getAuthHeaders }) => {
                     <section>
                         <p className="text-[12px] font-semibold text-gray-500 mb-2">Usage</p>
                         <div className="rounded-2xl border border-gray-200 overflow-hidden">
-                            <div className="grid grid-cols-[1fr_repeat(4,52px)] px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                            <div className="grid grid-cols-[1fr_repeat(4,64px)] px-4 py-2.5 bg-gray-50 text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
                                 <span />
-                                {PERIODS.map((p) => <span key={p.key} className="text-right">{p.label}</span>)}
+                                {PERIODS.map((p) => <span key={p.key} className="text-right whitespace-nowrap">{p.label}</span>)}
                             </div>
-                            {rows.map((r) => (
-                                <div key={r.label} className="grid grid-cols-[1fr_repeat(4,52px)] items-center px-4 py-3.5 border-t border-gray-100">
-                                    <span className="text-[13px] font-medium text-gray-700">{r.label}</span>
+                            {recordKeys.map((key) => (
+                                <div key={key} className="grid grid-cols-[1fr_repeat(4,64px)] items-center px-4 py-3 border-t border-gray-100">
+                                    <span className="flex items-center gap-2 text-[13px] font-medium text-gray-700">
+                                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${RECORD_DOTS[key] || 'bg-gray-300'}`} />
+                                        {recordLabel(key)}
+                                    </span>
                                     {PERIODS.map((p) => (
                                         <span key={p.key} className={`text-right tabular-nums ${p.key === 'total' ? 'font-bold text-gray-900' : 'font-semibold text-gray-700'}`}>
-                                            {usage ? r.types.reduce((sum, t) => sum + val(t, p.key), 0) : '…'}
+                                            {usage ? recordVal(key, p.key) : '…'}
+                                        </span>
+                                    ))}
+                                </div>
+                            ))}
+                            {[
+                                { key: 'records', label: 'Records', value: recordSum },
+                                { key: 'queries', label: 'PetQuery', value: queryVal }
+                            ].map((row) => (
+                                <div key={row.key} className="grid grid-cols-[1fr_repeat(4,64px)] items-center px-4 py-3.5 border-t border-gray-200 bg-gray-50/60">
+                                    <span className="text-[13px] font-semibold text-gray-900">{row.label}</span>
+                                    {PERIODS.map((p) => (
+                                        <span key={p.key} className={`text-right tabular-nums ${p.key === 'total' ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'}`}>
+                                            {usage ? row.value(p.key) : '…'}
                                         </span>
                                     ))}
                                 </div>
                             ))}
                         </div>
-                        <p className="mt-2 text-[11px] text-gray-400">Day, week and month are rolling (last 24 hours, 7 days, 30 days).</p>
+                        <p className="mt-2 text-[11px] text-gray-400">Today, 7 days and month are rolling (last 24 hours, 7 days, 30 days). Records are saved notes. PetQuery is questions asked.</p>
                     </section>
 
                     <section>
