@@ -19,14 +19,14 @@ SOAP, the matching section: Subjective field gets the Subjective).
 
 | | |
 |---|---|
-| Version | **1.0.0** (first store submission) |
+| Version | **1.0.1** (ezyVet fixes, submitted Nov 5, 2026). 1.0.0 was the first published version |
 | Branch | `feature/smartpaste-m1`, merged into `main` and pushed Nov 3, 2026 (web app side live, invisible without the extension) |
 | Store item id | `cfeodmjhbjndbcbghakbfpinmjhogibd` |
 | Store listing | https://chromewebstore.google.com/detail/petwise-smartpaste/cfeodmjhbjndbcbghakbfpinmjhogibd |
 | Dev (unpacked) id | `fdaakcanieiagjadphmnblgicldefcfd` (fixed by the manifest `key` in `wxt.config.js`) |
 | Store status | **Published Nov 4, 2026.** Rejected once on Nov 3 for "excessive keywords" (PIMS names in the description); fixed and resubmitted |
 | Visibility plan | Unlisted for the beta; Public when ready to advertise |
-| First real tester | Nick's mom, a vet on ezyVet. Nothing has been tested on a real PIMS yet |
+| First real tester | Nick's mom, a vet on ezyVet. ezyVet verified working by Nick on Nov 5 (1.0.1); other PIMS untested |
 | Privacy policy | Live at https://petwise.vet/privacy#smartpaste (section 8), already on `main` |
 
 ### Iteration history (milestone M1)
@@ -42,6 +42,17 @@ SOAP, the matching section: Subjective field gets the Subjective).
 9. Opening a case selects SOAP > summary > callback > dental; clicking into a record still selects that record.
 10. Last-viewed PetWise tab wins; hidden tabs never send. Chrome-first copy.
 11. Store screenshots and promo tiles (`npm run screenshots`), listing copy, store id baked into the app.
+12. 1.0.1, ezyVet (first real PIMS):
+    - Chip was rendered but hidden: ezyVet has `!important` page rules that made our host `position: static`, so it
+      lost its z-index. The host styles are now set with `!important` and `.sp-root` has its own z-index.
+    - `display: contents` wrappers (0x0 rect) no longer count as clipping ancestors (`positioner.js`).
+    - ezyVet's History / Physical Exam / Assessment / Plan are unlabelled Lexical editors. `services/pimsAdapters.js`
+      maps them by wrapper id (`history-lexical-container-header` etc.). `describeField` exposes a `container` source
+      (nearest ancestor id) that only adapters read; it is also the fallback key for remembered fields.
+    - Line breaks: contenteditable now gets a synthetic paste first (rich editors keep lines), execCommand only if
+      nothing handled it. Real Lexical editor in `fixture/rich.html` with line-by-line tests.
+    - "May be incomplete" warning removed (reformatting editors triggered it); error copy rewritten.
+    - Chip shows "Paste all" next to the section paste only while every S/O/A/P field in the panel is empty.
 
 ## Changing the version
 
@@ -191,8 +202,8 @@ Build flags live in `wxt.config.js` (`STORE`, `SMARTPASTE_E2E`) and reach code t
 
 ## Testing
 
-- `npm run test:run`: unit tests (Vitest + jsdom). 195 passing at 1.0.0.
-- `npm run test:e2e`: 37 Playwright tests against the mock PIMS (`fixture/`), real Chromium with the extension.
+- `npm run test:run`: unit tests (Vitest + jsdom). 198 passing at 1.0.1.
+- `npm run test:e2e`: 40 Playwright tests against the mock PIMS (`fixture/`), real Chromium with the extension.
   Must run outside the sandbox (needs a real browser).
 - Manual: `npm run dev:fixture`, load `.output/chrome-mv3` unpacked, open http://127.0.0.1:4173. Run PetWise locally
   (`npm run dev` in the repo root, port 3000) to send real records.
@@ -233,10 +244,19 @@ Build flags live in `wxt.config.js` (`STORE`, `SMARTPASTE_E2E`) and reach code t
 - Never overwrite or restore a field automatically; never globally block pointer events.
 - No em dashes in user-facing copy. Desktop only.
 
+## Debugging a PIMS remotely
+
+If the chip doesn't show on a vet's system, the DevTools console is the fastest route (see the 1.0.1 ezyVet work):
+check `document.querySelector('petwise-smartpaste')` exists, then whether `.sp-chip` exists in its shadow root
+(rendered but hidden = stacking/CSS problem; missing = detection problem), and `document.elementsFromPoint` at the
+chip's position to see what covers it. Run console snippets inside `setTimeout` so there's time to click the field;
+DevTools' `copy()` only works typed at the prompt, so stash results on `window` first.
+
 ## Next up
 
-1. Mom tests on ezyVet over a screen share; add any missing field labels.
-2. Onboarding: in-app first-run nudge, refresh-after-install inside PetWise, maybe a short GIF.
-3. Optional "Copy diagnostics" in the gear (field type, label, frame, decision; no record text) for remote debugging.
-4. Verify petwise.vet in Google Search Console and set it as the item's Official URL (verified publisher badge).
-5. Going public: set `REACT_APP_SMARTPASTE_STORE_URL`, switch visibility, announce. Later: Edge Add-ons listing.
+1. Mom tests on ezyVet; confirm Paste all and line spacing on her screens (popup "Comment"/"Notes" variant too).
+2. Chip in the top layer (Popover API) plus a self-check that it's actually on top, and a hostile-CSS fixture.
+3. Onboarding: in-app first-run nudge, refresh-after-install inside PetWise, maybe a short GIF.
+4. Optional "Copy diagnostics" in the gear (field type, label, frame, decision; no record text) for remote debugging.
+5. Verify petwise.vet in Google Search Console and set it as the item's Official URL (verified publisher badge).
+6. Going public: set `REACT_APP_SMARTPASTE_STORE_URL`, switch visibility, announce. Later: Edge Add-ons listing.

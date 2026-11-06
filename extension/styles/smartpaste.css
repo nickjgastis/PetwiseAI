@@ -26,6 +26,8 @@
     position: fixed;
     top: -9999px;
     left: -9999px;
+    /* Stays on top even if page CSS strips the host's stacking context. */
+    z-index: 2147483647;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
     line-height: 1.3;
@@ -114,6 +116,18 @@
 .sp-primary:disabled {
     background: #e7ecf4;
     color: var(--sp-muted) !important;
+}
+
+.sp-primary.is-secondary {
+    margin-left: 4px;
+    padding: 0 12px;
+    background: var(--sp-wash);
+    color: var(--sp-accent) !important;
+    border: 1px solid var(--sp-accent-line);
+}
+
+.sp-primary.is-secondary:hover {
+    background: var(--sp-accent-soft);
 }
 
 .sp-primary.is-choose {
@@ -396,6 +410,8 @@
 .sp-action.is-primary:disabled {
     border-color: var(--sp-border);
     background: var(--sp-wash);
+    color: var(--sp-muted) !important;
+    font-weight: 500;
 }
 
 .sp-action-detail {

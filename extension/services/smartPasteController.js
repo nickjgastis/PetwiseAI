@@ -43,6 +43,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
         feedback: null,
         anchor: null,
         bulkPlan: null,
+        quickFill: null,
     };
     let snapshot = null;
 
@@ -116,6 +117,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
             remembered,
             rememberedLabel: remembered ? labelOf(remembered) : '',
             bulkPlan: state.bulkPlan,
+            quickFill: state.quickFill,
             sectionOptions: single ? [] : [...typeSectionKeys(type), FULL].map((key) => ({ key, label: labelOf(key), available: !!content?.[key] })),
             fieldName: state.descriptor ? fieldDisplayName(state.descriptor) : '',
             detected: state.classification,
@@ -161,7 +163,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
     const clearTarget = () => {
         resizeObserver?.disconnect();
         if (!state.target && !state.menuOpen) return;
-        setState({ target: null, descriptor: null, classification: null, override: null, savedRange: null, menuOpen: false, feedback: null, anchor: null, useCaret: false });
+        setState({ target: null, descriptor: null, classification: null, override: null, savedRange: null, menuOpen: false, feedback: null, anchor: null, useCaret: false, quickFill: null });
     };
 
     const setTarget = (el) => {
@@ -181,7 +183,8 @@ export const createController = ({ win, store, memory = null, copy }) => {
             resizeObserver = resizeObserver || new win.ResizeObserver(scheduleMeasure);
             resizeObserver.observe(el);
         }
-        state = { ...state, target: el, descriptor, classification, override: null, useCaret: false, savedRange: null, menuOpen: false, dismissed: false, feedback: null };
+        state = { ...state, target: el, descriptor, classification, override: null, useCaret: false, savedRange: null, menuOpen: false, dismissed: false, feedback: null, quickFill: null };
+        refreshQuickFill();
         measure();
     };
 
@@ -239,6 +242,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
 
     const onInput = (e) => {
         if (inTarget(eventNode(e))) {
+            if (state.quickFill || !readValue(state.target).trim()) refreshQuickFill();
             emit();
             scheduleMeasure();
         }
@@ -396,16 +400,17 @@ export const createController = ({ win, store, memory = null, copy }) => {
         state = { ...state, busy: false };
 
         const copyAction = { kind: 'copy', section };
-        if (result.status === 'inserted') {
+        // 'uncertain' means the field changed but the editor reformatted the text (bullets, spacing), so it is
+        // reported as pasted: a warning there fired on normal rich-editor pastes and taught vets to ignore it.
+        if (result.status === 'inserted' || result.status === 'uncertain') {
             const name = store.getActiveRecord()?.patientName;
             showFeedback({ type: 'success', message: `Pasted ${name}'s ${label}${mode === 'replace' ? ' (replaced field)' : ''}.` });
         } else if (result.status === 'unchanged') {
-            showFeedback({ type: 'error', message: `This field didn't accept the text. Nothing was changed.`, action: copyAction });
-        } else if (result.status === 'invalid') {
-            showFeedback({ type: 'error', message: `This field is no longer available.`, action: copyAction });
+            showFeedback({ type: 'error', message: `Couldn't paste into this field. Copy the ${label} and paste it with \u2318V or Ctrl+V.`, action: copyAction });
         } else {
-            showFeedback({ type: 'warning', message: `The field changed but the ${label} may be incomplete. Check it before saving.`, action: copyAction });
+            showFeedback({ type: 'error', message: `This field closed. Click back into it to paste.`, action: copyAction });
         }
+        refreshQuickFill();
         return { ...result, recordId, section };
     };
 
@@ -447,7 +452,19 @@ export const createController = ({ win, store, memory = null, copy }) => {
             else fill.push(matches[0]);
         });
         const labelled = (s) => ({ ...s, label: labelOf(s.section) });
-        return { fill: fill.map((f) => labelOf(f.section)), skipped: skipped.map(labelled), fields: fill };
+        // Every section field here is empty and unambiguous (a section the record lacks doesn't count against it).
+        const allEmpty = fill.length >= 2 && skipped.every((s) => s.reason === 'not in this record');
+        return { fill: fill.map((f) => labelOf(f.section)), skipped: skipped.map(labelled), fields: fill, allEmpty };
+    };
+
+    // The chip offers "Paste all" next to the section paste only while every S/O/A/P field is still empty.
+    const refreshQuickFill = () => {
+        let quickFill = null;
+        if (state.target && !isSingleBlock(activeType())) {
+            const plan = planBulk();
+            if (plan?.allEmpty) quickFill = plan.fill;
+        }
+        if (String(quickFill) !== String(state.quickFill)) setState({ quickFill });
     };
 
     const pasteAll = async () => {
@@ -472,14 +489,16 @@ export const createController = ({ win, store, memory = null, copy }) => {
         state = { ...state, busy: false };
         if (origin?.isConnected) origin.focus({ preventScroll: true });
 
-        const done = results.filter((r) => r.status === 'inserted').map((r) => labelOf(r.section));
-        const failed = results.filter((r) => r.status !== 'inserted').map((r) => labelOf(r.section));
+        const pasted = (r) => r.status === 'inserted' || r.status === 'uncertain';
+        const done = results.filter(pasted).map((r) => labelOf(r.section));
+        const failed = results.filter((r) => !pasted(r)).map((r) => labelOf(r.section));
         const name = store.getActiveRecord()?.patientName;
         const parts = [];
         if (done.length) parts.push(`Pasted ${name}'s ${done.join(', ')}.`);
-        if (failed.length) parts.push(`Check ${failed.join(', ')}: the field did not take the text.`);
+        if (failed.length) parts.push(`Couldn't paste ${failed.join(', ')}.`);
         if (plan.skipped.length) parts.push(`Skipped ${plan.skipped.map((s) => `${s.label} (${s.reason})`).join(', ')}.`);
-        showFeedback({ type: failed.length ? 'warning' : plan.skipped.length ? 'info' : 'success', message: parts.join(' ') });
+        showFeedback({ type: failed.length ? 'error' : plan.skipped.length ? 'info' : 'success', message: parts.join(' ') });
+        refreshQuickFill();
         return { results, skipped: plan.skipped };
     };
 
@@ -506,7 +525,10 @@ export const createController = ({ win, store, memory = null, copy }) => {
         if (state.target && state.descriptor) setState({ classification: classify(state.target, state.descriptor) });
     });
 
-    const unsubscribeStore = store.subscribe(() => emit());
+    const unsubscribeStore = store.subscribe(() => {
+        refreshQuickFill();
+        emit();
+    });
 
     snapshot = buildSnapshot();
 
@@ -553,6 +575,7 @@ export const createController = ({ win, store, memory = null, copy }) => {
         },
         setOverride: (section) => {
             setState({ override: section, menuOpen: false, feedback: null });
+            refreshQuickFill();
             refocusTarget();
         },
         toggleMenu: () => {

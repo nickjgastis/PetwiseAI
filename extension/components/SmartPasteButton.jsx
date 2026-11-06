@@ -79,10 +79,19 @@ function PrimaryAction({ snap, controller, previewBind }) {
             </>
         );
     }
-    return (
-        <button type="button" className="sp-primary" onMouseDown={keepFieldFocus} onClick={() => controller.paste()} {...previewBind}>
+    const section = (
+        <button type="button" className={`sp-primary${snap.quickFill ? ' is-secondary' : ''}`} onMouseDown={keepFieldFocus} onClick={() => controller.paste()} {...previewBind}>
             Paste {snap.sectionLabel}
         </button>
+    );
+    if (!snap.quickFill) return section;
+    return (
+        <>
+            <button type="button" className="sp-primary" title={`Fills ${snap.quickFill.join(', ')}`} onMouseDown={keepFieldFocus} onClick={controller.pasteAll}>
+                Paste all
+            </button>
+            {section}
+        </>
     );
 }
 

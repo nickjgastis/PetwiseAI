@@ -112,8 +112,9 @@ export const classifyField = (descriptor, { location } = {}) => {
         if (result) return { ...result, source: `adapter:${adapter.id}` };
     }
 
+    // Only adapters read other sources (e.g. 'container'): a wrapper id like "search-panel" says nothing generic.
     const sources = [...(descriptor.sources || [])]
-        .filter((s) => s.text && s.text.trim())
+        .filter((s) => SOURCE_ORDER.includes(s.kind) && s.text && s.text.trim())
         .sort((a, b) => SOURCE_ORDER.indexOf(a.kind) - SOURCE_ORDER.indexOf(b.kind));
 
     for (const source of sources) {

@@ -85,6 +85,7 @@ test.describe('separate SOAP fields', () => {
         const field = page.locator('#existing-objective');
         await field.click();
         await pasteButton(page, 'Objective').click();
+        await expect(chipIn(page)).toContainText("Pasted Bella's Objective");
         const text = normalize(await field.innerText());
         expect(text.startsWith('Triage: BAR, ambulatory.')).toBe(true);
         expect(text).toContain(normalize(BELLA.objective));
@@ -317,6 +318,43 @@ test.describe('rich text (Quill)', () => {
     });
 });
 
+// Line structure without blank lines: editors differ in how they mark a paragraph break, but every line must survive.
+const lines = (text) =>
+    String(text)
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+test.describe('rich text (Lexical, as in ezyVet)', () => {
+    test('keeps every line of the pasted section and full record in Lexical\'s model', async ({ page }) => {
+        await page.goto(`${FIXTURE}/rich.html`);
+        const model = (id) => page.getByTestId(`lexical-${id}-model`);
+        expect(lines(BELLA.full).length).toBeGreaterThan(5);
+
+        await page.locator('#lexical-plan').click();
+        await pasteButton(page, 'Plan').click();
+        await expect(chipIn(page)).toContainText("Pasted Bella's Plan");
+        await expect.poll(async () => lines(await model('plan').textContent())).toEqual(lines(BELLA.plan));
+
+        await page.locator('#lexical-record').click();
+        await pasteButton(page, 'Full SOAP').click();
+        await expect(chipIn(page)).toContainText("Pasted Bella's Full SOAP");
+        await expect.poll(async () => lines(await model('record').textContent())).toEqual(lines(BELLA.full));
+        expect(lines(await page.locator('#lexical-record').innerText())).toEqual(lines(BELLA.full));
+
+        // Inserted once, and it survives more typing.
+        await page.keyboard.type(' Signed.');
+        await expect.poll(async () => normalize(await model('record').textContent())).toBe(normalize(`${BELLA.full} Signed.`));
+    });
+
+    test('Quill keeps every line too', async ({ page }) => {
+        await page.goto(`${FIXTURE}/rich.html`);
+        await page.locator('#quill-record .ql-editor').click();
+        await pasteButton(page, 'Full SOAP').click();
+        await expect.poll(async () => lines(await page.evaluate(() => window.__quills.record.getText()))).toEqual(lines(BELLA.full));
+    });
+});
+
 test.describe('React-controlled fields', () => {
     test('updates React state, not just the DOM', async ({ page }) => {
         await page.goto(`${FIXTURE}/react.html`);
@@ -339,7 +377,7 @@ test.describe('React-controlled fields', () => {
         await field.click();
         await pasteButton(page, 'Assessment').click();
         const feedback = chipIn(page).getByRole('alert');
-        await expect(feedback).toContainText("didn't accept the text");
+        await expect(feedback).toContainText("Couldn't paste into this field");
         await expect(field).toHaveValue('Typed by vet.');
         await expect(page.getByTestId('react-locked-state')).toHaveText('Typed by vet.');
 
@@ -470,6 +508,25 @@ test.describe('UI behaviour', () => {
 test.describe('paste all', () => {
     const pasteAllButton = (page) => menuIn(page).getByRole('button', { name: /^Paste all sections/ });
 
+    test('the chip offers Paste all next to the section paste only while every section field is empty', async ({ page }) => {
+        await page.goto(`${FIXTURE}/`);
+        const quick = chipIn(page).getByRole('button', { name: 'Paste all', exact: true });
+        await page.locator('#subjective').click();
+        await expect(pasteButton(page, 'Subjective')).toBeVisible();
+        await expect(quick).toBeVisible();
+        await quick.click();
+        await expect(chipIn(page)).toContainText("Pasted Bella's Subjective, Objective, Assessment, Plan.");
+        for (const key of ['subjective', 'objective', 'assessment', 'plan']) await expect(page.locator(`#${key}`)).toHaveValue(BELLA[key]);
+        await expect(quick).toHaveCount(0);
+
+        // One field with text is enough to hide it.
+        await page.goto(`${FIXTURE}/`);
+        await page.locator('#plan').fill('Typed by vet.');
+        await page.locator('#subjective').click();
+        await expect(pasteButton(page, 'Subjective')).toBeVisible();
+        await expect(quick).toHaveCount(0);
+    });
+
     test('fills the empty S/O/A/P fields in the same panel and leaves typed text alone', async ({ page }) => {
         await page.goto(`${FIXTURE}/`);
         await page.locator('#plan').fill('Typed by vet.');
@@ -492,6 +549,7 @@ test.describe('paste all', () => {
         await settingsButton(page).click();
         await expect(menuIn(page)).toContainText('Skips Subjective: 2 fields look like Subjective');
         await pasteAllButton(page).click();
+        await expect(chipIn(page)).toContainText('Skipped');
         await expect(page.locator('#history')).toHaveValue('');
         await expect(page.locator('#hpi')).toHaveValue('');
         expect(normalize(await page.locator('#physical-exam').innerText())).toBe(normalize(BELLA.objective));

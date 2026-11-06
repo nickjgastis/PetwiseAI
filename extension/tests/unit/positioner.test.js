@@ -48,4 +48,11 @@ describe('rectInViewport', () => {
         const el = box(document.getElementById('field'), { left: 0, right: 500, top: 150, bottom: 250 });
         expect(rectInViewport(el, window).visible).toBe(false);
     });
+
+    it('ignores display: contents wrappers, which have no box', () => {
+        document.body.innerHTML = '<div id="wrap" style="display: contents; overflow: hidden"><div id="editor" contenteditable></div></div>';
+        box(document.getElementById('wrap'), { left: 0, right: 0, top: 0, bottom: 0 });
+        const editor = box(document.getElementById('editor'), { left: 100, right: 700, top: 200, bottom: 400 });
+        expect(rectInViewport(editor, window)).toMatchObject({ visible: true, rect: { top: 200, height: 200 } });
+    });
 });

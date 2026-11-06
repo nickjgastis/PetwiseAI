@@ -22,7 +22,7 @@ export default defineConfig({
     manifest: {
         name: 'PetWise SmartPaste',
         description: 'Paste PetWise records into the field you choose in your practice management software.',
-        version: '1.0.0',
+        version: '1.0.1',
         // activeTab lets the popup see which site it was opened on. The install prompt names only the known cloud
         // practice software; any other site is added one at a time when the vet enables it.
         permissions: ['storage', 'activeTab', 'scripting'],

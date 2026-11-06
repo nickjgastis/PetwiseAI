@@ -115,6 +115,15 @@ const labelledByText = (el) => {
         .join(' ');
 };
 
+// Id of the closest wrapper, for PIMS adapters whose editors carry no label of their own.
+const containerId = (el) => {
+    let node = el.parentElement;
+    for (let depth = 0; node && depth < 3; depth++, node = node.parentElement) {
+        if (node.id) return node.id;
+    }
+    return '';
+};
+
 export const describeField = (el) => {
     const kind = editorKind(el);
     const labels = kind === 'contenteditable' ? [] : Array.from(el.labels || []);
@@ -126,6 +135,7 @@ export const describeField = (el) => {
         { kind: 'heading', text: nearbyHeading(el) },
         { kind: 'name', text: el.getAttribute('name') || '' },
         { kind: 'id', text: el.id || '' },
+        { kind: 'container', text: containerId(el) },
     ].filter((s) => s.text);
     return { kind, multiline: kind !== 'input', sources };
 };

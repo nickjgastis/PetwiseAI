@@ -18,6 +18,8 @@ const clippingAncestors = (el) => {
     const list = [];
     for (let node = el.parentElement; node && node !== el.ownerDocument.documentElement; node = node.parentElement) {
         const s = win.getComputedStyle(node);
+        // display: contents has no box (a 0x0 rect), so it cannot clip anything.
+        if (s.display === 'contents') continue;
         if (CLIPS.test(`${s.overflow} ${s.overflowX} ${s.overflowY}`)) list.push(node);
     }
     clipCache.set(el, list);

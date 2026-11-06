@@ -1,9 +1,9 @@
 import { editorKind, ineligibleReason } from './fieldDetector.js';
 
 // Inserts text into the field the vet chose. Order of attempts:
-//   1. document.execCommand('insertText'): native editing pipeline, keeps undo where the editor supports it.
-//   2. Inputs/textareas: native value setter + beforeinput/input/change events.
-//      Contenteditable: a synthetic paste event (rich editors handle it), then text-node insertion.
+//   Inputs/textareas: document.execCommand('insertText') (native pipeline, keeps undo), then the native value
+//   setter + beforeinput/input/change events.
+//   Contenteditable: a synthetic paste event (rich editors keep line breaks), then execCommand, then text nodes.
 // A later attempt only runs when the field is still exactly what it was before, so text is never inserted twice.
 // Nothing is ever rolled back: on failure the field is left as the editor left it and the caller offers Copy.
 
@@ -186,15 +186,18 @@ const insertTextNodes = (el, range, text) => {
     }
 };
 
+// True when the page took the paste (cancelled the event to insert it itself). An untrusted paste event has no
+// default action, so an editor that ignores it leaves the field untouched.
 const dispatchPaste = (el, text) => {
     try {
         const DataTransfer = ctor(el, 'DataTransfer');
         const ClipboardEvent = ctor(el, 'ClipboardEvent');
         const data = new DataTransfer();
         data.setData('text/plain', text);
-        el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true, composed: true }));
+        return !el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true, composed: true }));
     } catch {
-        // Environments without DataTransfer/ClipboardEvent constructors fall through to text-node insertion.
+        // Environments without DataTransfer/ClipboardEvent constructors fall through to the next method.
+        return false;
     }
 };
 
@@ -229,13 +232,22 @@ const insertIntoContentEditable = async (el, text, { mode, useCaret, savedRange 
 
     const unchanged = () => readValue(el) === before;
     let method = null;
+    // Rich editors (Lexical, ProseMirror, Slate...) turn pasted line breaks into lines but typed-in ones
+    // (execCommand insertText) into nothing, so a paste goes first. They track the selection on selectionchange,
+    // which fires asynchronously. An editor that took the paste is never given the text a second way.
+    await settle(win);
+    if (!sel.rangeCount || !el.contains(sel.getRangeAt(0).startContainer)) {
+        focusTarget(el);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+    if (dispatchPaste(el, insert)) {
+        method = 'paste-event';
+        if (unchanged()) await settle(win);
+        return { before, body: text, method };
+    }
     if (tryExecCommand(doc, insert)) method = 'execCommand';
     if (unchanged()) await settle(win);
-    if (unchanged()) {
-        dispatchPaste(el, insert);
-        method = 'paste-event';
-        await settle(win);
-    }
     if (unchanged()) {
         method = null;
         const current = sel.rangeCount ? sel.getRangeAt(0) : range;

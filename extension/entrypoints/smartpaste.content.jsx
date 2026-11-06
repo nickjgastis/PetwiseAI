@@ -5,6 +5,7 @@ import SmartPasteButton from '../components/SmartPasteButton.jsx';
 import { copyToClipboard, extensionStorage, sessionRecordStorage } from '../platform/browser.js';
 import { KNOWN_PIMS_PATTERNS } from '../platform/pimsSites.js';
 import { createFieldMemory } from '../services/fieldMemory.js';
+import { registerPimsAdapters } from '../services/pimsAdapters.js';
 import { createRecordStore } from '../services/recordStore.js';
 import { createController } from '../services/smartPasteController.js';
 // Bundled into the script rather than fetched: a fetched stylesheet must be web-accessible to the page's origin,
@@ -40,6 +41,7 @@ export default defineContentScript({
 
     async main(ctx) {
         if (window !== window.top && reachableFromTop()) return;
+        registerPimsAdapters();
 
         const store = createRecordStore({ storage: extensionStorage, liveStorage: sessionRecordStorage });
         const memory = createFieldMemory({ storage: extensionStorage });
@@ -54,7 +56,10 @@ export default defineContentScript({
             append: 'last',
             isolateEvents: true,
             onMount: (container, shadow, host) => {
-                host.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;z-index:2147483647;';
+                // !important: some PIMS (ezyVet) have !important page rules that would otherwise make this static.
+                Object.entries({ position: 'fixed', top: '0', left: '0', width: '0', height: '0', 'z-index': '2147483647' }).forEach(([k, v]) =>
+                    host.style.setProperty(k, v, 'important')
+                );
                 controller.attachUi(host, container, () => ui.mount());
                 const root = createRoot(container);
                 root.render(<SmartPasteButton controller={controller} />);

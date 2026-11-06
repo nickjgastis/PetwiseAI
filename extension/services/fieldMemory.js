@@ -8,7 +8,7 @@ import { ALL_SECTION_KEYS, FULL } from './recordTypes.js';
 export const MEMORY_KEY = 'smartpaste.fieldMappings';
 
 const VALID = new Set([...ALL_SECTION_KEYS, FULL]);
-const KEY_SOURCES = ['label', 'aria-label', 'aria-labelledby', 'placeholder', 'name', 'id'];
+const KEY_SOURCES = ['label', 'aria-label', 'aria-labelledby', 'placeholder', 'name', 'id', 'container'];
 
 // A stable name for a field: its strongest label-like source. Null when the field has nothing to go on.
 export const fieldKey = (descriptor) => {
