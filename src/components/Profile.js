@@ -17,6 +17,7 @@ import {
     FaGraduationCap, FaEnvelope, FaCircle
 } from 'react-icons/fa';
 import { clearAppLocalStorage } from '../utils/clearUserData';
+import { isStandalone, canPromptInstall, promptInstall } from '../utils/install';
 import { STUDENT_PROGRAM } from '../constants/features';
 
 // Row inside a settings card: label left, value right
@@ -235,8 +236,11 @@ const Profile = ({ isMobileSignup = false }) => {
             return <InstallPrompt onClose={() => setShowInstallPrompt(false)} />;
         }
 
-        const isStandaloneApp = window.matchMedia('(display-mode: standalone)').matches ||
-            window.navigator.standalone === true;
+        const isStandaloneApp = isStandalone();
+        const openInstall = async () => {
+            if (canPromptInstall() && await promptInstall()) return;
+            setShowInstallPrompt(true);
+        };
         const profileDisplayName = userData?.dvm_name
             ? `Dr. ${userData.dvm_name}`
             : user?.name || 'Welcome';
@@ -273,6 +277,35 @@ const Profile = ({ isMobileSignup = false }) => {
                             <div className="flex-shrink-0 self-start">{planBadge()}</div>
                         </div>
                     </motion.div>
+
+                    {!isStandaloneApp && (
+                        <motion.button
+                            type="button"
+                            onClick={openInstall}
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
+                            className="relative w-full overflow-hidden text-left rounded-[24px] p-5 bg-gradient-to-br from-[#3a72cc] via-[#2d5fb8] to-[#1e4a94] text-white shadow-[0_18px_40px_-18px_rgba(45,95,184,0.8)] ring-2 ring-[#5cccf0]/60 active:scale-[0.985] transition-transform"
+                        >
+                            <span className="absolute -top-10 -right-8 w-32 h-32 rounded-full bg-[#5cccf0]/30 blur-2xl pointer-events-none" />
+                            <span className="relative flex items-start gap-3.5">
+                                <span className="relative w-12 h-12 shrink-0 rounded-2xl bg-white/15 flex items-center justify-center">
+                                    <FaMobile className="text-white text-lg" />
+                                    <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#ef4444] ring-2 ring-[#2d5fb8] text-[11px] font-bold flex items-center justify-center">!</span>
+                                </span>
+                                <span className="flex-1 min-w-0">
+                                    <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-[#a8e6fa] mb-1">Recommended</span>
+                                    <span className="block text-[17px] font-bold leading-tight">Get the PetWise app</span>
+                                    <span className="block text-[13px] text-white/80 leading-snug mt-1">
+                                        Opens full screen from your home screen, stays logged in, and starts recording in one tap.
+                                    </span>
+                                </span>
+                            </span>
+                            <span className="relative mt-4 flex items-center justify-center h-12 rounded-full bg-white text-[#2d5fb8] text-[15px] font-semibold">
+                                Install the app →
+                            </span>
+                        </motion.button>
+                    )}
 
                     {pastDueBanner}
 
@@ -327,23 +360,6 @@ const Profile = ({ isMobileSignup = false }) => {
                         <h3 className="text-xs font-bold uppercase tracking-[0.12em] text-[#1a2b4a]/40">Settings</h3>
                     </div>
                     <div className="bg-white rounded-[24px] border border-[#e7ecf3] overflow-hidden divide-y divide-[#e7ecf3] shadow-[0_4px_20px_rgba(15,23,42,0.045)]">
-                        {!isStandaloneApp && (
-                            <button
-                                className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors"
-                                onClick={() => setShowInstallPrompt(true)}
-                            >
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-emerald-50 rounded-[14px] flex items-center justify-center">
-                                        <FaMobile className="text-emerald-600 text-sm" />
-                                    </div>
-                                    <div>
-                                        <p className="text-[#13233f] font-semibold text-sm">Get the App</p>
-                                        <p className="text-[#1a2b4a]/40 text-[11px] mt-0.5">Install Petwise on your home screen</p>
-                                    </div>
-                                </div>
-                                <span className="text-gray-300 text-xl font-light">›</span>
-                            </button>
-                        )}
                         <button
                             className="w-full flex items-center justify-between px-4 py-4 text-left active:bg-gray-50 transition-colors"
                             onClick={() => setShowManageAccount(true)}

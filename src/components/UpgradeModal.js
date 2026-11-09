@@ -5,6 +5,7 @@ import { FaCheck, FaGraduationCap, FaTimes, FaLock, FaChartPie } from 'react-ico
 import StudentRedeem from './StudentRedeem';
 import PlanCards, { CurrencyToggle } from './PlanCards';
 import { STUDENT_PROGRAM } from '../constants/features';
+import { metaBrowserIds } from '../utils/pixelEvents';
 
 // Loaded on first checkout, not on import: a blocked or offline Stripe.js must not crash the page.
 let stripePromise = null;
@@ -78,7 +79,7 @@ const UpgradeModal = ({ user, feature = 'soap', resetsAt, reason = 'limit', onCl
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user, planType, currency }),
+                body: JSON.stringify({ user, planType, currency, ...metaBrowserIds() }),
             });
 
             const session = await response.json();

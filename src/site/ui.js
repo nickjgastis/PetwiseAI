@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FiArrowRight, FiCheck, FiPlus } from 'react-icons/fi';
 import { TESTIMONIALS } from './siteConfig';
 import { BRAND_WASH } from '../brand';
+import { trackMeta } from '../utils/pixelEvents';
 
 export const Container = ({ className = '', children }) => (
     <div className={`max-w-6xl mx-auto px-5 sm:px-8 ${className}`}>{children}</div>
@@ -62,7 +63,7 @@ export const SectionHeading = ({ eyebrow, title, body, align = 'left', light = f
 const track = (label) => {
     if (typeof window === 'undefined') return;
     window.gtag?.('event', 'site_cta', { label, page_path: window.location.pathname });
-    if (label.startsWith('signup')) window.fbq?.('track', 'Lead');
+    if (label.startsWith('signup')) trackMeta('Lead');
 };
 
 const BUTTON_STYLES = {

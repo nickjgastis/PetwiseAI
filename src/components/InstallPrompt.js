@@ -1,211 +1,144 @@
-import React, { useState, useEffect } from 'react';
-import '../styles/InstallPrompt.css';
+import React, { useEffect, useState } from 'react';
+import { FiX, FiShare, FiMoreHorizontal, FiMoreVertical, FiPlusSquare, FiCopy, FiCheck } from 'react-icons/fi';
+import { installPlatform, canPromptInstall, promptInstall } from '../utils/install';
 
-// User-invoked install instructions overlay (opened from the mobile Profile's
-// "Get the App" row). Formerly a hard gate — now always dismissible via onClose.
+const Icon = ({ children }) => (
+    <span className="inline-flex items-center justify-center w-6 h-6 mx-1 rounded-md bg-white text-[#2d5fb8] align-middle text-[14px]">
+        {children}
+    </span>
+);
+
+const STEPS = {
+    'ios-safari': [
+        <>Tap <Icon><FiShare /></Icon> Share. It’s in Safari’s bottom bar, or under <Icon><FiMoreHorizontal /></Icon></>,
+        <>Scroll down and tap <strong>Add to Home Screen</strong> <Icon><FiPlusSquare /></Icon></>,
+        <>Tap <strong>Add</strong>, then open PetWise from your home screen</>
+    ],
+    'ios-chrome': [
+        <>Tap <Icon><FiShare /></Icon> Share, at the right of the address bar</>,
+        <>Tap <strong>Add to Home Screen</strong> <Icon><FiPlusSquare /></Icon></>,
+        <>Tap <strong>Add</strong>, then open PetWise from your home screen</>
+    ],
+    android: [
+        <>Tap <Icon><FiMoreVertical /></Icon> in the top right of Chrome</>,
+        <>Tap <strong>Add to Home screen</strong> or <strong>Install app</strong></>,
+        <>Open PetWise from your home screen</>
+    ],
+    'in-app': [
+        <>Tap <Icon><FiMoreHorizontal /></Icon> in the top right corner</>,
+        <>Tap <strong>Open in browser</strong> (or Open in Safari / Chrome)</>,
+        <>Log in, then tap <strong>Get the app</strong> on your Profile again</>
+    ],
+    other: [
+        <>Open your browser menu</>,
+        <>Tap <strong>Add to Home Screen</strong> or <strong>Install</strong></>,
+        <>Open PetWise from your home screen</>
+    ]
+};
+
+// User-invoked install instructions (Profile → Get the app). Always dismissible.
 const InstallPrompt = ({ onClose }) => {
-  // Check for early-captured prompt from index.html
-  const [deferredPrompt, setDeferredPrompt] = useState(() => window.deferredInstallPrompt || null);
+    const platform = installPlatform();
+    const [canPrompt, setCanPrompt] = useState(canPromptInstall);
+    const [copied, setCopied] = useState(false);
 
-  // Detect platform
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-  const isIOSSafari = isIOS && /Safari/.test(navigator.userAgent) && !/CriOS|FxiOS|OPiOS|EdgiOS/.test(navigator.userAgent);
-  const isIOSChrome = isIOS && /CriOS/.test(navigator.userAgent);
-  const isIOSOtherBrowser = isIOS && !isIOSSafari && !isIOSChrome;
-  const isAndroid = /Android/.test(navigator.userAgent);
+    useEffect(() => {
+        const onPrompt = (e) => {
+            e.preventDefault();
+            window.deferredInstallPrompt = e;
+            setCanPrompt(true);
+        };
+        const onInstalled = () => onClose?.();
+        window.addEventListener('beforeinstallprompt', onPrompt);
+        window.addEventListener('appinstalled', onInstalled);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', onPrompt);
+            window.removeEventListener('appinstalled', onInstalled);
+        };
+    }, [onClose]);
 
-  useEffect(() => {
-    if (isIOS) return;
-
-    // Check again for early-captured prompt (in case it was captured after initial state)
-    if (window.deferredInstallPrompt && !deferredPrompt) {
-      setDeferredPrompt(window.deferredInstallPrompt);
-    }
-
-    const handleBeforeInstall = (e) => {
-      e.preventDefault();
-      window.deferredInstallPrompt = e; // Store globally too
-      setDeferredPrompt(e);
+    const install = async () => {
+        if (await promptInstall()) onClose?.();
+        else setCanPrompt(false);
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-
-    const handleInstalled = () => {
-      setDeferredPrompt(null);
-      window.deferredInstallPrompt = null;
-      if (onClose) onClose();
+    const copyLink = async () => {
+        try {
+            await navigator.clipboard.writeText('https://petwise.vet/dashboard');
+            setCopied(true);
+        } catch {
+            setCopied(false);
+        }
     };
 
-    window.addEventListener('appinstalled', handleInstalled);
+    const inApp = platform === 'in-app';
+    const title = inApp ? 'Open in your browser' : 'Get the PetWise app';
+    const subtitle = inApp
+        ? 'This app’s built-in browser can’t install PetWise. Open it in Safari or Chrome first.'
+        : 'Add PetWise to your home screen. It opens full screen, stays logged in, and records faster.';
 
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-      window.removeEventListener('appinstalled', handleInstalled);
-    };
-  }, [isIOS, deferredPrompt, onClose]);
-
-  const handleAndroidInstall = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    setDeferredPrompt(null);
-    window.deferredInstallPrompt = null;
-
-    if (outcome === 'accepted' && onClose) {
-      onClose();
-    }
-  };
-
-  const closeButtons = (
-    <>
-      <button onClick={onClose} className="install-gate-close" aria-label="Close">✕</button>
-      <button onClick={onClose} className="install-gate-later">Maybe later</button>
-    </>
-  );
-
-  // iOS but NOT Safari - tell them to open in Safari
-  if (isIOSChrome || isIOSOtherBrowser) {
     return (
-      <div className="install-gate">
-        <div className="install-gate-content">
-          <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
-          <h1>Open in Safari</h1>
-          <p>To install PetWise, you need to open this page in Safari</p>
+        <div
+            className="fixed inset-0 z-[99999] flex flex-col overflow-y-auto bg-gradient-to-b from-[#3a72cc] to-[#2d5fb8] text-white"
+            style={{ overscrollBehavior: 'contain' }}
+        >
+            <div className="flex justify-end px-4 pt-[max(12px,env(safe-area-inset-top))]">
+                <button
+                    type="button"
+                    onClick={onClose}
+                    aria-label="Close"
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-white/15 active:bg-white/25 text-[18px]"
+                >
+                    <FiX />
+                </button>
+            </div>
 
-          <div className="install-steps">
-            <div className="install-step">
-              <span className="step-number">1</span>
-              <span className="step-text">Copy this URL: <strong>petwise.vet</strong></span>
-            </div>
-            <div className="install-step">
-              <span className="step-number">2</span>
-              <span className="step-text">Open <strong>Safari</strong> and paste the URL</span>
-            </div>
-            <div className="install-step">
-              <span className="step-number">3</span>
-              <span className="step-text">Follow the install instructions there</span>
-            </div>
-          </div>
+            <div className="my-auto w-full max-w-sm mx-auto px-6 pt-2 pb-[max(24px,env(safe-area-inset-bottom))] text-center">
+                <img src="/apple-touch-icon.png" alt="" className="w-16 h-16 rounded-[18px] mx-auto mb-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)]" />
+                <h1 className="m-0 mb-2 text-[26px] font-bold tracking-[-0.02em] leading-tight">{title}</h1>
+                <p className="m-0 mb-5 text-[15px] text-white/85 leading-relaxed">{subtitle}</p>
 
-          <p className="install-gate-footer">Only Safari supports app installation on iOS</p>
-          {closeButtons}
+                {canPrompt && !inApp ? (
+                    <button
+                        type="button"
+                        onClick={install}
+                        className="w-full h-14 rounded-2xl bg-white text-[#2d5fb8] text-[17px] font-semibold shadow-[0_4px_14px_rgba(0,0,0,0.15)] active:scale-[0.98] transition-transform"
+                    >
+                        Install PetWise
+                    </button>
+                ) : (
+                    <ol className="m-0 p-4 list-none rounded-2xl bg-white/15 backdrop-blur-md text-left space-y-3.5">
+                        {STEPS[platform].map((step, n) => (
+                            <li key={n} className="flex items-start gap-3 text-[15px] leading-snug">
+                                <span className="w-7 h-7 shrink-0 rounded-full bg-white text-[#2d5fb8] flex items-center justify-center text-[14px] font-bold">
+                                    {n + 1}
+                                </span>
+                                <span className="pt-0.5">{step}</span>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+
+                {inApp && (
+                    <button
+                        type="button"
+                        onClick={copyLink}
+                        className="mt-3 w-full h-12 rounded-2xl bg-white text-[#2d5fb8] text-[15px] font-semibold inline-flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+                    >
+                        {copied ? <><FiCheck /> Link copied, paste it in Safari</> : <><FiCopy /> Copy link</>}
+                    </button>
+                )}
+
+                <button
+                    type="button"
+                    onClick={onClose}
+                    className="mt-4 px-4 py-2 bg-transparent border-none text-[14px] text-white/60 underline underline-offset-[3px]"
+                >
+                    Maybe later
+                </button>
+            </div>
         </div>
-      </div>
     );
-  }
-
-  // iOS Safari - show Add to Home Screen instructions
-  if (isIOSSafari || isIOS) {
-    return (
-      <div className="install-gate">
-        <div className="install-gate-content">
-          <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
-          <h1>Get the PetWise App</h1>
-          <p>Install PetWise on your device for the best experience</p>
-
-          <div className="install-steps">
-            <div className="install-step">
-              <span className="step-number">1</span>
-              <span className="step-text">
-                Tap the share button
-                <span className="share-icon-inline">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8M16 6l-4-4-4 4M12 2v13" />
-                  </svg>
-                </span>
-                below
-              </span>
-            </div>
-            <div className="install-step">
-              <span className="step-number">2</span>
-              <span className="step-text">Tap <strong>"Add to Home Screen"</strong></span>
-            </div>
-            <div className="install-step">
-              <span className="step-number">3</span>
-              <span className="step-text">Open PetWise from your home screen</span>
-            </div>
-          </div>
-
-          <p className="install-gate-footer">Must be opened in <strong>Safari</strong>. If you're in the Instagram or Facebook browser, open Safari and go to <strong>petwise.vet</strong></p>
-          {closeButtons}
-        </div>
-      </div>
-    );
-  }
-
-  // Android
-  if (isAndroid) {
-    return (
-      <div className="install-gate">
-        <div className="install-gate-content">
-          <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
-          <h1>Get the PetWise App</h1>
-          <p>Install PetWise on your device for the best experience</p>
-
-          <div className="install-steps">
-            {deferredPrompt ? (
-              <button onClick={handleAndroidInstall} className="install-gate-btn">
-                Install App
-              </button>
-            ) : (
-              <>
-                <div className="install-step">
-                  <span className="step-number">1</span>
-                  <span className="step-text">
-                    Tap the menu
-                    <span className="menu-icon-inline">⋮</span>
-                    in your browser
-                  </span>
-                </div>
-                <div className="install-step">
-                  <span className="step-number">2</span>
-                  <span className="step-text">Tap <strong>"Add to Home screen"</strong> or <strong>"Install App"</strong></span>
-                </div>
-                <div className="install-step">
-                  <span className="step-number">3</span>
-                  <span className="step-text">Open PetWise from your home screen</span>
-                </div>
-              </>
-            )}
-          </div>
-
-          <p className="install-gate-footer">Must be opened in a web browser like <strong>Chrome</strong>. If you're in the Instagram or Facebook browser, open Chrome and go to <strong>petwise.vet</strong></p>
-          {closeButtons}
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback for other mobile browsers
-  return (
-    <div className="install-gate">
-      <div className="install-gate-content">
-        <img src="/apple-touch-icon.png" alt="PetWise" className="install-gate-icon" />
-        <h1>Get the PetWise App</h1>
-        <p>Install PetWise on your device for the best experience</p>
-
-        <div className="install-steps">
-          <div className="install-step">
-            <span className="step-number">1</span>
-            <span className="step-text">Open your browser menu</span>
-          </div>
-          <div className="install-step">
-            <span className="step-number">2</span>
-            <span className="step-text">Tap <strong>"Add to Home Screen"</strong> or <strong>"Install"</strong></span>
-          </div>
-          <div className="install-step">
-            <span className="step-number">3</span>
-            <span className="step-text">Open PetWise from your home screen</span>
-          </div>
-        </div>
-
-        <p className="install-gate-footer">Must be opened in a web browser like <strong>Safari</strong> or <strong>Chrome</strong>, not the Instagram or Facebook browser</p>
-        {closeButtons}
-      </div>
-    </div>
-  );
 };
 
 export default InstallPrompt;

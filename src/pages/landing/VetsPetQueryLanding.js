@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
 import PetQueryDemo from './campaign/PetQueryDemo';
+import { trackMeta } from '../../utils/pixelEvents';
+import { useSignup } from '../../hooks/useSignup';
 
 const VetsPetQueryLanding = () => {
-    const { loginWithRedirect } = useAuth0();
+    const { signup, handoff } = useSignup();
     const [showAfterAnswer, setShowAfterAnswer] = useState(false);
 
     const start = (placement) => {
         window.gtag?.('event', 'landing_cta', { page_variant: 'petquery', placement });
-        window.fbq?.('track', 'Lead');
-        loginWithRedirect({
-            authorizationParams: { screen_hint: 'signup' },
-            appState: { returnTo: '/dashboard/quick-query' }
-        });
+        trackMeta('Lead');
+        signup({ returnTo: '/dashboard/quick-query' });
     };
 
     return (
         <div className="min-h-screen bg-[#f5f7fb] text-[#1a2b4a] text-base overflow-x-clip">
+            {handoff}
             <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100">
                 <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
                     <div className="flex items-center gap-2">

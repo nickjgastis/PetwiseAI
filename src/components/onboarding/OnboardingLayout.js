@@ -40,7 +40,7 @@ const OnboardingLayout = ({ currentStep, children, showProgress = true, wide = f
             )}
 
             {/* Content area */}
-            <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-10 py-4 sm:py-8 relative z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-10 pt-[max(16px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))] sm:py-8 relative z-10" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <div className={`w-full ${wide ? 'max-w-5xl' : 'max-w-xl'}`}>
                     {children}
                 </div>

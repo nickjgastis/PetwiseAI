@@ -74,12 +74,12 @@ const CongratsStep = ({ onNext }) => {
     return (
         <OnboardingLayout currentStep="congrats" showProgress={false}>
             <div className="animate-fade-in">
-                <div className="text-center mb-7 sm:mb-9">
-                    <p className="text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-[#a8e6fa] mb-4">Welcome to PetWise</p>
-                    <h1 className="text-[2.5rem] sm:text-[3.5rem] lg:text-[4.25rem] font-semibold tracking-[-0.04em] text-white leading-[1.02] mb-4">
+                <div className="text-center mb-5 sm:mb-9">
+                    <p className="text-[12px] sm:text-[13px] font-semibold uppercase tracking-[0.14em] text-[#a8e6fa] mb-3 sm:mb-4">Welcome to PetWise</p>
+                    <h1 className="text-[2.25rem] sm:text-[3.5rem] lg:text-[4.25rem] font-semibold tracking-[-0.04em] text-white leading-[1.02] mb-3 sm:mb-4">
                         Congratulations!
                     </h1>
-                    <p className="text-white/75 text-base sm:text-lg max-w-md mx-auto leading-relaxed">
+                    <p className="text-white/75 text-base sm:text-lg max-w-md mx-auto leading-relaxed [@media(max-height:700px)]:hidden">
                         You've taken your first step to saving countless hours writing SOAPs.
                     </p>
                 </div>

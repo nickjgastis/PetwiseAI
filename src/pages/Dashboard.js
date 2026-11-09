@@ -15,6 +15,7 @@ import Templates from '../components/Templates';
 // Tailwind classes will be used instead of CSS file
 import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
+import { isStandalone as isInstalledApp } from '../utils/install';
 import { FaUser, FaSignOutAlt, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
 import { FiPlus } from 'react-icons/fi';
 import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiPuzzlePieceFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill, PiUser } from 'react-icons/pi';
@@ -149,6 +150,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
     const isPetQuery = location.pathname === '/dashboard/quick-query';
     const isCases = location.pathname.startsWith('/dashboard/cases');
     const isProfile = location.pathname === '/dashboard/profile';
+    const inBrowser = !isInstalledApp();
 
     return (
         <>
@@ -200,8 +202,16 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                                 to="/dashboard/profile"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isProfile ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
-                                <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isProfile ? 'bg-[#2d5fb8]/10' : ''}`}>
+                                <span className={`relative w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isProfile ? 'bg-[#2d5fb8]/10' : ''}`}>
                                     <PiUser />
+                                    {inBrowser && (
+                                        <span
+                                            aria-label="Get the app"
+                                            className="absolute -top-1 right-0.5 w-4 h-4 rounded-full bg-[#ef4444] ring-2 ring-white text-white text-[10px] font-bold leading-none flex items-center justify-center"
+                                        >
+                                            !
+                                        </span>
+                                    )}
                                 </span>
                                 <span className={`text-[10px] mt-0.5 ${isProfile ? 'font-bold' : 'font-semibold'}`}>Profile</span>
                             </Link>

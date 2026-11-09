@@ -17,6 +17,8 @@ import DemoStage from './DemoStage';
 import StepGraphic from './StepGraphic';
 import YoutubeEmbed from '../YoutubeEmbed';
 import { COPY, PHOTOS, QUOTES, BEST_FOR, FAQS } from './copy';
+import { trackMeta } from '../../../utils/pixelEvents';
+import { useSignup } from '../../../hooks/useSignup';
 
 const fadeUp = {
     hidden: { opacity: 0, y: 16 },
@@ -89,15 +91,13 @@ const BEST_ICONS = [FaBolt, FaMoon, FaUserMd, FaLayerGroup];
 const CampaignLanding = ({ variant = 'home' }) => {
     const copy = COPY[variant] || COPY.home;
     const { loginWithRedirect } = useAuth0();
+    const { signup, handoff } = useSignup();
     const [openFaq, setOpenFaq] = useState(0);
 
     const start = (placement) => {
         window.gtag?.('event', 'landing_cta', { page_variant: copy.variant, placement });
-        window.fbq?.('track', 'Lead');
-        loginWithRedirect({
-            authorizationParams: { screen_hint: 'signup' },
-            appState: { returnTo: '/dashboard' }
-        });
+        trackMeta('Lead');
+        signup({ returnTo: '/dashboard' });
     };
 
     const logIn = () => loginWithRedirect({ appState: { returnTo: '/dashboard' } });
@@ -105,6 +105,7 @@ const CampaignLanding = ({ variant = 'home' }) => {
 
     return (
         <div className="min-h-screen bg-white text-[#1a2b4a] text-base overflow-x-clip">
+            {handoff}
             <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-100">
                 <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">

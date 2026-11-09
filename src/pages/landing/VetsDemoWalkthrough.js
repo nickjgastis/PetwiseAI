@@ -5,6 +5,7 @@ import { FaBookMedical, FaCheck, FaClipboardList, FaCommentMedical, FaCrown, FaD
 import YoutubeEmbed from './YoutubeEmbed';
 import PetQueryDemo from './campaign/PetQueryDemo';
 import QuickSOAPDemo from './campaign/QuickSOAPDemo';
+import { trackMeta } from '../../utils/pixelEvents';
 
 const PLAN_FEATURES = [
     'Unlimited SOAP reports',
@@ -29,7 +30,7 @@ const useDemoSignup = () => {
     const { loginWithRedirect } = useAuth0();
     return (placement) => {
         window.gtag?.('event', 'landing_cta', { page_variant: 'demo', placement });
-        window.fbq?.('track', 'Lead');
+        trackMeta('Lead');
         loginWithRedirect({
             authorizationParams: { screen_hint: 'signup' },
             appState: { returnTo: '/dashboard' }

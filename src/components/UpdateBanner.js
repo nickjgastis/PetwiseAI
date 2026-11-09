@@ -9,7 +9,7 @@ const UpdateBanner = () => {
   return (
     <div style={{
       position: 'fixed',
-      bottom: '20px',
+      bottom: 'calc(20px + env(safe-area-inset-bottom))',
       left: '50%',
       transform: 'translateX(-50%)',
       backgroundColor: '#3369bd',

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { FaArrowRight, FaCheck, FaShieldAlt } from 'react-icons/fa';
 import YoutubeEmbed from './YoutubeEmbed';
+import { useSignup } from '../../hooks/useSignup';
 
 const BULLETS = [
     '140 minutes + a day saved',
@@ -11,23 +12,19 @@ const BULLETS = [
 
 const IntroductionLanding = () => {
     const { loginWithRedirect } = useAuth0();
+    const { signup, handoff } = useSignup();
     const [email, setEmail] = useState('');
 
     const startSignup = (e) => {
         if (e?.preventDefault) e.preventDefault();
-        loginWithRedirect({
-            authorizationParams: {
-                screen_hint: 'signup',
-                login_hint: email || undefined
-            },
-            appState: { returnTo: '/dashboard' }
-        });
+        signup({ returnTo: '/dashboard', loginHint: email || undefined });
     };
 
     const logIn = () => loginWithRedirect({ appState: { returnTo: '/dashboard' } });
 
     return (
         <div className="relative min-h-screen text-white overflow-x-clip bg-gradient-to-b from-[#3d70c6] via-[#3468bd] to-[#20447f]">
+            {handoff}
             <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
                 <div className="absolute -top-44 -right-40 w-[44rem] h-[44rem] rounded-full bg-amber-300/25 blur-[140px]" />
                 <div className="absolute top-[38%] -left-52 w-[42rem] h-[42rem] rounded-full bg-rose-300/20 blur-[150px]" />

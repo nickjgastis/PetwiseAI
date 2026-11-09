@@ -66,15 +66,22 @@ const Header = () => {
                             </>
                         )}
                     </div>
-                    <button
-                        type="button"
-                        className="lg:hidden -mr-2 p-2 text-[#13233f]"
-                        onClick={() => setOpen((v) => !v)}
-                        aria-expanded={open}
-                        aria-label={open ? 'Close menu' : 'Open menu'}
-                    >
-                        {open ? <FiX className="text-[22px]" /> : <FiMenu className="text-[22px]" />}
-                    </button>
+                    <div className="lg:hidden flex items-center gap-1">
+                        {!isAuthenticated && !open && (
+                            <ButtonLink to="/signup" trackAs="signup_header_mobile" arrow={false} className="!py-2 !px-4 !text-[14px]">
+                                Start free
+                            </ButtonLink>
+                        )}
+                        <button
+                            type="button"
+                            className="-mr-2 p-2 text-[#13233f]"
+                            onClick={() => setOpen((v) => !v)}
+                            aria-expanded={open}
+                            aria-label={open ? 'Close menu' : 'Open menu'}
+                        >
+                            {open ? <FiX className="text-[22px]" /> : <FiMenu className="text-[22px]" />}
+                        </button>
+                    </div>
                 </div>
                 {open && (
                     <div className="lg:hidden border-t border-[#13233f]/[0.06] px-4 sm:px-5 py-4 flex flex-col">

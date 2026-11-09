@@ -327,7 +327,7 @@ const UpgradeAnnouncement = ({ isMobile, onClose, onTour }) => {
                         </AnimatePresence>
                     </div>
                 )}
-                <div className="flex-1 min-w-0 flex flex-col">
+                <div className="flex-1 min-w-0 min-h-0 flex flex-col">
                     <div className={`flex justify-end ${isMobile ? 'px-4 pt-[max(14px,env(safe-area-inset-top))]' : 'px-6 pt-5'}`}>
                         <button type="button" onClick={() => close()} title="Close" className="w-10 h-10 rounded-full flex items-center justify-center text-[#1a2b4a]/50 hover:bg-[#f6f8fb] bg-transparent border-none cursor-pointer text-[20px]">
                             <FiX />

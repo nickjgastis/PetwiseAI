@@ -26,6 +26,7 @@ const { correctTranscript } = require('./utils/vetCorrector');
 const { runMedicalCleanup } = require('./utils/medicalCleanup');
 const usage = require('./usage');
 const hubspot = require('./utils/hubspot');
+const metaCapi = require('./utils/metaCapi');
 
 // Load veterinary lexicon for Whisper boosting
 const lexiconPath = path.join(__dirname, 'lexicon', 'vetLexicon.txt');
@@ -266,6 +267,38 @@ app.use('/email', emailRouter);
 app.use('/cron', cronRouter);
 app.use('/api/db', meDbRouter);
 app.use('/api/demo', demoQueryRouter);
+
+// Server copy of browser pixel events; Meta dedupes on event_id.
+const META_BROWSER_EVENTS = new Set(['Lead', 'CompleteRegistration', 'SubmitApplication']);
+app.post('/meta/event', async (req, res) => {
+    const { event_name, event_id, event_source_url, fbp, fbc, auth0_user_id } = req.body || {};
+    if (!META_BROWSER_EVENTS.has(event_name) || !event_id) return res.status(400).end();
+    res.status(204).end();
+
+    let row = null;
+    if (auth0_user_id) {
+        const { data } = await supabase
+            .from('users')
+            .select('email, phone_number, dvm_name, nickname')
+            .eq('auth0_user_id', auth0_user_id)
+            .maybeSingle();
+        row = data;
+    }
+    await metaCapi.sendEvent({
+        eventName: event_name,
+        eventId: event_id,
+        sourceUrl: event_source_url,
+        user: {
+            email: row?.email,
+            phone: row?.phone_number,
+            name: row?.dvm_name || row?.nickname,
+            externalId: auth0_user_id,
+            fbp,
+            fbc,
+            ...metaCapi.reqContext(req),
+        },
+    });
+});
 
 // Make supabase available to routes via app.locals
 app.locals.supabase = supabase;
@@ -1813,7 +1846,7 @@ PET_NAME: [write the actual pet name here, or write the word "none" if no pet na
 // Handles creation of Stripe checkout sessions
 app.post('/create-checkout-session', async (req, res) => {
     try {
-        const { user, planType, currency = 'usd' } = req.body;
+        const { user, planType, currency = 'usd', fbp, fbc } = req.body;
         const priceId = PRICE_IDS[`${planType}_${currency}`];
 
         if (!priceId) {
@@ -1911,7 +1944,15 @@ app.post('/create-checkout-session', async (req, res) => {
             }],
             success_url: `${appOrigin(req)}/dashboard`,
             cancel_url: `${appOrigin(req)}/dashboard`,
-            client_reference_id: user.sub
+            client_reference_id: user.sub,
+            // Webhook has no browser context; carry it through for Meta CAPI.
+            metadata: {
+                fbp: fbp || '',
+                fbc: fbc || '',
+                ip: metaCapi.reqContext(req).ip || '',
+                ua: (req.headers['user-agent'] || '').slice(0, 500),
+                source_url: `${appOrigin(req)}/dashboard`,
+            }
         });
 
         res.json({ id: session.id });
@@ -2027,6 +2068,28 @@ app.post('/webhook', async (req, res) => {
                         subscription_status: 'active',
                         subscription_interval: subscriptionInterval,
                         subscription_end_date: endDate,
+                    });
+
+                    const meta = session.metadata || {};
+                    await metaCapi.sendEvent({
+                        eventName: 'Purchase',
+                        eventId: session.id,
+                        sourceUrl: meta.source_url,
+                        user: {
+                            email: data[0].email || session.customer_details?.email,
+                            phone: data[0].phone_number,
+                            name: data[0].dvm_name || data[0].nickname,
+                            externalId: session.client_reference_id,
+                            fbp: meta.fbp,
+                            fbc: meta.fbc,
+                            ip: meta.ip,
+                            ua: meta.ua,
+                        },
+                        customData: {
+                            value: (session.amount_total || 0) / 100,
+                            currency: (session.currency || 'usd').toUpperCase(),
+                            content_name: subscriptionInterval,
+                        },
                     });
                 }
             } catch (error) {

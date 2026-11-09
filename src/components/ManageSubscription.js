@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import PlanCards, { CurrencyToggle } from './PlanCards';
 import { openPastDuePayment } from './PaymentIssueBanner';
 import { STUDENT_PROGRAM } from '../constants/features';
+import { metaBrowserIds } from '../utils/pixelEvents';
 
 // Loaded on first checkout, not on import: a blocked or offline Stripe.js must not crash the page.
 let stripePromise = null;
@@ -61,7 +62,7 @@ const ManageSubscription = ({ user, subscriptionStatus, subscriptionInterval, on
                 method: 'POST',
                 credentials: 'include',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user, planType, currency }),
+                body: JSON.stringify({ user, planType, currency, ...metaBrowserIds() }),
             });
 
             const session = await response.json();
