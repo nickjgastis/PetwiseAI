@@ -1,17 +1,20 @@
 import React, { useState, useMemo, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useNavigate } from 'react-router-dom';
 import { FaPaw, FaMobileAlt } from 'react-icons/fa';
 import { FiPlus } from 'react-icons/fi';
 import { PiPawPrintFill, PiSparkleFill } from 'react-icons/pi';
 import { supabase } from '../../supabaseClient';
+import { isStandalone } from '../../utils/install';
 
 // First-run tutorial shown once, right after a new signup lands in the app.
 // Tracked by users.has_seen_app_tour (backfilled TRUE for existing users in
 // migration 008, so only genuinely new users ever see this).
 //
-// "anchor" steps spotlight a real sidebar item (matched via [data-tour="…"])
-// and float the card beside it; "center" steps render a normal centered modal.
+// "anchor" steps spotlight a real nav item (matched via [data-tour="…"]): a sidebar
+// item on desktop, a bottom tab on mobile. "center" steps render a centered modal.
+// `mobileBody` replaces `body` on phones.
 const STEPS = [
     {
         id: 'welcome',
@@ -28,7 +31,8 @@ const STEPS = [
         icon: FiPlus,
         iconBg: 'from-blue-400 to-blue-600',
         title: () => 'New case',
-        body: () => "Start every patient visit here. Pick SOAP, Summary, Callback or Dental, say the patient's name, then talk through the visit. PetWise writes the record, and for Dental it charts every tooth you mention."
+        body: () => "Start every patient visit here. Pick SOAP, Summary, Callback or Dental, say the patient's name, then talk through the visit. PetWise writes the record, and for Dental it charts every tooth you mention.",
+        mobileBody: () => "Start every visit here. Pick the record type, tap the mic, say the patient's name first, then talk through the visit. Tap Done and PetWise writes the record."
     },
     {
         id: 'cases',
@@ -37,7 +41,8 @@ const STEPS = [
         icon: PiPawPrintFill,
         iconBg: 'from-sky-400 to-blue-600',
         title: () => 'Cases',
-        body: () => 'Every patient you see, with all their records together. Open one to add a summary, callback or dental record later, or copy everything at once.'
+        body: () => 'Every patient you see, with all their records together. Open one to add a summary, callback or dental record later, or copy everything at once.',
+        mobileBody: () => 'Every patient, with all their records together. To add to a patient, open their case first and dictate from there.'
     },
     {
         id: 'petquery',
@@ -56,6 +61,18 @@ const STEPS = [
         iconBg: 'from-[#3468bd] to-[#2a5298]',
         title: () => 'Get PetWise on your phone',
         body: () => 'Scan this code, log in, and add PetWise to your home screen. Open or start a case, dictate in the exam room, and the record shows up in that case here on your desktop.'
+    },
+    {
+        id: 'install',
+        placement: 'anchor',
+        target: 'profile',
+        mobileOnly: true,
+        browserOnly: true,
+        icon: FaMobileAlt,
+        iconBg: 'from-[#3468bd] to-[#2a5298]',
+        title: () => 'Get the app',
+        body: () => 'Add PetWise to your home screen so it’s one tap away in the exam room. It opens full screen and stays logged in.',
+        cta: 'Show me how'
     }
 ];
 
@@ -63,14 +80,20 @@ const CARD_WIDTH = 360;
 
 const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete }) => {
     const { user } = useAuth0();
+    const navigate = useNavigate();
     const [stepIndex, setStepIndex] = useState(0);
     const [closing, setClosing] = useState(false);
     const [rect, setRect] = useState(null);
 
-    // Drop desktop-only steps (the mobile QR) when the user is already on a phone.
+    // Phones skip the desktop QR; desktop skips phone-only steps; installed apps skip "Get the app".
     // Existing accounts replaying the tour skip the trial welcome.
     const steps = useMemo(
-        () => STEPS.filter((s) => !(s.desktopOnly && isMobile) && !(skipWelcome && s.id === 'welcome')),
+        () => STEPS.filter((s) =>
+            !(s.desktopOnly && isMobile) &&
+            !(s.mobileOnly && !isMobile) &&
+            !(s.browserOnly && isStandalone()) &&
+            !(skipWelcome && s.id === 'welcome')
+        ),
         [isMobile, skipWelcome]
     );
 
@@ -95,23 +118,28 @@ const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete })
         return () => window.removeEventListener('resize', measure);
     }, [step]);
 
-    const finish = async () => {
+    // Unmount before navigating: the mobile screens each render their own copy of the
+    // tour, so navigating while it's open remounts it at step one.
+    const finish = (goTo) => {
         setClosing(true);
-        try {
-            await supabase
-                .from('users')
-                .update({ has_seen_app_tour: true })
-                .eq('auth0_user_id', user?.sub);
-        } catch (err) {
-            console.error('Failed to persist app tour completion:', err);
-        }
         if (onComplete) onComplete();
+        if (typeof goTo === 'string') navigate(goTo);
+        supabase
+            .from('users')
+            .update({ has_seen_app_tour: true })
+            .eq('auth0_user_id', user?.sub)
+            .then(({ error }) => error && console.error('Failed to persist app tour completion:', error))
+            .catch((err) => console.error('Failed to persist app tour completion:', err));
     };
 
-    const next = () => (isLast ? finish() : setStepIndex(stepIndex + 1));
+    const next = () => {
+        if (!isLast) return setStepIndex(stepIndex + 1);
+        finish(step.id === 'install' ? '/dashboard/profile' : undefined);
+    };
 
     const isAnchored = step.placement === 'anchor' && rect;
-    const pad = 8;
+    const isTabAnchor = isAnchored && isMobile;
+    const pad = isTabAnchor ? 4 : 8;
 
     // Card position for anchored steps: to the right of the sidebar item,
     // vertically centered on it but clamped inside the viewport.
@@ -135,8 +163,8 @@ const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete })
             <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 mb-3 tracking-tight">
                 {step.title(dvmName)}
             </h2>
-            <p className="text-gray-600 text-sm sm:text-base leading-relaxed mb-6">
-                {step.body()}
+            <p className={`text-gray-600 text-sm sm:text-base leading-relaxed ${isTabAnchor ? 'mb-4' : 'mb-6'}`}>
+                {(isMobile && step.mobileBody ? step.mobileBody : step.body)()}
             </p>
 
             {step.id === 'mobile' && (
@@ -150,7 +178,7 @@ const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete })
             )}
 
             {/* Progress dots */}
-            <div className="flex items-center justify-center gap-2 mb-6">
+            <div className={`flex items-center justify-center gap-2 ${isTabAnchor ? 'mb-4' : 'mb-6'}`}>
                 {steps.map((s, i) => (
                     <motion.div
                         key={s.id}
@@ -166,7 +194,7 @@ const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete })
 
             <div className="flex items-center justify-between gap-3">
                 <button
-                    onClick={finish}
+                    onClick={() => finish()}
                     className="text-gray-400 hover:text-gray-600 text-sm transition-colors px-2 py-2"
                 >
                     Skip
@@ -175,7 +203,7 @@ const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete })
                     onClick={next}
                     className="px-6 py-2.5 bg-[#3468bd] text-white font-semibold rounded-xl hover:bg-[#2a5298] transition-colors text-sm"
                 >
-                    {isLast ? "Got it, let's go" : 'Next'}
+                    {isLast ? step.cta || "Got it, let's go" : 'Next'}
                 </button>
             </div>
         </>
@@ -190,7 +218,39 @@ const AppTour = ({ dvmName, isMobile = false, skipWelcome = false, onComplete })
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[9998]"
                 >
-                    {isAnchored ? (
+                    {isTabAnchor ? (
+                        <>
+                            <div
+                                className="fixed rounded-2xl pointer-events-none"
+                                style={{
+                                    top: rect.top - pad,
+                                    left: rect.left - pad,
+                                    width: rect.width + pad * 2,
+                                    height: rect.height + pad * 2,
+                                    boxShadow: '0 0 0 9999px rgba(15,23,42,0.62)',
+                                    border: '2px solid rgba(255,255,255,0.9)'
+                                }}
+                            />
+                            <motion.div
+                                key={step.id}
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, ease: 'easeOut' }}
+                                className="fixed left-3 right-3 bg-white rounded-2xl shadow-2xl p-5 text-center max-h-[70vh] overflow-y-auto"
+                                style={{ bottom: window.innerHeight - rect.top + pad + 14 }}
+                            >
+                                {cardInner}
+                            </motion.div>
+                            {/* Arrow pointing down at the tab */}
+                            <div
+                                className="fixed border-[9px] border-transparent border-t-white pointer-events-none"
+                                style={{
+                                    top: rect.top - pad - 14 - 1,
+                                    left: rect.left + rect.width / 2 - 9
+                                }}
+                            />
+                        </>
+                    ) : isAnchored ? (
                         <>
                             {/* Spotlight: the huge box-shadow dims everything except
                                 a rounded hole around the highlighted sidebar item. */}

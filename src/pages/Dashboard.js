@@ -169,6 +169,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                         <div className="flex items-center justify-around h-16">
                             <Link
                                 to="/dashboard/quicksoap"
+                                data-tour="quicksoap"
                                 onClick={(e) => {
                                     e.preventDefault();
                                     requestNewCase(navigate);
@@ -182,6 +183,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                             </Link>
                             <Link
                                 to="/dashboard/cases"
+                                data-tour="cases"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isCases ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
                                 <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isCases ? 'bg-[#2d5fb8]/10' : ''}`}>
@@ -191,6 +193,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                             </Link>
                             <Link
                                 to="/dashboard/quick-query"
+                                data-tour="petquery"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isPetQuery ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
                                 <span className={`w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isPetQuery ? 'bg-[#2d5fb8]/10' : ''}`}>
@@ -200,6 +203,7 @@ const MobileAppShell = ({ visible, location, children, lockScroll = false }) => 
                             </Link>
                             <Link
                                 to="/dashboard/profile"
+                                data-tour="profile"
                                 className={`flex flex-col items-center justify-center flex-1 h-full transition-colors duration-200 ${isProfile ? 'text-[#2d5fb8]' : 'text-[#1a2b4a]'}`}
                             >
                                 <span className={`relative w-11 h-7 rounded-xl flex items-center justify-center text-[22px] transition-colors ${isProfile ? 'bg-[#2d5fb8]/10' : ''}`}>
@@ -1263,6 +1267,15 @@ const Dashboard = () => {
         </AnimatePresence>
     );
 
+    const mobileTour = showAppTour && (
+        <AppTour
+            dvmName={userData?.dvm_name}
+            isMobile
+            skipWelcome={userData?.has_seen_app_tour !== false}
+            onComplete={() => setShowAppTour(false)}
+        />
+    );
+
     // After onboarding, check if on mobile
     if (isMobile && !isLoading) {
         // Check if this is the admin route - allow access on mobile for admins
@@ -1283,6 +1296,7 @@ const Dashboard = () => {
                         </div>
                     </MobileAppShell>
                     {upgradeAnnouncement}
+                    {mobileTour}
                 </>
             );
         }
@@ -1291,11 +1305,14 @@ const Dashboard = () => {
         const isPetQueryRoute = window.location.pathname.includes('/quick-query');
         if (isPetQueryRoute) {
             return (
-                <MobileAppShell visible={mobileAppVisible} location={location} lockScroll>
-                    <div className="h-full flex flex-col overflow-hidden bg-white" style={{ touchAction: 'pan-y' }}>
-                        <QuickQuery isMobile={true} />
-                    </div>
-                </MobileAppShell>
+                <>
+                    <MobileAppShell visible={mobileAppVisible} location={location} lockScroll>
+                        <div className="h-full flex flex-col overflow-hidden bg-white" style={{ touchAction: 'pan-y' }}>
+                            <QuickQuery isMobile={true} />
+                        </div>
+                    </MobileAppShell>
+                    {mobileTour}
+                </>
             );
         }
 
@@ -1307,6 +1324,7 @@ const Dashboard = () => {
                         <Cases mobile />
                     </MobileAppShell>
                     {upgradeAnnouncement}
+                    {mobileTour}
                 </>
             );
         }
@@ -1320,9 +1338,12 @@ const Dashboard = () => {
         // If on profile route, allow it but hide sidebar and only show profile with bottom nav
         if (window.location.pathname.includes('/profile')) {
             return (
-                <MobileAppShell visible={mobileAppVisible} location={location}>
-                    <Profile isMobileSignup={true} />
-                </MobileAppShell>
+                <>
+                    <MobileAppShell visible={mobileAppVisible} location={location}>
+                        <Profile isMobileSignup={true} />
+                    </MobileAppShell>
+                    {mobileTour}
+                </>
             );
         }
 
