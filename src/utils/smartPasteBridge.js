@@ -28,9 +28,10 @@ const send = (message) => {
 // Sign-out and user switch: the extension forgets every record it was sent.
 export const clearSmartPaste = () => send({ type: 'petwise:clear' });
 
-// Chrome Web Store listing. Empty until the extension is public: the sidebar's Get SmartPaste entry stays hidden, and
-// the get-SmartPaste page (still reachable from the SmartPaste ready pill) offers early access instead.
-export const SMARTPASTE_STORE_URL = process.env.REACT_APP_SMARTPASTE_STORE_URL || '';
+// Chrome Web Store listing. The sidebar bar and the sign-in announcement both open this in a new tab.
+export const SMARTPASTE_STORE_URL =
+    process.env.REACT_APP_SMARTPASTE_STORE_URL ||
+    'https://chromewebstore.google.com/detail/petwise-smartpaste/cfeodmjhbjndbcbghakbfpinmjhogibd';
 
 // Chrome and Edge on a computer: the browsers that can install it from the Chrome Web Store.
 export const canInstallSmartPaste = () =>

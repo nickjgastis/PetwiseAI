@@ -17,7 +17,7 @@ import { supabase } from '../supabaseClient';
 import { trackCompleteRegistration } from '../utils/pixelEvents';
 import { isStandalone as isInstalledApp } from '../utils/install';
 import { FaUser, FaSignOutAlt, FaTimes, FaMobile, FaChevronUp, FaChevronDown, FaChartPie, FaCreditCard } from 'react-icons/fa';
-import { FiPlus } from 'react-icons/fi';
+import { FiExternalLink, FiPlus } from 'react-icons/fi';
 import { PiArchive, PiArchiveFill, PiFileText, PiFileTextFill, PiLayout, PiLayoutFill, PiPawPrint, PiPawPrintFill, PiPuzzlePieceFill, PiQuestion, PiQuestionFill, PiSparkle, PiSparkleFill, PiUser } from 'react-icons/pi';
 import SmartPaste from './SmartPaste';
 import { SMARTPASTE_STORE_URL, useSmartPasteInstalled } from '../utils/smartPasteBridge';
@@ -1625,25 +1625,29 @@ const Dashboard = () => {
                                 <p className="mt-3 mb-0 px-2.5 text-[10px] font-semibold tracking-[0.14em] uppercase text-[#1a2b4a]/40">More</p>
                             )}
                         </li>
-                        {SMARTPASTE_STORE_URL && !isMobile && smartPasteInstalled === false && (
+                        {!isMobile && smartPasteInstalled === false && (
                             <li className="mx-3 mt-2 mb-1.5 relative">
-                                <Link
-                                    to="/dashboard/smartpaste"
-                                    onClick={closeMobileMenu}
-                                    data-tooltip="Get SmartPaste"
-                                    className={`group relative flex items-center no-underline rounded-[12px] border font-display tracking-[-0.01em] text-[13px] font-semibold h-10 whitespace-nowrap transition-all duration-200 bg-gradient-to-r from-[#e6f6fd] via-[#eef6fe] to-[#e9f1fd] text-[#2d5fb8] hover:shadow-[0_8px_18px_-12px_rgba(45,95,184,0.55)] ${location.pathname === '/dashboard/smartpaste' ? 'border-[#5cccf0]' : 'border-[#5cccf0]/45 hover:border-[#5cccf0]'} ${isSidebarCollapsed ? 'justify-center' : 'px-3 gap-3'}`}
+                                <a
+                                    href={SMARTPASTE_STORE_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    data-tooltip="Add SmartPaste to Chrome"
+                                    className={`group relative flex items-center no-underline rounded-[12px] border font-display tracking-[-0.01em] text-[#2d5fb8] transition-all duration-200 bg-gradient-to-r from-[#e6f6fd] via-[#eef6fe] to-[#e9f1fd] hover:shadow-[0_8px_18px_-12px_rgba(45,95,184,0.55)] border-[#5cccf0]/45 hover:border-[#5cccf0] ${isSidebarCollapsed ? 'justify-center h-10' : 'px-3 py-2 gap-2.5'}`}
                                 >
-                                    <span className="relative flex items-center justify-center w-5 text-[16px] text-[#2d9fd6]">
+                                    <span className="relative flex items-center justify-center w-5 shrink-0 text-[16px] text-[#2d9fd6]">
                                         <PiPuzzlePieceFill />
                                         {isSidebarCollapsed && <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-[#5cccf0] ring-2 ring-[#eef4fc] animate-pulse" />}
                                     </span>
                                     {!isSidebarCollapsed && (
                                         <>
-                                            <span>Get SmartPaste</span>
-                                            <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-[#5cccf0]/25 text-[#1e86b8] tracking-[0.06em]">NEW</span>
+                                            <span className="min-w-0 leading-tight">
+                                                <span className="block text-[13px] font-semibold">SmartPaste</span>
+                                                <span className="block text-[10.5px] font-medium text-[#1e86b8]/80">Add to Chrome</span>
+                                            </span>
+                                            <FiExternalLink className="ml-auto shrink-0 text-[13px] text-[#1e86b8]" />
                                         </>
                                     )}
-                                </Link>
+                                </a>
                             </li>
                         )}
                         <SideLink secondary to="/dashboard/saved-reports" active={location.pathname === '/dashboard/saved-reports'} icon={PiArchive} activeIcon={PiArchiveFill} label="Saved Records" collapsed={isSidebarCollapsed} onClick={closeMobileMenu} />

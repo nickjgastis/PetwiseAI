@@ -1,6 +1,7 @@
 import { FiFolder } from 'react-icons/fi';
-import { PiTooth } from 'react-icons/pi';
+import { PiPuzzlePiece, PiTooth } from 'react-icons/pi';
 import UpgradeAnnouncement from './components/UpgradeAnnouncement';
+import SmartPasteAnnouncement from './components/SmartPasteAnnouncement';
 import { markAnnouncementSeen } from './supabaseClient';
 
 // Oldest first. The newest active one shows once to every account created before its publishedAt.
@@ -17,6 +18,16 @@ export const ANNOUNCEMENTS = [
         summary: 'Every visit is now a case, and you can dictate a full dental chart. See what changed.',
         icons: [FiFolder, PiTooth],
         Component: UpgradeAnnouncement,
+    },
+    {
+        id: 'smartpaste-2026-11',
+        active: true,
+        publishedAt: '2026-11-10T17:00:00Z',
+        expiresAt: '2027-01-06T08:00:00Z', // end of Jan 5, Pacific
+        title: 'SmartPaste for Chrome',
+        summary: 'Paste the open record into a browser-based PIMS. Verified in ezyVet. Chrome on a computer only.',
+        icons: [PiPuzzlePiece],
+        Component: SmartPasteAnnouncement,
     },
 ];
 
